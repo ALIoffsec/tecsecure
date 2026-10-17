@@ -1,0 +1,35 @@
+{
+  "name": "tecsecure-platform",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "prisma generate && next build && node scripts/copy-standalone-assets.cjs",
+    "start": "node .next/standalone/server.js",
+    "worker": "tsx src/worker.ts",
+    "test": "tsx --test src/lib/cctv.test.ts src/lib/request-status.test.ts",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate deploy",
+    "db:dev": "prisma migrate dev",
+    "admin:create": "tsx scripts/create-admin.ts",
+    "founder:claim": "tsx scripts/claim-founder.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@prisma/client": "6.9.0",
+    "bcryptjs": "3.0.2",
+    "next": "16.4.0",
+    "prisma": "6.9.0",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "tsx": "4.19.4",
+    "zod": "3.25.28"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "2.4.6",
+    "@types/node": "22.15.30",
+    "@types/react": "19.1.6",
+    "@types/react-dom": "19.1.6",
+    "typescript": "5.8.3"
+  }
+}

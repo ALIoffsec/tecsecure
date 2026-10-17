@@ -1,0 +1,38 @@
+services:
+  - type: web
+    name: tecsecure-platform
+    runtime: node
+    rootDir: platform
+    buildCommand: npm ci && npx prisma generate && npm run build
+    startCommand: npm run db:migrate && npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: 22
+      - key: DATABASE_URL
+        fromDatabase:
+          name: tecsecure-db
+          property: connectionString
+      - key: NEXT_PUBLIC_APP_URL
+        sync: false
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+  - type: worker
+    name: tecsecure-worker
+    runtime: node
+    rootDir: platform
+    buildCommand: npm ci && npx prisma generate && npm run build
+    startCommand: npm run worker
+    envVars:
+      - key: NODE_VERSION
+        value: 22
+      - key: DATABASE_URL
+        fromDatabase:
+          name: tecsecure-db
+          property: connectionString
+databases:
+  - name: tecsecure-db
+    databaseName: tecsecure
+    user: tecsecure
