@@ -3,7 +3,7 @@
 import { FormEvent, useState } from "react";
 import { useSitePreferences } from "@/components/site-preferences";
 
-type ServiceOption = { id: string; name: string };
+export type ServiceOption = { id: string; name: string };
 
 export function ServiceRequestForm({ services }: { services: ServiceOption[] }) {
   const { t } = useSitePreferences();

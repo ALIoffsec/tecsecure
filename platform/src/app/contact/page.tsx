@@ -2,12 +2,13 @@ import { ServiceRequestForm } from "@/components/service-request-form";
 import { prisma } from "@/lib/prisma";
 import { LocalizedText } from "@/components/site-preferences";
 import { PreviewModeNotice } from "@/components/preview-mode-notice";
+import type { ServiceOption } from "@/components/service-request-form";
 import { isPreviewMode } from "@/lib/preview-mode";
 
 export const dynamic = "force-dynamic";
 
 export default async function ContactPage() {
-  const [services, settings] = isPreviewMode ? [[], []] as const : await Promise.all([
+  const [services, settings] = isPreviewMode ? [[] as ServiceOption[], []] : await Promise.all([
     prisma.service.findMany({ where: { status: "PUBLISHED", availability: true }, select: { id: true, name: true } }),
     prisma.siteSetting.findMany({ where: { key: { in: ["phone", "email", "telegram", "instagram", "address"] } } })
   ]);
