@@ -10,7 +10,7 @@ export const runtime = "nodejs";
 const createSchema = z.object({
   name: z.string().trim().min(2).max(100),
   email: z.string().trim().email().max(254).transform((value) => value.toLowerCase()),
-  password: z.string().min(12).max(128),
+  password: z.string().min(8).max(128),
   role: z.enum(["STAFF", "ADMIN"]),
   permissions: z.array(z.enum(adminModules)).max(adminModules.length).default([])
 });

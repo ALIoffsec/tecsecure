@@ -37,8 +37,8 @@ export function PasswordChangeForm() {
 
   return <form className="form" onSubmit={submit}>
     <div className="field"><label htmlFor="currentPassword">{t("currentPassword")}</label><input id="currentPassword" name="currentPassword" type="password" autoComplete="current-password" required /></div>
-    <div className="field"><label htmlFor="newPassword">{t("newPassword")} (12+)</label><input id="newPassword" name="newPassword" type="password" minLength={12} maxLength={128} autoComplete="new-password" required /></div>
-    <div className="field"><label htmlFor="confirmPassword">{t("confirmPassword")}</label><input id="confirmPassword" name="confirmPassword" type="password" minLength={12} maxLength={128} autoComplete="new-password" required /></div>
+    <div className="field"><label htmlFor="newPassword">{t("newPassword")} (8+)</label><input id="newPassword" name="newPassword" type="password" minLength={8} maxLength={128} autoComplete="new-password" required /></div>
+    <div className="field"><label htmlFor="confirmPassword">{t("confirmPassword")}</label><input id="confirmPassword" name="confirmPassword" type="password" minLength={8} maxLength={128} autoComplete="new-password" required /></div>
     {error && <div className="notice error" role="alert">{error}</div>}
     {success && <div className="notice success" role="status">{success}</div>}
     <button className="button secondary" disabled={busy}>{busy ? t("saving") : t("updatePassword")}</button>

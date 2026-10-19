@@ -12,6 +12,7 @@
     "db:migrate": "prisma migrate deploy",
     "db:dev": "prisma migrate dev",
     "admin:create": "tsx scripts/create-admin.ts",
+    "admin:password-reset": "tsx scripts/reset-admin-password.ts",
     "founder:claim": "tsx scripts/claim-founder.ts",
     "typecheck": "tsc --noEmit"
   },

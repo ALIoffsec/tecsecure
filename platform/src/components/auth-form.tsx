@@ -50,8 +50,8 @@ export function AuthForm({ mode, audience = "customer" }: Props) {
         <div className="field"><label htmlFor="email">{t("email")}</label><input id="email" name="email" type="email" autoComplete="email" maxLength={254} required /></div>
         <div className="field">
           <label htmlFor="password">{t("password")}</label>
-          <input id="password" name="password" type="password" autoComplete={mode === "login" ? "current-password" : "new-password"} minLength={mode === "register" ? 12 : 1} maxLength={128} required />
-          {mode === "register" && <span className="small muted">{t("minimum12Characters")}</span>}
+          <input id="password" name="password" type="password" autoComplete={mode === "login" ? "current-password" : "new-password"} minLength={mode === "register" ? 8 : 1} maxLength={128} required />
+          {mode === "register" && <span className="small muted">{t("minimum8Characters")}</span>}
         </div>
         {error && <div className="notice error" role="alert">{error}</div>}
         <button className="button" type="submit" disabled={busy}>{busy ? t("waiting") : mode === "login" ? t("signIn") : t("createAccountButton")}</button>

@@ -46,6 +46,8 @@ Requirements: Node.js 22, npm, and PostgreSQL 15+.
 
 For an existing database, take a backup first. Do not run `migrate dev` against production; use reviewed migrations and `npm run db:migrate`.
 
+To reset an existing administrator or founder password from an interactive server terminal, run `npm run admin:password-reset -- admin@example.com` from this directory with `DATABASE_URL` available in the process environment. The new password is entered without terminal echo, must be at least 16 characters, and the command revokes that account's existing sessions. If the database URL is stored in `.env` rather than provided by the service environment, run `node --env-file=.env --import tsx scripts/reset-admin-password.ts admin@example.com` instead. This command does not create accounts or change roles.
+
 ## Environment variables
 
 | Variable | Required | Purpose |

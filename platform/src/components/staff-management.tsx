@@ -95,7 +95,7 @@ export function StaffManagement({ users, founder }: { users: ManagedUser[]; foun
           <div className="field"><label htmlFor="staff-email">{t("email")}</label><input id="staff-email" name="email" type="email" maxLength={254} required /></div>
         </div>
         <div className="form-row">
-          <div className="field"><label htmlFor="staff-password">{t("password")}</label><input id="staff-password" name="password" type="password" minLength={12} maxLength={128} required /></div>
+          <div className="field"><label htmlFor="staff-password">{t("password")}</label><input id="staff-password" name="password" type="password" minLength={8} maxLength={128} required /></div>
           <div className="field"><label htmlFor="staff-role">{t("userRole")}</label><select id="staff-role" name="role"><option value="STAFF">{t("staffRole")}</option>{founder && <option value="ADMIN">{t("adminRole")}</option>}</select></div>
         </div>
         <fieldset className="permission-fieldset">
