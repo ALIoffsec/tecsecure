@@ -7,6 +7,7 @@ import { StaffManagement } from "@/components/staff-management";
 import { SiteBlockManager, type SiteBlockRecord } from "@/components/site-block-manager";
 import { PortfolioManager } from "@/components/portfolio-manager";
 import { WalletReviewManager } from "@/components/wallet-panel";
+import { TecGiftManager } from "@/components/tec-gift-manager";
 import { SystemStatus } from "@/components/system-status";
 import { MediaGallery, MediaUploader } from "@/components/media-uploader";
 import type { AdminModule } from "@/lib/auth";
@@ -47,7 +48,7 @@ const designOptions: { id: SiteDesign; name: string; font: string }[] = [
   { id: "terminal", name: "Terminal", font: "JetBrains Mono" }
 ];
 
-export function AdminWorkspace({ services, requests, products, articles, settings, notifications, projects, quotations, pendingPayments, plans, users, siteBlocks, portfolioPosts, walletRequests, metrics, role, permissions }: {
+export function AdminWorkspace({ services, requests, products, articles, settings, notifications, projects, quotations, pendingPayments, plans, users, siteBlocks, portfolioPosts, walletRequests, metrics, role, permissions, actorId }: {
   services: Service[];
   requests: RequestRecord[];
   products: Product[];
@@ -65,6 +66,7 @@ export function AdminWorkspace({ services, requests, products, articles, setting
   metrics: { users: number; projects: number; invoices: number };
   role: "FOUNDER" | "ADMIN" | "STAFF";
   permissions: string[];
+  actorId: string;
 }) {
   const router = useRouter();
   const { t } = useSitePreferences();
@@ -503,7 +505,10 @@ export function AdminWorkspace({ services, requests, products, articles, setting
         </section>}
         {visibleSections.includes("content") && <div className={`admin-panel-section ${selectedSection === "content" ? "active" : ""}`}><SiteBlockManager blocks={siteBlocks} /></div>}
         {visibleSections.includes("portfolio") && <div className={`admin-panel-section ${selectedSection === "portfolio" ? "active" : ""}`}><PortfolioManager posts={portfolioPosts} /></div>}
-        {visibleSections.includes("wallet") && <div className={`admin-panel-section ${selectedSection === "wallet" ? "active" : ""}`}><WalletReviewManager transactions={walletRequests} /></div>}
+        {visibleSections.includes("wallet") && <div className={`admin-panel-section ${selectedSection === "wallet" ? "active" : ""}`}>
+          {isPrivileged && <TecGiftManager users={users} actorId={actorId} />}
+          <WalletReviewManager transactions={walletRequests} />
+        </div>}
         {visibleSections.includes("system") && <div className={`admin-panel-section ${selectedSection === "system" ? "active" : ""}`}><SystemStatus /></div>}
         {visibleSections.includes("users") && <div className={`admin-panel-section ${selectedSection === "users" ? "active" : ""}`}><StaffManagement users={users} founder={role === "FOUNDER"} /></div>}
         </div>

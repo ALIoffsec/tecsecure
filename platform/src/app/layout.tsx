@@ -4,8 +4,10 @@ import { SiteNav } from "@/components/site-nav";
 import { PageBackLink } from "@/components/page-back-link";
 import { SiteFooter, SitePreferencesProvider, preferenceBootstrapScript } from "@/components/site-preferences";
 import { SiteBlocksRenderer, type SiteBlockRecord } from "@/components/site-block-manager";
-import { PreviewModeNotice } from "@/components/preview-mode-notice";
 import { prisma } from "@/lib/prisma";
+import { learningModules, learningPaths } from "@/lib/learning-demo";
+import { toLearningModulePreview } from "@/lib/learning-catalog-data";
+import { LearningCatalogProvider } from "@/components/learning-catalog-context";
 import type { Locale, MessageKey } from "@/lib/messages";
 import { isSiteDesign } from "@/lib/site-designs";
 import { isPreviewMode } from "@/lib/preview-mode";
@@ -27,6 +29,10 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
       prisma.siteSetting.findUnique({ where: { key: "siteDesign" }, select: { value: true } })
     ]);
   const design = isSiteDesign(designSetting?.value) ? designSetting.value : "midnight";
+  const learningCatalog = {
+    modules: learningModules.map(toLearningModulePreview),
+    paths: learningPaths
+  };
   const overrides: Partial<Record<Locale, Partial<Record<MessageKey, string>>>> = {};
   for (const item of content) {
     if (item.locale === "uz" || item.locale === "ru" || item.locale === "en") {
@@ -41,12 +47,13 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
       </head>
       <body>
         <SitePreferencesProvider overrides={overrides}>
-          <SiteNav />
-          {isPreviewMode && <div className="container demo-mode-banner"><PreviewModeNotice /></div>}
-          <PageBackLink />
-          <main>{children}</main>
-          <SiteBlocksRenderer blocks={siteBlocks} />
-          <SiteFooter />
+          <LearningCatalogProvider data={learningCatalog}>
+            <SiteNav />
+            <PageBackLink />
+            <main>{children}</main>
+            <SiteBlocksRenderer blocks={siteBlocks} />
+            <SiteFooter />
+          </LearningCatalogProvider>
         </SitePreferencesProvider>
       </body>
     </html>

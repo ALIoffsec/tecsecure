@@ -116,6 +116,9 @@ model User {
   notifications        Notification[]
   walletTransactions   WalletTransaction[]    @relation("WalletOwner")
   reviewedWalletTransactions WalletTransaction[] @relation("WalletReviewer")
+  learningPurchases    LearningPurchase[]
+  learningProgress    LearningProgress[]
+  learningCompletions LearningModuleCompletion[]
   requestStatusChanges RequestStatusHistory[]
   paymentsSubmitted    Payment[]              @relation("PaymentSubmitter")
   paymentsVerified     Payment[]              @relation("PaymentVerifier")
@@ -493,6 +496,44 @@ model WalletTransaction {
 
   @@index([userId, createdAt])
   @@index([status, createdAt])
+}
+
+model LearningPurchase {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  moduleSlug   String
+  sectionIndex Int?
+  purchaseKey  String
+  priceTec     Int
+  createdAt    DateTime @default(now())
+
+  @@unique([userId, purchaseKey])
+  @@index([userId, moduleSlug])
+}
+
+model LearningProgress {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  moduleSlug   String
+  sectionIndex Int
+  completedAt  DateTime @default(now())
+
+  @@unique([userId, moduleSlug, sectionIndex])
+  @@index([userId, moduleSlug])
+}
+
+model LearningModuleCompletion {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  moduleSlug  String
+  rewardTec   Int
+  completedAt DateTime @default(now())
+
+  @@unique([userId, moduleSlug])
+  @@index([userId, completedAt])
 }
 
 model Subscription {

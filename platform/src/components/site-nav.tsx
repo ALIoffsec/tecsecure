@@ -8,19 +8,30 @@ import { UiIcon } from "@/components/ui-icon";
 
 const locales: Locale[] = ["uz", "ru", "en"];
 const themes = ["light", "dark", "system"] as const;
+type NavGroup = "services" | "market" | "education";
 
 export function SiteNav() {
   const [open, setOpen] = useState(false);
+  const [openGroup, setOpenGroup] = useState<NavGroup | null>(null);
   const { locale, setLocale, theme, setTheme, t } = useSitePreferences();
   const nextLocale = locales[(locales.indexOf(locale) + 1) % locales.length];
   const nextTheme = themes[(themes.indexOf(theme) + 1) % themes.length];
   const themeIcon = theme === "light" ? "sun" : theme === "dark" ? "moon" : "monitor";
   const themeLabel = theme === "light" ? t("themeLight") : theme === "dark" ? t("themeDark") : t("themeSystem");
 
+  function closeMenu() {
+    setOpen(false);
+    setOpenGroup(null);
+  }
+
+  function toggleGroup(group: NavGroup) {
+    setOpenGroup((current) => current === group ? null : group);
+  }
+
   return (
     <header className="site-nav">
       <nav className="container nav-inner" aria-label={t("navLabel")}>
-        <Link className="brand" href="/" onClick={() => setOpen(false)}>
+        <Link className="brand" href="/" onClick={closeMenu}>
           <span className="brand-mark"><img src="/icon.ico" alt="" width="34" height="34" /></span>
           <span className="brand-word" aria-label="Tecsecure">
             {"Tecsecure".split("").map((letter, index) => (
@@ -28,35 +39,54 @@ export function SiteNav() {
             ))}
           </span>
         </Link>
-        <button className="button ghost mobile-nav-toggle" type="button" aria-expanded={open} onClick={() => setOpen(!open)}>
-          {open ? t("close") : t("menu")}
+        <button
+          className={`mobile-nav-toggle${open ? " open" : ""}`}
+          type="button"
+          aria-label={open ? t("close") : t("menu")}
+          aria-expanded={open}
+          aria-controls="site-navigation"
+          onClick={() => open ? closeMenu() : setOpen(true)}
+        >
+          <span />
+          <span />
+          <span />
         </button>
-        <div className={`nav-links ${open ? "open" : ""}`}>
-          <Link className="home-nav-button" href="/" aria-label={t("home")} title={t("home")} onClick={() => setOpen(false)}>
+        <div className={`nav-links ${open ? "open" : ""}`} id="site-navigation">
+          <Link className="home-nav-button" href="/" aria-label={t("home")} title={t("home")} onClick={closeMenu}>
             <UiIcon name="home" />
           </Link>
-          <div className="nav-group">
-            <Link href="/services" onClick={() => setOpen(false)}>{t("navServices")}</Link>
-            <div className="nav-submenu">
-              <Link href="/services">{t("allServices")}</Link>
-              <Link href="/cybersecurity">{t("cybersecurity")}</Link>
-              <Link href="/monitoring">{t("monitoring")}</Link>
-              <Link href="/consultation">{t("consultation")}</Link>
-              <Link href="/contact">{t("contact")}</Link>
+          <div className={`nav-group${openGroup === "services" ? " is-open" : ""}`}>
+            <div className="nav-group-trigger">
+              <Link href="/services" onClick={closeMenu}>{t("navServices")}</Link>
+              <button className="nav-group-toggle" type="button" aria-label={t("navServices")} aria-expanded={openGroup === "services"} aria-controls="services-submenu" onClick={() => toggleGroup("services")} />
+            </div>
+            <div className="nav-submenu" id="services-submenu">
+              <Link href="/services" onClick={closeMenu}>{t("allServices")}</Link>
+              <Link href="/cybersecurity" onClick={closeMenu}>{t("cybersecurity")}</Link>
+              <Link href="/monitoring" onClick={closeMenu}>{t("monitoring")}</Link>
+              <Link href="/consultation" onClick={closeMenu}>{t("consultation")}</Link>
+              <Link href="/contact" onClick={closeMenu}>{t("contact")}</Link>
             </div>
           </div>
-          <div className="nav-group">
-            <Link href="/products" onClick={() => setOpen(false)}>{t("navMarket")}</Link>
-            <div className="nav-submenu">
-              <Link href="/products">{t("productCatalog")}</Link>
-              <Link href="/request-quote">{t("requestProjectQuote")}</Link>
+          <div className={`nav-group${openGroup === "market" ? " is-open" : ""}`}>
+            <div className="nav-group-trigger">
+              <Link href="/products" onClick={closeMenu}>{t("navMarket")}</Link>
+              <button className="nav-group-toggle" type="button" aria-label={t("navMarket")} aria-expanded={openGroup === "market"} aria-controls="market-submenu" onClick={() => toggleGroup("market")} />
+            </div>
+            <div className="nav-submenu" id="market-submenu">
+              <Link href="/products" onClick={closeMenu}>{t("productCatalog")}</Link>
+              <Link href="/request-quote" onClick={closeMenu}>{t("requestProjectQuote")}</Link>
             </div>
           </div>
-          <div className="nav-group">
-            <Link href="/learning" onClick={() => setOpen(false)}>{t("navEducation")}</Link>
-            <div className="nav-submenu">
-              <Link href="/learning">{t("learning")}</Link>
-              <Link href="/news">{t("news")}</Link>
+          <div className={`nav-group${openGroup === "education" ? " is-open" : ""}`}>
+            <div className="nav-group-trigger">
+              <Link href="/learning" onClick={closeMenu}>{t("navEducation")}</Link>
+              <button className="nav-group-toggle" type="button" aria-label={t("navEducation")} aria-expanded={openGroup === "education"} aria-controls="education-submenu" onClick={() => toggleGroup("education")} />
+            </div>
+            <div className="nav-submenu" id="education-submenu">
+              <Link href="/learning" onClick={closeMenu}>{t("learning")}</Link>
+              <Link href="/learning/dashboard" onClick={closeMenu}>{t("learningDashboard")}</Link>
+              <Link href="/news" onClick={closeMenu}>{t("news")}</Link>
             </div>
           </div>
           <div className="nav-utilities">
@@ -65,7 +95,7 @@ export function SiteNav() {
               type="button"
               aria-label={`${t("language")}: ${locale.toUpperCase()}. ${t("switchLanguage")}`}
               title={`${t("switchLanguage")}: ${nextLocale.toUpperCase()}`}
-              onClick={() => setLocale(nextLocale)}
+              onClick={() => { setLocale(nextLocale); closeMenu(); }}
             >
               {locale.toUpperCase()}
             </button>
@@ -74,11 +104,11 @@ export function SiteNav() {
               type="button"
               aria-label={`${t("theme")}: ${themeLabel}. ${t("switchTheme")}`}
               title={`${t("switchTheme")}: ${nextTheme === "light" ? t("themeLight") : nextTheme === "dark" ? t("themeDark") : t("themeSystem")}`}
-              onClick={() => setTheme(nextTheme)}
+              onClick={() => { setTheme(nextTheme); closeMenu(); }}
             >
               <UiIcon name={themeIcon} />
             </button>
-            <Link className="account-button" href="/portal/profile" aria-label={t("profile")} title={t("profile")} onClick={() => setOpen(false)}>
+            <Link className="account-button" href="/portal/profile" aria-label={t("profile")} title={t("profile")} onClick={closeMenu}>
               <UiIcon name="user" />
               <span>{t("profile")}</span>
             </Link>

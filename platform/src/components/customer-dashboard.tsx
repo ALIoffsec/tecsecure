@@ -11,6 +11,7 @@ import { SubscriptionManager } from "@/components/subscription-manager";
 import { AccountSessionActions } from "@/components/account-session-actions";
 import { ProfileDetails } from "@/components/profile-details";
 import { WalletPanel } from "@/components/wallet-panel";
+import { TecGiftNotifications } from "@/components/tec-gift-notifications";
 
 type RequestRecord = {
   id: string; reference: string; name: string; serviceId: string | null; service: { name: string } | null;
@@ -142,6 +143,7 @@ export function CustomerDashboard({ user, requests, organizations, projects, cat
           <h2>{t("portalOverview")}</h2>
           <p className="muted">{t("privateDataNotice")}</p>
           <div className="dashboard-grid"><div className="metric"><strong>{(wallet.walletBalanceMinor / 100).toLocaleString(numberLocale)} UZS</strong><span>{t("walletBalance")}</span></div><div className="metric"><strong>{wallet.rewardPoints.toLocaleString(numberLocale)}</strong><span>{t("rewardPoints")}</span></div></div>
+          <TecGiftNotifications />
           {!requests.length && <div className="empty-state"><p>{t("noRequestsYet")}</p><Link className="button" href="/request-service">{t("newServiceRequest")}</Link></div>}
         </section>}
         {activeSection === "profile" && <ProfileDetails user={{ name: user.name, email: user.email, phone: user.phone, role: user.role }} />}

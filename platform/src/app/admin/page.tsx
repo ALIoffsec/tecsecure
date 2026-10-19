@@ -54,5 +54,5 @@ export default async function AdminPage() {
     ...plan,
     features: Array.isArray(plan.features) ? plan.features.filter((value): value is string => typeof value === "string") : []
   }));
-  return <><AdminSecurityBoundary /><AdminWorkspace services={services} requests={requests} products={products} articles={articles} settings={Object.fromEntries(settings.map((item) => [item.key, item.value]))} notifications={notifications} projects={projects} quotations={quotations} pendingPayments={pendingPayments} plans={managedPlans} users={managedUsers} siteBlocks={siteBlocks} portfolioPosts={portfolioPosts} walletRequests={walletRequests} metrics={{ users: managedUsers.length, projects: projectCount, invoices }} role={actor.role} permissions={actor.permissions} /></>;
+  return <><AdminSecurityBoundary /><AdminWorkspace services={services} requests={requests} products={products} articles={articles} settings={Object.fromEntries(settings.map((item) => [item.key, item.value]))} notifications={notifications} projects={projects} quotations={quotations} pendingPayments={pendingPayments} plans={managedPlans} users={managedUsers} siteBlocks={siteBlocks} portfolioPosts={portfolioPosts} walletRequests={walletRequests} metrics={{ users: managedUsers.length, projects: projectCount, invoices }} role={actor.role} permissions={actor.permissions} actorId={actor.id} /></>;
 }

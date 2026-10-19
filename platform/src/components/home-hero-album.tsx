@@ -6,39 +6,35 @@ import { useSitePreferences } from "@/components/site-preferences";
 
 const slides = [
   {
-    id: "business",
+    id: "services",
     eyebrow: "heroEyebrow",
     title: "introTitle",
     description: "introDescription",
     links: [
-      { label: "navServices", href: "/services", style: "" },
-      { label: "navMarket", href: "/products", style: "secondary" },
-      { label: "navEducation", href: "/learning", style: "ghost" }
+      { label: "navServices", href: "/services", style: "" }
     ]
   },
   {
-    id: "infrastructure",
+    id: "learning",
     eyebrow: "heroInfrastructureEyebrow",
     title: "heroInfrastructureTitle",
     description: "heroInfrastructureDescription",
     links: [
-      { label: "navServices", href: "/services", style: "" },
-      { label: "requestAQuote", href: "/request-quote", style: "secondary" }
+      { label: "navEducation", href: "/learning", style: "" }
     ]
   },
   {
-    id: "security",
+    id: "store",
     eyebrow: "heroSecurityEyebrow",
     title: "heroSecurityTitle",
     description: "heroSecurityDescription",
     links: [
-      { label: "cybersecurity", href: "/cybersecurity", style: "" },
-      { label: "contact", href: "/contact", style: "secondary" }
+      { label: "navMarket", href: "/products", style: "" }
     ]
   }
 ] as const;
 
-const slideInterval = 12_000;
+const slideInterval = 8_000;
 
 export function HomeHeroAlbum() {
   const { t } = useSitePreferences();
