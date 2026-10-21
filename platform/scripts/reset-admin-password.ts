@@ -56,9 +56,9 @@ async function main() {
     throw new Error("That account is disabled. Enable it before resetting its password.");
   }
 
-  const password = await readHidden("New password (16+ characters): ");
-  if (password.length < 16 || password.length > 128) {
-    throw new Error("Password must be between 16 and 128 characters.");
+  const password = await readHidden("New password (8+ characters): ");
+  if (password.length < 8 || password.length > 128) {
+    throw new Error("Password must be between 8 and 128 characters.");
   }
   const confirmation = await readHidden("Repeat new password: ");
   if (password !== confirmation) {

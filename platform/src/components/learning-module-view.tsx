@@ -203,9 +203,9 @@ export function LearningModuleView({ module }: { module: LearningModulePreview }
   const positioned = useRef(false);
   const { ready, touch, isDone } = progress;
   const modulePurchase = access.purchases.some((purchase) => purchase.sectionIndex === null);
-  const hasAccess = useCallback((index: number) => module.sectionPricesTec[index] === 0
+  const hasAccess = useCallback((index: number) => access.subscriptionAccess || module.sectionPricesTec[index] === 0
     || modulePurchase
-    || access.purchases.some((purchase) => purchase.sectionIndex === index), [access.purchases, module, modulePurchase]);
+    || access.purchases.some((purchase) => purchase.sectionIndex === index), [access.purchases, access.subscriptionAccess, module, modulePurchase]);
   const moduleUnlocked = module.sections.every((_, index) => hasAccess(index));
 
   useEffect(() => {

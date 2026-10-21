@@ -9,6 +9,7 @@ import { networkFundamentalsDetails } from "@/lib/network-fundamentals-content";
 import { sectionPriceTec } from "@/lib/learning-pricing";
 import { isPreviewMode } from "@/lib/preview-mode";
 import { prisma } from "@/lib/prisma";
+import { hasLearningModuleAccess } from "@/lib/learning-subscriptions";
 
 export const runtime = "nodejs";
 
@@ -29,11 +30,9 @@ export async function GET(_request: Request, { params }: { params: Promise<{ slu
     const user = await getCurrentUser();
     if (!user) return Response.json({ error: "Bu materialni ko‘rish uchun avval TEC bilan oching." }, { status: 401 });
     if (isPreviewMode) return Response.json({ error: "TEC bilan ochilgan materiallar hozircha mavjud emas." }, { status: 503 });
-    const purchase = await prisma.learningPurchase.findFirst({
-      where: { userId: user.id, moduleSlug: module.slug, OR: [{ sectionIndex: index }, { sectionIndex: null }] },
-      select: { id: true }
-    });
-    if (!purchase) return Response.json({ error: "Bu bo‘lim hali ochilmagan." }, { status: 403 });
+    if (!await hasLearningModuleAccess(prisma, user.id, module, index)) {
+      return Response.json({ error: "Bu bo‘lim hali ochilmagan." }, { status: 403 });
+    }
   }
 
   const section = module.sections[index];

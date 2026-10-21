@@ -86,6 +86,7 @@ export function SiteNav() {
             <div className="nav-submenu" id="education-submenu">
               <Link href="/learning" onClick={closeMenu}>{t("learning")}</Link>
               <Link href="/learning/dashboard" onClick={closeMenu}>{t("learningDashboard")}</Link>
+              <Link href="/store" onClick={closeMenu}>{t("learningStore")}</Link>
               <Link href="/news" onClick={closeMenu}>{t("news")}</Link>
             </div>
           </div>

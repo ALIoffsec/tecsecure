@@ -2,12 +2,12 @@ import { Prisma } from "@prisma/client";
 import { getCurrentUser } from "@/lib/auth";
 import { isPreviewMode } from "@/lib/preview-mode";
 import { prisma } from "@/lib/prisma";
-import { TEC_PRICE_UZS, tecPurchaseCostMinor } from "@/lib/tec-pricing";
+import { getTecPack, TEC_PRICE_UZS, tecPurchaseCostMinor, tecPacks } from "@/lib/tec-pricing";
 import { z } from "zod";
 
 export const runtime = "nodejs";
 
-const purchaseSchema = z.object({ amountTec: z.number().int().min(1).max(2_000) });
+const purchaseSchema = z.object({ packId: z.enum(tecPacks.map((pack) => pack.id) as [string, ...string[]]) });
 
 export async function POST(request: Request) {
   if (isPreviewMode) return Response.json({ error: "TEC xaridi hozircha mavjud emas." }, { status: 503 });
@@ -22,16 +22,18 @@ export async function POST(request: Request) {
     return Response.json({ error: "So‘rov JSON formatida bo‘lishi kerak." }, { status: 400 });
   }
   const parsed = purchaseSchema.safeParse(input);
-  if (!parsed.success) return Response.json({ error: "TEC miqdori 1 dan 2 000 gacha butun son bo‘lishi kerak." }, { status: 400 });
+  if (!parsed.success) return Response.json({ error: "Mavjud TEC paketlaridan birini tanlang." }, { status: 400 });
 
-  const amountMinor = tecPurchaseCostMinor(parsed.data.amountTec);
+  const pack = getTecPack(parsed.data.packId);
+  if (!pack) return Response.json({ error: "TEC paketi topilmadi." }, { status: 400 });
+  const amountMinor = tecPurchaseCostMinor(pack.amountTec, pack.discountPercent);
   try {
     const result = await prisma.$transaction(async (tx) => {
       const debit = await tx.user.updateMany({
         where: { id: user.id, walletBalanceMinor: { gte: amountMinor } },
         data: {
           walletBalanceMinor: { decrement: amountMinor },
-          rewardPoints: { increment: parsed.data.amountTec }
+          rewardPoints: { increment: pack.amountTec }
         }
       });
       if (debit.count !== 1) throw new Error("TEC_WALLET_BALANCE_TOO_LOW");
@@ -46,7 +48,7 @@ export async function POST(request: Request) {
           kind: "TEC_PURCHASE",
           status: "APPROVED",
           amountMinor,
-          details: `TEC xaridi: ${parsed.data.amountTec} TEC (${TEC_PRICE_UZS.toLocaleString("en-US")} UZS/TEC)`
+          details: `TEC xaridi: ${pack.amountTec} TEC; ${pack.discountPercent}% chegirma; bazaviy narx ${TEC_PRICE_UZS.toLocaleString("en-US")} UZS/TEC`
         }
       });
       await tx.auditLog.create({
@@ -57,7 +59,7 @@ export async function POST(request: Request) {
           entityId: transaction.id
         }
       });
-      return { account, transaction, amountTec: parsed.data.amountTec };
+      return { account, transaction, amountTec: pack.amountTec, discountPercent: pack.discountPercent, amountMinor };
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 
     return Response.json(result, { status: 201 });

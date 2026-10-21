@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { SiteNav } from "@/components/site-nav";
 import { PageBackLink } from "@/components/page-back-link";
+import { FontLoader } from "@/components/font-loader";
 import { SiteFooter, SitePreferencesProvider, preferenceBootstrapScript } from "@/components/site-preferences";
 import { SiteBlocksRenderer, type SiteBlockRecord } from "@/components/site-block-manager";
 import { prisma } from "@/lib/prisma";
@@ -15,7 +16,19 @@ import { isPreviewMode } from "@/lib/preview-mode";
 export const metadata: Metadata = {
   title: "Tecsecure — IT va xavfsizlik yechimlari",
   description: "IT infratuzilma, jismoniy xavfsizlik va texnik xizmatlar.",
-  robots: { index: true, follow: true }
+  robots: { index: true, follow: true },
+  applicationName: "Tecsecure",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: { title: "Tecsecure", capable: true },
+  icons: {
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon.ico", sizes: "any" }
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }]
+  }
 };
 
 export const dynamic = "force-dynamic";
@@ -43,9 +56,13 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   return (
     <html lang="uz" data-design={design} suppressHydrationWarning>
       <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <script dangerouslySetInnerHTML={{ __html: preferenceBootstrapScript }} />
+        <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&family=Playfair+Display:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" /></noscript>
       </head>
       <body>
+        <FontLoader />
         <SitePreferencesProvider overrides={overrides}>
           <LearningCatalogProvider data={learningCatalog}>
             <SiteNav />

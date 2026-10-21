@@ -57,6 +57,10 @@ export type LearningPath = {
   kind: "jobRole" | "skill";
   title: Localized;
   summary: Localized;
+  timeEstimate: Localized;
+  prerequisites: Localized;
+  outcomes: Localized;
+  capstone: Localized;
   modules: string[];
 };
 
@@ -1177,21 +1181,33 @@ export const learningPaths: LearningPath[] = [
     slug: "it-support-networking",
     kind: "jobRole",
     title: l("IT qo‘llab-quvvatlash va tarmoq muhandisi", "IT-поддержка и сетевой инженер", "IT Support and Network Engineer"),
-    summary: l("Noldan boshlab tarmoq, tizim va MikroTik bo‘yicha ish uchun tayyor bilimlar.", "Практические знания по сетям, системам и MikroTik с нуля.", "Job-ready networking, systems and MikroTik skills from scratch."),
+    summary: l("Tarmoq, operatsion tizimlar va MikroTik asoslari. Bu yo‘nalish mustaqil mashq uchun tayyorlaydi, ishga qabul yoki seniorlikni kafolatlamaydi.", "Основы сетей, операционных систем и MikroTik. Курс готовит к самостоятельной практике, но не гарантирует трудоустройство или уровень senior.", "Networking, operating-system, and MikroTik fundamentals. This path prepares you for independent practice; it does not guarantee employment or senior-level competence."),
+    timeEstimate: l("Taxminan 60–80 soat: modul materiallari, takrorlash, mustaqil amaliyot va yakuniy loyiha. Bu platformada o‘lchangan natija emas.", "Около 60–80 часов: материалы модулей, повторение, самостоятельная практика и итоговый проект. Это не измеренная статистика платформы.", "About 60–80 hours for module material, review, independent practice, and the final project. This is an estimate, not measured platform data."),
+    prerequisites: l("Oldindan IT tajribasi shart emas; kompyuterda fayl va buyruq satri bilan ishlashni o‘rganishga tayyor bo‘ling.", "Предварительный опыт в IT не требуется; будьте готовы освоить работу с файлами и командной строкой.", "No prior IT experience required; be ready to learn file and command-line basics."),
+    outcomes: l("IP manzil va marshrutni tekshirish; Linux/Windows jurnalidan nosozlik izlash; oddiy VLAN/Wi‑Fi segmentatsiyasi va RouterOS sozlamasini xavfsiz rejalash.", "Проверять IP-адреса и маршруты; искать сбои в журналах Linux/Windows; планировать базовую VLAN/Wi‑Fi сегментацию и настройки RouterOS.", "Inspect IP addressing and routes; troubleshoot using Linux/Windows logs; plan basic VLAN/Wi‑Fi segmentation and RouterOS configuration."),
+    capstone: l("Uy/ofis laboratoriyasi uchun tarmoq sxemasi, manzillash jadvali, segmentatsiya rejasi, xavfsiz o‘qish buyruqlari va nosozliklarni aniqlash hisobotini tayyorlang. Rubrika: to‘g‘rilik, segmentlar orasidagi ruxsatlar, zaxira/qaytarish rejasi va takrorlanadigan tekshiruvlar.", "Подготовьте схему домашней/офисной лаборатории, адресный план, сегментацию, безопасные команды чтения и отчёт по диагностике. Критерии: корректность, доступ между сегментами, резервирование/откат и повторяемые проверки.", "Produce a home/office lab topology, addressing plan, segmentation rules, safe read-only commands, and troubleshooting report. Rubric: correctness, inter-segment access, backup/rollback, and repeatable checks."),
     modules: ["network-fundamentals", "linux-fundamentals", "windows-fundamentals", "mikrotik-routeros-basics", "wifi-security"]
   },
   {
     slug: "soc-analyst",
     kind: "jobRole",
     title: l("SOC tahlilchisi", "Аналитик SOC", "SOC Analyst"),
-    summary: l("Kiberxavfsizlik asoslaridan hodisalarni tahlil qilishgacha.", "От основ кибербезопасности до анализа инцидентов.", "From cybersecurity basics to incident analysis."),
+    summary: l("Kiberxavfsizlik asoslari va loglar bilan ishlash. Bu o‘quv yo‘nalishi; SOC ish tajribasi yoki senior malakasini bermaydi.", "Основы кибербезопасности и анализ журналов. Это учебный курс, а не опыт работы в SOC или квалификация senior.", "Cybersecurity fundamentals and log analysis. This is a learning path, not SOC job experience or senior qualification."),
+    timeEstimate: l("Taxminan 80–110 soat: darslar, log tahlili mashqlari va yakuniy hodisa hisoboti. Laboratoriya natijasi o‘quvchining o‘z muhitiga bog‘liq.", "Около 80–110 часов: уроки, анализ журналов и итоговый отчёт об инциденте. Практика зависит от среды учащегося.", "About 80–110 hours for lessons, log-analysis exercises, and a final incident report. Hands-on time depends on the learner’s own lab."),
+    prerequisites: l("Yo‘l tarmoq, Linux va Windows asoslarini o‘z ichiga oladi; boshlashdan oldin tajriba shart emas.", "В курс включены основы сетей, Linux и Windows; предварительный опыт не обязателен.", "Networking, Linux, and Windows foundations are included; no prior experience required."),
+    outcomes: l("Shubhali hodisaga vaqt chizig‘i tuzish; log manbalarini ajratish; dalillar va taxminlarni farqlash; xavfni baholab, eskalatsiya tavsiyasini yozish.", "Составлять хронологию события; различать источники журналов, факты и гипотезы; оценивать риск и оформлять рекомендацию по эскалации.", "Build an event timeline; distinguish log sources, evidence, and hypotheses; assess risk and write an escalation recommendation."),
+    capstone: l("Faqat berilgan yoki o‘zingiz yaratgan sintetik loglardan foydalanib hodisa tahlili yozing: xulosa, vaqt chizig‘i, dalillar, noaniqliklar va containment tavsiyasi. Rubrika: dalilga tayanish, vaqt ketma-ketligi, noaniqlikni ochiq ko‘rsatish va xavfsiz tavsiyalar.", "Используя только предоставленные или собственные синтетические журналы, подготовьте разбор инцидента: вывод, хронология, доказательства, неопределённости и рекомендации по локализации. Критерии: опора на данные, последовательность, явное описание неопределённостей и безопасные рекомендации.", "Using only provided or self-generated synthetic logs, write an incident analysis with a conclusion, timeline, evidence, uncertainties, and containment recommendations. Rubric: evidence-based reasoning, chronology, explicit uncertainty, and safe recommendations."),
     modules: ["network-fundamentals", "intro-cybersecurity", "linux-fundamentals", "windows-fundamentals", "active-directory-security", "web-security-owasp", "soc-log-analysis"]
   },
   {
     slug: "network-admin-mikrotik",
     kind: "skill",
     title: l("MikroTik tarmoq administratori", "Администратор сети MikroTik", "MikroTik Network Administrator"),
-    summary: l("RouterOS bo‘yicha amaliy ko‘nikmalar yo‘nalishi.", "Практическое направление по RouterOS.", "Hands-on RouterOS skill path."),
+    summary: l("RouterOS konfiguratsiyasi va tekshiruv usullari. Ishlab chiqarish tarmog‘ida o‘zgarish qilish malakasi alohida amaliy tajriba talab qiladi.", "Настройка RouterOS и методы проверки. Изменение production-сетей требует отдельного практического опыта.", "RouterOS configuration and verification techniques. Production changes require separate supervised experience."),
+    timeEstimate: l("Taxminan 30–40 soat: ikkita modul, mustaqil konfiguratsiya mashqlari va loyiha.", "Около 30–40 часов: два модуля, самостоятельные упражнения по конфигурации и проект.", "About 30–40 hours for two modules, independent configuration practice, and a project."),
+    prerequisites: l("Tarmoq asoslari birinchi modulda beriladi; RouterOS qurilmasi shart emas, ammo xavfsiz virtual yoki zaxira qurilma foydali.", "Основы сетей рассматриваются в первом модуле; RouterOS-устройство не обязательно, но безопасный виртуальный стенд или запасное устройство полезны.", "Networking fundamentals are included first; a RouterOS device is optional, though a safe virtual or spare device helps."),
+    outcomes: l("Interfeys va route holatini o‘qish; NAT/firewall qoidasini izohlash; VLAN va Wi‑Fi segmentatsiyasini chizish; o‘zgarishdan oldin backup va tekshiruv rejasini tuzish.", "Читать состояние интерфейсов и маршрутов; объяснять NAT/firewall правила; проектировать VLAN/Wi‑Fi сегментацию; планировать резервирование и проверку до изменений.", "Inspect interface and route state; explain NAT/firewall rules; design VLAN/Wi‑Fi segmentation; plan backup and verification before changes."),
+    capstone: l("Sintetik filial tarmog‘i uchun RouterOS konfiguratsiya rejasi va faqat o‘qish tekshiruvlari ro‘yxatini topshiring. Rubrika: manzillash, VLAN, minimal ruxsat, backup, rollback va foydalanuvchi ta’sirini tushuntirish.", "Подготовьте план RouterOS для синтетической сети филиала и список проверок только для чтения. Критерии: адресация, VLAN, минимальные разрешения, backup/rollback и объяснение влияния на пользователей.", "Submit a RouterOS plan for a synthetic branch network plus read-only verification checks. Rubric: addressing, VLANs, least access, backup, rollback, and user-impact explanation."),
     modules: ["network-fundamentals", "mikrotik-routeros-basics"]
   },
   {
@@ -1203,6 +1219,10 @@ export const learningPaths: LearningPath[] = [
       "Изучите архитектуру firewall и администрирование Kerio Control в практическом учебном направлении.",
       "Learn firewall architecture and Kerio Control administration in a practical learning path."
     ),
+    timeEstimate: l("Taxminan 90–120 soat: asosiy tarmoq, firewall/Kerio darslari, mustaqil dizayn va xavfsiz sinov rejasi.", "Около 90–120 часов: сети, firewall/Kerio, самостоятельное проектирование и план безопасных испытаний.", "About 90–120 hours for networking, firewall/Kerio lessons, independent design, and a safe test plan."),
+    prerequisites: l("Tarmoq asoslari yo‘l boshida kiritilgan; Kerio qurilmasi yoki litsenziya majburiy emas. Bu yo‘l ishlab chiqarish tizimidagi tajribani almashtirmaydi.", "Основы сетей включены в начало курса; устройство или лицензия Kerio не обязательны. Курс не заменяет опыт работы с production.", "Networking foundations are included first; a Kerio appliance or license is not required. This path does not replace production experience."),
+    outcomes: l("Firewall zonalari va oqimlarni xaritalash; NAT, VPN va qoidalar ketma-ketligini izohlash; loglardan nosozlik topish; backup/rollback va o‘zgarish rejasini yozish.", "Картировать зоны и потоки firewall; объяснять NAT, VPN и порядок правил; диагностировать сбои по журналам; составлять план изменений и отката.", "Map firewall zones and flows; explain NAT, VPN, and rule order; troubleshoot from logs; write change, backup, and rollback plans."),
+    capstone: l("Faqat izolyatsiyalangan yoki qog‘ozdagi sintetik ofis uchun segmented tarmoq dizaynini yarating: zonalar, qoidalar jadvali, VPN taxmini, testlar va rollback. Rubrika: talablar izchilligi, default-deny, minimal ruxsat, sinov dalillari va rollback.", "Спроектируйте сегментированную сеть для изолированного или учебного офиса: зоны, таблица правил, VPN, тесты и откат. Критерии: соответствие требованиям, default-deny, минимальные разрешения, доказательства тестирования и rollback.", "Design a segmented network for an isolated or paper-based synthetic office: zones, rule matrix, VPN assumptions, tests, and rollback. Rubric: requirements traceability, default-deny, least privilege, test evidence, and rollback."),
     modules: ["network-fundamentals", "firewall-zero-to-hero", "kerio-control-zero-to-hero"]
   },
   {
@@ -1214,27 +1234,43 @@ export const learningPaths: LearningPath[] = [
       "От CLI и начальной настройки до VLAN, STP, маршрутизации, ACL и итоговой лабораторной работы.",
       "From the CLI and initial setup to VLANs, STP, routing, ACLs, and a capstone lab."
     ),
+    timeEstimate: l("Taxminan 55–70 soat: tarmoq va Cisco modullari, Packet Tracer yoki shaxsiy lab mashqlari, yakuniy hujjat.", "Около 55–70 часов: сетевой и Cisco-модули, упражнения в Packet Tracer или собственной лаборатории, итоговая документация.", "About 55–70 hours for networking and Cisco modules, Packet Tracer or personal lab exercises, and final documentation."),
+    prerequisites: l("Boshlang‘ich tarmoq tushunchalari birinchi modulda beriladi; real Cisco qurilmasi kerak emas. Virtual simulyator alohida o‘rnatilishi mumkin.", "Основы сетей включены в первый модуль; реальное Cisco-оборудование не требуется. Симулятор можно установить отдельно.", "Networking basics are included first; physical Cisco equipment is not required. A simulator may need to be installed separately."),
+    outcomes: l("IOS CLI rejimlarini farqlash; VLAN/trunk, STP, routing va ACL rejasini o‘qish; konfiguratsiyani saqlash va sinash; nosozlik bo‘yicha dalilli hisobot yozish.", "Различать режимы IOS CLI; читать план VLAN/trunk, STP, маршрутизации и ACL; сохранять и проверять конфигурацию; документировать диагностику.", "Distinguish IOS CLI modes; interpret VLAN/trunk, STP, routing, and ACL plans; save and verify configurations; document troubleshooting evidence."),
+    capstone: l("Packet Tracer yoki qog‘oz modeli orqali ikki bo‘limli tarmoqni loyihalang. Topshiriq: diagramma, VLAN/IP jadvali, routing/ACL ni asoslash, test matritsasi va qaytarish qadamlari. Fizik Cisco lab platformaga ulanmagan.", "Спроектируйте сеть из двух отделов в Packet Tracer или на схеме. Сдайте диаграмму, VLAN/IP таблицу, обоснование routing/ACL, тест-матрицу и шаги отката. Физическая Cisco-лаборатория к платформе не подключена.", "Design a two-department network in Packet Tracer or on paper. Submit a diagram, VLAN/IP table, routing/ACL rationale, test matrix, and rollback steps. No physical Cisco lab is connected to this platform."),
     modules: ["network-fundamentals", "cisco-ios-fundamentals"]
   },
   {
     slug: "wireless-network-security",
     kind: "skill",
     title: l("Simsiz tarmoq xavfsizligi", "Безопасность беспроводных сетей", "Wireless Network Security"),
-    summary: l("Wi-Fi himoya standartlari, ruxsatli tekshiruv va kirish nuqtalarini mustahkamlash.", "Стандарты защиты Wi-Fi, разрешённая проверка и укрепление точек доступа.", "Wi-Fi security standards, authorized assessment, and access-point hardening."),
+    summary: l("Wi‑Fi xavfsizlik standartlari, ruxsatli baholash va access point konfiguratsiyasini mustahkamlash.", "Стандарты Wi‑Fi, разрешённая оценка и усиление конфигурации точек доступа.", "Wi-Fi security standards, authorized assessment, and access-point hardening."),
+    timeEstimate: l("Taxminan 25–35 soat: ikki modul, konfiguratsiya taqqoslash, mustaqil audit ro‘yxati va loyiha.", "Около 25–35 часов: два модуля, сравнение конфигураций, самостоятельный чек-лист аудита и проект.", "About 25–35 hours for two modules, configuration comparisons, an independent audit checklist, and a project."),
+    prerequisites: l("Tarmoq asoslari yo‘l boshida beriladi; faqat o‘zingiz boshqaradigan access point yoki simulyatsiyadan foydalaning.", "Основы сетей включены; используйте только собственную точку доступа или симулятор.", "Networking basics are included; use only an access point you control or a simulator."),
+    outcomes: l("WPA2/3 va autentifikatsiya tanlovlarini tushuntirish; mehmon/korporativ SSID ni ajratish; ruxsatli audit doirasini belgilash; xavfsiz konfiguratsiya ro‘yxatini tuzish.", "Объяснять WPA2/3 и варианты аутентификации; разделять гостевой и корпоративный SSID; определять границы разрешённой проверки; составлять чек-лист защиты.", "Explain WPA2/3 and authentication choices; separate guest and corporate SSIDs; define an authorized assessment scope; produce a hardening checklist."),
+    capstone: l("Uy/ofis Wi‑Fi dizayni va xavf tahlilini topshiring: SSID/VLAN, boshqaruv, guest isolation, yangilash va incident response. Rubrika: minimal ochiq xizmat, ruxsat doirasi, test reja va hujjatlashtirish.", "Подготовьте дизайн и оценку рисков Wi‑Fi: SSID/VLAN, управление, изоляция гостей, обновления и реагирование. Критерии: минимум открытых сервисов, границы разрешения, план тестирования и документация.", "Submit a home/office Wi-Fi design and risk assessment covering SSID/VLAN, management, guest isolation, updates, and incident response. Rubric: minimal exposure, authorized scope, test plan, and documentation."),
     modules: ["network-fundamentals", "wifi-security"]
   },
   {
     slug: "active-directory-security",
     kind: "skill",
     title: l("Active Directory himoyasi", "Защита Active Directory", "Active Directory Defense"),
-    summary: l("Domen infratuzilmasini tushunish, imtiyozlarni nazorat qilish va lateral movement xavfini kamaytirish.", "Понимание доменной инфраструктуры, контроль привилегий и снижение риска lateral movement.", "Understand domain infrastructure, control privileges, and reduce lateral-movement risk."),
+    summary: l("Active Directory himoya tamoyillari, ruxsatlarni ko‘rib chiqish va xavfsiz audit rejalash.", "Принципы защиты Active Directory, проверка прав и планирование безопасного аудита.", "Active Directory defense, access review, and safe audit planning."),
+    timeEstimate: l("Taxminan 25–35 soat: Windows va AD darslari, xavfsiz tekshiruvlar va yakuniy hardening rejasi.", "Около 25–35 часов: Windows/AD, безопасные проверки и итоговый план hardening.", "About 25–35 hours for Windows/AD lessons, safe checks, and a final hardening plan."),
+    prerequisites: l("Windows asoslari birinchi modulda bor; domen muhiti yoki administrator huquqi talab qilinmaydi.", "Основы Windows включены в первый модуль; домен и права администратора не требуются.", "Windows basics are included first; a domain environment or administrator access is not required."),
+    outcomes: l("OU, GPO, DNS va guruhlar rolini tushuntirish; imtiyozlarni ko‘rib chiqish; o‘zgarishlarni test OU da sinash; xavfsiz tekshiruv va rollbackni hujjatlashtirish.", "Объяснять роли OU, GPO, DNS и групп; проверять привилегии; тестировать изменения в тестовой OU; документировать безопасную проверку и откат.", "Explain OU, GPO, DNS, and group roles; review privileges; test changes in a test OU; document safe verification and rollback."),
+    capstone: l("Sintetik korxona domeni uchun xavfsizlik baseline va GPO o‘zgarish taklifini yozing. Rubrika: least privilege, ta’sir ko‘lami, sinov/rollback, audit yozuvlari va dalillarga tayangan tavsiyalar.", "Подготовьте baseline безопасности и предложение GPO для синтетического домена. Критерии: least privilege, масштаб воздействия, тест/откат, аудит и рекомендации на основе доказательств.", "Write a security baseline and GPO change proposal for a synthetic domain. Rubric: least privilege, impact scope, test/rollback, audit trail, and evidence-based recommendations."),
     modules: ["windows-fundamentals", "active-directory-security"]
   },
   {
     slug: "cctv-physical-security",
     kind: "skill",
     title: l("CCTV va jismoniy xavfsizlik", "CCTV и физическая безопасность", "CCTV and Physical Security"),
-    summary: l("Videokuzatuv tizimini loyihalash va o‘rnatish asoslari.", "Основы проектирования и монтажа видеонаблюдения.", "Fundamentals of designing and deploying video surveillance."),
+    summary: l("CCTV loyihalash, saqlash va tarmoq talablarini baholash. Sayt ko‘rigi va amaliy montaj tajribasini almashtirmaydi.", "Проектирование CCTV, оценка хранения и сети. Не заменяет осмотр объекта и практический монтаж.", "CCTV design and storage/network estimation. Does not replace a site survey or supervised installation."),
+    timeEstimate: l("Taxminan 25–35 soat: tarmoq asoslari, CCTV moduli, saqlash hisoblari va loyiha hujjatlari.", "Около 25–35 часов: основы сетей, CCTV, расчёт хранения и проектная документация.", "About 25–35 hours for networking basics, CCTV, storage calculations, and design documentation."),
+    prerequisites: l("Oldindan tajriba shart emas; kamera soni, ko‘rish zonasi va saqlash kunlari kabi talablarni aniqlashga tayyor bo‘ling.", "Опыт не обязателен; будьте готовы собирать требования по количеству камер, зонам обзора и сроку хранения.", "No prior experience required; be ready to gather camera-count, coverage, and retention requirements."),
+    outcomes: l("Kamera joylashuvini sxemalash; bitrate/storage va PoE ehtiyojini taxminlash; maxfiylik/saqlash xavflarini aniqlash; site-survey savollarini tuzish.", "Намечать расположение камер; оценивать bitrate/storage и PoE; выявлять риски приватности и хранения; составлять вопросы для site survey.", "Sketch camera placement; estimate bitrate/storage and PoE; identify privacy/retention risks; prepare site-survey questions."),
+    capstone: l("Sintetik kichik obyekt uchun kamera coverage, saqlash taxmini, tarmoq/PoE sxemasi va maxfiylik tekshiruvini topshiring. Rubrika: hisobdagi birliklar, ko‘r nuqtalar, retention taxmini, tarmoq ajratilishi va cheklovlarni ochiq ko‘rsatish.", "Подготовьте coverage, оценку хранения, сетевую/PoE схему и privacy-чек для синтетического объекта. Критерии: единицы расчёта, слепые зоны, срок хранения, сегментация и явные ограничения.", "Submit coverage, storage estimate, network/PoE diagram, and privacy review for a synthetic site. Rubric: calculation units, blind spots, retention assumptions, segmentation, and disclosed limitations."),
     modules: ["network-fundamentals", "cctv-system-design"]
   }
 ];
@@ -1262,6 +1298,7 @@ export type LearningText = {
   start: string; continueLearning: string; open: string; progress: string; completed: string;
   difficulty: Record<Difficulty, string>; category: Record<Category, string>;
   pathIncludes: string; backToCatalog: string;
+  timeEstimateLabel: string; prerequisitesLabel: string; outcomesLabel: string; capstoneLabel: string; deliveryDisclaimer: string;
   tableOfContents: string; sectionBody: string; exampleTitle: string; markComplete: string; sectionDone: string; next: string; previous: string;
   question: string; answerPlaceholder: string; check: string; correct: string; wrong: string;
   labTitle: string; labDescription: string; labSoon: string; moduleDone: string;
@@ -1275,7 +1312,7 @@ export type LearningText = {
 export const learningUi: Record<Locale, LearningText> = {
   uz: {
     eyebrow: "Tecsecure Academy", title: "IT va kiberxavfsizlik ta’limi",
-    intro: "Yo‘nalishlar bo‘yicha bosqichma-bosqich o‘rganing: modullar, savollar, amaliy lablar va sertifikatlar.",
+    intro: "Yo‘nalishlarni bosqichma-bosqich o‘rganing. Bu mustaqil ta’lim va mahalliy mashqlar uchun material; platformada hosted lab yoki ishga tayyorlik kafolati yo‘q.",
     openDashboard: "Mening o‘qishim", browseCatalog: "Katalogni ko‘rish",
     statPaths: "Yo‘nalish", statModules: "Modul", statSections: "Bo‘lim",
     pathsTitle: "O‘quv yo‘nalishlari", jobRole: "Kasbiy yo‘nalish", skillPath: "Ko‘nikma yo‘nalishi", modulesTitle: "Modullar katalogi", all: "Barchasi",
@@ -1291,6 +1328,8 @@ export const learningUi: Record<Locale, LearningText> = {
     difficulty: { fundamental: "Asosiy", easy: "Oson", medium: "O‘rta", hard: "Qiyin" },
     category: { networking: "Tarmoq", systems: "Tizimlar", security: "Xavfsizlik", physical: "Jismoniy xavfsizlik" },
     pathIncludes: "Yo‘nalish tarkibi", backToCatalog: "Katalogga qaytish",
+    timeEstimateLabel: "Taxminiy o‘qish vaqti", prerequisitesLabel: "Boshlash uchun", outcomesLabel: "O‘rganish natijalari", capstoneLabel: "Yakuniy loyiha va baholash mezonlari",
+    deliveryDisclaimer: "Vaqt oralig‘i mavjud dars hajmi, takrorlash va mustaqil mashq asosidagi taxmin; haqiqiy natija tajriba va o‘qish sur’atiga qarab farq qiladi. Yakuniy loyiha faqat o‘quv topshirig‘i, mentor bahosi yoki ish tajribasi mavjud emas.",
     tableOfContents: "Mundarija", sectionBody: "Bu bo‘lim uchun dars matni tayyorlanmoqda.", exampleTitle: "Amaliy misol",
     markComplete: "Bo‘limni yakunlash", sectionDone: "Bo‘lim yakunlangan", next: "Keyingi", previous: "Oldingi",
     question: "Savol", answerPlaceholder: "Javobingiz", check: "Tekshirish", correct: "To‘g‘ri javob! Bo‘lim yakunlandi.", wrong: "Noto‘g‘ri, qayta urinib ko‘ring.",
@@ -1305,7 +1344,7 @@ export const learningUi: Record<Locale, LearningText> = {
   },
   ru: {
     eyebrow: "Tecsecure Academy", title: "Обучение IT и кибербезопасности",
-    intro: "Изучайте по направлениям шаг за шагом: модули, вопросы, практические лаборатории и сертификаты.",
+    intro: "Изучайте направления шаг за шагом. Это материалы для самостоятельного обучения и локальной практики; hosted-лаборатории и гарантии трудоустройства нет.",
     openDashboard: "Моё обучение", browseCatalog: "Смотреть каталог",
     statPaths: "Направлений", statModules: "Модулей", statSections: "Разделов",
     pathsTitle: "Учебные направления", jobRole: "Профессия", skillPath: "Навык", modulesTitle: "Каталог модулей", all: "Все",
@@ -1321,6 +1360,8 @@ export const learningUi: Record<Locale, LearningText> = {
     difficulty: { fundamental: "Базовый", easy: "Лёгкий", medium: "Средний", hard: "Сложный" },
     category: { networking: "Сети", systems: "Системы", security: "Безопасность", physical: "Физическая безопасность" },
     pathIncludes: "Состав направления", backToCatalog: "Назад к каталогу",
+    timeEstimateLabel: "Оценка времени", prerequisitesLabel: "Перед началом", outcomesLabel: "Результаты обучения", capstoneLabel: "Итоговый проект и критерии",
+    deliveryDisclaimer: "Диапазон рассчитан по объёму уроков, повторению и самостоятельной практике; фактическое время зависит от опыта и темпа. Итоговый проект — учебное задание, без оценки наставника или подтверждения опыта работы.",
     tableOfContents: "Содержание", sectionBody: "Материал этого раздела готовится.", exampleTitle: "Практический пример",
     markComplete: "Завершить раздел", sectionDone: "Раздел завершён", next: "Далее", previous: "Назад",
     question: "Вопрос", answerPlaceholder: "Ваш ответ", check: "Проверить", correct: "Верно! Раздел завершён.", wrong: "Неверно, попробуйте ещё раз.",
@@ -1335,7 +1376,7 @@ export const learningUi: Record<Locale, LearningText> = {
   },
   en: {
     eyebrow: "Tecsecure Academy", title: "IT and cybersecurity education",
-    intro: "Learn step by step through paths: modules, questions, hands-on labs and certificates.",
+    intro: "Follow structured learning paths. Material supports self-study and local practice; hosted labs and job-readiness guarantees are not provided.",
     openDashboard: "My learning", browseCatalog: "Browse catalog",
     statPaths: "Paths", statModules: "Modules", statSections: "Sections",
     pathsTitle: "Learning paths", jobRole: "Job role path", skillPath: "Skill path", modulesTitle: "Module catalog", all: "All",
@@ -1351,6 +1392,8 @@ export const learningUi: Record<Locale, LearningText> = {
     difficulty: { fundamental: "Fundamental", easy: "Easy", medium: "Medium", hard: "Hard" },
     category: { networking: "Networking", systems: "Systems", security: "Security", physical: "Physical security" },
     pathIncludes: "Path contents", backToCatalog: "Back to catalog",
+    timeEstimateLabel: "Estimated study time", prerequisitesLabel: "Before you start", outcomesLabel: "Learning outcomes", capstoneLabel: "Capstone and assessment rubric",
+    deliveryDisclaimer: "Time ranges estimate the published lesson material, review, and independent practice; actual time varies with prior experience and pace. The capstone is a learning exercise, not mentor-graded or proof of work experience.",
     tableOfContents: "Contents", sectionBody: "This section's lesson text is being prepared.", exampleTitle: "Worked example",
     markComplete: "Complete section", sectionDone: "Section completed", next: "Next", previous: "Previous",
     question: "Question", answerPlaceholder: "Your answer", check: "Check", correct: "Correct! Section completed.", wrong: "Incorrect, try again.",

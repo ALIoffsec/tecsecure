@@ -9,5 +9,5 @@ export default async function HomePage() {
     where: { key: { in: ["phone", "email", "telegram", "instagram"] } }
   });
   const work = isPreviewMode ? [] : await prisma.portfolioPost.findMany({ where: { published: true }, orderBy: { updatedAt: "desc" }, take: 3 });
-  return <HomeContent contact={Object.fromEntries(settings.map(({ key, value }) => [key, value]))} work={work} />;
+  return <><link rel="preload" as="image" href="/hero/infrastructure.webp" fetchPriority="high" /><HomeContent contact={Object.fromEntries(settings.map(({ key, value }) => [key, value]))} work={work} /></>;
 }

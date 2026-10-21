@@ -52,6 +52,7 @@ export function LearningCatalog() {
         <h1 className="page-title">{tx.title}</h1>
         <p className="page-intro">{tx.intro}</p>
         <div className="hero-actions">
+          <Link className="button secondary" href="/learning/practice">Laboratoriya va imtihonlar</Link>
           <Link className="button" href="/learning/dashboard">{tx.openDashboard}</Link>
           <a className="button secondary" href="#learn-modules">{tx.browseCatalog}</a>
         </div>

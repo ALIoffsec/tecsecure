@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { useSitePreferences } from "@/components/site-preferences";
+import { OAuthSignIn } from "@/components/oauth-sign-in";
 
 type Props = { mode: "login" | "register"; audience?: "customer" | "staff" };
 
@@ -56,6 +57,7 @@ export function AuthForm({ mode, audience = "customer" }: Props) {
         {error && <div className="notice error" role="alert">{error}</div>}
         <button className="button" type="submit" disabled={busy}>{busy ? t("waiting") : mode === "login" ? t("signIn") : t("createAccountButton")}</button>
       </form>
+      {audience === "customer" && <OAuthSignIn />}
       {audience === "customer" && <p className="small muted" style={{ marginTop: 18 }}>
         {mode === "login" ? <>{t("noAccount")} <Link className="text-link" href="/register">{t("registerLink")}</Link></> : <>{t("alreadyHaveAccount")} <Link className="text-link" href="/login">{t("signIn")}</Link></>}
       </p>}

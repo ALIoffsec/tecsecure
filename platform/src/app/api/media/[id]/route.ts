@@ -4,6 +4,23 @@ export const runtime = "nodejs";
 
 type Context = { params: Promise<{ id: string }> };
 
+export async function HEAD(_request: Request, context: Context) {
+  const { id } = await context.params;
+  const asset = await prisma.mediaAsset.findUnique({
+    where: { id },
+    select: { mimeType: true, sizeBytes: true }
+  });
+  if (!asset) return new Response(null, { status: 404 });
+  return new Response(null, {
+    headers: {
+      "Content-Type": asset.mimeType,
+      "Content-Length": String(asset.sizeBytes),
+      "Cache-Control": "public, max-age=31536000, immutable",
+      "X-Content-Type-Options": "nosniff"
+    }
+  });
+}
+
 export async function GET(_request: Request, context: Context) {
   const { id } = await context.params;
   const asset = await prisma.mediaAsset.findUnique({

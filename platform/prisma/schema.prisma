@@ -109,6 +109,8 @@ model User {
   createdAt            DateTime               @default(now())
   updatedAt            DateTime               @updatedAt
   sessions             Session[]
+  oauthAccounts        OAuthAccount[]
+  learningSubscription LearningSubscription?
   requests             ServiceRequest[]       @relation("RequestCustomer")
   memberships          OrganizationMember[]
   projects             Project[]
@@ -119,6 +121,10 @@ model User {
   learningPurchases    LearningPurchase[]
   learningProgress    LearningProgress[]
   learningCompletions LearningModuleCompletion[]
+  labTasks            LearningLabTask[]
+  labCompletions      LearningLabCompletion[]
+  examAttempts        LearningExamAttempt[]
+  certificates        LearningCertificate[]
   requestStatusChanges RequestStatusHistory[]
   paymentsSubmitted    Payment[]              @relation("PaymentSubmitter")
   paymentsVerified     Payment[]              @relation("PaymentVerifier")
@@ -135,6 +141,18 @@ model Session {
   createdAt DateTime @default(now())
 
   @@index([userId, expiresAt])
+}
+
+model OAuthAccount {
+  id                String   @id @default(cuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider          String
+  providerAccountId String
+  createdAt         DateTime @default(now())
+
+  @@unique([provider, providerAccountId])
+  @@index([userId, provider])
 }
 
 model AuthRateLimit {
@@ -536,6 +554,19 @@ model LearningModuleCompletion {
   @@index([userId, completedAt])
 }
 
+model LearningSubscription {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planKey   String
+  startsAt  DateTime
+  endsAt    DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([planKey, endsAt])
+}
+
 model Subscription {
   id             String              @id @default(cuid())
   organizationId String
@@ -692,4 +723,52 @@ model Notification {
 
   @@index([status, createdAt])
   @@index([userId, createdAt])
+}
+
+model LearningLabTask {
+  id       String   @id @default(cuid())
+  userId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  labSlug  String
+  taskId   String
+  solvedAt DateTime @default(now())
+
+  @@unique([userId, labSlug, taskId])
+}
+
+model LearningLabCompletion {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  labSlug     String
+  completedAt DateTime @default(now())
+
+  @@unique([userId, labSlug])
+}
+
+model LearningExamAttempt {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  examSlug     String
+  feeTec       Int
+  startedAt    DateTime  @default(now())
+  deadlineAt   DateTime
+  submittedAt  DateTime?
+  scorePercent Int?
+  passed       Boolean   @default(false)
+
+  @@index([userId, examSlug])
+}
+
+model LearningCertificate {
+  id           String   @id @default(cuid())
+  code         String   @unique
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  examSlug     String
+  scorePercent Int
+  issuedAt     DateTime @default(now())
+
+  @@unique([userId, examSlug])
 }

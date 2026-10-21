@@ -6,6 +6,7 @@ import { moduleCompletionRewardTec } from "@/lib/learning-rewards";
 import { sectionPriceTec } from "@/lib/learning-pricing";
 import { isPreviewMode } from "@/lib/preview-mode";
 import { prisma } from "@/lib/prisma";
+import { hasLearningModuleAccess } from "@/lib/learning-subscriptions";
 import { z } from "zod";
 
 export const runtime = "nodejs";
@@ -86,15 +87,9 @@ export async function POST(request: Request) {
   try {
     const result = await prisma.$transaction(async (tx) => {
       if (sectionPriceTec(module, parsed.data.sectionIndex) > 0) {
-        const access = await tx.learningPurchase.findFirst({
-          where: {
-            userId: user.id,
-            moduleSlug: module.slug,
-            OR: [{ sectionIndex: parsed.data.sectionIndex }, { sectionIndex: null }]
-          },
-          select: { id: true }
-        });
-        if (!access) throw new Error("LEARNING_SECTION_NOT_UNLOCKED");
+        if (!await hasLearningModuleAccess(tx, user.id, module, parsed.data.sectionIndex)) {
+          throw new Error("LEARNING_SECTION_NOT_UNLOCKED");
+        }
       }
 
       if (parsed.data.sectionIndex > 0) {

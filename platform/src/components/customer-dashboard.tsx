@@ -12,6 +12,7 @@ import { AccountSessionActions } from "@/components/account-session-actions";
 import { ProfileDetails } from "@/components/profile-details";
 import { WalletPanel } from "@/components/wallet-panel";
 import { TecGiftNotifications } from "@/components/tec-gift-notifications";
+import { ProfileHero } from "@/components/profile-hero";
 
 type RequestRecord = {
   id: string; reference: string; name: string; serviceId: string | null; service: { name: string } | null;
@@ -55,13 +56,16 @@ export function CustomerDashboard({ user, requests, organizations, projects, cat
     { id: "overview", label: "dashboard" },
     { id: "profile", label: "profile" },
     { id: "wallet", label: "wallet" },
+    { id: "learning", label: "learningSubscription" },
+    { id: "store", label: "learningStore" },
     ...(requests.length ? [{ id: "requests", label: "myRequests" }] : []),
     ...(requests.length || projects.length || invoices.length || subscriptions.length ? [{ id: "organizations", label: "organizationsAndDevices" }] : []),
     ...(invoices.length ? [{ id: "invoices", label: "invoices" }] : []),
     ...(organizations.length || subscriptions.length ? [{ id: "subscriptions", label: "monitoringTrials" }] : [])
   ];
-  const sectionKeys: Record<string, "dashboard" | "profile" | "wallet" | "myRequests" | "organizationsAndDevices" | "invoices" | "monitoringTrials"> = {
+  const sectionKeys: Record<string, "dashboard" | "profile" | "wallet" | "learningSubscription" | "learningStore" | "myRequests" | "organizationsAndDevices" | "invoices" | "monitoringTrials"> = {
     overview: "dashboard", profile: "profile", wallet: "wallet", requests: "myRequests",
+    learning: "learningSubscription", store: "learningStore",
     organizations: "organizationsAndDevices", invoices: "invoices", subscriptions: "monitoringTrials"
   };
 
@@ -112,24 +116,14 @@ export function CustomerDashboard({ user, requests, organizations, projects, cat
 
   return (
     <div className="container page-shell">
-      <section className="portal-welcome">
-        <div className="portal-identity">
-          <div className="portal-avatar" aria-hidden="true">{user.name.slice(0, 1).toUpperCase()}</div>
-          <div>
-            <span className="eyebrow">{t("profile")}</span>
-            <h1 className="page-title">{t("customerGreeting").replace("{name}", user.name)}</h1>
-            <p className="page-intro">{user.email} · {t("privateDataNotice")}</p>
-          </div>
-        </div>
-        <div className="portal-actions">
-          <AccountSessionActions />
-        </div>
-      </section>
-      <div className="dashboard-grid">
+      <ProfileHero name={user.name} email={user.email} rewardPoints={wallet.rewardPoints}>
+        <AccountSessionActions compact />
+      </ProfileHero>
+      {(requests.length > 0 || projects.length > 0 || organizations.length > 0) && <div className="dashboard-grid">
         <div className="metric"><strong>{requests.length}</strong><span>{t("requestsMetric")}</span></div>
         <div className="metric"><strong>{projects.length}</strong><span>{t("projectsMetric")}</span></div>
         <div className="metric"><strong>{organizations.reduce((sum, item) => sum + item.devices.length, 0)}</strong><span>{t("registeredDevices")}</span></div>
-      </div>
+      </div>}
       {error && <div className="notice error" role="alert">{error}</div>}
       <div className="customer-workspace">
         <aside className="customer-sidebar" aria-label={t("portalOverview")}>
@@ -148,6 +142,16 @@ export function CustomerDashboard({ user, requests, organizations, projects, cat
         </section>}
         {activeSection === "profile" && <ProfileDetails user={{ name: user.name, email: user.email, phone: user.phone, role: user.role }} />}
         {activeSection === "wallet" && <WalletPanel initialBalance={wallet.walletBalanceMinor} initialPoints={wallet.rewardPoints} transactions={wallet.walletTransactions} />}
+        {activeSection === "learning" && <section className="panel-card">
+          <h2>{t("learningSubscription")}</h2>
+          <Link className="button" href="/store">{t("learningStore")}</Link>
+        </section>}
+        {activeSection === "store" && <section className="panel-card">
+          <h2>{t("learningStore")}</h2>
+          <p className="muted">{t("productsPageTitle")}</p>
+          <Link className="button" href="/store">TEC · {t("learningSubscription")}</Link>
+          <Link className="button ghost" href="/products" style={{ marginInlineStart: 8 }}>{t("allProducts")}</Link>
+        </section>}
         {activeSection === "requests" && requests.length > 0 && <section className="panel-card" id="requests">
           <h2>{t("myRequests")}</h2>
           {requests.length ? <div className="list">{requests.map((item) => (

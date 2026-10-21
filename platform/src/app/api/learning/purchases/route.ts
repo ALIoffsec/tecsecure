@@ -5,6 +5,7 @@ import { modulePriceTec, sectionPriceTec, sectionPurchaseKey } from "@/lib/learn
 import { isPreviewMode } from "@/lib/preview-mode";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { hasLearningModuleAccess, planIncludesModule } from "@/lib/learning-subscriptions";
 
 export const runtime = "nodejs";
 
@@ -18,16 +19,27 @@ export async function GET(request: Request) {
   const user = await getCurrentUser();
   if (!user) return Response.json({ error: "Kirish talab qilinadi." }, { status: 401 });
   const moduleSlug = new URL(request.url).searchParams.get("module");
-  const [account, purchases] = await Promise.all([
+  const [account, purchases, subscription] = await Promise.all([
     prisma.user.findUnique({ where: { id: user.id }, select: { rewardPoints: true } }),
     prisma.learningPurchase.findMany({
       where: { userId: user.id, ...(moduleSlug ? { moduleSlug } : {}) },
       select: { moduleSlug: true, sectionIndex: true, purchaseKey: true, priceTec: true, createdAt: true },
       orderBy: { createdAt: "asc" }
+    }),
+    prisma.learningSubscription.findUnique({
+      where: { userId: user.id },
+      select: { planKey: true, startsAt: true, endsAt: true }
     })
   ]);
   if (!account) return Response.json({ error: "Foydalanuvchi hisobi topilmadi." }, { status: 404 });
-  return Response.json({ tecBalance: account.rewardPoints, purchases });
+  const subscriptionAccess = Boolean(
+    moduleSlug &&
+    subscription &&
+    subscription.startsAt <= new Date() &&
+    subscription.endsAt > new Date() &&
+    planIncludesModule(subscription.planKey, moduleSlug)
+  );
+  return Response.json({ tecBalance: account.rewardPoints, purchases, subscriptionAccess });
 }
 
 export async function POST(request: Request) {
@@ -57,6 +69,18 @@ export async function POST(request: Request) {
   const purchaseKey = sectionPurchaseKey(module.slug, sectionIndex);
   try {
     const result = await prisma.$transaction(async (tx) => {
+      const activeSubscription = await tx.learningSubscription.findFirst({
+        where: { userId: user.id, startsAt: { lte: new Date() }, endsAt: { gt: new Date() } },
+        select: { planKey: true }
+      });
+      if (activeSubscription && planIncludesModule(activeSubscription.planKey, module.slug)) {
+        const account = await tx.user.findUniqueOrThrow({ where: { id: user.id }, select: { rewardPoints: true } });
+        return { alreadyOwned: true, subscriptionAccess: true, tecBalance: account.rewardPoints, purchase: null };
+      }
+      if (sectionIndex !== null && await hasLearningModuleAccess(tx, user.id, module, sectionIndex)) {
+        const account = await tx.user.findUniqueOrThrow({ where: { id: user.id }, select: { rewardPoints: true } });
+        return { alreadyOwned: true, subscriptionAccess: false, tecBalance: account.rewardPoints, purchase: null };
+      }
       const existing = await tx.learningPurchase.findMany({
         where: { userId: user.id, moduleSlug: module.slug },
         select: { purchaseKey: true, sectionIndex: true }
@@ -71,7 +95,7 @@ export async function POST(request: Request) {
       );
       if (alreadyOwnsModule || alreadyOwnsSection || (sectionIndex === null && ownsAllSections)) {
         const account = await tx.user.findUniqueOrThrow({ where: { id: user.id }, select: { rewardPoints: true } });
-        return { alreadyOwned: true, tecBalance: account.rewardPoints, purchase: null };
+        return { alreadyOwned: true, subscriptionAccess: false, tecBalance: account.rewardPoints, purchase: null };
       }
 
       const debit = await tx.user.updateMany({
@@ -87,7 +111,7 @@ export async function POST(request: Request) {
       await tx.auditLog.create({
         data: { actorId: user.id, action: "LEARNING_CONTENT_PURCHASED", entity: "LearningPurchase", entityId: purchase.id }
       });
-      return { alreadyOwned: false, tecBalance: account.rewardPoints, purchase };
+      return { alreadyOwned: false, subscriptionAccess: false, tecBalance: account.rewardPoints, purchase };
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 
     return Response.json(result, { status: result.alreadyOwned ? 200 : 201 });

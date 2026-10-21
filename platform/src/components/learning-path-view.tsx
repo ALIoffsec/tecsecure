@@ -20,6 +20,21 @@ export function LearningPathView({ path }: { path: LearningPath }) {
         <span className="eyebrow">{tx.pathsTitle}</span>
         <h1 className="page-title">{pick(path.title)}</h1>
         <p className="page-intro">{pick(path.summary)}</p>
+        <div className="dashboard-grid learning-path-details">
+          <div className="metric"><strong>{tx.timeEstimateLabel}</strong><span>{pick(path.timeEstimate)}</span></div>
+          <div className="metric"><strong>{tx.prerequisitesLabel}</strong><span>{pick(path.prerequisites)}</span></div>
+          <div className="metric"><strong>{tx.outcomesLabel}</strong><span>{pick(path.outcomes)}</span></div>
+          <div className="metric"><strong>{tx.capstoneLabel}</strong><span>{pick(path.capstone)}</span></div>
+        </div>
+        <p className="small muted">{tx.deliveryDisclaimer}</p>
+        <div className="notice">
+          <strong>{pick({ uz: "Yo‘nalishni tugatgach nima qila olasiz — halol javob", ru: "Что вы сможете после курса — честно", en: "What you can do after this path — honestly" })}</strong>
+          <ul>
+            <li>{pick({ uz: "Mavzular bo‘yicha tushuncha, terminologiya va xavfsiz o‘z laboratoriyangizda takrorlash tartibini bilasiz.", ru: "Вы понимаете темы, терминологию и умеете безопасно повторять практику в собственной лаборатории.", en: "You understand the topics and terminology and can repeat practice safely in your own lab." })}</li>
+            <li>{pick({ uz: "Yakuniy loyiha natijasi (sxema, hisobot, checklist) portfolioga qo‘yiladigan ish namunasi bo‘ladi.", ru: "Результат итогового проекта (схема, отчёт, чек-лист) станет образцом для портфолио.", en: "The capstone output (diagram, report, checklist) becomes a portfolio sample." })}</li>
+            <li>{pick({ uz: "Platforma hozircha laboratoriya, ustoz bahosi yoki sertifikat bermaydi — ish bilan ta’minlash yoki senior darajasi va’da qilinmaydi.", ru: "Платформа пока не предоставляет лаборатории, оценку преподавателя или сертификат; трудоустройство и уровень senior не обещаются.", en: "The platform does not yet provide hosted labs, instructor grading, or certificates; employment or senior level is not promised." })}</li>
+          </ul>
+        </div>
         <div className="hero-actions">
           <a className="button secondary" href="#path-modules">{tx.modulesButton}</a>
           <button

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { LocalizedText } from "@/components/site-preferences";
 import { MediaGallery } from "@/components/media-uploader";
+import { getProductStockMessageKey } from "@/lib/products";
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +18,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
     <div className="panel-card stack">
       <p><LocalizedText id="modelLabel" />: {product.model ?? <LocalizedText id="notProvided" />} · SKU: {product.sku ?? <LocalizedText id="notProvided" />}</p>
       <p><LocalizedText id="priceOnRequest" />: {product.priceMinor === null ? <LocalizedText id="technicalProposal" /> : `${(product.priceMinor / 100).toLocaleString("uz-UZ")} ${product.currency}`}</p>
-      <p><LocalizedText id="stockLabel" />: {product.stockStatus}</p>
+      <p><LocalizedText id="stockLabel" />: <LocalizedText id={getProductStockMessageKey(product.stockStatus)} /></p>
       <p><LocalizedText id="guarantee" />: {product.warrantyDescription ?? <LocalizedText id="guaranteeNotProvided" />}</p>
       <p className="muted"><LocalizedText id="specificationsNotice" /></p>
       <Link className="button" href="/request-quote"><LocalizedText id="addToProject" /></Link>

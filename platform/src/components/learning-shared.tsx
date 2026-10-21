@@ -22,6 +22,7 @@ type LearningPurchaseState = {
   authenticated: boolean;
   tecBalance: number;
   purchases: LearningPurchase[];
+  subscriptionAccess: boolean;
   error: string;
   notice: string;
 };
@@ -32,8 +33,9 @@ export function useLearningText() {
 }
 
 export function useLearningPurchases(moduleSlug: string) {
+  const { tx } = useLearningText();
   const [state, setState] = useState<LearningPurchaseState>({
-    loaded: false, authenticated: false, tecBalance: 0, purchases: [], error: "", notice: ""
+    loaded: false, authenticated: false, tecBalance: 0, purchases: [], subscriptionAccess: false, error: "", notice: ""
   });
 
   const refresh = useCallback(async () => {
@@ -51,6 +53,7 @@ export function useLearningPurchases(moduleSlug: string) {
         authenticated: true,
         tecBalance: result.tecBalance,
         purchases: result.purchases,
+        subscriptionAccess: Boolean(result.subscriptionAccess),
         error: ""
       }));
     } catch (error) {
@@ -83,7 +86,11 @@ export function useLearningPurchases(moduleSlug: string) {
         }));
       } else {
         await refresh();
-        setState((current) => ({ ...current, notice: "Material avval ochilgan." }));
+        setState((current) => ({
+          ...current,
+          subscriptionAccess: Boolean(result.subscriptionAccess) || current.subscriptionAccess,
+          notice: result.subscriptionAccess ? tx.subscriptionAccessNotice : tx.alreadyUnlocked
+        }));
       }
       return true;
     } catch (error) {
@@ -93,7 +100,7 @@ export function useLearningPurchases(moduleSlug: string) {
       }));
       return false;
     }
-  }, [moduleSlug, refresh]);
+  }, [moduleSlug, refresh, tx]);
 
   return { ...state, purchase };
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useSitePreferences } from "@/components/site-preferences";
 
@@ -96,11 +97,19 @@ function MediaPreview({ id, title, marquee = false, decorative = false }: { id: 
     </div>
   );
   if (mime.startsWith("image/")) return (
-    <div className={itemClassName} style={itemStyle} role={marquee ? "listitem" : undefined} aria-hidden={decorative || undefined}>
-      <img className={marquee ? "media-preview media-marquee-preview" : "media-preview"} src={source} alt={decorative ? "" : title} loading="lazy" onLoad={(event) => {
-        const { naturalWidth, naturalHeight } = event.currentTarget;
-        if (naturalWidth && naturalHeight) setAspectRatio(naturalWidth / naturalHeight);
-      }} />
+    <div className={itemClassName ?? "media-preview-frame"} style={itemStyle} role={marquee ? "listitem" : undefined} aria-hidden={decorative || undefined}>
+      <Image
+        className={marquee ? "media-preview media-marquee-preview" : "media-preview"}
+        src={source}
+        alt={decorative ? "" : title}
+        fill
+        sizes={marquee ? "(max-width: 640px) 75vw, (max-width: 1200px) 42vw, 480px" : "(max-width: 640px) 100vw, (max-width: 1200px) 50vw, 560px"}
+        quality={75}
+        onLoad={(event) => {
+          const { naturalWidth, naturalHeight } = event.currentTarget;
+          if (naturalWidth && naturalHeight) setAspectRatio(naturalWidth / naturalHeight);
+        }}
+      />
     </div>
   );
   return null;

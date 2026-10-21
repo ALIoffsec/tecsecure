@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
-import { getPath, learningModules } from "./learning-demo";
+import { getPath, learningModules, learningPaths } from "./learning-demo";
 import { firewallZeroToHeroDetails } from "./firewall-zero-to-hero-content";
 import { firewallKerioTerminalExamples } from "./firewall-kerio-terminal-examples";
 import { kerioControlDetails } from "./kerio-control-content";
@@ -10,7 +10,9 @@ import { learningTeachingChecks, learningTeachingVisuals } from "./learning-teac
 import { networkFundamentalsDetails } from "./network-fundamentals-content";
 import { freeLearningModules, modulePriceTec, sectionPriceTec } from "./learning-pricing";
 import { toLearningModulePreview } from "./learning-catalog-data";
-import { TEC_PRICE_MINOR, TEC_PRICE_UZS, tecPurchaseCostMinor } from "./tec-pricing";
+import { getTecPack, TEC_PRICE_MINOR, TEC_PRICE_UZS, tecPacks, tecPurchaseCostMinor } from "./tec-pricing";
+import { learningSubscriptionPlans, planIncludesModule } from "./learning-subscriptions";
+import { getProductStockMessageKey } from "./products";
 import { moduleCompletionRewardTec } from "./learning-rewards";
 import { getLearningSectionQuestion, isLearningAnswerCorrect } from "./learning-completion";
 
@@ -113,6 +115,21 @@ test("firewall and Kerio zero-to-hero courses are complete and discoverable", ()
   assert.deepEqual(path.modules, ["network-fundamentals", "firewall-zero-to-hero", "kerio-control-zero-to-hero"]);
 });
 
+test("published learning paths disclose estimates, prerequisites, outcomes, and capstone expectations", () => {
+  assert.equal(learningPaths.length, 8);
+  for (const path of learningPaths) {
+    assert.ok(path.modules.length > 0, `${path.slug} includes modules`);
+    assert.ok(path.timeEstimate.uz.includes("Taxminan"), `${path.slug} labels its time as an estimate`);
+    assert.ok(path.prerequisites.uz.length > 20, `${path.slug} documents prerequisites`);
+    assert.ok(path.outcomes.uz.length > 40, `${path.slug} describes measurable outcomes`);
+    assert.ok(path.capstone.uz.length > 80, `${path.slug} includes a capstone and rubric`);
+    for (const slug of path.modules) {
+      assert.ok(learningModules.some((module) => module.slug === slug), `${path.slug} module ${slug} exists`);
+    }
+  }
+  assert.ok(learningPaths.every((path) => !path.summary.en.toLowerCase().includes("job-ready")));
+});
+
 test("TEC pricing keeps starter content free and discounts full modules", () => {
   for (const slug of freeLearningModules) {
     const module = learningModules.find((item) => item.slug === slug);
@@ -154,10 +171,35 @@ test("learning module previews expose titles and pricing without lesson bodies",
   assert.equal("labPlan" in preview, true);
 });
 
-test("TEC cash purchases use the displayed UZS exchange rate", () => {
+test("TEC packs use the advertised base rate and deterministic volume discounts", () => {
   assert.equal(TEC_PRICE_MINOR, TEC_PRICE_UZS * 100);
   assert.equal(tecPurchaseCostMinor(1) / 100, TEC_PRICE_UZS);
-  assert.equal(tecPurchaseCostMinor(5) / 100, 50_000);
+  assert.equal(TEC_PRICE_UZS, 4_990);
+  assert.deepEqual(tecPacks.map((pack) => pack.amountTec), [1, 3, 5, 10, 25, 50, 100, 250, 500]);
+  assert.equal(tecPurchaseCostMinor(5, 0) / 100, 24_950);
+  assert.equal(tecPurchaseCostMinor(50, 8) / 100, 229_540);
+  assert.equal(tecPurchaseCostMinor(500, 25) / 100, 1_871_250);
+  assert.equal(getTecPack("tec-50")?.discountPercent, 8);
+  assert.throws(() => tecPurchaseCostMinor(0), RangeError);
+  assert.throws(() => tecPurchaseCostMinor(5, 26), RangeError);
+});
+
+test("learning subscriptions expose three 30-day plans with explicit module entitlements", () => {
+  assert.deepEqual(learningSubscriptionPlans.map((plan) => plan.key), ["basic", "standard", "expert"]);
+  assert.deepEqual(learningSubscriptionPlans.map((plan) => plan.priceMinor), [4_990_000, 9_990_000, 19_990_000]);
+  assert.ok(learningSubscriptionPlans.every((plan) => plan.durationDays === 30));
+  assert.equal(planIncludesModule("basic", "network-fundamentals"), true);
+  assert.equal(planIncludesModule("basic", "firewall-zero-to-hero"), false);
+  assert.equal(planIncludesModule("standard", "soc-log-analysis"), true);
+  assert.equal(planIncludesModule("expert", "kerio-control-zero-to-hero"), true);
+  assert.equal(planIncludesModule("unknown", "network-fundamentals"), false);
+});
+
+test("public product stock uses localized availability labels", () => {
+  assert.equal(getProductStockMessageKey("IN_STOCK"), "inStock");
+  assert.equal(getProductStockMessageKey("OUT_OF_STOCK"), "outOfStock");
+  assert.equal(getProductStockMessageKey("ON_REQUEST"), "onRequest");
+  assert.equal(getProductStockMessageKey("UNKNOWN"), "unknown");
 });
 
 test("module completion awards one difficulty-scaled TEC reward", () => {

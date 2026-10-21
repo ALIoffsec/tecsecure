@@ -1,10 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { MediaUploader } from "@/components/media-uploader";
 import { useSitePreferences } from "@/components/site-preferences";
-import { TEC_PRICE_UZS } from "@/lib/tec-pricing";
 
 type WalletRecord = {
   id: string;
@@ -29,14 +29,8 @@ export function WalletPanel({ initialBalance, initialPoints, transactions }: {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
-  const [tecAmount, setTecAmount] = useState("1");
-  const [tecPurchaseError, setTecPurchaseError] = useState("");
-  const [tecPurchaseNotice, setTecPurchaseNotice] = useState("");
-  const [tecPurchaseBusy, setTecPurchaseBusy] = useState(false);
   const rank = initialPoints >= 2000 ? t("rankGold") : initialPoints >= 500 ? t("rankSilver") : t("rankStarter");
   const numberLocale = locale === "uz" ? "uz-UZ" : locale === "ru" ? "ru-RU" : "en-US";
-  const tecCount = Number(tecAmount);
-  const tecCost = Number.isInteger(tecCount) && tecCount > 0 ? tecCount * TEC_PRICE_UZS : 0;
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -66,27 +60,6 @@ export function WalletPanel({ initialBalance, initialPoints, transactions }: {
     }
   }
 
-  async function buyTec(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setTecPurchaseBusy(true);
-    setTecPurchaseError("");
-    setTecPurchaseNotice("");
-    try {
-      const response = await fetch("/api/wallet/tec-purchase", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amountTec: tecCount })
-      });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error ?? t("tecPurchaseFailed"));
-      setTecPurchaseNotice(t("tecPurchaseSuccess").replace("{amount}", String(result.amountTec)));
-      router.refresh();
-    } catch (issue) {
-      setTecPurchaseError(issue instanceof Error ? issue.message : t("tecPurchaseFailed"));
-    } finally {
-      setTecPurchaseBusy(false);
-    }
-  }
 
   return <section className="panel-card">
     <h2>{t("wallet")}</h2>
@@ -100,23 +73,7 @@ export function WalletPanel({ initialBalance, initialPoints, transactions }: {
     <div className="panel-card wallet-tec-purchase">
       <h3>{t("tecPurchaseTitle")}</h3>
       <p className="small muted">{t("tecPurchaseDescription")}</p>
-      <form className="form" onSubmit={buyTec}>
-        <div className="form-row wallet-tec-purchase-row">
-          <div className="field">
-            <label htmlFor="tec-purchase-amount">{t("tecPurchaseAmount")}</label>
-            <input id="tec-purchase-amount" type="number" min="1" max="2000" step="1" value={tecAmount} onChange={(event) => setTecAmount(event.target.value)} required />
-          </div>
-          <div className="metric wallet-tec-purchase-cost">
-            <strong>{tecCost.toLocaleString(numberLocale)} UZS</strong>
-            <span>{t("tecPurchaseCost")}</span>
-          </div>
-        </div>
-        {tecPurchaseError && <div className="notice error" role="alert">{tecPurchaseError}</div>}
-        {tecPurchaseNotice && <div className="notice success" role="status">{tecPurchaseNotice}</div>}
-        <button className="button" type="submit" disabled={tecPurchaseBusy || !tecCost}>
-          {tecPurchaseBusy ? t("saving") : t("tecPurchaseSubmit")}
-        </button>
-      </form>
+      <Link className="button" href="/store">{t("learningStore")}</Link>
     </div>
     <div className="hero-actions">
       <button className={`button ${kind === "DEPOSIT" ? "" : "ghost"}`} type="button" onClick={() => { setKind("DEPOSIT"); setError(""); }}>{t("depositRequest")}</button>
