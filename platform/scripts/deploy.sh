@@ -10,6 +10,8 @@ mkdir -p "$HOME/backups"
 pg_dump "${DATABASE_URL%%\?*}" | gzip > "$HOME/backups/db-pre-deploy-$(date +%F-%H%M).sql.gz"
 
 npm ci
+# server npm rewrites package-lock.json; keep the working tree clean for auto-deploy
+git checkout -- package-lock.json
 npx prisma generate
 npm run db:migrate
 # 1GB RAM + swap: default Node heap (~490MB) is too small for next build type-check
