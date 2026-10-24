@@ -12,7 +12,8 @@ pg_dump "${DATABASE_URL%%\?*}" | gzip > "$HOME/backups/db-pre-deploy-$(date +%F-
 npm ci
 npx prisma generate
 npm run db:migrate
-npm run build
+# 1GB RAM + swap: default Node heap (~490MB) is too small for next build type-check
+NODE_OPTIONS="--max-old-space-size=1536" npm run build
 
 sudo systemctl restart tecsecure-web tecsecure-worker
 sleep 3
