@@ -3,6 +3,7 @@
 ## Unreleased — 2026-10-24
 
 ### Implemented in the current uncommitted checkout
+- News: `prisma/seed-news.mjs` seeds 8 evergreen educational articles (OWASP Top 10:2021, OWASP API Security Top 10:2023, phishing, passwords/MFA, 3-2-1 backups, Wi‑Fi, CCTV hardening, what an audit includes). Idempotent; run with `node --env-file=.env prisma/seed-news.mjs`. Not breaking-news items; review before publishing to production.
 - Quote → invoice → payment flow verified end to end over HTTP with temporary users (since deleted): issue, accept (customer only), duplicate/early invoice blocked, partial + final manual payments, staff-only verification, concurrent verification (one 200, one 409), invoice becomes PAID, cross-customer access denied (403). Two gaps fixed: duplicate invoice per quotation (409) and over-payment submission (409).
 - Real monitoring MVP: `src/lib/monitoring.ts`, `PATCH /api/devices/[id]` (admin only, audit logged) and a worker check every 5 minutes. TCP port reachability only, `tcp:PORT` method, opt-in per device, public IPs only (loopback/private/link-local/metadata blocked, DNS result validated before connecting). No ping/SNMP/agent/LAN/alerting; `/monitoring` copy updated in uz/ru/en to say exactly this. Unit tests in `monitoring.test.ts`.
 - Catalog seed `prisma/seed-catalog.mjs` (6 price-on-request equipment items, no invented brands/prices); run locally with `node --env-file=.env prisma/seed-catalog.mjs`.

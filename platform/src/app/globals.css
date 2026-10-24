@@ -483,9 +483,12 @@ th { color: var(--muted); font-size: .8rem; text-transform: uppercase; letter-sp
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
-}
+    /* Sekin, miltillamaydigan gorizontal lentalar: faqat ular uchun harakat saqlanadi */
+    :root .brand-track { animation: brand-scroll 38s linear infinite !important; }
+    :root .media-marquee-track { animation: portfolio-media-scroll 48s linear infinite !important; }
+  }
 
-:root[data-design="midnight"] {
+  :root[data-design="midnight"] {
   --design-bg-dark: #07111f; --design-surface-dark: #0d1b2d; --design-surface-2-dark: #12233a; --design-line-dark: #243851;
   --design-text-dark: #f2f6fc; --design-muted-dark: #a8b7c9; --design-accent: #50d5e8; --design-accent-soft: #122f43;
   --design-bg-light: #f4f7fb; --design-surface-light: #fff; --design-surface-2-light: #eaf0f6; --design-line-light: #d1dbe7;
