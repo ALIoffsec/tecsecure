@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from "node:crypto";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { isAdminAccessActive } from "@/lib/admin-access";
 import { prisma } from "@/lib/prisma";
 
 const SESSION_COOKIE = "tecsecure_session";
@@ -29,7 +30,13 @@ export async function createSession(userId: string, adminAccess = false): Promis
   const expiresAt = new Date(Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000);
   const adminExpiresAt = adminAccess ? new Date(Date.now() + ADMIN_ACCESS_MINUTES * 60 * 1000) : null;
   await prisma.session.create({
-    data: { tokenHash: hashToken(token), userId, expiresAt, adminAccessHash: adminToken ? hashToken(adminToken) : null }
+    data: {
+      tokenHash: hashToken(token),
+      userId,
+      expiresAt,
+      adminAccessHash: adminToken ? hashToken(adminToken) : null,
+      adminAccessExpiresAt: adminToken ? adminExpiresAt : null
+    }
   });
   const cookieStore = await cookies();
   cookieStore.set(SESSION_COOKIE, token, {
@@ -113,15 +120,17 @@ async function hasAdminAccess(): Promise<boolean> {
   const adminToken = cookieStore.get(ADMIN_ACCESS_COOKIE)?.value;
   const sessionToken = cookieStore.get(SESSION_COOKIE)?.value;
   if (!adminToken || !sessionToken) return false;
+  const now = new Date();
   const access = await prisma.session.findFirst({
     where: {
       tokenHash: hashToken(sessionToken),
       adminAccessHash: hashToken(adminToken),
-      expiresAt: { gt: new Date() }
+      expiresAt: { gt: now },
+      adminAccessExpiresAt: { gt: now }
     },
-    select: { id: true }
+    select: { expiresAt: true, adminAccessExpiresAt: true }
   });
-  return access !== null;
+  return access !== null && isAdminAccessActive(access.expiresAt, access.adminAccessExpiresAt, now);
 }
 
 export async function requireAdminApi(): Promise<AuthUser | Response> {
@@ -151,7 +160,7 @@ export async function endAdminAccess(): Promise<void> {
   if (adminToken && sessionToken) {
     await prisma.session.updateMany({
       where: { tokenHash: hashToken(sessionToken), adminAccessHash: hashToken(adminToken) },
-      data: { adminAccessHash: null }
+      data: { adminAccessHash: null, adminAccessExpiresAt: null }
     });
   }
   cookieStore.delete(ADMIN_ACCESS_COOKIE);

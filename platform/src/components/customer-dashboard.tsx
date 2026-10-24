@@ -13,6 +13,7 @@ import { ProfileDetails } from "@/components/profile-details";
 import { WalletPanel } from "@/components/wallet-panel";
 import { TecGiftNotifications } from "@/components/tec-gift-notifications";
 import { ProfileHero } from "@/components/profile-hero";
+import type { ProfilePractice } from "@/lib/learning-profile-types";
 
 type RequestRecord = {
   id: string; reference: string; name: string; serviceId: string | null; service: { name: string } | null;
@@ -36,7 +37,7 @@ type SubscriptionRecord = {
   organization: { name: string };
 };
 
-export function CustomerDashboard({ user, requests, organizations, projects, catalog, invoices, plans, subscriptions, wallet }: {
+export function CustomerDashboard({ user, requests, organizations, projects, catalog, invoices, plans, subscriptions, wallet, practice }: {
   user: { id: string; name: string; email: string; phone: string | null; role: string };
   requests: RequestRecord[];
   organizations: Organization[];
@@ -46,6 +47,7 @@ export function CustomerDashboard({ user, requests, organizations, projects, cat
   plans: PlanRecord[];
   subscriptions: SubscriptionRecord[];
   wallet: { walletBalanceMinor: number; rewardPoints: number; walletTransactions: { id: string; kind: string; status: string; amountMinor: number; reference: string | null; details: string | null; proofMediaId: string | null; createdAt: Date }[] };
+  practice: ProfilePractice;
 }) {
   const router = useRouter();
   const { locale, t } = useSitePreferences();
@@ -116,7 +118,7 @@ export function CustomerDashboard({ user, requests, organizations, projects, cat
 
   return (
     <div className="container page-shell">
-      <ProfileHero name={user.name} email={user.email} rewardPoints={wallet.rewardPoints}>
+      <ProfileHero name={user.name} email={user.email} rewardPoints={wallet.rewardPoints} practice={practice}>
         <AccountSessionActions compact />
       </ProfileHero>
       {(requests.length > 0 || projects.length > 0 || organizations.length > 0) && <div className="dashboard-grid">

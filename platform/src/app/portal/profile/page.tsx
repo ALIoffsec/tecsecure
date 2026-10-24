@@ -1,5 +1,6 @@
 import { requireUser } from "@/lib/auth";
 import { CustomerDashboard } from "@/components/customer-dashboard";
+import { getProfilePractice } from "@/lib/learning-profile-server";
 import { prisma } from "@/lib/prisma";
 import { PreviewModeNotice } from "@/components/preview-mode-notice";
 import { isPreviewMode } from "@/lib/preview-mode";
@@ -13,7 +14,7 @@ export default async function ProfilePage() {
     where: { id: user.id },
     select: { id: true, name: true, email: true, phone: true, role: true }
   });
-  const [requests, organizations, projects, products, services, invoices, plans, subscriptions, wallet] = await Promise.all([
+  const [requests, organizations, projects, products, services, invoices, plans, subscriptions, wallet, practice] = await Promise.all([
     prisma.serviceRequest.findMany({
       where: { customerId: user.id },
       include: { service: { select: { name: true } }, history: { orderBy: { createdAt: "asc" } } },
@@ -48,7 +49,8 @@ export default async function ProfilePage() {
         rewardPoints: true,
         walletTransactions: { orderBy: { createdAt: "desc" }, take: 100 }
       }
-    })
+    }),
+    getProfilePractice(user.id)
   ]);
   const catalog = [
     ...products.map((item) => ({ ...item, kind: "product" as const })),
@@ -59,5 +61,5 @@ export default async function ProfilePage() {
     totalMinor: invoice.items.reduce((sum, item) => sum + item.quantity * item.unitPriceMinor + item.taxMinor - item.discountMinor, 0),
     paidMinor: invoice.payments.filter((payment) => payment.status === "VERIFIED").reduce((sum, payment) => sum + payment.amountMinor, 0)
   }));
-  return <CustomerDashboard user={profileUser} requests={requests} organizations={organizations} projects={projects} catalog={catalog} invoices={invoiceRows} plans={plans} subscriptions={subscriptions} wallet={wallet ?? { walletBalanceMinor: 0, rewardPoints: 0, walletTransactions: [] }} />;
+  return <CustomerDashboard user={profileUser} requests={requests} organizations={organizations} projects={projects} catalog={catalog} invoices={invoiceRows} plans={plans} subscriptions={subscriptions} wallet={wallet ?? { walletBalanceMinor: 0, rewardPoints: 0, walletTransactions: [] }} practice={practice} />;
 }

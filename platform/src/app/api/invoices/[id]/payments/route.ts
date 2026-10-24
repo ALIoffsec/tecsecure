@@ -30,6 +30,14 @@ export async function POST(request: Request, context: Context) {
       if (!["ISSUED", "PARTIALLY_PAID", "OVERDUE"].includes(invoice.status)) {
         return { error: "Ushbu hisob-fakturaga to‘lov qabul qilinmaydi.", status: 409 as const };
       }
+      const total = invoice.items.reduce((sum, item) => sum + item.quantity * item.unitPriceMinor + item.taxMinor - item.discountMinor, 0);
+      const committed = await tx.payment.aggregate({
+        where: { invoiceId: id, status: { in: ["PENDING", "VERIFIED"] } },
+        _sum: { amountMinor: true }
+      });
+      if ((committed._sum.amountMinor ?? 0) + parsed.data.amountMinor > total) {
+        return { error: "To‘lov summasi hisob-fakturaning qolgan qismidan oshmasligi kerak.", status: 409 as const };
+      }
       const payment = await tx.payment.create({
         data: {
           invoiceId: id,

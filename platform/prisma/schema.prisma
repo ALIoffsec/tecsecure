@@ -138,6 +138,7 @@ model Session {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   expiresAt DateTime
   adminAccessHash String?  @unique
+  adminAccessExpiresAt DateTime?
   createdAt DateTime @default(now())
 
   @@index([userId, expiresAt])
