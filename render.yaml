@@ -4,7 +4,7 @@ services:
     runtime: node
     rootDir: platform
     buildCommand: npm ci && npx prisma generate && npm run build
-    startCommand: npm run db:migrate && npm start
+    startCommand: npm run db:migrate && (npm run db:seed-news || echo "news seed skipped") && npm start
     healthCheckPath: /api/health
     envVars:
       - key: NODE_VERSION

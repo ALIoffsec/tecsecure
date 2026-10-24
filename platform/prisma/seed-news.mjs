@@ -66,6 +66,15 @@ const articles = [
   }
 ];
 
+// Bir martalik: marker bo‘lsa qayta yaratmaydi, shunda admin o‘chirgan maqolalar qaytib kelmaydi.
+const markerKey = "seed.news.v1";
+const force = process.argv.includes("--force");
+if (!force && (await prisma.siteSetting.findUnique({ where: { key: markerKey } }))) {
+  console.log("News seed already applied, skipping (use --force to re-run)");
+  await prisma.$disconnect();
+  process.exit(0);
+}
+
 let created = 0;
 for (const [index, article] of articles.entries()) {
   const exists = await prisma.newsArticle.findUnique({ where: { slug: article.slug }, select: { id: true } });
@@ -75,5 +84,6 @@ for (const [index, article] of articles.entries()) {
   });
   created += 1;
 }
+await prisma.siteSetting.upsert({ where: { key: markerKey }, update: {}, create: { key: markerKey, value: new Date().toISOString() } });
 console.log(`News ready: ${created} created, ${articles.length - created} already present`);
 await prisma.$disconnect();

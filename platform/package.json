@@ -10,6 +10,7 @@
     "test": "tsx --test src/lib/cctv.test.ts src/lib/request-status.test.ts src/lib/learning-demo.test.ts src/lib/practice.test.ts src/lib/learning-profile.test.ts src/lib/validation.test.ts src/lib/admin-access.test.ts src/lib/monitoring.test.ts",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate deploy",
+    "db:seed-news": "node prisma/seed-news.mjs",
     "db:dev": "prisma migrate dev",
     "admin:create": "tsx scripts/create-admin.ts",
     "admin:password-reset": "tsx scripts/reset-admin-password.ts",
