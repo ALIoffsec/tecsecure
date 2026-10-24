@@ -8,6 +8,8 @@ set -a; . ./.env.production; set +a
 
 mkdir -p "$HOME/backups"
 pg_dump "${DATABASE_URL%%\?*}" | gzip > "$HOME/backups/db-pre-deploy-$(date +%F-%H%M).sql.gz"
+# keep only the 10 newest pre-deploy backups so the disk does not fill up
+ls -1t "$HOME"/backups/db-pre-deploy-*.sql.gz | tail -n +11 | xargs -r rm --
 
 npm ci
 # server npm rewrites package-lock.json; keep the working tree clean for auto-deploy
