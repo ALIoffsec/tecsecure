@@ -25,16 +25,23 @@ export async function POST(request: Request) {
   }
   const parsed = productSchema.safeParse(body);
   if (!parsed.success) return Response.json({ error: "Mahsulot ma’lumotlari noto‘g‘ri.", details: parsed.error.flatten() }, { status: 400 });
+  if (parsed.data.categoryId && !(await prisma.productCategory.findUnique({ where: { id: parsed.data.categoryId }, select: { id: true } }))) {
+    return Response.json({ error: "Tanlangan kategoriya topilmadi." }, { status: 400 });
+  }
   const slug = `${parsed.data.name.toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}-${crypto.randomUUID().slice(0, 8)}`;
   try {
     const product = await prisma.$transaction(async (tx) => {
+      const { categoryId, specifications, compatibility, ...productData } = parsed.data;
       const created = await tx.product.create({
         data: {
-          ...parsed.data,
-          sku: parsed.data.sku || null,
-          brand: parsed.data.brand || null,
-          model: parsed.data.model || null,
-          warrantyDescription: parsed.data.warrantyDescription || null,
+          ...productData,
+          sku: productData.sku || null,
+          brand: productData.brand || null,
+          model: productData.model || null,
+          warrantyDescription: productData.warrantyDescription || null,
+          ...(categoryId ? { category: { connect: { id: categoryId } } } : {}),
+          ...(specifications !== undefined ? { specifications: specifications ?? Prisma.DbNull } : {}),
+          ...(compatibility !== undefined ? { compatibility: compatibility ?? Prisma.DbNull } : {}),
           slug
         }
       });

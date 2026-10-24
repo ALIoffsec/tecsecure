@@ -3,13 +3,19 @@
 import { useEffect, useRef, useState } from "react";
 
 type Coords = [number, number];
+type GeoResult = { geoObjects: { get: (i: number) => { getAddressLine?: () => string } | undefined } };
 type YMaps = {
   ready: (cb: () => void) => void;
   Map: new (el: HTMLElement, opts: Record<string, unknown>) => YMap;
   Placemark: new (coords: Coords, props?: Record<string, unknown>, opts?: Record<string, unknown>) => YPlacemark;
-  geocode: (query: Coords | string, opts?: Record<string, unknown>) => Promise<{ geoObjects: { get: (i: number) => { getAddressLine?: () => string; geometry?: { getCoordinates: () => Coords } } | undefined } }>;
+  geocode: (query: Coords | string) => Promise<GeoResult>;
 };
-type YMap = { events: { add: (name: string, cb: (e: { get: (k: string) => Coords }) => void) => void }; geoObjects: { add: (o: YPlacemark) => void; remove: (o: YPlacemark) => void }; setCenter: (c: Coords, z?: number) => void; destroy: () => void };
+type YMap = {
+  events: { add: (name: string, cb: (e: { get: (k: string) => Coords }) => void) => void };
+  geoObjects: { add: (o: YPlacemark) => void };
+  setCenter: (c: Coords, z?: number) => void;
+  destroy: () => void;
+};
 type YPlacemark = { geometry: { setCoordinates: (c: Coords) => void } };
 declare global { interface Window { ymaps?: YMaps } }
 
@@ -18,7 +24,7 @@ const apiKey = process.env.NEXT_PUBLIC_YANDEX_MAPS_API_KEY;
 
 let loader: Promise<YMaps> | null = null;
 function loadYandex(): Promise<YMaps> {
-  if (window.ymaps) return new Promise((r) => window.ymaps!.ready(() => r(window.ymaps!)));
+  if (window.ymaps) return new Promise((resolve) => window.ymaps!.ready(() => resolve(window.ymaps!)));
   loader ??= new Promise<YMaps>((resolve, reject) => {
     const script = document.createElement("script");
     script.src = `https://api-maps.yandex.ru/2.1/?apikey=${encodeURIComponent(apiKey ?? "")}&lang=uz_UZ`;
@@ -30,46 +36,126 @@ function loadYandex(): Promise<YMaps> {
   return loader;
 }
 
-export function DeliveryMap({ value, onChange }: {
+export function DeliveryMap({ value, address, onChange }: {
   value: Coords | null;
+  address: string;
   onChange: (coords: Coords, address?: string) => void;
 }) {
   const container = useRef<HTMLDivElement>(null);
   const onChangeRef = useRef(onChange);
-  const [state, setState] = useState<"loading" | "ready" | "error">(apiKey ? "loading" : "error");
-  const initial = useRef(value);
+  const [open, setOpen] = useState(false);
+  const [state, setState] = useState<"loading" | "ready" | "error">("loading");
+  const [locating, setLocating] = useState(false);
+  const [error, setError] = useState("");
+  const [mapReadyCount, setMapReadyCount] = useState(0);
+  const placeRef = useRef<((coords: Coords, reverse: boolean) => Promise<void>) | null>(null);
+  const mapRef = useRef<YMap | null>(null);
 
-  useEffect(() => { onChangeRef.current = onChange; });
+  useEffect(() => { onChangeRef.current = onChange; }, [onChange]);
 
   useEffect(() => {
-    if (!apiKey || !container.current) return;
-    let map: YMap | null = null;
+    if (!open || !apiKey || !container.current) return;
     let cancelled = false;
+    setState("loading");
+    setError("");
     loadYandex().then((ymaps) => {
       if (cancelled || !container.current) return;
-      map = new ymaps.Map(container.current, { center: initial.current ?? TASHKENT, zoom: initial.current ? 15 : 11, controls: ["zoomControl", "geolocationControl", "searchControl"] });
+      const map = new ymaps.Map(container.current, {
+        center: value ?? TASHKENT,
+        zoom: value ? 16 : 11,
+        controls: ["zoomControl", "searchControl", "typeSelector"]
+      });
+      mapRef.current = map;
       let mark: YPlacemark | null = null;
       const place = async (coords: Coords, reverse: boolean) => {
         if (mark) mark.geometry.setCoordinates(coords);
-        else { mark = new ymaps.Placemark(coords, {}, { preset: "islands#redDotIcon" }); map!.geoObjects.add(mark); }
-        let address: string | undefined;
-        if (reverse) {
-          try { address = (await ymaps.geocode(coords)).geoObjects.get(0)?.getAddressLine?.(); } catch { address = undefined; }
+        else {
+          mark = new ymaps.Placemark(coords, {}, { preset: "islands#redDotIcon" });
+          map.geoObjects.add(mark);
         }
-        onChangeRef.current(coords, address);
+        map.setCenter(coords, 16);
+        let selectedAddress: string | undefined;
+        if (reverse) {
+          try { selectedAddress = (await ymaps.geocode(coords)).geoObjects.get(0)?.getAddressLine?.(); }
+          catch { setError("Manzil nomini aniqlab bo‘lmadi. Manzilni qo‘lda kiriting."); }
+        }
+        onChangeRef.current(coords, selectedAddress);
       };
-      if (initial.current) void place(initial.current, false);
-      map.events.add("click", (e) => void place(e.get("coords"), true));
+      placeRef.current = place;
+      if (value) void place(value, false);
+      map.events.add("click", (event) => void place(event.get("coords"), true));
       setState("ready");
+      setMapReadyCount((n) => n + 1);
     }).catch(() => { if (!cancelled) setState("error"); });
-    return () => { cancelled = true; map?.destroy(); };
-  }, []);
+    return () => {
+      cancelled = true;
+      mapRef.current?.destroy();
+      mapRef.current = null;
+      placeRef.current = null;
+    };
+  }, [open]);
 
-  if (state === "error") {
-    return <p className="small muted">{apiKey ? "Xarita yuklanmadi. Manzilni matn ko‘rinishida kiriting." : "Xarita hozircha ulanmagan. Manzilni matn ko‘rinishida kiriting."}</p>;
+  function useMyLocation() {
+    setError("");
+    if (!navigator.geolocation) {
+      setError("Brauzer joylashuvni aniqlashni qo‘llamaydi.");
+      return;
+    }
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const coords: Coords = [position.coords.latitude, position.coords.longitude];
+        setLocating(false);
+        if (coords[0] < 37 || coords[0] > 46 || coords[1] < 55 || coords[1] > 74) {
+          setError("Tanlangan manzil O‘zbekiston hududidan tashqarida.");
+          return;
+        }
+        if (mapReadyCount) void placeRef.current?.(coords, true);
+      },
+      (issue) => {
+        setLocating(false);
+        setError(issue.code === issue.PERMISSION_DENIED
+          ? "Joylashuvga ruxsat berilmadi. Brauzer sozlamalarida ruxsat bering yoki xaritada nuqtani tanlang."
+          : "Joylashuvni aniqlab bo‘lmadi. Xaritada nuqtani tanlang.");
+      },
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 }
+    );
   }
-  return <div>
-    <div ref={container} style={{ width: "100%", height: 340, borderRadius: 12, overflow: "hidden", background: "#e8ecef" }} aria-label="Yetkazib berish xaritasi" />
-    <p className="small muted" style={{ marginTop: 6 }}>{state === "loading" ? "Xarita yuklanmoqda…" : "Xaritada yetkazib berish joyini bosing yoki qidiring."}</p>
-  </div>;
+
+  if (!apiKey) return <p className="small muted">Xarita ulanmagan. Manzilni qo‘lda kiriting.</p>;
+  return <>
+    <div className="shop-map-picker">
+      <div className="shop-map-summary">
+        <span className="shop-map-pin" aria-hidden="true">⌖</span>
+        <div>
+          <strong>{address || (value ? "Xaritadagi nuqta tanlangan" : "Manzil tanlanmagan")}</strong>
+          <span className="small muted">{value ? `${value[0].toFixed(5)}, ${value[1].toFixed(5)}` : "Xaritadan tanlang yoki joriy joylashuvingizdan foydalaning"}</span>
+        </div>
+      </div>
+      <button className="button" type="button" onClick={() => setOpen(true)}>
+        {value ? "Manzilni o‘zgartirish" : "Xaritada manzil tanlash"}
+      </button>
+    </div>
+    {open && <div className="shop-map-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setOpen(false); }}>
+      <section className="shop-map-dialog" role="dialog" aria-modal="true" aria-labelledby="delivery-map-title">
+        <header className="shop-map-dialog-head">
+          <div><span className="eyebrow">YETKAZIB BERISH</span><h2 id="delivery-map-title">Yetkazish manzilini tanlang</h2></div>
+          <button className="button ghost" type="button" aria-label="Yopish" onClick={() => setOpen(false)}>✕</button>
+        </header>
+        <div className="shop-map-toolbar">
+          <p className="small muted">Xaritada nuqtani bosing yoki qidiruvdan foydalaning.</p>
+          <button className="button secondary" type="button" onClick={useMyLocation} disabled={locating || state !== "ready"}>
+            {locating ? "Aniqlanmoqda…" : "◎ Mening joylashuvim"}
+          </button>
+        </div>
+        {error && <p className="notice error" role="alert">{error}</p>}
+        {state === "error" && <p className="notice error" role="alert">Yandex xaritasi yuklanmadi. Sahifani yangilang yoki manzilni qo‘lda kiriting.</p>}
+        <div ref={container} className="shop-map-canvas" aria-label="Yetkazish manzilini tanlash xaritasi" />
+        <footer className="shop-map-dialog-foot">
+          <span className="small muted">{value ? "Tanlangan nuqtani tekshirib tasdiqlang." : "Nuqta tanlanmaguncha tasdiqlash mumkin emas."}</span>
+          <button className="button" type="button" disabled={!value} onClick={() => setOpen(false)}>Manzilni tasdiqlash</button>
+        </footer>
+      </section>
+    </div>}
+  </>;
 }

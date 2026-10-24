@@ -18,16 +18,23 @@ export async function PATCH(request: Request, context: Context) {
   }
   const parsed = productSchema.partial().safeParse(body);
   if (!parsed.success) return Response.json({ error: "Mahsulot ma’lumotlari noto‘g‘ri.", details: parsed.error.flatten() }, { status: 400 });
+  if (parsed.data.categoryId && !(await prisma.productCategory.findUnique({ where: { id: parsed.data.categoryId }, select: { id: true } }))) {
+    return Response.json({ error: "Tanlangan kategoriya topilmadi." }, { status: 400 });
+  }
   try {
     const product = await prisma.$transaction(async (tx) => {
+      const { categoryId, specifications, compatibility, ...productData } = parsed.data;
       const updated = await tx.product.update({
         where: { id },
         data: {
-          ...parsed.data,
-          ...(parsed.data.sku !== undefined ? { sku: parsed.data.sku || null } : {}),
-          ...(parsed.data.brand !== undefined ? { brand: parsed.data.brand || null } : {}),
-          ...(parsed.data.model !== undefined ? { model: parsed.data.model || null } : {}),
-          ...(parsed.data.warrantyDescription !== undefined ? { warrantyDescription: parsed.data.warrantyDescription || null } : {})
+          ...productData,
+          ...(productData.sku !== undefined ? { sku: productData.sku || null } : {}),
+          ...(productData.brand !== undefined ? { brand: productData.brand || null } : {}),
+          ...(productData.model !== undefined ? { model: productData.model || null } : {}),
+          ...(productData.warrantyDescription !== undefined ? { warrantyDescription: productData.warrantyDescription || null } : {}),
+          ...(categoryId !== undefined ? { category: categoryId ? { connect: { id: categoryId } } : { disconnect: true } } : {}),
+          ...(specifications !== undefined ? { specifications: specifications ?? Prisma.DbNull } : {}),
+          ...(compatibility !== undefined ? { compatibility: compatibility ?? Prisma.DbNull } : {})
         }
       });
       await tx.auditLog.create({ data: { actorId: actor.id, action: "PRODUCT_UPDATED", entity: "Product", entityId: id } });

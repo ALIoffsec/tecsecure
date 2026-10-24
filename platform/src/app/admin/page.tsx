@@ -12,10 +12,11 @@ export default async function AdminPage() {
   if (actor.role === "CUSTOMER") redirect("/portal");
   const privileged = actor.role === "FOUNDER" || actor.role === "ADMIN";
   const can = (module: string) => privileged || actor.permissions.includes(module as typeof actor.permissions[number]);
-  const [services, requests, products, articles, settings, notifications, users, projects, projectCount, invoices, quotations, pendingPayments, plans, siteBlocks, portfolioPosts, walletRequests] = await Promise.all([
+  const [services, requests, products, productCategories, articles, settings, notifications, users, projects, projectCount, invoices, quotations, pendingPayments, plans, siteBlocks, portfolioPosts, walletRequests] = await Promise.all([
     can("SERVICES") ? prisma.service.findMany({ orderBy: { createdAt: "desc" }, take: 100 }) : [],
     can("REQUESTS") ? prisma.serviceRequest.findMany({ include: { service: { select: { name: true } } }, orderBy: { createdAt: "desc" }, take: 100 }) : [],
     can("PRODUCTS") ? prisma.product.findMany({ orderBy: { createdAt: "desc" }, take: 100 }) : [],
+    can("PRODUCTS") ? prisma.productCategory.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }) : [],
     can("NEWS") ? prisma.newsArticle.findMany({ orderBy: { updatedAt: "desc" }, take: 100 }) : [],
     can("COMPANY") ? prisma.siteSetting.findMany({ where: { key: { in: ["companyName", "phone", "email", "telegram", "instagram", "address", "siteDesign"] } } }) : [],
     can("COMPANY") ? prisma.notification.findMany({ where: { userId: actor.id }, orderBy: { createdAt: "desc" }, take: 20 }) : [],
@@ -55,5 +56,5 @@ export default async function AdminPage() {
     ...plan,
     features: Array.isArray(plan.features) ? plan.features.filter((value): value is string => typeof value === "string") : []
   }));
-  return <><AdminSecurityBoundary /><div className="container" style={{ paddingTop: 12 }}><Link className="button secondary" href="/admin/orders">Buyurtmalar</Link></div><AdminWorkspace services={services} requests={requests} products={products} articles={articles} settings={Object.fromEntries(settings.map((item) => [item.key, item.value]))} notifications={notifications} projects={projects} quotations={quotations} pendingPayments={pendingPayments} plans={managedPlans} users={managedUsers} siteBlocks={siteBlocks} portfolioPosts={portfolioPosts} walletRequests={walletRequests} metrics={{ users: managedUsers.length, projects: projectCount, invoices }} role={actor.role} permissions={actor.permissions} actorId={actor.id} /></>;
+  return <><AdminSecurityBoundary /><div className="container" style={{ paddingTop: 12 }}><Link className="button secondary" href="/admin/orders">Buyurtmalar</Link></div><AdminWorkspace services={services} requests={requests} products={products} productCategories={productCategories} articles={articles} settings={Object.fromEntries(settings.map((item) => [item.key, item.value]))} notifications={notifications} projects={projects} quotations={quotations} pendingPayments={pendingPayments} plans={managedPlans} users={managedUsers} siteBlocks={siteBlocks} portfolioPosts={portfolioPosts} walletRequests={walletRequests} metrics={{ users: managedUsers.length, projects: projectCount, invoices }} role={actor.role} permissions={actor.permissions} actorId={actor.id} /></>;
 }

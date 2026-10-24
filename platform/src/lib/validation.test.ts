@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { projectSchema, requestSchema, serviceSchema } from "./validation";
+import { productSchema, projectSchema, requestSchema, serviceSchema } from "./validation";
 
 const validCuid = "c12345678901234567890123";
 
@@ -32,4 +32,21 @@ test("guest quote request can be submitted with phone, project description, and 
     description: "Need a quote for a small office network installation.",
     consent: true
   }).success, true);
+});
+
+test("product supports category, specs, compatibility, and image/video media ids", () => {
+  const product = {
+    name: "Managed network switch",
+    description: "A managed switch for a small business network.",
+    categoryId: validCuid,
+    specifications: { ports: 24, poe: true, speed: "1 Gbit/s" },
+    compatibility: ["Windows", "Linux"],
+    media: Array.from({ length: 20 }, () => validCuid),
+    status: "PUBLISHED"
+  };
+
+  assert.equal(productSchema.safeParse(product).success, true);
+  assert.equal(productSchema.safeParse({ ...product, categoryId: "invalid" }).success, false);
+  assert.equal(productSchema.safeParse({ ...product, specifications: ["not", "an", "object"] }).success, false);
+  assert.equal(productSchema.safeParse({ ...product, compatibility: [42] }).success, false);
 });

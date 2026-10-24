@@ -50,6 +50,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
   ]);
 
   const specs = specRows(product.specifications);
+  const compatibility = specRows(product.compatibility);
   const hasMedia = Array.isArray(product.media) && product.media.length > 0;
   const priced = product.priceMinor !== null;
   const average = reviews.length ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length : 0;
@@ -124,6 +125,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
           {product.sku && <tr><th>SKU</th><td>{product.sku}</td></tr>}
           {product.warrantyDescription && <tr><th>Kafolat</th><td>{product.warrantyDescription}</td></tr>}
           {specs.map(([k, v], i) => <tr key={`${k}-${i}`}><th>{k}</th><td>{v}</td></tr>)}
+          {compatibility.map(([k, v], i) => <tr key={`compat-${k}-${i}`}><th>{k || "Moslik"}</th><td>{v}</td></tr>)}
         </tbody>
       </table>
     </section>

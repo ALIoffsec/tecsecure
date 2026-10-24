@@ -16,7 +16,8 @@ import { isSiteDesign, type SiteDesign } from "@/lib/site-designs";
 
 type Service = { id: string; name: string; description: string; icon: string | null; status: string; pricingType: string; startingPriceMinor: number | null; currency: string; availability: boolean; media: unknown };
 type RequestRecord = { id: string; reference: string; name: string; phone: string; email: string | null; organizationName: string | null; description: string; status: string; service: { name: string } | null; createdAt: Date };
-type Product = { id: string; name: string; sku: string | null; brand: string | null; model: string | null; warrantyDescription: string | null; status: string; priceMinor: number | null; currency: string; stockStatus: string; description: string; media: unknown };
+type Product = { id: string; name: string; sku: string | null; brand: string | null; model: string | null; categoryId: string | null; specifications: unknown; compatibility: unknown; warrantyDescription: string | null; status: string; priceMinor: number | null; currency: string; stockStatus: string; description: string; media: unknown };
+type ProductCategory = { id: string; name: string };
 type Project = { id: string; name: string; status: string; customerId: string | null; city: string | null; items: { id: string; quantity: number; product: { name: string } | null; service: { name: string } | null }[] };
 type Article = { id: string; title: string; excerpt: string; content: string; status: string; publishedAt: Date | null; media: unknown };
 type Notice = { id: string; event: string; status: string; createdAt: Date };
@@ -48,10 +49,11 @@ const designOptions: { id: SiteDesign; name: string; font: string }[] = [
   { id: "terminal", name: "Terminal", font: "JetBrains Mono" }
 ];
 
-export function AdminWorkspace({ services, requests, products, articles, settings, notifications, projects, quotations, pendingPayments, plans, users, siteBlocks, portfolioPosts, walletRequests, metrics, role, permissions, actorId }: {
+export function AdminWorkspace({ services, requests, products, productCategories, articles, settings, notifications, projects, quotations, pendingPayments, plans, users, siteBlocks, portfolioPosts, walletRequests, metrics, role, permissions, actorId }: {
   services: Service[];
   requests: RequestRecord[];
   products: Product[];
+  productCategories: ProductCategory[];
   articles: Article[];
   settings: Record<string, string>;
   notifications: Notice[];
@@ -137,10 +139,25 @@ export function AdminWorkspace({ services, requests, products, articles, setting
     const form = event.currentTarget;
     const data = new FormData(form);
     const price = String(data.get("priceMinor") ?? "").trim();
+    const parseObjectField = (name: string) => {
+      const raw = String(data.get(name) ?? "").trim();
+      if (!raw) return null;
+      let parsed: unknown;
+      try { parsed = JSON.parse(raw); }
+      catch { throw new Error(`${name === "specifications" ? "Xususiyatlar" : "Moslik"} maydoni to‘g‘ri JSON formatida bo‘lishi kerak.`); }
+      if (!parsed || typeof parsed !== "object" ||
+        (Array.isArray(parsed) && (name !== "compatibility" || !parsed.every((item) => typeof item === "string")))) {
+        throw new Error(name === "compatibility" ? "Moslik JSON obyekt yoki matnlar ro‘yxati bo‘lishi kerak." : "Xususiyatlar kalit-qiymat JSON obyekti bo‘lishi kerak.");
+      }
+      return parsed;
+    };
     try {
       const body = {
         name: data.get("name"), description: data.get("description"), sku: data.get("sku"),
         brand: data.get("brand"), model: data.get("model"), warrantyDescription: data.get("warrantyDescription"),
+        categoryId: data.get("categoryId") || null,
+        specifications: parseObjectField("specifications"),
+        compatibility: parseObjectField("compatibility"),
         priceMinor: price ? Number(price) : null, currency: data.get("currency"),
         stockStatus: data.get("stockStatus"), status: data.get("status"), media: productMedia
       };
@@ -375,7 +392,11 @@ export function AdminWorkspace({ services, requests, products, articles, setting
             <div className="form-row"><div className="field"><label>{t("formName")}</label><input name="name" defaultValue={editingProduct?.name ?? ""} required minLength={2} maxLength={160} /></div><div className="field"><label>{t("optionalSku")}</label><input name="sku" defaultValue={editingProduct?.sku ?? ""} maxLength={80} /></div></div>
             <div className="field"><label>{t("description")}</label><textarea name="description" defaultValue={editingProduct?.description ?? ""} required minLength={5} maxLength={5000} /></div>
             <MediaUploader scope="PRODUCTS" value={productMedia} onChange={setProductMedia} />
+            <p className="small muted">Mahsulot rasmi yoki videosini yuklang: JPG, PNG, WebP, GIF (8 MB gacha), MP4 yoki WebM (32 MB gacha).</p>
             <div className="form-row"><div className="field"><label>{t("brand")}</label><input name="brand" defaultValue={editingProduct?.brand ?? ""} maxLength={100} /></div><div className="field"><label>{t("model")}</label><input name="model" defaultValue={editingProduct?.model ?? ""} maxLength={120} /></div></div>
+            <div className="field"><label>Kategoriya</label><select name="categoryId" defaultValue={editingProduct?.categoryId ?? ""}><option value="">Kategoriya tanlanmagan</option>{productCategories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></div>
+            <div className="field"><label>Xususiyatlar (JSON)</label><textarea name="specifications" rows={5} defaultValue={JSON.stringify(editingProduct?.specifications && typeof editingProduct.specifications === "object" ? editingProduct.specifications : {}, null, 2)} placeholder={'{\n  "Maksimal tezlik": "1 Gbit/s",\n  "Portlar": 8\n}'} /></div>
+            <div className="field"><label>Moslik (JSON, ixtiyoriy)</label><textarea name="compatibility" rows={3} defaultValue={JSON.stringify(editingProduct?.compatibility && typeof editingProduct.compatibility === "object" ? editingProduct.compatibility : {}, null, 2)} placeholder={'{\n  "Tizim": "Windows, Linux"\n}'} /></div>
             <div className="field"><label>{t("warrantyDescription")}</label><input name="warrantyDescription" defaultValue={editingProduct?.warrantyDescription ?? ""} maxLength={500} /></div>
             <div className="form-row"><div className="field"><label>{t("optionalMinorPrice")}</label><input name="priceMinor" type="number" min="0" step="1" defaultValue={editingProduct?.priceMinor ?? ""} /></div><div className="field"><label>{t("currency")}</label><input name="currency" defaultValue={editingProduct?.currency ?? "UZS"} minLength={3} maxLength={3} required /></div></div>
             <div className="form-row"><div className="field"><label>{t("stockStatus")}</label><select name="stockStatus" defaultValue={editingProduct?.stockStatus ?? "UNKNOWN"}><option value="UNKNOWN">{t("unknown")}</option><option value="IN_STOCK">{t("inStock")}</option><option value="OUT_OF_STOCK">{t("outOfStock")}</option><option value="ON_REQUEST">{t("onRequest")}</option></select></div><div className="field"><label>{t("publicationStatus")}</label><select name="status" defaultValue={editingProduct?.status ?? "DRAFT"}><option value="DRAFT">{t("draft")}</option><option value="PUBLISHED">{t("publish")}</option><option value="ARCHIVED">{t("archived")}</option></select></div></div>

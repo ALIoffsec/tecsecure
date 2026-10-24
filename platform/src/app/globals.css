@@ -1209,6 +1209,20 @@ th { color: var(--muted); font-size: .8rem; text-transform: uppercase; letter-sp
 .shop-field span { color: var(--muted); font-size: .82rem; font-weight: 600; }
 .shop-field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .shop-map-note { display: flex; gap: 10px; padding: 10px 12px; border-radius: 10px; background: var(--accent-dark); color: var(--text); font-size: .86rem; }
+.shop-address-card, .shop-contact-card { padding: 22px; border-color: color-mix(in srgb, var(--accent) 24%, var(--line)); background: linear-gradient(145deg, var(--surface), color-mix(in srgb, var(--accent) 5%, var(--surface))); }
+.shop-address-card h2, .shop-contact-card h2 { margin: 4px 0; }
+.shop-map-picker { display: grid; gap: 14px; padding: 16px; border: 1px solid var(--line); border-radius: 16px; background: color-mix(in srgb, var(--bg) 45%, var(--surface)); }
+.shop-map-summary { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.shop-map-summary > div { display: grid; gap: 4px; min-width: 0; }
+.shop-map-summary strong, .shop-map-summary span { overflow-wrap: anywhere; }
+.shop-map-pin { display: grid; flex: none; width: 42px; height: 42px; place-items: center; border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--line)); border-radius: 13px; background: color-mix(in srgb, var(--accent) 14%, var(--surface)); color: var(--accent); font-size: 1.5rem; }
+.shop-map-backdrop { position: fixed; inset: 0; z-index: 150; display: grid; place-items: center; padding: 20px; background: rgba(3, 9, 18, .78); backdrop-filter: blur(8px); }
+.shop-map-dialog { display: grid; grid-template-rows: auto auto minmax(240px, 1fr) auto; gap: 12px; width: min(1100px, 100%); height: min(820px, 92dvh); padding: 20px; overflow: hidden; border: 1px solid var(--line); border-radius: 22px; background: var(--surface); box-shadow: 0 28px 90px rgba(0, 0, 0, .45); }
+.shop-map-dialog-head, .shop-map-dialog-foot, .shop-map-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.shop-map-dialog-head h2 { margin: 2px 0 0; }
+.shop-map-toolbar p { margin: 0; }
+.shop-map-canvas { min-height: 240px; overflow: hidden; border: 1px solid var(--line); border-radius: 14px; background: #e8ecef; }
+.shop-map-dialog-foot { padding-top: 4px; }
 .shop-cart-icon { margin-right: 6px; }
 
 .order-card { overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
@@ -1244,6 +1258,13 @@ th { color: var(--muted); font-size: .8rem; text-transform: uppercase; letter-sp
   .shop-steps li.is-active span { display: inline; }
 }
 @media (max-width: 560px) {
+  .shop-map-backdrop { padding: 0; }
+  .shop-map-dialog { width: 100%; height: 100dvh; padding: 14px; border: 0; border-radius: 0; }
+  .shop-map-dialog-head, .shop-map-toolbar, .shop-map-dialog-foot { align-items: flex-start; }
+  .shop-map-toolbar { flex-direction: column; }
+  .shop-map-dialog-foot { flex-direction: column; }
+  .shop-map-dialog-foot .button { width: 100%; }
+  .shop-address-card, .shop-contact-card { padding: 16px; }
   .shop-field-row { grid-template-columns: 1fr; }
   .shop-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
   .shop-card-body { padding: 10px 12px 12px; }
