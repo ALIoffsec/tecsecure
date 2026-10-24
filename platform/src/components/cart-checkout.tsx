@@ -73,7 +73,7 @@ export function CartCheckout() {
     </div>;
   }
   return <>
-    <Steps current={form.recipientName || form.address ? 2 : 1} />
+    <Steps current={coords || form.recipientName || form.address ? 2 : 1} />
     <form onSubmit={submit} className="shop-checkout">
       <div className="stack" style={{ gap: 18 }}>
         <section className="panel-card">
@@ -100,10 +100,9 @@ export function CartCheckout() {
             <p className="small muted">O‘zingiz turgan joyni aniqlang yoki yetkazish kerak bo‘lgan boshqa nuqtani xaritadan belgilang.</p>
           </div>
           <DeliveryMap value={coords} address={form.address} onChange={(c, address) => { setCoords(c); setForm((f) => ({ ...f, address: address ?? "" })); }} />
-          {coords && <div className="shop-map-note">📍 Tanlangan nuqta: {coords[0].toFixed(5)}, {coords[1].toFixed(5)}</div>}
           <div className="shop-field-row">
             <label className="shop-field"><span>Shahar / viloyat</span><input required value={form.city} onChange={update("city")} maxLength={80} autoComplete="address-level1" /></label>
-            <label className="shop-field"><span>Aniq manzil / mo‘ljal</span><input required placeholder="Ko‘cha, uy, kirish, mo‘ljal" value={form.address} onChange={update("address")} maxLength={300} autoComplete="street-address" /></label>
+            <label className="shop-field"><span>Manzil nomi (ixtiyoriy)</span><input placeholder="Avtomatik topilmasa, bo‘sh qoldiring" value={form.address} onChange={update("address")} maxLength={300} autoComplete="street-address" /></label>
           </div>
         </section>
 
@@ -117,7 +116,7 @@ export function CartCheckout() {
             <label className="shop-field"><span>Qabul qiluvchi nomi</span><input required value={form.recipientName} onChange={update("recipientName")} maxLength={120} autoComplete="name" /></label>
             <label className="shop-field"><span>Telefon raqami</span><input required placeholder="+998 90 123 45 67" value={form.phone} onChange={update("phone")} maxLength={30} inputMode="tel" autoComplete="tel" /></label>
           </div>
-          <label className="shop-field"><span>Izoh / yetkazish bo‘yicha ko‘rsatma (ixtiyoriy)</span><textarea placeholder="Masalan: qo‘ng‘iroq qiling, darvoza yonida kutaman" value={form.note} onChange={update("note")} maxLength={500} rows={3} /></label>
+          <label className="shop-field"><span>Izoh / qo‘shimcha manzil tafsilotlari (ixtiyoriy)</span><textarea placeholder="Manzil nomi topilmasa, ko‘cha, uy, kirish, qavat yoki mo‘ljalni shu yerda yozing." value={form.note} onChange={update("note")} maxLength={500} rows={3} /></label>
         </section>
       </div>
 

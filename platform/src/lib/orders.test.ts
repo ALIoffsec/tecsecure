@@ -18,6 +18,13 @@ test("order schema rejects out-of-range coordinates and empty carts", () => {
   assert.equal(orderSchema.safeParse({ ...base, items: [{ productId: "p1", quantity: 0 }] }).success, false);
 });
 
+test("order location name is optional when coordinates or location details in note are provided", () => {
+  const base = { recipientName: "Ali", phone: "+998901234567", city: "Toshkent", address: "", items: [{ productId: "p1", quantity: 1 }] };
+  assert.equal(orderSchema.safeParse({ ...base, latitude: 41.31, longitude: 69.24 }).success, true);
+  assert.equal(orderSchema.safeParse({ ...base, note: "Ko‘cha 12, 4-uy, 3-qavat" }).success, true);
+  assert.equal(orderSchema.safeParse(base).success, false);
+});
+
 test("mergeItems combines duplicate products", () => {
   assert.deepEqual(mergeItems([{ productId: "a", quantity: 2 }, { productId: "a", quantity: 3 }, { productId: "b", quantity: 1 }]), [
     { productId: "a", quantity: 5 },

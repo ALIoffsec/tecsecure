@@ -77,7 +77,7 @@ export function DeliveryMap({ value, address, onChange }: {
         let selectedAddress: string | undefined;
         if (reverse) {
           try { selectedAddress = (await ymaps.geocode(coords)).geoObjects.get(0)?.getAddressLine?.(); }
-          catch { setError("Manzil nomini aniqlab bo‘lmadi. Manzilni qo‘lda kiriting."); }
+          catch { /* The selected coordinates remain usable without a resolved street name. */ }
         }
         if (reverse) onChangeRef.current(coords, selectedAddress);
       };
@@ -129,7 +129,7 @@ export function DeliveryMap({ value, address, onChange }: {
         <span className="shop-map-pin" aria-hidden="true">⌖</span>
         <div>
           <strong>{address || (value ? "Xaritadagi nuqta tanlangan" : "Manzil tanlanmagan")}</strong>
-          <span className="small muted">{value ? `${value[0].toFixed(5)}, ${value[1].toFixed(5)}` : "Xaritadan tanlang yoki joriy joylashuvingizdan foydalaning"}</span>
+          <span className="small muted">{value ? "Yetkazish nuqtasi belgilandi" : "Xaritadan yoki joriy joylashuvingizdan tanlang"}</span>
         </div>
       </div>
       <button className="button" type="button" onClick={() => setOpen(true)}>
@@ -144,13 +144,15 @@ export function DeliveryMap({ value, address, onChange }: {
         </header>
         <div className="shop-map-toolbar">
           <p className="small muted">Xaritada nuqtani bosing yoki qidiruvdan foydalaning.</p>
-          <button className="button secondary" type="button" onClick={useMyLocation} disabled={locating || state !== "ready"}>
-            {locating ? "Aniqlanmoqda…" : "◎ Mening joylashuvim"}
-          </button>
         </div>
-        {error && <p className="notice error" role="alert">{error}</p>}
-        {state === "error" && <p className="notice error" role="alert">Yandex xaritasi yuklanmadi. Sahifani yangilang yoki manzilni qo‘lda kiriting.</p>}
-        <div ref={container} className="shop-map-canvas" aria-label="Yetkazish manzilini tanlash xaritasi" />
+        {state === "error" && <p className="shop-map-error" role="alert">Xarita yuklanmadi. Sahifani yangilang yoki manzilni izohda yozing.</p>}
+        <div className="shop-map-canvas-wrap">
+          <div ref={container} className="shop-map-canvas" aria-label="Yetkazish manzilini tanlash xaritasi" />
+          <button className="shop-map-locate" type="button" onClick={useMyLocation} disabled={locating || state !== "ready"} aria-label="Mening joylashuvim" title="Mening joylashuvim">
+            {locating ? <span className="shop-map-spinner" aria-hidden="true" /> : <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v3m0 14v3M2 12h3m14 0h3M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10Zm0 3v4m-2-2h4" /></svg>}
+          </button>
+          {error && <p className="shop-map-status" role="status">{error}</p>}
+        </div>
         <footer className="shop-map-dialog-foot">
           <span className="small muted">{value ? "Tanlangan nuqtani tekshirib tasdiqlang." : "Nuqta tanlanmaguncha tasdiqlash mumkin emas."}</span>
           <button className="button" type="button" disabled={!value} onClick={() => setOpen(false)}>Manzilni tasdiqlash</button>

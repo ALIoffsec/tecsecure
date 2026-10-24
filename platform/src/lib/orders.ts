@@ -34,7 +34,7 @@ export const orderSchema = z.object({
   recipientName: z.string().trim().min(2).max(120),
   phone: z.string().trim().min(7).max(30),
   city: z.string().trim().min(2).max(80),
-  address: z.string().trim().min(5).max(300),
+  address: z.string().trim().max(300).optional().default(""),
   latitude: z.number().min(37).max(46).nullable().optional(),
   longitude: z.number().min(55).max(74).nullable().optional(),
   note: z.string().trim().max(500).optional(),
@@ -42,6 +42,16 @@ export const orderSchema = z.object({
     .array(z.object({ productId: z.string().min(1).max(40), quantity: z.number().int().min(1).max(999) }))
     .min(1)
     .max(50)
+}).superRefine((order, context) => {
+  const hasCoordinates = order.latitude != null && order.longitude != null;
+  const hasManualLocation = order.address.length >= 5 || (order.note?.trim().length ?? 0) >= 5;
+  if (!hasCoordinates && !hasManualLocation) {
+    context.addIssue({
+      code: "custom",
+      path: ["address"],
+      message: "Xaritadan joy tanlang yoki manzilni izohga kiriting."
+    });
+  }
 });
 
 export const orderStatusSchema = z.object({
