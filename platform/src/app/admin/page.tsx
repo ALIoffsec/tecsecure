@@ -1,6 +1,7 @@
 import { AdminWorkspace } from "@/components/admin-workspace";
 import { AdminSecurityBoundary } from "@/components/admin-security-boundary";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { requireAdminPage } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
@@ -54,5 +55,5 @@ export default async function AdminPage() {
     ...plan,
     features: Array.isArray(plan.features) ? plan.features.filter((value): value is string => typeof value === "string") : []
   }));
-  return <><AdminSecurityBoundary /><AdminWorkspace services={services} requests={requests} products={products} articles={articles} settings={Object.fromEntries(settings.map((item) => [item.key, item.value]))} notifications={notifications} projects={projects} quotations={quotations} pendingPayments={pendingPayments} plans={managedPlans} users={managedUsers} siteBlocks={siteBlocks} portfolioPosts={portfolioPosts} walletRequests={walletRequests} metrics={{ users: managedUsers.length, projects: projectCount, invoices }} role={actor.role} permissions={actor.permissions} actorId={actor.id} /></>;
+  return <><AdminSecurityBoundary /><div className="container" style={{ paddingTop: 12 }}><Link className="button secondary" href="/admin/orders">Buyurtmalar</Link></div><AdminWorkspace services={services} requests={requests} products={products} articles={articles} settings={Object.fromEntries(settings.map((item) => [item.key, item.value]))} notifications={notifications} projects={projects} quotations={quotations} pendingPayments={pendingPayments} plans={managedPlans} users={managedUsers} siteBlocks={siteBlocks} portfolioPosts={portfolioPosts} walletRequests={walletRequests} metrics={{ users: managedUsers.length, projects: projectCount, invoices }} role={actor.role} permissions={actor.permissions} actorId={actor.id} /></>;
 }

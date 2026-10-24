@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { LocalizedText } from "@/components/site-preferences";
+import { AddToCartButton } from "@/components/cart";
 import { MediaGallery } from "@/components/media-uploader";
 import { getProductStockMessageKey } from "@/lib/products";
 
@@ -21,7 +22,11 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
       <p><LocalizedText id="stockLabel" />: <LocalizedText id={getProductStockMessageKey(product.stockStatus)} /></p>
       <p><LocalizedText id="guarantee" />: {product.warrantyDescription ?? <LocalizedText id="guaranteeNotProvided" />}</p>
       <p className="muted"><LocalizedText id="specificationsNotice" /></p>
-      <Link className="button" href="/request-quote"><LocalizedText id="addToProject" /></Link>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <AddToCartButton product={{ productId: product.id, name: product.name, slug: product.slug }} disabled={product.stockStatus === "OUT_OF_STOCK"} />
+        <Link className="button secondary" href="/cart">Savat</Link>
+        <Link className="button secondary" href="/request-quote"><LocalizedText id="addToProject" /></Link>
+      </div>
     </div>
   </article>;
 }

@@ -112,7 +112,8 @@ model User {
   oauthAccounts        OAuthAccount[]
   learningSubscription LearningSubscription?
   requests             ServiceRequest[]       @relation("RequestCustomer")
-  memberships          OrganizationMember[]
+  orders               Order[]                @relation("OrderCustomer")
+  memberships           OrganizationMember[]
   projects             Project[]
   auditEvents          AuditLog[]             @relation("AuditActor")
   notifications        Notification[]
@@ -273,8 +274,69 @@ model Product {
   updatedAt           DateTime          @updatedAt
   projectItems        ProjectItem[]
   quoteItems          QuoteItem[]
+  orderItems          OrderItem[]
 
   @@index([status, categoryId])
+}
+
+enum OrderStatus {
+  NEW
+  CONFIRMED
+  PREPARING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+model Order {
+  id              String               @id @default(cuid())
+  reference       String               @unique
+  customerId      String
+  customer        User                 @relation("OrderCustomer", fields: [customerId], references: [id], onDelete: Restrict)
+  status          OrderStatus          @default(NEW)
+  recipientName   String
+  phone           String
+  city            String
+  address         String
+  latitude        Float?
+  longitude       Float?
+  note            String?
+  totalMinor      Int?
+  currency        String               @default("UZS")
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  items           OrderItem[]
+  history         OrderStatusHistory[]
+
+  @@index([customerId, createdAt])
+  @@index([status, createdAt])
+}
+
+model OrderItem {
+  id             String   @id @default(cuid())
+  orderId        String
+  order          Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId      String?
+  product        Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  name           String
+  sku            String?
+  quantity       Int
+  unitPriceMinor Int?
+
+  @@index([orderId])
+}
+
+model OrderStatusHistory {
+  id         String       @id @default(cuid())
+  orderId    String
+  order      Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  fromStatus OrderStatus?
+  toStatus   OrderStatus
+  note       String?
+  actorId    String?
+  createdAt  DateTime     @default(now())
+
+  @@index([orderId, createdAt])
 }
 
 model ServiceRequest {

@@ -75,6 +75,8 @@ export function SiteNav() {
             </div>
             <div className="nav-submenu" id="market-submenu">
               <Link href="/products" onClick={closeMenu}>{t("productCatalog")}</Link>
+              <Link href="/cart" onClick={closeMenu}>Savat</Link>
+              <Link href="/portal/orders" onClick={closeMenu}>Buyurtmalarim</Link>
               <Link href="/request-quote" onClick={closeMenu}>{t("requestProjectQuote")}</Link>
             </div>
           </div>

@@ -7,7 +7,7 @@
     "build": "prisma generate && next build && node scripts/copy-standalone-assets.cjs",
     "start": "node .next/standalone/server.js",
     "worker": "tsx src/worker.ts",
-    "test": "tsx --test src/lib/cctv.test.ts src/lib/request-status.test.ts src/lib/learning-demo.test.ts src/lib/practice.test.ts src/lib/learning-profile.test.ts src/lib/validation.test.ts src/lib/admin-access.test.ts src/lib/monitoring.test.ts",
+    "test": "tsx --test src/lib/cctv.test.ts src/lib/request-status.test.ts src/lib/learning-demo.test.ts src/lib/practice.test.ts src/lib/learning-profile.test.ts src/lib/validation.test.ts src/lib/admin-access.test.ts src/lib/monitoring.test.ts src/lib/orders.test.ts",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate deploy && (node prisma/seed-news.mjs || echo news seed skipped) && (node prisma/seed-catalog.mjs || echo catalog seed skipped)",
     "db:seed-news": "node prisma/seed-news.mjs",
