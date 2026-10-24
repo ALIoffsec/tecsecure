@@ -6,3 +6,6 @@ out/
 !.env.example
 coverage/
 npm-debug.log*
+tmp-*.ts
+*.tsbuildinfo
+next-env.d.ts
