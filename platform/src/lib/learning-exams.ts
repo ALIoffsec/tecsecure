@@ -2,6 +2,9 @@ export type ExamQuestion = { id: string; text: string; options: [string, string,
 export type ExamDef = {
   slug: string;
   title: string;
+  credential: string;
+  acronym: string;
+  accent: string;
   summary: string;
   feeTec: number;
   minutes: number;
@@ -77,6 +80,9 @@ export const learningExams: ExamDef[] = [
   {
     slug: "tec-network-foundations",
     title: "Tecsecure Network Foundations",
+    credential: "Tecsecure Certified Network Foundations",
+    acronym: "TCNF",
+    accent: "#3aa9ff",
     summary: "Tarmoq asoslari: OSI, IP, subnet, DNS/DHCP, VLAN, NAT.",
     feeTec: 100,
     minutes: 30,
@@ -89,6 +95,9 @@ export const learningExams: ExamDef[] = [
   {
     slug: "tec-linux-security-foundations",
     title: "Tecsecure Linux & Security Foundations",
+    credential: "Tecsecure Certified Linux & Security Foundations",
+    acronym: "TCLS",
+    accent: "#3ddc84",
     summary: "Linux asoslari va kiberxavfsizlik tamoyillari.",
     feeTec: 120,
     minutes: 30,
@@ -101,6 +110,9 @@ export const learningExams: ExamDef[] = [
   {
     slug: "tec-soc-foundations",
     title: "Tecsecure SOC Foundations",
+    credential: "Tecsecure Certified SOC Foundations",
+    acronym: "TCSF",
+    accent: "#ff5a4d",
     summary: "Log tahlili, hodisalarni aniqlash va javob berish asoslari.",
     feeTec: 180,
     minutes: 40,

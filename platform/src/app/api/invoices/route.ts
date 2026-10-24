@@ -40,6 +40,8 @@ export async function POST(request: Request) {
       const quote = await tx.quotation.findUnique({ where: { id: parsed.data.quotationId }, include: { items: true } });
       if (!quote) throw new Error("QUOTE_NOT_FOUND");
       if (quote.status !== "ACCEPTED") throw new Error("QUOTE_NOT_ACCEPTED");
+      const existing = await tx.invoice.findFirst({ where: { quotationId: quote.id, status: { not: "VOID" } }, select: { id: true } });
+      if (existing) throw new Error("INVOICE_EXISTS");
       const created = await tx.invoice.create({
         data: {
           number: `INV-${new Date().getUTCFullYear()}-${randomBytes(6).toString("hex").toUpperCase()}`,
@@ -65,6 +67,7 @@ export async function POST(request: Request) {
   } catch (error) {
     if (error instanceof Error && error.message === "QUOTE_NOT_FOUND") return Response.json({ error: "Taklif topilmadi." }, { status: 404 });
     if (error instanceof Error && error.message === "QUOTE_NOT_ACCEPTED") return Response.json({ error: "Hisob-faktura faqat mijoz qabul qilgan taklifdan yaratiladi." }, { status: 409 });
+    if (error instanceof Error && error.message === "INVOICE_EXISTS") return Response.json({ error: "Bu taklif uchun hisob-faktura allaqachon yaratilgan." }, { status: 409 });
     console.error("Invoice creation failed", error);
     return Response.json({ error: "Hisob-fakturani yaratib bo‘lmadi." }, { status: 500 });
   }

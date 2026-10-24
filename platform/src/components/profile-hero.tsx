@@ -3,24 +3,78 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useSitePreferences } from "@/components/site-preferences";
-import { learningModules, learningPaths } from "@/lib/learning-demo";
-
-type Progress = {
-  completedSections: { moduleSlug: string; sectionIndex: number }[];
-  completions: { moduleSlug: string; rewardTec: number; completedAt: string }[];
-  earnedTec: number;
-};
+import type { ProfilePractice } from "@/lib/learning-profile-types";
 
 const copy = {
-  uz: { noPath: "Siz hali yo'nalish tanlamadingiz.", choosePath: "Yo'nalish tanlash", rank: "Daraja", sections: "Bajarilgan bo'limlar", modules: "Tugatilgan modullar", tec: "TEC balansi", earned: "Ishlangan TEC", paths: "Yo'nalishlar progressi", history: "So'nggi faoliyat", empty: "Hali faoliyat yo'q. Birinchi darsni boshlang.", start: "Ta'limni boshlash", store: "TEC do'koni", wallet: "Hamyon", badges: "Yutuqlar", none: "Hali yutuq yo'q", done: "modul", ranks: ["Yangi", "O'quvchi", "Amaliyotchi", "Tajribali", "Mutaxassis"], badgeNames: { first: "Birinchi dars", five: "5 ta bo'lim", module: "Birinchi modul", path: "Yo'nalish tugatildi" }, honest: "Daraja faqat tugatilgan bo'limlarni sanaydi; bu ish tajribasi yoki sertifikat emas." },
-  ru: { noPath: "Вы ещё не выбрали направление.", choosePath: "Выбрать направление", rank: "Ранг", sections: "Пройдено разделов", modules: "Завершено модулей", tec: "Баланс TEC", earned: "Заработано TEC", paths: "Прогресс по направлениям", history: "Последняя активность", empty: "Пока нет активности. Начните первый урок.", start: "Начать обучение", store: "Магазин TEC", wallet: "Кошелёк", badges: "Достижения", none: "Пока нет достижений", done: "мод.", ranks: ["Новичок", "Ученик", "Практик", "Опытный", "Специалист"], badgeNames: { first: "Первый урок", five: "5 разделов", module: "Первый модуль", path: "Направление пройдено" }, honest: "Ранг считает только пройденные разделы; это не опыт работы и не сертификат." },
-  en: { noPath: "You haven't chosen a path yet.", choosePath: "Choose a path", rank: "Rank", sections: "Sections completed", modules: "Modules completed", tec: "TEC balance", earned: "TEC earned", paths: "Path progress", history: "Recent activity", empty: "No activity yet. Start your first lesson.", start: "Start learning", store: "TEC store", wallet: "Wallet", badges: "Achievements", none: "No achievements yet", done: "mod.", ranks: ["Newcomer", "Learner", "Practitioner", "Experienced", "Specialist"], badgeNames: { first: "First lesson", five: "5 sections", module: "First module", path: "Path completed" }, honest: "Rank only counts completed sections; it is not work experience or a certificate." }
+  uz: {
+    noPath: "Siz hali yo'nalish tanlamadingiz.",
+    choosePath: "Yo'nalish tanlash",
+    rank: "Daraja",
+    sections: "Bajarilgan bo'limlar",
+    modules: "Tugatilgan modullar",
+    tec: "TEC balansi",
+    earned: "Ishlangan TEC",
+    paths: "Yo'nalishlar progressi",
+    history: "So'nggi faoliyat",
+    empty: "Hali faoliyat yo'q. Birinchi darsni boshlang.",
+    start: "Ta'limni boshlash",
+    store: "TEC do'koni",
+    skills: "Ko'nikmalar bahosi",
+    certificates: "Sertifikatlarim",
+    achievements: "Mening yutuqlarim",
+    noCertificates: "Hali sertifikat yo'q.",
+    examsLink: "Imtihonlarni ko'rish",
+    scoreSource: "Baho Tecsecure ichidagi bo'limlar, laboratoriyalar va imtihonlar asosida hisoblanadi (50/30/20). Bu tashqi malaka emas.",
+    honest: "Daraja faqat Tecsecure ichidagi o'quv natijalarini ifodalaydi; bu ish tajribasi yoki xalqaro sertifikat emas."
+  },
+  ru: {
+    noPath: "Вы ещё не выбрали направление.",
+    choosePath: "Выбрать направление",
+    rank: "Ранг",
+    sections: "Пройдено разделов",
+    modules: "Завершено модулей",
+    tec: "Баланс TEC",
+    earned: "Заработано TEC",
+    paths: "Прогресс по направлениям",
+    history: "Последняя активность",
+    empty: "Пока нет активности. Начните первый урок.",
+    start: "Начать обучение",
+    store: "Магазин TEC",
+    skills: "Оценка навыков",
+    certificates: "Мои сертификаты",
+    achievements: "Мои достижения",
+    noCertificates: "Сертификатов пока нет.",
+    examsLink: "Смотреть экзамены",
+    scoreSource: "Оценка строится только на прогрессе внутри Tecsecure: разделы, лаборатории и экзамены (50/30/20). Это не внешняя квалификация.",
+    honest: "Ранг отражает только учебный прогресс в Tecsecure; это не опыт работы и не международная сертификация."
+  },
+  en: {
+    noPath: "You haven't chosen a path yet.",
+    choosePath: "Choose a path",
+    rank: "Rank",
+    sections: "Sections completed",
+    modules: "Modules completed",
+    tec: "TEC balance",
+    earned: "TEC earned",
+    paths: "Path progress",
+    history: "Recent activity",
+    empty: "No activity yet. Start your first lesson.",
+    start: "Start learning",
+    store: "TEC store",
+    skills: "Skill rating",
+    certificates: "My certificates",
+    achievements: "My achievements",
+    noCertificates: "No certificates yet.",
+    examsLink: "View exams",
+    scoreSource: "Score uses only Tecsecure activity: sections, labs, and exams (50/30/20). This is not an external qualification.",
+    honest: "Rank reflects only learning progress inside Tecsecure; it is not work experience or an external certification."
+  }
 };
 
-export function ProfileHero({ name, email, rewardPoints, children }: { name: string; email: string; rewardPoints: number; children?: React.ReactNode }) {
+export function ProfileHero({ name, email, rewardPoints, practice, children }: { name: string; email: string; rewardPoints: number; practice: ProfilePractice; children?: React.ReactNode }) {
   const { locale } = useSitePreferences();
   const c = copy[locale];
-  const [progress, setProgress] = useState<Progress | null>(null);
+  const { profile, progress } = practice;
 
   const [selected, setSelected] = useState<string[]>([]);
 
@@ -31,39 +85,21 @@ export function ProfileHero({ name, email, rewardPoints, children }: { name: str
     } catch { /* ignore corrupt local data */ }
   }, []);
 
-  useEffect(() => {
-    let active = true;
-    fetch("/api/learning/progress", { cache: "no-store" })
-      .then((response) => (response.ok ? response.json() : null))
-      .then((data) => { if (active && data) setProgress(data); })
-      .catch(() => undefined);
-    return () => { active = false; };
-  }, []);
 
   const stats = useMemo(() => {
     const sections = progress?.completedSections ?? [];
     const completions = progress?.completions ?? [];
-    const doneKeys = new Set(sections.map((item) => `${item.moduleSlug}:${item.sectionIndex}`));
     const doneModules = new Set(completions.map((item) => item.moduleSlug));
-    const paths = learningPaths.map((path) => {
-      const modules = path.modules.map((slug) => learningModules.find((item) => item.slug === slug)).filter((item): item is NonNullable<typeof item> => Boolean(item));
-      const total = modules.reduce((sum, item) => sum + item.sections.length, 0);
-      const done = modules.reduce((sum, item) => sum + item.sections.filter((_, index) => doneKeys.has(`${item.slug}:${index}`)).length, 0);
-      return { slug: path.slug, title: path.title[locale], total, done, percent: total ? Math.round((done / total) * 100) : 0, finished: total > 0 && done === total };
-    });
+    const paths = progress?.paths.map((path) => ({
+      ...path,
+      title: path.title[locale],
+      percent: path.total ? Math.round((path.done / path.total) * 100) : 0
+    })) ?? [];
     const count = sections.length;
-    const rankIndex = count >= 60 ? 4 : count >= 30 ? 3 : count >= 12 ? 2 : count >= 1 ? 1 : 0;
-    const badges = [
-      count >= 1 && c.badgeNames.first,
-      count >= 5 && c.badgeNames.five,
-      doneModules.size >= 1 && c.badgeNames.module,
-      paths.some((item) => item.finished) && c.badgeNames.path
-    ].filter(Boolean) as string[];
-    return { count, modules: doneModules.size, paths, rankIndex, badges, history: completions.slice(0, 5) };
-  }, [progress, locale, c]);
+    return { count, modules: doneModules.size, paths, history: completions.slice(0, 5) };
+  }, [progress, locale]);
 
-  const nextRankAt = [1, 12, 30, 60, 60][stats.rankIndex];
-  const rankPercent = stats.rankIndex === 4 ? 100 : Math.min(100, Math.round((stats.count / nextRankAt) * 100));
+  const xpPercent = profile.levelCeil ? Math.min(100, Math.round(((profile.xp - profile.levelFloor) / (profile.levelCeil - profile.levelFloor)) * 100)) : 100;
 
   return (
     <section className="htb-profile" aria-label={name}>
@@ -74,9 +110,10 @@ export function ProfileHero({ name, email, rewardPoints, children }: { name: str
         <div className="htb-identity">
           <h2>{name}</h2>
           <p>{email}</p>
-          <div className="htb-rank"><span className="htb-rank-badge">{c.rank}: {c.ranks[stats.rankIndex]}</span>
-            <div className="htb-bar" role="progressbar" aria-valuenow={rankPercent} aria-valuemin={0} aria-valuemax={100}><span style={{ width: `${rankPercent}%` }} /></div>
+          <div className="htb-rank"><span className="htb-rank-badge">{c.rank} {profile.level}: {profile.levelName}</span>
+            <div className="htb-bar" role="progressbar" aria-valuenow={xpPercent} aria-valuemin={0} aria-valuemax={100}><span style={{ width: `${xpPercent}%` }} /></div>
           </div>
+          <div className="htb-xp"><small>{profile.xp} XP{profile.levelCeil ? ` · keyingi daraja: ${profile.levelCeil} XP` : " · eng yuqori daraja"}</small></div>
         </div>
         <div className="htb-links">
           <Link className="button primary" href="/learning">{c.start}</Link>
@@ -101,15 +138,39 @@ export function ProfileHero({ name, email, rewardPoints, children }: { name: str
           </ul>
         </div>
         <div className="htb-card">
-          <h3>{c.badges}</h3>
-          <div className="htb-badges">{stats.badges.length ? stats.badges.map((badge) => <span key={badge} className="htb-badge">{badge}</span>) : <p>{c.none}</p>}</div>
           <h3>{c.history}</h3>
           {stats.history.length ? <ul className="htb-timeline">{stats.history.map((item) => <li key={item.moduleSlug + item.completedAt}>
-            <strong>{learningModules.find((module) => module.slug === item.moduleSlug)?.title[locale] ?? item.moduleSlug}</strong>
+            <strong>{item.title[locale]}</strong>
             <small>{new Date(item.completedAt).toLocaleDateString(locale === "uz" ? "uz-UZ" : locale === "ru" ? "ru-RU" : "en-US")} · +{item.rewardTec} TEC</small>
           </li>)}</ul> : <p>{c.empty}</p>}
           <p className="htb-note">{c.honest}</p>
         </div>
+      </div>
+      <div className="htb-columns">
+        <div className="htb-card">
+          <h3>{c.skills}</h3>
+          {profile.skills.map((skill) => <div className="htb-skill" key={skill.key}>
+            <span>{skill.title}</span>
+            <div className="htb-bar" role="progressbar" aria-valuenow={skill.score} aria-valuemin={0} aria-valuemax={100}><span style={{ width: `${skill.score}%` }} /></div>
+            <small>{skill.score}% · {skill.label}</small>
+          </div>)}
+          <p className="htb-note">{c.scoreSource}</p>
+        </div>
+        <div className="htb-card">
+          <h3>{c.certificates}</h3>
+          {practice.certificates.length === 0 ? <p>{c.noCertificates} <Link href="/learning/practice">{c.examsLink}</Link></p> :
+            <div className="htb-certs">{practice.certificates.slice(0, 6).map((cert) => {
+              return <Link key={cert.code} className="htb-cert" href={`/verify/${cert.code}`}>
+                <i style={{ background: cert.accent }} /><span><b style={{ color: cert.accent }}>{cert.acronym}</b><strong>{cert.title}</strong><small>{cert.scorePercent}% · {new Date(cert.issuedAt).toLocaleDateString("uz-UZ")}</small></span>
+              </Link>;
+            })}</div>}
+        </div>
+      </div>
+      <div className="htb-card">
+        <h3>{c.achievements}</h3>
+        <div className="htb-ach">{profile.achievements.map((item) => <div key={item.id} className={`htb-ach-item ${item.tone}${item.earned ? "" : " off"}`}>
+          <strong>{item.title}</strong><small>{item.hint}</small>
+        </div>)}</div>
       </div>
     </section>
   );

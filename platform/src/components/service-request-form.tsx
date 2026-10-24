@@ -1,11 +1,12 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import Link from "next/link";
 import { useSitePreferences } from "@/components/site-preferences";
 
 export type ServiceOption = { id: string; name: string };
 
-export function ServiceRequestForm({ services }: { services: ServiceOption[] }) {
+export function ServiceRequestForm({ services, showRegisterLink = false }: { services: ServiceOption[]; showRegisterLink?: boolean }) {
   const { t } = useSitePreferences();
   const [message, setMessage] = useState<{ text: string; reference?: string; error: boolean } | null>(null);
   const [busy, setBusy] = useState(false);
@@ -62,7 +63,10 @@ export function ServiceRequestForm({ services }: { services: ServiceOption[] }) 
       <div className="field"><label htmlFor="request-description">{t("requestDetails")} *</label><textarea id="request-description" name="description" required minLength={5} maxLength={5000} /></div>
       <div className="field"><label htmlFor="request-time">{t("preferredContactTime")}</label><input id="request-time" name="preferredContactTime" maxLength={120} /></div>
       <label className="checkline"><input type="checkbox" name="consent" required />{t("consentText")}</label>
-      {message && <div className={`notice ${message.error ? "error" : "success"}`} role="status">{message.text} {message.reference && <strong>{message.reference}</strong>}</div>}
+      {message && <div className={`notice ${message.error ? "error" : "success"}`} role="status">
+        {message.text} {message.reference && <strong>{message.reference}</strong>}
+        {!message.error && showRegisterLink && <p><Link href="/register">{t("registerForFutureRequests")}</Link></p>}
+      </div>}
       <button className="button" type="submit" disabled={busy}>{busy ? t("sending") : t("submitRequest")}</button>
     </form>
   );

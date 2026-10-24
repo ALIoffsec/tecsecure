@@ -1,7 +1,29 @@
 import { prisma } from "@/lib/prisma";
+import { MONITORING_INTERVAL_MS, parseMonitoringTarget, runTcpCheck } from "@/lib/monitoring";
 
 const POLL_INTERVAL_MS = 15_000;
 const BATCH_SIZE = 50;
+
+async function runMonitoring() {
+  const dueBefore = new Date(Date.now() - MONITORING_INTERVAL_MS);
+  const devices = await prisma.device.findMany({
+    where: { monitored: true, OR: [{ lastCheckAt: null }, { lastCheckAt: { lte: dueBefore } }] },
+    orderBy: { lastCheckAt: "asc" },
+    take: 20,
+    select: { id: true, hostname: true, monitoringMethod: true }
+  });
+  for (const device of devices) {
+    const target = parseMonitoringTarget(device.monitoringMethod, device.hostname);
+    const result = target
+      ? await runTcpCheck(target.host, target.port)
+      : { online: false, latencyMs: null, detail: "Monitoring maqsadi noto‘g‘ri sozlangan." };
+    const status = result.online ? "ONLINE" : "OFFLINE";
+    await prisma.$transaction([
+      prisma.monitoringCheck.create({ data: { deviceId: device.id, status, latencyMs: result.latencyMs, detail: result.detail } }),
+      prisma.device.update({ where: { id: device.id }, data: { status, lastCheckAt: new Date() } })
+    ]);
+  }
+}
 
 async function runOnce() {
   const pending = await prisma.notification.findMany({
@@ -76,11 +98,12 @@ async function runOnce() {
   }
 
   await prisma.session.deleteMany({ where: { expiresAt: { lte: new Date() } } });
+  await runMonitoring();
   await prisma.authRateLimit.deleteMany({ where: { resetAt: { lt: new Date(Date.now() - 24 * 60 * 60 * 1000) } } });
 }
 
 async function main() {
-  console.info("Tecsecure worker started. External providers and real monitoring are not configured.");
+  console.info("Tecsecure worker started. TCP monitoring runs for opted-in devices; external notification providers are not configured.");
   while (true) {
     try {
       await runOnce();
