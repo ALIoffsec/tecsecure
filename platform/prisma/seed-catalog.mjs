@@ -18,6 +18,14 @@ const items = [
   ["xavfsizlik", "xavfsizlik-nazorat-kirish", "Kirishni nazorat qilish tizimi", "Eshik nazorati, kartalar va hisobot yuritish uchun uskunalar to‘plami."]
 ];
 
+// Bir martalik: admin o‘chirgan yoki o‘zgartirgan mahsulotlar qayta tiklanmasligi uchun.
+const markerKey = "seed.catalog.v1";
+if (!process.argv.includes("--force") && (await prisma.siteSetting.findUnique({ where: { key: markerKey } }))) {
+  console.log("Catalog seed already applied, skipping (use --force to re-run)");
+  await prisma.$disconnect();
+  process.exit(0);
+}
+
 for (const category of categories) {
   await prisma.productCategory.upsert({ where: { slug: category.slug }, update: {}, create: category });
 }
@@ -40,5 +48,6 @@ for (const [categorySlug, slug, name, description] of items) {
   });
 }
 
+await prisma.siteSetting.upsert({ where: { key: markerKey }, update: {}, create: { key: markerKey, value: new Date().toISOString() } });
 console.log(`Catalog ready: ${items.length} items`);
 await prisma.$disconnect();

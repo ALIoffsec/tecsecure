@@ -11,6 +11,7 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate deploy",
     "db:seed-news": "node prisma/seed-news.mjs",
+    "db:seed-catalog": "node prisma/seed-catalog.mjs",
     "db:dev": "prisma migrate dev",
     "admin:create": "tsx scripts/create-admin.ts",
     "admin:password-reset": "tsx scripts/reset-admin-password.ts",
