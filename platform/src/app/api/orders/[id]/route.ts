@@ -1,6 +1,7 @@
 import { isResponse, requireModuleApi } from "@/lib/auth";
 import { canTransition, orderStatusSchema } from "@/lib/orders";
 import { prisma } from "@/lib/prisma";
+import { escapeTelegramHtml, notifyTelegramUser } from "@/lib/telegram";
 
 export const runtime = "nodejs";
 
@@ -45,5 +46,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     return true;
   });
   if (!updated) return Response.json({ error: "Buyurtma holati allaqachon o‘zgargan." }, { status: 409 });
+  await notifyTelegramUser(
+    order.customerId,
+    `<b>Tecsecure: buyurtma holati yangilandi</b>\nRaqam: <code>${escapeTelegramHtml(order.reference)}</code>\nYangi holat: ${escapeTelegramHtml(parsed.data.status)}${parsed.data.note ? `\nIzoh: ${escapeTelegramHtml(parsed.data.note)}` : ""}`
+  );
   return Response.json({ ok: true });
 }

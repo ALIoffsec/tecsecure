@@ -1,5 +1,7 @@
+import { randomBytes } from "node:crypto";
 import { getCurrentUser, requireModuleApi } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { escapeTelegramHtml, notifyTelegramAdmins } from "@/lib/telegram";
 import { projectSchema } from "@/lib/validation";
 
 export const runtime = "nodejs";
@@ -37,6 +39,7 @@ export async function POST(request: Request) {
   if (!parsed.success) return Response.json({ error: "Loyiha ma’lumotlari noto‘g‘ri.", details: parsed.error.flatten() }, { status: 400 });
 
   try {
+    const reference = `PRJ-${new Date().getUTCFullYear()}-${randomBytes(5).toString("hex").toUpperCase()}`;
     const project = await prisma.$transaction(async (tx) => {
       for (const item of parsed.data.items) {
         if (item.productId) {
@@ -49,6 +52,7 @@ export async function POST(request: Request) {
       }
       const created = await tx.project.create({
         data: {
+          reference,
           name: parsed.data.name,
           city: parsed.data.city || null,
           notes: parsed.data.notes || null,
@@ -58,9 +62,43 @@ export async function POST(request: Request) {
         },
         include: { items: { include: { product: true, service: true } } }
       });
+      const itemNames = created.items.map((item) => item.product?.name ?? item.service?.name ?? "Mahsulot/xizmat");
+      await tx.portalConversation.create({
+        data: {
+          reference,
+          category: "PROJECT",
+          sourceType: "PROJECT",
+          sourceId: created.id,
+          subject: `Loyiha: ${created.name}`,
+          customerName: user.name,
+          customerId: user.id,
+          messages: {
+            create: {
+              sender: "CUSTOMER",
+              body: [
+                `Loyiha: ${created.name}`,
+                created.city && `Shahar: ${created.city}`,
+                itemNames.length ? `Tanlanganlar: ${itemNames.join(", ")}` : "",
+                created.notes && `Talablar: ${created.notes}`
+              ].filter(Boolean).join("\n")
+            }
+          }
+        }
+      });
       await tx.auditLog.create({ data: { actorId: user.id, action: "PROJECT_SUBMITTED", entity: "Project", entityId: created.id } });
       return created;
     });
+    const itemNames = project.items.map((item) => item.product?.name ?? item.service?.name ?? "Mahsulot/xizmat");
+    await notifyTelegramAdmins([
+      "<b>Yangi loyiha / narx so‘rovi</b>",
+      `Raqam: <code>${escapeTelegramHtml(project.reference)}</code>`,
+      `Mijoz: ${escapeTelegramHtml(user.name)} · ${escapeTelegramHtml(user.email)}`,
+      `Loyiha: ${escapeTelegramHtml(project.name)}`,
+      itemNames.length ? `Tanlanganlar: ${escapeTelegramHtml(itemNames.join(", "))}` : "",
+      project.notes ? `Talablar: ${escapeTelegramHtml(project.notes)}` : "",
+      "",
+      `Javob: <code>/reply ${escapeTelegramHtml(project.reference)} matn</code>`
+    ].filter(Boolean).join("\n"));
     return Response.json({ project }, { status: 201 });
   } catch (error) {
     if (error instanceof Error && error.message.startsWith("PUBLISHED_")) {

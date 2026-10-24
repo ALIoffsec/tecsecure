@@ -12,6 +12,7 @@ import { LearningCatalogProvider } from "@/components/learning-catalog-context";
 import type { Locale, MessageKey } from "@/lib/messages";
 import { isSiteDesign } from "@/lib/site-designs";
 import { isPreviewMode } from "@/lib/preview-mode";
+import { ServiceWorkerRegistration } from "@/components/service-worker-registration";
 
 export const metadata: Metadata = {
   title: "Tecsecure — IT va xavfsizlik yechimlari",
@@ -62,6 +63,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&family=Playfair+Display:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" /></noscript>
       </head>
       <body>
+        <ServiceWorkerRegistration />
         <FontLoader />
         <SitePreferencesProvider overrides={overrides}>
           <LearningCatalogProvider data={learningCatalog}>

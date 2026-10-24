@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import { getCurrentUser, requireModuleApi } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { canTransitionRequest } from "@/lib/request-status";
+import { escapeTelegramHtml, notifyTelegramUser } from "@/lib/telegram";
 import { z } from "zod";
 
 export const runtime = "nodejs";
@@ -81,6 +82,12 @@ export async function PATCH(request: Request, context: Context) {
       return { request: updated };
     });
     if ("error" in result) return Response.json({ error: result.error }, { status: result.status });
+    if (admin && result.request.customerId) {
+      await notifyTelegramUser(
+        result.request.customerId,
+        `<b>Tecsecure: murojaat holati yangilandi</b>\nRaqam: <code>${escapeTelegramHtml(result.request.reference)}</code>\nYangi holat: ${escapeTelegramHtml(parsed.data.status)}`
+      );
+    }
     return Response.json({ request: result.request });
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError) console.error("Request update database error", error);

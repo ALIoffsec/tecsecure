@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Locale } from "@/lib/messages";
 import { useSitePreferences } from "@/components/site-preferences";
 import { UiIcon } from "@/components/ui-icon";
+import { AppInstallButton } from "@/components/app-install-button";
 
 const locales: Locale[] = ["uz", "ru", "en"];
 const themes = ["light", "dark", "system"] as const;
@@ -93,6 +94,7 @@ export function SiteNav() {
             </div>
           </div>
           <div className="nav-utilities">
+            <AppInstallButton />
             <button
               className="preference-button locale-button"
               type="button"

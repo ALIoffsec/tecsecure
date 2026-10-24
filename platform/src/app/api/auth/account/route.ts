@@ -56,6 +56,14 @@ export async function DELETE(request: Request) {
         where: { customerId: user.id },
         data: { customerId: null, name: "Archived customer project", notes: null, city: null }
       });
+      await tx.portalMessage.updateMany({
+        where: { conversation: { customerId: user.id } },
+        data: { body: "[Message content removed after account deletion]" }
+      });
+      await tx.portalConversation.updateMany({
+        where: { customerId: user.id },
+        data: { customerId: null, customerName: "Deleted account", customerPhone: null, subject: "Archived conversation" }
+      });
       await tx.organizationMember.deleteMany({ where: { userId: user.id } });
       await tx.notification.deleteMany({ where: { userId: user.id } });
       await tx.auditLog.updateMany({ where: { actorId: user.id }, data: { actorId: null } });

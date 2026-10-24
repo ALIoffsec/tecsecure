@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { hash } from "bcryptjs";
 import AzureAD from "next-auth/providers/azure-ad";
+import GitHub from "next-auth/providers/github";
 import Google from "next-auth/providers/google";
 import Yandex from "next-auth/providers/yandex";
 import type { NextAuthOptions } from "next-auth";
@@ -11,6 +12,10 @@ const hasAuthSecret = Boolean(process.env.NEXTAUTH_SECRET);
 const googleCredentials = {
   clientId: process.env.GOOGLE_CLIENT_ID ?? "",
   clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? ""
+};
+const githubCredentials = {
+  clientId: process.env.GITHUB_CLIENT_ID ?? "",
+  clientSecret: process.env.GITHUB_CLIENT_SECRET ?? ""
 };
 const yandexCredentials = {
   clientId: process.env.YANDEX_CLIENT_ID ?? "",
@@ -24,6 +29,9 @@ const microsoftCredentials = {
 const providers: NextAuthOptions["providers"] = [
   ...(hasAuthSecret && googleCredentials.clientId && googleCredentials.clientSecret
     ? [Google({ ...googleCredentials })]
+    : []),
+  ...(hasAuthSecret && githubCredentials.clientId && githubCredentials.clientSecret
+    ? [GitHub({ ...githubCredentials })]
     : []),
   ...(hasAuthSecret && yandexCredentials.clientId && yandexCredentials.clientSecret
     ? [Yandex({ ...yandexCredentials })]
@@ -54,7 +62,7 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async signIn({ account, profile, user }) {
       if (!account || account.type !== "oauth") return false;
-      if (!["google", "yandex", "microsoft"].includes(account.provider)) return false;
+      if (!["google", "github", "yandex", "microsoft"].includes(account.provider)) return false;
 
       const identity = await prisma.oAuthAccount.findUnique({
         where: {

@@ -3,6 +3,7 @@ import { getCurrentUser, isResponse, requireModuleApi } from "@/lib/auth";
 import { mergeItems, orderSchema } from "@/lib/orders";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { escapeTelegramHtml, notifyTelegramAdmins } from "@/lib/telegram";
 
 export const runtime = "nodejs";
 
@@ -82,6 +83,28 @@ export async function POST(request: Request) {
         },
         select: { id: true, reference: true, status: true, totalMinor: true }
       });
+      await tx.portalConversation.create({
+        data: {
+          reference: created.reference,
+          category: "ORDER",
+          sourceType: "ORDER",
+          sourceId: created.id,
+          subject: "Yangi buyurtma",
+          customerName: parsed.data.recipientName,
+          customerPhone: parsed.data.phone,
+          customerId: user.id,
+          messages: {
+            create: {
+              sender: "CUSTOMER",
+              body: [
+                `Mahsulotlar: ${lines.map((line) => `${line.product.name} × ${line.quantity}`).join(", ")}`,
+                `Yetkazish: ${parsed.data.city}${parsed.data.address ? `, ${parsed.data.address}` : ""}`,
+                parsed.data.note ? `Izoh: ${parsed.data.note}` : ""
+              ].filter(Boolean).join("\n")
+            }
+          }
+        }
+      });
       const staff = await tx.user.findMany({
         where: { role: { in: ["FOUNDER", "ADMIN", "STAFF"] }, active: true },
         select: { id: true }
@@ -99,6 +122,17 @@ export async function POST(request: Request) {
       }
       return created;
     });
+    const telegramBody = [
+      "<b>Yangi buyurtma</b>",
+      `Raqam: <code>${escapeTelegramHtml(order.reference)}</code>`,
+      `Qabul qiluvchi: ${escapeTelegramHtml(parsed.data.recipientName)}`,
+      `Telefon: ${escapeTelegramHtml(parsed.data.phone)}`,
+      `Manzil: ${escapeTelegramHtml(`${parsed.data.city}, ${parsed.data.address}`)}`,
+      `Mahsulotlar: ${escapeTelegramHtml(lines.map((line) => `${line.product.name} × ${line.quantity}`).join(", "))}`,
+      "",
+      `Javob: <code>/reply ${escapeTelegramHtml(order.reference)} matn</code>`
+    ].join("\n");
+    await notifyTelegramAdmins(telegramBody);
     return Response.json({ order }, { status: 201 });
   } catch (error) {
     console.error("Order creation failed", error);

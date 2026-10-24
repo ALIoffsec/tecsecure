@@ -2,6 +2,7 @@ import { randomBytes } from "node:crypto";
 import { getCurrentUser, requireModuleApi } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { escapeTelegramHtml, notifyTelegramAdmins } from "@/lib/telegram";
 import { requestSchema } from "@/lib/validation";
 
 export const runtime = "nodejs";
@@ -27,12 +28,14 @@ export async function POST(request: Request) {
     if (user && user.role !== "CUSTOMER") {
       return Response.json({ error: "Xodim yoki administrator hisobi bilan mijoz arizasi yuborib bo‘lmaydi." }, { status: 403 });
     }
+    let serviceName = "Umumiy so‘rov";
     if (parsed.data.serviceId) {
       const service = await prisma.service.findFirst({
         where: { id: parsed.data.serviceId, status: "PUBLISHED", availability: true },
-        select: { id: true }
+        select: { id: true, name: true }
       });
       if (!service) return Response.json({ error: "Tanlangan xizmat mavjud emas." }, { status: 400 });
+      serviceName = service.name;
     }
     const reference = `TS-${new Date().getUTCFullYear()}-${randomBytes(8).toString("hex").toUpperCase()}`;
     const record = await prisma.$transaction(async (tx) => {
@@ -54,6 +57,27 @@ export async function POST(request: Request) {
         },
         select: { id: true, reference: true, status: true, createdAt: true }
       });
+      const details = [
+        parsed.data.description,
+        parsed.data.organizationName && `Tashkilot: ${parsed.data.organizationName}`,
+        parsed.data.city && `Shahar: ${parsed.data.city}`,
+        parsed.data.location && `Manzil: ${parsed.data.location}`,
+        parsed.data.budgetRange && `Byudjet: ${parsed.data.budgetRange}`,
+        parsed.data.preferredContactTime && `Bog‘lanish vaqti: ${parsed.data.preferredContactTime}`
+      ].filter(Boolean).join("\n");
+      await tx.portalConversation.create({
+        data: {
+          reference: created.reference,
+          category: "SERVICE",
+          sourceType: "SERVICE_REQUEST",
+          sourceId: created.id,
+          subject: parsed.data.serviceId ? `Xizmat: ${serviceName}` : "Yangi murojaat",
+          customerName: parsed.data.name,
+          customerPhone: parsed.data.phone,
+          customerId: user?.id,
+          messages: { create: { sender: "CUSTOMER", body: details } }
+        }
+      });
       const admins = await tx.user.findMany({
         where: { role: { in: ["FOUNDER", "ADMIN", "STAFF"] }, active: true },
         select: { id: true }
@@ -71,6 +95,18 @@ export async function POST(request: Request) {
       }
       return created;
     });
+    const telegramBody = [
+      "<b>Yangi xizmat murojaati</b>",
+      `Raqam: <code>${escapeTelegramHtml(record.reference)}</code>`,
+      `Ism: ${escapeTelegramHtml(parsed.data.name)}`,
+      `Telefon: ${escapeTelegramHtml(parsed.data.phone)}`,
+      parsed.data.email ? `Email: ${escapeTelegramHtml(parsed.data.email)}` : "",
+      `Xizmat: ${escapeTelegramHtml(serviceName)}`,
+      `Tafsilot: ${escapeTelegramHtml(parsed.data.description)}`,
+      "",
+      `Javob: <code>/reply ${escapeTelegramHtml(record.reference)} matn</code>`
+    ].filter(Boolean).join("\n");
+    await notifyTelegramAdmins(telegramBody);
     return Response.json({ request: record }, { status: 201 });
   } catch (error) {
     console.error("Service request submission failed", error);

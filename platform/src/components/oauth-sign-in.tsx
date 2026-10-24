@@ -7,7 +7,7 @@ import { useSitePreferences } from "@/components/site-preferences";
 type Provider = { id: string; name: string };
 type ProviderState = { providers: Provider[]; error: boolean } | null;
 
-export function OAuthSignIn() {
+export function OAuthSignIn({ mode }: { mode: "login" | "register" }) {
   const { locale } = useSitePreferences();
   const [state, setState] = useState<ProviderState>(null);
   const [busy, setBusy] = useState("");
@@ -20,10 +20,10 @@ export function OAuthSignIn() {
     if (authError && mounted) {
       setProviderError(authError === "OAuthCallbackError"
         ? (locale === "uz"
-          ? "Bu email bilan avval akkaunt yaratilgan bo‘lishi mumkin. Mavjud akkauntga parol bilan kiring."
+          ? "Bu email bilan avval akkaunt yaratilgan bo‘lishi mumkin. Mavjud akkauntingizga avval bog‘langan usul bilan kiring."
           : locale === "ru"
-            ? "Возможно, аккаунт с этим email уже существует. Войдите в него по паролю."
-            : "An account may already exist with this email. Sign in to the existing account with its password.")
+            ? "Возможно, аккаунт с этим email уже существует. Войдите в него ранее подключённым способом."
+            : "An account may already exist with this email. Sign in using the method already linked to it.")
         : (locale === "uz" ? "Tashqi hisob orqali kirish yakunlanmadi." : locale === "ru" ? "Не удалось завершить вход через провайдера." : "Provider sign-in could not be completed."));
     }
     fetch("/api/auth/providers")
@@ -34,7 +34,7 @@ export function OAuthSignIn() {
       .then((available) => {
         if (!mounted) return;
         const providers = Object.values(available ?? {}).filter((provider) =>
-          ["google", "yandex", "microsoft"].includes(provider.id)
+          ["google", "github", "yandex", "microsoft"].includes(provider.id)
         );
         setState({ providers, error: false });
       })
@@ -45,10 +45,22 @@ export function OAuthSignIn() {
   }, [locale]);
 
   const text = locale === "ru"
-    ? { heading: "Или войдите через", unavailable: "Вход через провайдера пока не настроен.", failed: "Не удалось загрузить способы входа." }
+    ? {
+        heading: mode === "register" ? "Или зарегистрируйтесь через" : "Или войдите через",
+        unavailable: "Вход через провайдера пока не настроен.",
+        failed: "Не удалось загрузить способы входа."
+      }
     : locale === "en"
-      ? { heading: "Or continue with", unavailable: "Social sign-in is not configured yet.", failed: "Could not load sign-in providers." }
-      : { heading: "Yoki quyidagi hisob orqali kiring", unavailable: "Tashqi hisob orqali kirish hali sozlanmagan.", failed: "Kirish usullarini yuklab bo‘lmadi." };
+      ? {
+          heading: mode === "register" ? "Or register with" : "Or continue with",
+          unavailable: "Social sign-in is not configured yet.",
+          failed: "Could not load sign-in providers."
+        }
+      : {
+          heading: mode === "register" ? "Yoki quyidagi hisob bilan ro‘yxatdan o‘ting" : "Yoki quyidagi hisob orqali kiring",
+          unavailable: "Tashqi hisob orqali kirish hali sozlanmagan.",
+          failed: "Kirish usullarini yuklab bo‘lmadi."
+        };
 
   if (!state) return null;
 
@@ -69,7 +81,11 @@ export function OAuthSignIn() {
               try {
                 const result = await signIn(provider.id, { callbackUrl: "/portal", redirect: false });
                 if (result?.error) {
-                  setProviderError(locale === "uz" ? "Kirish amalga oshmadi. Mavjud akkauntga parol bilan kirib ko‘ring." : locale === "ru" ? "Вход не выполнен. Попробуйте войти в существующий аккаунт по паролю." : "Sign-in failed. Try signing in to your existing account with its password.");
+                  setProviderError(locale === "uz"
+                    ? "Kirish amalga oshmadi. Akkauntga avval bog‘langan kirish usulidan foydalaning."
+                    : locale === "ru"
+                      ? "Вход не выполнен. Используйте способ входа, ранее подключённый к аккаунту."
+                      : "Sign-in failed. Use the sign-in method already linked to your account.");
                 } else if (result?.url) {
                   window.location.assign(result.url);
                 }

@@ -11,10 +11,14 @@ The production-oriented rebuild lives in `platform/`; the original static files 
 | Public product market | Reads published products from the database; shows an honest empty state until real inventory is published; inquiries only, no checkout |
 | Public homepage contact details | Implemented; email, phone, and social handles can be edited in admin site settings |
 | Customer registration/login, database-backed sessions, password hashing | Implemented |
-| Google, Yandex, and Microsoft customer sign-in | Implemented; each provider requires owner-created OAuth app credentials and callback registration; existing email accounts are not silently linked |
+| Google, GitHub, Yandex, and Microsoft customer sign-in | Implemented; each provider requires owner-created OAuth app credentials and callback registration; existing email accounts are not silently linked |
 | Customer logout, account deletion, and request/project data anonymization | Implemented; password-confirmed; financial history is retained |
 | Admin/staff server-side access checks and bootstrap | Implemented; staff has a separate login entry and is limited to request/project operations, while ADMIN manages system settings and user roles |
 | Service requests, unique reference, request history, owner-scoped portal | Implemented |
+| Telegram notifications for new service requests, orders, and project quotes | Implemented; requires the bot secrets and webhook setup below |
+| Telegram admin replies saved in customer profile and sent to linked customers | Implemented; customer must connect Telegram from Profile → My messages |
+| Customer portal with grouped service/order/monitoring/project/learning sections | Implemented |
+| Tecsecure app install button | Implemented as a PWA install flow; not a native APK download |
 | Admin service catalog create/archive | Implemented |
 | Product catalog create/read and project submissions | Implemented |
 | News publishing and admin create/edit/archive | Implemented |
@@ -25,7 +29,7 @@ The production-oriented rebuild lives in `platform/`; the original static files 
 | Invoice creation from accepted quotations; manual payment submission and admin approval | Implemented; no payment provider or automatic settlement |
 | Subscription plans and customer-consented trials | Implemented; no recurring billing or automatic charge |
 | Monitoring worker | Not operational; no target checks are executed and all devices remain `UNKNOWN` until real telemetry is integrated |
-| Email/Telegram delivery | Not configured; worker marks undeliverable notifications `FAILED`, never claims delivery |
+| Email and worker-based external notification delivery | Not configured; the worker records undeliverable notifications as `FAILED` |
 | Cybersecurity authorization/reporting | Schema foundation only; customer authorization, evidence access, and reporting workflow pending |
 | Learning catalog and article access | Implemented; 13 static modules, TEC purchases, and 30-day wallet-funded Basic/Standard/Expert subscriptions; no hosted lab runtime or automatic renewal |
 | Support tickets, uploads/private file storage, admin audit/history UI | Pending |
@@ -60,12 +64,29 @@ To reset an existing administrator or founder password from an interactive serve
 | `NEXTAUTH_URL` | OAuth | Canonical origin used by NextAuth; must match the registered provider callback origin |
 | `NEXTAUTH_SECRET` | OAuth | Unique random secret used to protect OAuth state and JWT sessions; never reuse the example value |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Optional | Google OAuth app credentials |
+| `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` | Optional | GitHub OAuth app credentials |
 | `YANDEX_CLIENT_ID`, `YANDEX_CLIENT_SECRET` | Optional | Yandex OAuth app credentials |
 | `MICROSOFT_CLIENT_ID`, `MICROSOFT_CLIENT_SECRET`, `MICROSOFT_TENANT_ID` | Optional | Microsoft identity app credentials; tenant defaults to `common` |
+| `TELEGRAM_BOT_TOKEN` | Optional | Secret token for the Tecsecure Telegram bot |
+| `TELEGRAM_BOT_USERNAME` | Telegram | Public bot username without `@`, used to create customer linking links |
+| `TELEGRAM_ADMIN_CHAT_ID` | Telegram | Private administrator chat ID that receives new request/order/project messages |
+| `TELEGRAM_WEBHOOK_SECRET` | Telegram | High-entropy secret used to authenticate Telegram webhook requests |
 
 The current auth uses an unguessable random session token in an HttpOnly/SameSite cookie; only a SHA-256 token digest and expiration are stored in PostgreSQL. Passwords use bcrypt. Changing/removing the initial-admin environment variables after bootstrap does not rotate an existing password.
 
-For OAuth, register the exact callback URLs `https://your-domain/api/auth/callback/google`, `/api/auth/callback/yandex`, and `/api/auth/callback/microsoft` with the providers (use `http://localhost:3000` for local development). Configure secrets only in the local ignored `.env` or the hosting provider's secret store. An OAuth identity that returns an email already used by a password account is rejected rather than linked automatically; continue using that account's password sign-in. Account linking is not currently supported. OAuth sign-in creates customer accounts only and cannot grant staff/admin access.
+For OAuth, register the exact callback URLs `https://your-domain/api/auth/callback/google`, `/api/auth/callback/github`, `/api/auth/callback/yandex`, and `/api/auth/callback/microsoft` with the providers (use `http://localhost:3000` for local development). “Gmail sign-in” uses Google OAuth; it does not need an email-sending password. Configure secrets only in the local ignored `.env` or the hosting provider's secret store. An OAuth identity that returns an email already used by a password account is rejected rather than linked automatically; continue using that account's existing sign-in method. Account linking is not currently supported. OAuth sign-in creates customer accounts only and cannot grant staff/admin access.
+
+To enable Google and GitHub buttons, create OAuth apps in Google Cloud Console and GitHub Developer Settings. Add `https://your-domain/api/auth/callback/google` as Google's authorized redirect URI. For GitHub, set the callback URL to `https://your-domain/api/auth/callback/github`; the GitHub provider requests verified email access so private email addresses can be returned. Put each provider's client ID and client secret into the hosting secret store, set `NEXTAUTH_URL` to the site's exact HTTPS origin, and ensure `NEXTAUTH_SECRET` is a unique random value of at least 32 characters. Restart/redeploy the web service; the matching buttons then appear on both `/login` and `/register`. Keep OAuth client secrets private and never paste them into chat or source control.
+
+### Telegram support and notifications
+
+1. Create a bot with BotFather. Set `TELEGRAM_BOT_TOKEN`, `TELEGRAM_BOT_USERNAME`, a private `TELEGRAM_ADMIN_CHAT_ID`, and a randomly generated `TELEGRAM_WEBHOOK_SECRET` only in the hosting provider's secret store.
+2. The bot must be started by the administrator. Before setting its webhook, obtain the administrator chat ID from Telegram's `getUpdates` response; never paste the bot token into source code or commit it.
+3. Apply the reviewed Prisma migration using the deployment's normal migration process. Configure Telegram's webhook URL as `https://your-domain/api/telegram/webhook` with Telegram's `secret_token` set to the same `TELEGRAM_WEBHOOK_SECRET`.
+4. New service requests, product orders, and project/quote requests are sent to the configured private chat with a category and reference. Reply in that chat using `/reply REFERENCE your message`. The reply is saved to the customer's profile; if the customer connected Telegram in Profile → My messages, it is also delivered to that Telegram account.
+5. Verify an end-to-end test with a non-production request before enabling this in production. If Telegram is unavailable, the original request remains saved in the database and delivery failure is logged.
+
+Customer Telegram notifications currently use Telegram only; SMS is not configured. The “Ilovani yuklab olish” navigation button installs the HTTPS PWA when the browser offers installation, and otherwise opens browser-specific install instructions. No native Android/iOS package is included.
 
 TEC packs use a 4,990 UZS base value per TEC and server-calculated volume discounts. Course subscriptions are prepaid for 30 days and do not renew automatically. UZS wallet deposits still require proof submission and administrator approval; no card/bank gateway is connected. The public product market lists published real records only and offers no online checkout. Do not publish placeholder inventory or imply that a deposit, product order, or recurring payment is automatic.
 

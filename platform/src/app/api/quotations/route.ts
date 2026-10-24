@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { getCurrentUser, isResponse, requireModuleApi } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { escapeTelegramHtml, notifyTelegramUser } from "@/lib/telegram";
 import { quotationSchema } from "@/lib/validation";
 
 export const runtime = "nodejs";
@@ -61,6 +62,16 @@ export async function POST(request: Request) {
       return created;
     });
     const totalMinor = quote.items.reduce((total, item) => total + item.quantity * item.unitPriceMinor - item.discountMinor, 0);
+    const project = await prisma.project.findUnique({
+      where: { id: parsed.data.projectId },
+      select: { customerId: true, name: true }
+    });
+    if (project?.customerId) {
+      await notifyTelegramUser(
+        project.customerId,
+        `<b>Tecsecure: sizga narx taklifi tayyor</b>\nLoyiha: ${escapeTelegramHtml(project.name)}\nTaklif: <code>${escapeTelegramHtml(quote.number)}</code>\nProfilingizdagi “Loyihalar va takliflar” bo‘limida ko‘ring.`
+      );
+    }
     return Response.json({ quotation: quote, totalMinor }, { status: 201 });
   } catch (error) {
     if (error instanceof Error && error.message === "PROJECT_NOT_FOUND") {
