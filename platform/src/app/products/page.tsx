@@ -67,6 +67,8 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
     prisma.product.groupBy({ by: ["brand"], where: { status: "PUBLISHED", brand: { not: null } }, _count: { _all: true }, orderBy: { brand: "asc" } })
   ]);
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const ratingRows = await prisma.productReview.groupBy({ by: ["productId"], where: { productId: { in: products.map((p) => p.id) } }, _avg: { rating: true }, _count: { _all: true } });
+  const ratings = new Map(ratingRows.map((r) => [r.productId, { avg: r._avg.rating ?? 0, count: r._count._all }]));
   const activeCategory = categories.find((c) => c.slug === sp.category);
   const activeFilters = [
     q && { label: `“${q}”`, href: build(current, { q: undefined, page: undefined }) },
@@ -149,6 +151,7 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
                 <span className="shop-card-cat">{[product.category?.name, product.brand].filter(Boolean).join(" · ") || "Tecsecure"}</span>
                 <h2><Link href={`/products/${product.slug}`}>{product.name}</Link></h2>
                 {product.model && <span className="small muted">Model: {product.model}</span>}
+                {ratings.get(product.id) && <span className="small"><span style={{ color: "#f5b301" }}>★</span> {ratings.get(product.id)!.avg.toFixed(1)} <span className="muted">({ratings.get(product.id)!.count} sharh)</span></span>}
                 <p className="shop-card-desc">{product.description}</p>
                 <div className="shop-card-foot">
                   <div>

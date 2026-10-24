@@ -113,6 +113,8 @@ model User {
   learningSubscription LearningSubscription?
   requests             ServiceRequest[]       @relation("RequestCustomer")
   orders               Order[]                @relation("OrderCustomer")
+  productReviews       ProductReview[]
+  productQuestions     ProductQuestion[]
   memberships           OrganizationMember[]
   projects             Project[]
   auditEvents          AuditLog[]             @relation("AuditActor")
@@ -275,6 +277,8 @@ model Product {
   projectItems        ProjectItem[]
   quoteItems          QuoteItem[]
   orderItems          OrderItem[]
+  reviews             ProductReview[]
+  questions           ProductQuestion[]
 
   @@index([status, categoryId])
 }
@@ -834,4 +838,34 @@ model LearningCertificate {
   issuedAt     DateTime @default(now())
 
   @@unique([userId, examSlug])
+}
+
+model ProductReview {
+  id        String   @id @default(cuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rating    Int
+  pros      String?
+  cons      String?
+  comment   String
+  createdAt DateTime @default(now())
+
+  @@unique([productId, userId])
+  @@index([productId, createdAt])
+}
+
+model ProductQuestion {
+  id         String    @id @default(cuid())
+  productId  String
+  product    Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  question   String
+  answer     String?
+  answeredAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([productId, createdAt])
 }
