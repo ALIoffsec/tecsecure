@@ -3,7 +3,7 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 
-export type CartLine = { productId: string; name: string; slug: string; quantity: number };
+export type CartLine = { productId: string; name: string; slug: string; categorySlug?: string | null; quantity: number };
 
 const KEY = "tecsecure-cart-v1";
 const EVENT = "tecsecure-cart-change";
@@ -18,7 +18,7 @@ function parse(raw: string | null): CartLine[] {
     return data
       .filter((l) => l && typeof l.productId === "string" && typeof l.name === "string" && typeof l.slug === "string" && Number.isInteger(l.quantity) && l.quantity > 0)
       .slice(0, 50)
-      .map((l) => ({ productId: l.productId, name: l.name, slug: l.slug, quantity: Math.min(l.quantity, 999) }));
+      .map((l) => ({ productId: l.productId, name: l.name, slug: l.slug, categorySlug: typeof l.categorySlug === "string" ? l.categorySlug : null, quantity: Math.min(l.quantity, 999) }));
   } catch {
     return [];
   }
@@ -84,8 +84,9 @@ export function AddToCartButton({ product, disabled }: { product: Omit<CartLine,
   </button>;
 }
 
-export function CartLink() {
+export function CartFab() {
   const lines = useCart();
   const count = lines.reduce((s, l) => s + l.quantity, 0);
-  return <Link className="button secondary" href="/cart">Savat{count > 0 ? ` (${count})` : ""}</Link>;
+  if (count === 0) return null;
+  return <Link className="shop-fab" href="/cart" aria-label={`Savat: ${count} ta mahsulot`}>Savat <b>{count}</b></Link>;
 }
