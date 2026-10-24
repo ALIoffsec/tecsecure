@@ -2,7 +2,8 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   experimental: {
-    agentUpgrade: "security"
+    agentUpgrade: "security",
+    cpus: 2
   },
   poweredByHeader: false,
   output: "standalone",
