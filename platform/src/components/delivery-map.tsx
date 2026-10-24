@@ -79,7 +79,7 @@ export function DeliveryMap({ value, address, onChange }: {
           try { selectedAddress = (await ymaps.geocode(coords)).geoObjects.get(0)?.getAddressLine?.(); }
           catch { setError("Manzil nomini aniqlab bo‘lmadi. Manzilni qo‘lda kiriting."); }
         }
-        onChangeRef.current(coords, selectedAddress);
+        if (reverse) onChangeRef.current(coords, selectedAddress);
       };
       placeRef.current = place;
       if (value) void place(value, false);

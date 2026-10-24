@@ -99,7 +99,7 @@ export function CartCheckout() {
             <h2>Yetkazish manzilini tanlang</h2>
             <p className="small muted">O‘zingiz turgan joyni aniqlang yoki yetkazish kerak bo‘lgan boshqa nuqtani xaritadan belgilang.</p>
           </div>
-          <DeliveryMap value={coords} address={form.address} onChange={(c, address) => { setCoords(c); if (address) setForm((f) => ({ ...f, address })); }} />
+          <DeliveryMap value={coords} address={form.address} onChange={(c, address) => { setCoords(c); setForm((f) => ({ ...f, address: address ?? "" })); }} />
           {coords && <div className="shop-map-note">📍 Tanlangan nuqta: {coords[0].toFixed(5)}, {coords[1].toFixed(5)}</div>}
           <div className="shop-field-row">
             <label className="shop-field"><span>Shahar / viloyat</span><input required value={form.city} onChange={update("city")} maxLength={80} autoComplete="address-level1" /></label>
