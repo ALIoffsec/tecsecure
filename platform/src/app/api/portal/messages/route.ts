@@ -72,7 +72,7 @@ export async function POST(request: Request) {
       escapeTelegramHtml(parsed.data.message),
       "",
       `Javob: <code>/reply ${escapeTelegramHtml(conversation.reference)} matn</code>`
-    ].join("\n"));
+    ].join("\n"), conversation.reference);
 
     return Response.json({ reference: conversation.reference, telegramSent }, { status: 201 });
   } catch (error) {

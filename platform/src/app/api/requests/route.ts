@@ -106,7 +106,7 @@ export async function POST(request: Request) {
       "",
       `Javob: <code>/reply ${escapeTelegramHtml(record.reference)} matn</code>`
     ].filter(Boolean).join("\n");
-    await notifyTelegramAdmins(telegramBody);
+    await notifyTelegramAdmins(telegramBody, record.reference);
     return Response.json({ request: record }, { status: 201 });
   } catch (error) {
     console.error("Service request submission failed", error);

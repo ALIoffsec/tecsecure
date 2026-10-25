@@ -98,7 +98,7 @@ export async function POST(request: Request) {
       project.notes ? `Talablar: ${escapeTelegramHtml(project.notes)}` : "",
       "",
       `Javob: <code>/reply ${escapeTelegramHtml(project.reference)} matn</code>`
-    ].filter(Boolean).join("\n"));
+    ].filter(Boolean).join("\n"), project.reference);
     return Response.json({ project }, { status: 201 });
   } catch (error) {
     if (error instanceof Error && error.message.startsWith("PUBLISHED_")) {

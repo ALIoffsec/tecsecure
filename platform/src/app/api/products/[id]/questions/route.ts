@@ -66,7 +66,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     `Savol: ${escapeTelegramHtml(parsed.data.question)}`,
     "",
     `Javob: <code>/reply ${escapeTelegramHtml(reference)} matn</code>`
-  ].join("\n"));
+  ].join("\n"), reference);
   return Response.json({ ok: true, questionId: question.id, reference }, { status: 201 });
 }
 

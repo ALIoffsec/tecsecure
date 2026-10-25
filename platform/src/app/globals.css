@@ -179,6 +179,26 @@ h1 { max-width: 760px; margin: 20px 0; font-size: clamp(2.5rem, 6vw, 4.8rem); le
 h2 { font-size: clamp(1.8rem, 4vw, 2.8rem); letter-spacing: -.045em; }
 .lead { max-width: 650px; color: var(--muted); font-size: 1.13rem; }
 .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+.oauth-sign-in { margin-top: 20px; }
+.oauth-sign-in .small { margin-bottom: 0; }
+.oauth-sign-in .hero-actions { gap: 9px; margin-top: 14px; }
+.oauth-provider-button { width: max-content; max-width: 48px; min-width: 48px; min-height: 48px; height: 48px; justify-content: flex-start; gap: 0; overflow: hidden; padding: 0 11px; border-radius: 14px; white-space: nowrap; transition: max-width .36s cubic-bezier(.2,.8,.2,1), padding .25s ease, border-color .2s ease, background .2s ease, box-shadow .2s ease; }
+.oauth-provider-button:hover, .oauth-provider-button:focus-visible { max-width: 180px; padding-right: 14px; border-color: var(--accent); background: #12263a; box-shadow: 0 0 22px #35d0ba20; }
+.oauth-provider-button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.oauth-provider-button:disabled { cursor: wait; opacity: .72; }
+.oauth-provider-icon { display: grid; width: 24px; height: 24px; flex: 0 0 24px; place-items: center; }
+.oauth-provider-icon svg { display: block; width: 24px; height: 24px; }
+.oauth-provider-label { display: inline-flex; max-width: 0; margin-left: 0; overflow: hidden; opacity: 0; transition: max-width .34s cubic-bezier(.2,.8,.2,1), margin-left .25s ease, opacity .18s ease; }
+.oauth-provider-button:hover .oauth-provider-label, .oauth-provider-button:focus-visible .oauth-provider-label { max-width: 125px; margin-left: 9px; opacity: 1; }
+.oauth-provider-label > span { display: inline-block; }
+.oauth-provider-button:hover .oauth-provider-label > span, .oauth-provider-button:focus-visible .oauth-provider-label > span { animation: brand-word-sequence .72s cubic-bezier(.2,.8,.2,1) both; animation-delay: calc(var(--oauth-letter-index) * 24ms); }
+.oauth-provider-spinner { width: 18px; height: 18px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: oauth-provider-spin .7s linear infinite; }
+@keyframes oauth-provider-spin { to { transform: rotate(360deg); } }
+@media (hover: none) {
+  .oauth-provider-button { max-width: 180px; padding-right: 12px; }
+  .oauth-provider-label { max-width: 125px; margin-left: 9px; opacity: 1; }
+  .oauth-provider-label > span { animation: none; }
+}
 .hero-aside { display: grid; gap: 12px; }
 .feature-tile, .card, .panel-card, .auth-card { border: 1px solid var(--line); border-radius: var(--radius); background: linear-gradient(155deg, #102038, var(--surface) 75%); }
 .feature-tile { padding: 20px; }
@@ -844,10 +864,18 @@ th { color: var(--muted); font-size: .8rem; text-transform: uppercase; letter-sp
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+  :root .brand-mark img { animation-duration: 36s !important; animation-iteration-count: infinite !important; }
+  :root .brand-word > span { animation-duration: 30s !important; animation-iteration-count: infinite !important; }
     /* Sekin, miltillamaydigan gorizontal lentalar: faqat ular uchun harakat saqlanadi */
     :root .brand-track { animation: brand-scroll 38s linear infinite !important; }
     :root .media-marquee-track { animation: portfolio-media-scroll 48s linear infinite !important; }
   }
+@media (prefers-reduced-motion: reduce) {
+  .oauth-provider-button { transition-duration: .36s, .25s, .2s, .2s, .2s !important; }
+  .oauth-provider-label { transition-duration: .34s, .25s, .18s !important; }
+  .oauth-provider-button:hover .oauth-provider-label > span,
+  .oauth-provider-button:focus-visible .oauth-provider-label > span { animation-duration: .72s !important; }
+}
 
   :root[data-design="midnight"] {
   --design-bg-dark: #07111f; --design-surface-dark: #0d1b2d; --design-surface-2-dark: #12233a; --design-line-dark: #243851;

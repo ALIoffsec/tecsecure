@@ -132,7 +132,7 @@ export async function POST(request: Request) {
       "",
       `Javob: <code>/reply ${escapeTelegramHtml(order.reference)} matn</code>`
     ].join("\n");
-    await notifyTelegramAdmins(telegramBody);
+    await notifyTelegramAdmins(telegramBody, order.reference);
     return Response.json({ order }, { status: 201 });
   } catch (error) {
     console.error("Order creation failed", error);
