@@ -1,4 +1,3 @@
-import { LocalizedText } from "@/components/site-preferences";
 import { AddToCartButton, CartFab } from "@/components/cart";
 import { FilterPanel } from "@/components/filter-panel";
 import { ProductVisual } from "@/components/product-visual";
@@ -80,57 +79,22 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
 
   return <div className="container page-shell">
     <section className="shop-hero">
-      <span className="eyebrow"><LocalizedText id="products" /></span>
-      <h1><LocalizedText id="productsPageTitle" /></h1>
-      <p><LocalizedText id="verifiedCatalog" /></p>
       <form method="get" action="/products" role="search" className="shop-search">
         {sp.category && <input type="hidden" name="category" value={sp.category} />}
-        <input name="q" defaultValue={q ?? ""} placeholder="Mahsulot, brend, model yoki SKU qidiring…" aria-label="Qidiruv" maxLength={80} />
-        <button className="button" type="submit">Qidirish</button>
+        <input name="q" defaultValue={q ?? ""} placeholder="Mahsulot qidirish…" aria-label="Qidiruv" maxLength={80} />
+        <button className="button shop-search-submit" type="submit" aria-label="Qidirish" title="Qidirish">
+          <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8" /><path d="m16 16 4.5 4.5" /></svg>
+        </button>
       </form>
-      <div className="shop-trust"><span>Tanlash va montajda maslahat</span><span>Kafolat taklifda ko‘rsatiladi</span><span>Yetkazib berish — xaritada nuqta tanlash</span><span>Buyurtma holatini kuzatish</span></div>
     </section>
 
-    <nav className="shop-cats" aria-label="Kategoriyalar">
-      <Link className={`shop-chip${!sp.category ? " is-active" : ""}`} href={build(current, { category: undefined, page: undefined })}>Hammasi <small>{allCount}</small></Link>
-      {categories.map((c) => <Link key={c.slug} className={`shop-chip${sp.category === c.slug ? " is-active" : ""}`} href={build(current, { category: c.slug, page: undefined })}>{c.name} <small>{c._count.products}</small></Link>)}
-    </nav>
-
-    <div className="shop-layout">
-      <FilterPanel activeCount={activeFilters.length}>
-        <form method="get" action="/products">
-          <h2>Filtrlar</h2>
-          {q && <input type="hidden" name="q" value={q} />}
-          {sp.category && <input type="hidden" name="category" value={sp.category} />}
-          {sp.sort && <input type="hidden" name="sort" value={sp.sort} />}
-          <details open>
-            <summary>Mavjudlik</summary>
-            <div className="opts">
-              <label><input type="radio" name="stock" value="" defaultChecked={!stock} /> Hammasi</label>
-              {Object.entries(stockLabels).map(([value, label]) => <label key={value}><input type="radio" name="stock" value={value} defaultChecked={stock === value} /> {label}</label>)}
-            </div>
-          </details>
-          {brands.length > 0 && <details open>
-            <summary>Brend</summary>
-            <div className="opts">
-              <label><input type="radio" name="brand" value="" defaultChecked={!sp.brand} /> Hammasi</label>
-              {brands.map((b) => <label key={b.brand}><input type="radio" name="brand" value={b.brand ?? ""} defaultChecked={sp.brand === b.brand} /> {b.brand} <small>{b._count._all}</small></label>)}
-            </div>
-          </details>}
-          <div style={{ display: "grid", gap: 8, marginTop: 12 }}>
-            <button className="button" type="submit">Qo‘llash</button>
-            {activeFilters.length > 0 && <Link className="button ghost" href="/products">Hammasini tozalash</Link>}
-          </div>
-        </form>
-      </FilterPanel>
-
-      <section aria-live="polite">
-        <div className="shop-toolbar">
-          <strong>{total} ta mahsulot</strong>
-          <div className="shop-sort" aria-label="Saralash">
-            {Object.entries(sorts).map(([key, s]) => <Link key={key} className={sort === key ? "is-active" : ""} href={build(current, { sort: key === "name" ? undefined : key, page: undefined })}>{s.label}</Link>)}
-          </div>
-        </div>
+    <FilterPanel
+      activeCount={activeFilters.length}
+      categories={<nav className="shop-cats" aria-label="Kategoriyalar">
+        <Link className={`shop-chip${!sp.category ? " is-active" : ""}`} href={build(current, { category: undefined, page: undefined })}>Hammasi <small>{allCount}</small></Link>
+        {categories.map((c) => <Link key={c.slug} className={`shop-chip${sp.category === c.slug ? " is-active" : ""}`} href={build(current, { category: c.slug, page: undefined })}>{c.name} <small>{c._count.products}</small></Link>)}
+      </nav>}
+      results={<section aria-live="polite" aria-label="Mahsulotlar">
         {activeFilters.length > 0 && <div className="shop-active">
           {activeFilters.map((f) => <Link key={f.label} className="shop-chip is-active removable" href={f.href}>{f.label}</Link>)}
         </div>}
@@ -176,8 +140,36 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
           <span className="small muted">{page} / {pages}</span>
           {page < pages ? <Link className="button secondary" href={build(current, { page: String(page + 1) })}>Keyingi →</Link> : <span />}
         </nav>}
-      </section>
-    </div>
+      </section>}
+    >
+        <form method="get" action="/products">
+          <h2>Filtrlar</h2>
+          {q && <input type="hidden" name="q" value={q} />}
+          {sp.category && <input type="hidden" name="category" value={sp.category} />}
+          {sp.sort && <input type="hidden" name="sort" value={sp.sort} />}
+          <details open>
+            <summary>Mavjudlik</summary>
+            <div className="opts">
+              <label><input type="radio" name="stock" value="" defaultChecked={!stock} /> Hammasi</label>
+              {Object.entries(stockLabels).map(([value, label]) => <label key={value}><input type="radio" name="stock" value={value} defaultChecked={stock === value} /> {label}</label>)}
+            </div>
+          </details>
+          {brands.length > 0 && <details open>
+            <summary>Brend</summary>
+            <div className="opts">
+              <label><input type="radio" name="brand" value="" defaultChecked={!sp.brand} /> Hammasi</label>
+              {brands.map((b) => <label key={b.brand}><input type="radio" name="brand" value={b.brand ?? ""} defaultChecked={sp.brand === b.brand} /> {b.brand} <small>{b._count._all}</small></label>)}
+            </div>
+          </details>}
+        </form>
+        {activeFilters.length > 0 && <Link className="shop-filter-clear" href="/products">Hammasini tozalash</Link>}
+        <nav className="shop-filter-sort" aria-label="Saralash">
+          <strong>Saralash</strong>
+          <div className="shop-filter-sort-options">
+            {Object.entries(sorts).map(([key, item]) => <Link key={key} className={sort === key ? "is-active" : ""} aria-current={sort === key ? "page" : undefined} href={build(current, { sort: key === "name" ? undefined : key, page: undefined })}>{item.label}</Link>)}
+          </div>
+        </nav>
+    </FilterPanel>
     <CartFab />
   </div>;
 }

@@ -12,7 +12,7 @@ export default async function ProfilePage() {
   const user = await requireUser();
   const profileUser = await prisma.user.findUniqueOrThrow({
     where: { id: user.id },
-    select: { id: true, name: true, email: true, phone: true, role: true, telegramChatId: true }
+    select: { id: true, name: true, email: true, phone: true, role: true }
   });
   const [requests, orders, conversations, organizations, projects, products, services, invoices, plans, subscriptions, wallet, practice] = await Promise.all([
     prisma.serviceRequest.findMany({
@@ -73,5 +73,5 @@ export default async function ProfilePage() {
     totalMinor: invoice.items.reduce((sum, item) => sum + item.quantity * item.unitPriceMinor + item.taxMinor - item.discountMinor, 0),
     paidMinor: invoice.payments.filter((payment) => payment.status === "VERIFIED").reduce((sum, payment) => sum + payment.amountMinor, 0)
   }));
-  return <CustomerDashboard user={{ ...profileUser, telegramLinked: Boolean(profileUser.telegramChatId) }} requests={requests} orders={orders} conversations={conversations} organizations={organizations} projects={projects} catalog={catalog} invoices={invoiceRows} plans={plans} subscriptions={subscriptions} wallet={wallet ?? { walletBalanceMinor: 0, rewardPoints: 0, walletTransactions: [] }} practice={practice} />;
+  return <CustomerDashboard user={profileUser} requests={requests} orders={orders} conversations={conversations} organizations={organizations} projects={projects} catalog={catalog} invoices={invoiceRows} plans={plans} subscriptions={subscriptions} wallet={wallet ?? { walletBalanceMinor: 0, rewardPoints: 0, walletTransactions: [] }} practice={practice} />;
 }
