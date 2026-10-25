@@ -6,13 +6,15 @@ import { FontLoader } from "@/components/font-loader";
 import { SiteFooter, SitePreferencesProvider, preferenceBootstrapScript } from "@/components/site-preferences";
 import { SiteBlocksRenderer, type SiteBlockRecord } from "@/components/site-block-manager";
 import { prisma } from "@/lib/prisma";
-import { learningModules, learningPaths } from "@/lib/learning-demo";
 import { toLearningModulePreview } from "@/lib/learning-catalog-data";
+import { getPublishedLearningDocuments } from "@/lib/learning-content";
 import { LearningCatalogProvider } from "@/components/learning-catalog-context";
 import type { Locale, MessageKey } from "@/lib/messages";
 import { isSiteDesign } from "@/lib/site-designs";
 import { isPreviewMode } from "@/lib/preview-mode";
 import { ServiceWorkerRegistration } from "@/components/service-worker-registration";
+import { ToastProvider } from "@/components/toast-provider";
+import { CurrencyProvider } from "@/components/currency-context";
 
 export const metadata: Metadata = {
   title: "Tecsecure — IT va xavfsizlik yechimlari",
@@ -43,10 +45,11 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
       prisma.siteSetting.findUnique({ where: { key: "siteDesign" }, select: { value: true } })
     ]);
   const design = isSiteDesign(designSetting?.value) ? designSetting.value : "midnight";
-  const learningCatalog = {
-    modules: learningModules.map(toLearningModulePreview),
-    paths: learningPaths
-  };
+  const [modules, paths] = await Promise.all([
+    getPublishedLearningDocuments("module"),
+    getPublishedLearningDocuments("path")
+  ]);
+  const learningCatalog = { modules: modules.map(toLearningModulePreview), paths };
   const overrides: Partial<Record<Locale, Partial<Record<MessageKey, string>>>> = {};
   for (const item of content) {
     if (item.locale === "uz" || item.locale === "ru" || item.locale === "en") {
@@ -66,13 +69,17 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         <ServiceWorkerRegistration />
         <FontLoader />
         <SitePreferencesProvider overrides={overrides}>
-          <LearningCatalogProvider data={learningCatalog}>
-            <SiteNav />
-            <PageBackLink />
-            <main>{children}</main>
-            <SiteBlocksRenderer blocks={siteBlocks} />
-            <SiteFooter />
-          </LearningCatalogProvider>
+          <CurrencyProvider>
+            <ToastProvider>
+              <LearningCatalogProvider data={learningCatalog}>
+                <SiteNav />
+                <PageBackLink />
+                <main>{children}</main>
+                <SiteBlocksRenderer blocks={siteBlocks} />
+                <SiteFooter />
+              </LearningCatalogProvider>
+            </ToastProvider>
+          </CurrencyProvider>
         </SitePreferencesProvider>
       </body>
     </html>

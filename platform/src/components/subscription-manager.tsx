@@ -3,6 +3,7 @@
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSitePreferences } from "@/components/site-preferences";
+import { ToastMessage } from "@/components/toast-provider";
 
 type OrganizationOption = { id: string; name: string };
 type PlanOption = { id: string; name: string; interval: string; priceMinor: number | null; currency: string; trialDays: number; features: unknown };
@@ -56,8 +57,8 @@ export function SubscriptionManager({ organizations, plans, subscriptions }: {
   return <section className="panel-card" style={{ marginTop: 20 }}>
     <h2>{t("monitoringTrials")}</h2>
     <p className="small muted">{t("trialNotice")}</p>
-    {error && <div className="notice error" role="alert">{error}</div>}
-    {notice && <div className="notice success" role="status">{notice}</div>}
+    <ToastMessage message={error} variant="error" />
+    <ToastMessage message={notice} variant="success" />
     {subscriptions.length ? <div className="list">{subscriptions.map((item) => <div className="list-row" key={item.id}>
       <div><strong>{item.organization.name} · {item.plan.name}</strong><p>{item.status} · {item.plan.priceMinor === null ? t("negotiatedPrice") : `${(item.plan.priceMinor / 100).toLocaleString(dateLocale)} ${item.plan.currency}/${item.plan.interval}`}</p><p className="small muted">{item.trialEndsAt ? `${t("trialEnds")}: ${new Date(item.trialEndsAt).toLocaleDateString(dateLocale)}` : t("noTrialPeriod")}</p></div>
       {!["CANCELLED"].includes(item.status) && <button className="button danger small" onClick={() => cancel(item.id)}>{t("cancel")}</button>}

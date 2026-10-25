@@ -3,6 +3,7 @@
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSitePreferences } from "@/components/site-preferences";
+import { ToastMessage } from "@/components/toast-provider";
 
 export function OrganizationSetupForm() {
   const router = useRouter();
@@ -47,7 +48,7 @@ export function OrganizationSetupForm() {
     <div className="form-row"><div className="field"><label htmlFor="org-type">{t("companyTypeOptional")}</label><input id="org-type" name="type" maxLength={100} /></div><div className="field"><label htmlFor="org-phone">{t("phone")}</label><input id="org-phone" name="phone" maxLength={30} /></div></div>
     <div className="field"><label htmlFor="org-location">{t("firstLocationOptional")}</label><input id="org-location" name="locationName" maxLength={120} /></div>
     <div className="form-row"><div className="field"><label htmlFor="org-address">{t("siteAddress")}</label><input id="org-address" name="address" maxLength={500} /></div><div className="field"><label htmlFor="org-city">{t("city")}</label><input id="org-city" name="city" maxLength={100} /></div></div>
-    {error && <div className="notice error" role="alert">{error}</div>}
+    <ToastMessage message={error} variant="error" />
     <button className="button" disabled={busy}>{busy ? t("saving") : t("addOrganization")}</button>
   </form>;
 }

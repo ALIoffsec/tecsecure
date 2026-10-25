@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { FormEvent, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { ProgressBar, TecAmount, useLearningProgress, useLearningPurchases, useLearningText } from "@/components/learning-shared";
+import { ToastMessage } from "@/components/toast-provider";
 import type { LearningDiagram, LearningImage, LearningSection, Localized } from "@/lib/learning-demo";
 import type { LearningModulePreview } from "@/lib/learning-catalog-types";
 
@@ -195,6 +196,7 @@ export function LearningModuleView({ module }: { module: LearningModulePreview }
   const [active, setActive] = useState(0);
   const [answer, setAnswer] = useState("");
   const [feedback, setFeedback] = useState<"idle" | "wrong">("idle");
+  const [completionNotice, setCompletionNotice] = useState("");
   const [answerError, setAnswerError] = useState("");
   const [checkingAnswer, setCheckingAnswer] = useState(false);
   const [buying, setBuying] = useState<"MODULE" | number | null>(null);
@@ -256,6 +258,7 @@ export function LearningModuleView({ module }: { module: LearningModulePreview }
     setActive(index);
     setAnswer("");
     setFeedback("idle");
+    setCompletionNotice("");
     setAnswerError("");
   }
 
@@ -269,6 +272,7 @@ export function LearningModuleView({ module }: { module: LearningModulePreview }
     event.preventDefault();
     setCheckingAnswer(true);
     setFeedback("idle");
+    setCompletionNotice("");
     setAnswerError("");
     try {
       const response = await fetch("/api/learning/answer", {
@@ -284,6 +288,7 @@ export function LearningModuleView({ module }: { module: LearningModulePreview }
       }
       const saved = await progress.complete(module.slug, active, answer);
       if (!saved) return;
+      setCompletionNotice(tx.correct);
     } catch (issue) {
       setAnswerError(issue instanceof Error ? issue.message : tx.purchaseFailed);
     } finally {
@@ -317,10 +322,10 @@ export function LearningModuleView({ module }: { module: LearningModulePreview }
                 : <Link className="button secondary" href="/login">{tx.signInToPurchase}</Link>
           )}
         </div>
-        {access.error && <div className="notice error" role="alert">{access.error}</div>}
-        {access.notice && <div className="notice success" role="status">{access.notice}</div>}
-        {progress.rewardNotice && <div className="notice success" role="status">{progress.rewardNotice}</div>}
-        {progress.rewardError && <div className="notice error" role="alert">{progress.rewardError}</div>}
+        <ToastMessage message={access.error} variant="error" />
+        <ToastMessage message={access.notice} variant="success" />
+        <ToastMessage message={progress.rewardNotice} variant="success" />
+        <ToastMessage message={progress.rewardError} variant="error" />
         <ProgressBar percent={status.percent} label={tx.progress} />
         <span className="learn-meta">{tx.progress}: {status.percent}% · {status.done}/{status.total}{status.percent === 100 ? ` · ${tx.moduleDone}` : ""}</span>
       </section>
@@ -360,7 +365,7 @@ export function LearningModuleView({ module }: { module: LearningModulePreview }
                   : <Link className="button secondary" href="/login">{tx.signInToPurchase}</Link>}
             </div>
           ) : lessonError ? (
-            <div className="notice error" role="alert">{lessonError}</div>
+            <ToastMessage message={lessonError} variant="error" />
           ) : !lesson ? (
             <p className="muted" role="status">{tx.purchasing}</p>
           ) : <>
@@ -392,9 +397,9 @@ export function LearningModuleView({ module }: { module: LearningModulePreview }
                 <input className="input" id="learn-answer" value={answer} onChange={(event) => setAnswer(event.target.value)} placeholder={tx.answerPlaceholder} disabled={sectionDone} autoComplete="off" />
                 <button className="button" disabled={sectionDone || checkingAnswer || !answer.trim()} type="submit">{checkingAnswer ? tx.purchasing : tx.check}</button>
               </div>
-              {answerError && <p className="learn-feedback wrong" role="alert">{answerError}</p>}
-              {feedback === "wrong" && <p className="learn-feedback wrong" role="alert">{tx.wrong}</p>}
-              {sectionDone && <p className="learn-feedback right" role="status">{tx.correct}</p>}
+              <ToastMessage message={answerError} variant="error" />
+              <ToastMessage message={feedback === "wrong" ? tx.wrong : ""} variant="error" />
+              <ToastMessage message={completionNotice} variant="success" />
             </form>
           )}
           </>}

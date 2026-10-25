@@ -1,8 +1,8 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import Link from "next/link";
 import { useSitePreferences } from "@/components/site-preferences";
+import { ToastMessage } from "@/components/toast-provider";
 
 export type ServiceOption = { id: string; name: string };
 
@@ -63,10 +63,11 @@ export function ServiceRequestForm({ services, showRegisterLink = false }: { ser
       <div className="field"><label htmlFor="request-description">{t("requestDetails")} *</label><textarea id="request-description" name="description" required minLength={5} maxLength={5000} /></div>
       <div className="field"><label htmlFor="request-time">{t("preferredContactTime")}</label><input id="request-time" name="preferredContactTime" maxLength={120} /></div>
       <label className="checkline"><input type="checkbox" name="consent" required />{t("consentText")}</label>
-      {message && <div className={`notice ${message.error ? "error" : "success"}`} role="status">
-        {message.text} {message.reference && <strong>{message.reference}</strong>}
-        {!message.error && showRegisterLink && <p><Link href="/register">{t("registerForFutureRequests")}</Link></p>}
-      </div>}
+      <ToastMessage
+        message={message ? `${message.text}${message.reference ? ` ${message.reference}` : ""}` : ""}
+        variant={message?.error ? "error" : "success"}
+        action={message && !message.error && showRegisterLink ? { label: t("registerForFutureRequests"), href: "/register" } : undefined}
+      />
       <button className="button" type="submit" disabled={busy}>{busy ? t("sending") : t("submitRequest")}</button>
     </form>
   );

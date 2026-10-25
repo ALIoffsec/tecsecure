@@ -1,9 +1,10 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { MediaGallery, MediaUploader } from "@/components/media-uploader";
 import { useSitePreferences } from "@/components/site-preferences";
+import { ToastMessage } from "@/components/toast-provider";
 
 type PortfolioPost = { id: string; title: string; description: string; media: unknown; published: boolean; slug: string };
 
@@ -14,10 +15,12 @@ export function PortfolioManager({ posts }: { posts: PortfolioPost[] }) {
   const [media, setMedia] = useState<string[]>([]);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const editorRef = useRef<HTMLDetailsElement>(null);
 
   function beginEdit(post: PortfolioPost) {
     setEditing(post);
     setMedia(Array.isArray(post.media) ? post.media.filter((item): item is string => typeof item === "string") : []);
+    if (editorRef.current) editorRef.current.open = true;
   }
 
   async function save(event: FormEvent<HTMLFormElement>) {
@@ -38,7 +41,7 @@ export function PortfolioManager({ posts }: { posts: PortfolioPost[] }) {
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error ?? t("requestFailed"));
-      setEditing(null); setMedia([]); form.reset(); router.refresh();
+      setEditing(null); setMedia([]); form.reset(); if (editorRef.current) editorRef.current.open = false; router.refresh();
     } catch (issue) {
       setError(issue instanceof Error ? issue.message : t("requestFailed"));
     } finally {
@@ -57,17 +60,27 @@ export function PortfolioManager({ posts }: { posts: PortfolioPost[] }) {
   return <section className="panel-card">
     <h2>{t("portfolioManagement")}</h2>
     <p className="small muted">{t("portfolioManagementDescription")}</p>
-    {error && <div className="notice error" role="alert">{error}</div>}
-    <form className="form" key={editing?.id ?? "new-portfolio"} onSubmit={save}>
-      <div className="field"><label>{t("portfolioTitle")}</label><input name="title" defaultValue={editing?.title ?? ""} minLength={2} maxLength={180} required /></div>
-      <div className="field"><label>{t("description")}</label><textarea name="description" defaultValue={editing?.description ?? ""} minLength={5} maxLength={10000} required /></div>
-      <MediaUploader scope="PORTFOLIO" value={media} onChange={setMedia} />
-      <label className="permission-option"><input type="checkbox" name="published" defaultChecked={editing?.published ?? false} />{t("publishPortfolioPost")}</label>
-      <div className="hero-actions"><button className="button" disabled={busy}>{editing ? t("save") : t("addPortfolioPost")}</button>{editing && <button className="button ghost" type="button" onClick={() => { setEditing(null); setMedia([]); }}>{t("cancel")}</button>}</div>
-    </form>
-    <div className="list" style={{ marginTop: 22 }}>{posts.map((post) => <article className="list-row portfolio-admin-card" key={post.id}>
-      <div><strong>{post.title}</strong><p className="small muted">{post.published ? t("published") : t("draft")}</p><p>{post.description}</p><MediaGallery media={post.media} title={post.title} /></div>
-      <div className="hero-actions"><button className="button secondary small" type="button" onClick={() => beginEdit(post)}>{t("edit")}</button><button className="button danger small" type="button" onClick={() => void remove(post)}>{t("delete")}</button></div>
-    </article>)}</div>
+    <ToastMessage message={error} variant="error" />
+    <details className="admin-editor-accordion" ref={editorRef}>
+      <summary>{editing ? `${t("edit")} · ${editing.title}` : t("addPortfolioPost")}</summary>
+      <form className="form" key={editing?.id ?? "new-portfolio"} onSubmit={save}>
+        <div className="field"><label>{t("portfolioTitle")}</label><input name="title" defaultValue={editing?.title ?? ""} minLength={2} maxLength={180} required /></div>
+        <div className="field"><label>{t("description")}</label><textarea name="description" defaultValue={editing?.description ?? ""} minLength={5} maxLength={10000} required /></div>
+        <MediaUploader scope="PORTFOLIO" value={media} onChange={setMedia} />
+        <label className="permission-option"><input type="checkbox" name="published" defaultChecked={editing?.published ?? false} />{t("publishPortfolioPost")}</label>
+        <div className="hero-actions"><button className="button" disabled={busy}>{editing ? t("save") : t("addPortfolioPost")}</button>{editing && <button className="button ghost" type="button" onClick={() => { setEditing(null); setMedia([]); if (editorRef.current) editorRef.current.open = false; }}>{t("cancel")}</button>}</div>
+      </form>
+    </details>
+    <details className="admin-records-accordion">
+      <summary>{t("portfolioManagement")} · {posts.length}</summary>
+      <div className="admin-managed-record-list">{posts.map((post) => <details className="admin-managed-record" key={post.id}>
+        <summary><span>{post.title}</span><small>{post.published ? t("published") : t("draft")}</small></summary>
+        <div className="admin-managed-record-content">
+          <p>{post.description}</p>
+          <MediaGallery media={post.media} title={post.title} />
+          <div className="hero-actions"><button className="button secondary small" type="button" onClick={() => beginEdit(post)}>{t("edit")}</button><button className="button danger small" type="button" onClick={() => void remove(post)}>{t("delete")}</button></div>
+        </div>
+      </details>)}</div>
+    </details>
   </section>;
 }

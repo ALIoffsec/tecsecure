@@ -3,6 +3,7 @@
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSitePreferences } from "@/components/site-preferences";
+import { ToastMessage } from "@/components/toast-provider";
 
 type GiftRecipient = { id: string; name: string; email: string; active: boolean; role: string };
 
@@ -60,8 +61,8 @@ export function TecGiftManager({ users, actorId }: { users: GiftRecipient[]; act
             <input id="tec-gift-amount" type="number" min="1" max="100000" step="1" value={amountTec} onChange={(event) => setAmountTec(event.target.value)} required />
           </div>
         </div>
-        {error && <div className="notice error" role="alert">{error}</div>}
-        {notice && <div className="notice success" role="status">{notice}</div>}
+        <ToastMessage message={error} variant="error" />
+        <ToastMessage message={notice} variant="success" />
         <button className="button" disabled={busy || !recipients.length} type="submit">{busy ? t("saving") : t("tecGiftSubmit")}</button>
       </form>
     </section>

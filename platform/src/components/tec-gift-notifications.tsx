@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSitePreferences } from "@/components/site-preferences";
+import { ToastMessage } from "@/components/toast-provider";
 
 type GiftNotice = {
   id: string;
@@ -75,7 +76,7 @@ export function TecGiftNotifications() {
   return (
     <section className="panel-card tec-gift-notifications" aria-live="polite">
       <h2>{t("tecGiftNotifications")}</h2>
-      {error && <div className="notice error" role="alert">{error}</div>}
+      <ToastMessage message={error} variant="error" />
       <div className="list">
         {notices.map((item) => (
           <article className={`list-row tec-gift-notice${item.status === "UNREAD" ? " unread" : ""}`} key={item.id}>

@@ -1,5 +1,6 @@
 import { getCurrentUser } from "@/lib/auth";
-import { getModule, supplementalLessonExamples } from "@/lib/learning-demo";
+import { supplementalLessonExamples } from "@/lib/learning-demo";
+import { getLearningModule } from "@/lib/learning-content";
 import { firewallZeroToHeroDetails } from "@/lib/firewall-zero-to-hero-content";
 import { firewallKerioTerminalExamples } from "@/lib/firewall-kerio-terminal-examples";
 import { kerioControlDetails } from "@/lib/kerio-control-content";
@@ -21,7 +22,7 @@ const extendedLessons: Record<string, Record<number, string>> = {
 
 export async function GET(_request: Request, { params }: { params: Promise<{ slug: string; index: string }> }) {
   const { slug, index: rawIndex } = await params;
-  const module = getModule(slug);
+  const module = await getLearningModule(slug);
   const index = Number(rawIndex);
   if (!module || !Number.isInteger(index) || index < 0 || index >= module.sections.length) {
     return Response.json({ error: "O‘quv bo‘limi topilmadi." }, { status: 404 });

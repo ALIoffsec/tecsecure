@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import { useSitePreferences } from "@/components/site-preferences";
+import { ToastMessage } from "@/components/toast-provider";
 
 type Estimate = {
   preliminary: boolean;
@@ -66,7 +67,7 @@ export function CctvBuilder() {
             <div className="field"><label htmlFor="bitrateMbps">{t("cameraBitrate")}</label><input id="bitrateMbps" name="bitrateMbps" type="number" min="0.1" max="32" step="0.1" defaultValue="4" required /></div>
             <div className="field"><label htmlFor="poeWattsPerCamera">{t("poePower")}</label><input id="poeWattsPerCamera" name="poeWattsPerCamera" type="number" min="1" max="90" defaultValue="12" required /></div>
           </div>
-          {error && <div className="notice error" role="alert">{error}</div>}
+          <ToastMessage message={error} variant="error" />
           <button className="button" type="submit" disabled={busy}>{busy ? t("calculating") : t("preliminaryEstimate")}</button>
         </form>
       </div>

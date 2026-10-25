@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { getLab, isLabAnswerCorrect } from "@/lib/learning-labs";
+import { isLabAnswerCorrect } from "@/lib/learning-labs";
+import { getLearningLab } from "@/lib/learning-content";
 import { labPurchaseKey, readJson, requirePracticeUser } from "@/lib/practice-server";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { prisma } from "@/lib/prisma";
@@ -13,7 +14,7 @@ export async function POST(request: Request) {
   if ("error" in auth) return auth.error;
   const parsed = schema.safeParse(await readJson(request));
   if (!parsed.success) return Response.json({ error: "Javobni tekshiring." }, { status: 400 });
-  const lab = getLab(parsed.data.slug);
+  const lab = await getLearningLab(parsed.data.slug);
   const task = lab?.tasks.find((item) => item.id === parsed.data.taskId);
   if (!lab || !task) return Response.json({ error: "Topshiriq topilmadi." }, { status: 404 });
   const userId = auth.user.id;

@@ -5,6 +5,7 @@ import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { MediaUploader } from "@/components/media-uploader";
 import { useSitePreferences } from "@/components/site-preferences";
+import { ToastMessage } from "@/components/toast-provider";
 
 type WalletRecord = {
   id: string;
@@ -85,8 +86,8 @@ export function WalletPanel({ initialBalance, initialPoints, transactions }: {
         <div className="field"><label htmlFor="wallet-reference">{t("walletReference")}</label><input id="wallet-reference" name="reference" minLength={2} maxLength={160} required /></div>
         <MediaUploader scope="WALLET" value={proof} onChange={setProof} />
       </> : <div className="field"><label htmlFor="wallet-details">{t("walletPayoutDetails")}</label><textarea id="wallet-details" name="details" minLength={10} maxLength={2000} required /></div>}
-      {error && <div className="notice error" role="alert">{error}</div>}
-      {notice && <div className="notice success" role="status">{notice}</div>}
+      <ToastMessage message={error} variant="error" />
+      <ToastMessage message={notice} variant="success" />
       <button className="button" type="submit" disabled={busy || (kind === "DEPOSIT" && !proof.length)}>{busy ? t("saving") : t("submitWalletRequest")}</button>
     </form>
     <h3 style={{ marginTop: 26 }}>{t("wallet")}</h3>
@@ -133,7 +134,7 @@ export function WalletReviewManager({ transactions }: { transactions: ReviewReco
 
   return <section className="panel-card">
     <h2>{t("walletReview")}</h2>
-    {error && <div className="notice error" role="alert">{error}</div>}
+    <ToastMessage message={error} variant="error" />
     {rows.length ? <div className="list">{rows.map((item) => <article className="list-row" key={item.id}>
       <div><strong>{item.user.name} · {item.user.email}</strong><p>{item.kind === "DEPOSIT" ? t("walletDeposit") : t("walletWithdrawal")} · {(item.amountMinor / 100).toLocaleString(locale === "uz" ? "uz-UZ" : locale === "ru" ? "ru-RU" : "en-US")} UZS</p><p className="small muted">{item.reference ?? item.details}</p>{item.proofMediaId && <a href={`/api/media/${item.proofMediaId}`} target="_blank" rel="noreferrer">{t("walletProof")}</a>}</div>
       <div className="hero-actions"><button className="button" disabled={busy === item.id} onClick={() => void review(item.id, "APPROVED")}>{t("walletApproved")}</button><button className="button danger" disabled={busy === item.id} onClick={() => void review(item.id, "REJECTED")}>{t("walletRejected")}</button></div>

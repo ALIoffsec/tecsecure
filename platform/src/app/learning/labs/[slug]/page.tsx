@@ -2,7 +2,8 @@ import { notFound } from "next/navigation";
 import { LabView } from "@/components/lab-view";
 import { PreviewModeNotice } from "@/components/preview-mode-notice";
 import { requireUser } from "@/lib/auth";
-import { getLab, toPublicLab } from "@/lib/learning-labs";
+import { toPublicLab } from "@/lib/learning-labs";
+import { getLearningLab } from "@/lib/learning-content";
 import { labPriceFor } from "@/lib/practice-perks";
 import { getActivePlanKey, labPurchaseKey } from "@/lib/practice-server";
 import { isPreviewMode } from "@/lib/preview-mode";
@@ -13,7 +14,7 @@ export const dynamic = "force-dynamic";
 export default async function LabPage({ params }: { params: Promise<{ slug: string }> }) {
   if (isPreviewMode) return <div className="container page-shell"><PreviewModeNotice /></div>;
   const { slug } = await params;
-  const lab = getLab(slug);
+  const lab = await getLearningLab(slug);
   if (!lab) notFound();
   const user = await requireUser();
   const [account, planKey, purchase, solved, completion] = await Promise.all([

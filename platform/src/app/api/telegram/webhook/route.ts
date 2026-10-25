@@ -2,6 +2,7 @@ import { timingSafeEqual } from "node:crypto";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { escapeTelegramHtml, sendTelegramMessage } from "@/lib/telegram";
+import { getTelegramCredentials } from "@/lib/integration-credentials";
 
 export const runtime = "nodejs";
 
@@ -43,9 +44,8 @@ async function handleStart(update: TelegramUpdateBody, token: string): Promise<v
   }
 }
 
-async function handleAdminReply(update: TelegramUpdateBody, reference: string, body: string): Promise<void> {
+async function handleAdminReply(update: TelegramUpdateBody, reference: string, body: string, adminChatId: string): Promise<void> {
   const message = update.message;
-  const adminChatId = process.env.TELEGRAM_ADMIN_CHAT_ID;
   if (!message || !adminChatId) return;
   const saved = await prisma.$transaction(async (tx) => {
     await tx.telegramUpdate.create({ data: { updateId: BigInt(update.update_id) } });
@@ -108,9 +108,16 @@ async function handleAdminReply(update: TelegramUpdateBody, reference: string, b
 }
 
 export async function POST(request: Request) {
-  const secret = process.env.TELEGRAM_WEBHOOK_SECRET;
-  if (!secret) return Response.json({ error: "Telegram webhook secret sozlanmagan." }, { status: 503 });
-  if (!hasValidSecret(request.headers.get("x-telegram-bot-api-secret-token"), secret)) {
+  let webhookSecret: string;
+  let adminChatId: string;
+  try {
+    ({ webhookSecret, adminChatId } = await getTelegramCredentials());
+  } catch (error) {
+    console.error("Telegram webhook configuration unavailable", error instanceof Error ? error.name : "UnknownError");
+    return Response.json({ error: "Telegram sozlamalarini o‘qib bo‘lmadi." }, { status: 503 });
+  }
+  if (!webhookSecret) return Response.json({ error: "Telegram webhook secret sozlanmagan." }, { status: 503 });
+  if (!hasValidSecret(request.headers.get("x-telegram-bot-api-secret-token"), webhookSecret)) {
     return Response.json({ error: "Ruxsat yo‘q." }, { status: 401 });
   }
   const length = Number(request.headers.get("content-length") ?? 0);
@@ -133,7 +140,6 @@ export async function POST(request: Request) {
     return Response.json({ ok: true });
   }
 
-  const adminChatId = process.env.TELEGRAM_ADMIN_CHAT_ID;
   if (!adminChatId || String(message.chat.id) !== adminChatId) {
     return Response.json({ ok: true });
   }
@@ -147,7 +153,7 @@ export async function POST(request: Request) {
     return Response.json({ ok: true });
   }
   try {
-    await handleAdminReply(update, reply[1].toUpperCase(), reply[2].trim());
+    await handleAdminReply(update, reply[1].toUpperCase(), reply[2].trim(), adminChatId);
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
       return Response.json({ ok: true });

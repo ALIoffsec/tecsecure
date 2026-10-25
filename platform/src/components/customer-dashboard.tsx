@@ -14,6 +14,7 @@ import { WalletPanel } from "@/components/wallet-panel";
 import { TecGiftNotifications } from "@/components/tec-gift-notifications";
 import { ProfileHero } from "@/components/profile-hero";
 import { PortalMessageForm } from "@/components/portal-message-form";
+import { ToastMessage } from "@/components/toast-provider";
 import type { ProfilePractice } from "@/lib/learning-profile-types";
 import type { Locale } from "@/lib/messages";
 
@@ -212,7 +213,7 @@ export function CustomerDashboard({ user, requests, orders, conversations, organ
         </div>
         <AccountSessionActions compact />
       </header>
-      {error && <div className="notice error" role="alert">{error}</div>}
+      <ToastMessage message={error} variant="error" />
       <div className={`customer-workspace${sidebarCollapsed ? " is-collapsed" : ""}`}>
         <aside className={`customer-sidebar${sidebarCollapsed ? " is-collapsed" : ""}`} aria-label={copy.menu}>
           <div className="customer-sidebar-head">

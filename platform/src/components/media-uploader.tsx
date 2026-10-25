@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useSitePreferences } from "@/components/site-preferences";
+import { ToastMessage } from "@/components/toast-provider";
 
 export function MediaUploader({ scope, value, onChange }: {
   scope: "CONTENT" | "PORTFOLIO" | "SERVICES" | "PRODUCTS" | "NEWS" | "WALLET";
@@ -41,7 +42,7 @@ export function MediaUploader({ scope, value, onChange }: {
       <label>{t("mediaAttachments")}</label>
       <input type="file" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm" multiple disabled={busy} onChange={(event) => { void upload(event.currentTarget.files); event.currentTarget.value = ""; }} />
       <p className="small muted">{t("mediaUploadLimits")}</p>
-      {error && <div className="notice error" role="alert">{error}</div>}
+      <ToastMessage message={error} variant="error" />
       {busy && <span className="small muted">{t("uploadingMedia")}</span>}
       {!!value.length && <div className="media-preview-grid">{value.map((id) => (
         <div className="media-preview-item" key={id}>

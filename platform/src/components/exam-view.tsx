@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { ToastMessage } from "@/components/toast-provider";
 import { useRouter } from "next/navigation";
 
 type Req = { slug: string; title: string; done: boolean };
@@ -95,7 +96,7 @@ export function ExamView({ exam, price, listPrice, tecBalance, modules, labs, ha
           <input type="radio" name={question.id} checked={answers[question.id] === optionIndex} onChange={() => setAnswers((current) => ({ ...current, [question.id]: optionIndex }))} /> {option}
         </label>)}
       </fieldset>)}
-      {error && <p className="form-error" role="alert">{error}</p>}
+      <ToastMessage message={error} variant="error" />
       <button type="button" className="button" disabled={busy} onClick={() => void submit()}>Topshirish</button>
     </div>;
   }
@@ -116,7 +117,7 @@ export function ExamView({ exam, price, listPrice, tecBalance, modules, labs, ha
       </ul>
       {certificateCode && <p>Sizda sertifikat bor: <Link href={`/verify/${certificateCode}`}>{certificateCode}</Link></p>}
       <p>Narx: <strong>{hasOpenAttempt ? "to‘lov olingan" : `${price} TEC`}</strong>{!hasOpenAttempt && price !== listPrice && <s> {listPrice}</s>}. Balansingiz: {tecBalance} TEC.</p>
-      {error && <p className="form-error" role="alert">{error}</p>}
+      <ToastMessage message={error} variant="error" />
       {!ready && !hasOpenAttempt ? <p className="muted">Avval yuqoridagi shartlarni bajaring.</p> :
         !hasOpenAttempt && tecBalance < price ? <Link href="/store" className="button">TEC olish</Link> :
         <button type="button" className="button" disabled={busy} onClick={start}>{hasOpenAttempt ? "Davom ettirish" : `${price} TEC evaziga boshlash`}</button>}

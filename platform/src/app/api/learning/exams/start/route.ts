@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
-import { getExam, toPublicQuestions } from "@/lib/learning-exams";
+import { toPublicQuestions } from "@/lib/learning-exams";
+import { getLearningExam } from "@/lib/learning-content";
 import { examPriceFor } from "@/lib/practice-perks";
 import { getActivePlanKey, readJson, requirePracticeUser } from "@/lib/practice-server";
 import { prisma } from "@/lib/prisma";
@@ -14,7 +15,7 @@ export async function POST(request: Request) {
   if ("error" in auth) return auth.error;
   const parsed = schema.safeParse(await readJson(request));
   if (!parsed.success) return Response.json({ error: "So‘rovni tekshiring." }, { status: 400 });
-  const exam = getExam(parsed.data.slug);
+  const exam = await getLearningExam(parsed.data.slug);
   if (!exam) return Response.json({ error: "Imtihon topilmadi." }, { status: 404 });
   const userId = auth.user.id;
 

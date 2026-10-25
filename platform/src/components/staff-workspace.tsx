@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { useSitePreferences } from "@/components/site-preferences";
+import { ToastMessage } from "@/components/toast-provider";
 
 type RequestRecord = { id: string; reference: string; name: string; phone: string; email: string | null; description: string; status: string; service: { name: string } | null };
 type Project = { id: string; name: string; status: string; city: string | null; items: { id: string; quantity: number; product: { name: string } | null; service: { name: string } | null }[] };
@@ -81,7 +82,7 @@ export function StaffWorkspace({ requests, projects }: { requests: RequestRecord
         <div className="metric"><strong>{requests.filter((request) => request.status === "NEW").length}</strong><span>{t("newRequests")}</span></div>
         <div className="metric"><strong>{projects.length}</strong><span>{t("projectsMetric")}</span></div>
       </div>
-      {(error || notice) && <div className={`notice ${error ? "error" : "success"}`} role="status">{error || notice}</div>}
+      <ToastMessage message={error || notice} variant={error ? "error" : "success"} />
       <div className="workspace">
         <section className="panel-card">
           <h2>{t("incomingRequests")}</h2>

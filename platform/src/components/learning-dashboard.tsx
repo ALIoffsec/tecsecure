@@ -5,6 +5,7 @@ import { useLearningCatalog } from "@/components/learning-catalog-context";
 import { getPathArtCategory, LearningCardArt } from "@/components/learning-card-art";
 import { TecGiftNotifications } from "@/components/tec-gift-notifications";
 import { ProgressBar, useLearningProgress, useLearningText } from "@/components/learning-shared";
+import { ToastMessage } from "@/components/toast-provider";
 
 const xpPerSection = 10;
 const xpPerLevel = 100;
@@ -53,7 +54,7 @@ export function LearningDashboard({ nickname }: { nickname: string | null }) {
         <div className="metric"><strong>{activePaths}</strong><span>{tx.statActivePaths}</span></div>
       </div>
       <TecGiftNotifications />
-      {progress.rewardError && <div className="notice error" role="alert">{progress.rewardError}</div>}
+      <ToastMessage message={progress.rewardError} variant="error" />
       {!progress.rewardsAvailable && !nickname && (
         <div className="notice learn-reward-sign-in">
           <span>{tx.rewardUnavailable}</span>

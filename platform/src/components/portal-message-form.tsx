@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
+import { ToastMessage } from "@/components/toast-provider";
 
 type PortalMessageCopy = {
   placeholder: string;
@@ -59,8 +60,8 @@ export function PortalMessageForm({ copy }: { copy: PortalMessageCopy }) {
       value={message}
       onChange={(event) => setMessage(event.target.value)}
     />
-    {error && <p className="notice error" role="alert">{error}</p>}
-    {notice && <p className="notice success" role="status">{notice}</p>}
+    <ToastMessage message={error} variant="error" />
+    <ToastMessage message={notice} variant="success" />
     <button className="button" type="submit" disabled={busy || message.trim().length < 3}>
       {busy ? copy.submitting : copy.submit}
     </button>

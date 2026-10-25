@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
-import { getLab } from "@/lib/learning-labs";
+import { getLearningLab } from "@/lib/learning-content";
 import { labPriceFor } from "@/lib/practice-perks";
 import { getActivePlanKey, labPurchaseKey, readJson, requirePracticeUser } from "@/lib/practice-server";
 import { prisma } from "@/lib/prisma";
@@ -14,7 +14,7 @@ export async function POST(request: Request) {
   if ("error" in auth) return auth.error;
   const parsed = schema.safeParse(await readJson(request));
   if (!parsed.success) return Response.json({ error: "So‘rovni tekshiring." }, { status: 400 });
-  const lab = getLab(parsed.data.slug);
+  const lab = await getLearningLab(parsed.data.slug);
   if (!lab) return Response.json({ error: "Laboratoriya topilmadi." }, { status: 404 });
   const userId = auth.user.id;
   const key = labPurchaseKey(lab.slug);

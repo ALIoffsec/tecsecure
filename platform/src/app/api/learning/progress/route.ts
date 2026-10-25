@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { getCurrentUser } from "@/lib/auth";
-import { getModule } from "@/lib/learning-demo";
+import { getLearningModule } from "@/lib/learning-content";
 import { getLearningSectionQuestion, isLearningAnswerCorrect } from "@/lib/learning-completion";
 import { moduleCompletionRewardTec } from "@/lib/learning-rewards";
 import { sectionPriceTec } from "@/lib/learning-pricing";
@@ -72,7 +72,7 @@ export async function POST(request: Request) {
   const parsed = completionSchema.safeParse(input);
   if (!parsed.success) return Response.json({ error: "Bo‘lim ma’lumotlarini tekshiring." }, { status: 400 });
 
-  const module = getModule(parsed.data.moduleSlug);
+  const module = await getLearningModule(parsed.data.moduleSlug);
   if (!module || parsed.data.sectionIndex >= module.sections.length) {
     return Response.json({ error: "O‘quv bo‘limi topilmadi." }, { status: 404 });
   }

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import type { CSSProperties } from "react";
 import { PrintButton } from "@/components/print-button";
-import { getExam } from "@/lib/learning-exams";
+import { getLearningExam } from "@/lib/learning-content";
 import { prisma } from "@/lib/prisma";
 import { isPreviewMode } from "@/lib/preview-mode";
 
@@ -14,7 +14,7 @@ export default async function VerifyPage({ params }: { params: Promise<{ code: s
     ? null
     : await prisma.learningCertificate.findUnique({ where: { code }, select: { code: true, examSlug: true, scorePercent: true, issuedAt: true, user: { select: { name: true } } } });
   if (!certificate) return <div className="container page-shell practice-page"><section className="practice-lock"><h1>Sertifikat topilmadi</h1><p className="muted">Kod noto‘g‘ri yoki sertifikat mavjud emas.</p></section></div>;
-  const exam = getExam(certificate.examSlug);
+  const exam = await getLearningExam(certificate.examSlug);
   const accent = exam?.accent ?? "#3aa9ff";
   return <div className="container page-shell practice-page">
     <section className="cert" style={{ "--cert-accent": accent } as CSSProperties}>

@@ -7,6 +7,7 @@ import { AddToCartButton, CartFab } from "@/components/cart";
 import { ProductVisual } from "@/components/product-visual";
 import { ReviewForm } from "@/components/product-feedback";
 import { CollapsibleSpecs, ExpandableText, ProductDetailTabs } from "@/components/product-detail-tabs";
+import { CurrencyPrice, CurrencySelector } from "@/components/currency-context";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +17,7 @@ function specRows(value: unknown): [string, string][] {
   if (!value || typeof value !== "object") return [];
   if (Array.isArray(value)) return value.filter((v): v is string => typeof v === "string").map((v) => ["", v]);
   return Object.entries(value as Record<string, unknown>)
-    .filter(([, v]) => typeof v === "string" || typeof v === "number")
+    .filter(([, v]) => typeof v === "string" || typeof v === "number" || typeof v === "boolean")
     .map(([k, v]) => [k, String(v)]);
 }
 
@@ -62,8 +63,6 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
   const priced = product.priceMinor !== null;
   const average = reviews.length ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length : 0;
   const distribution = [5, 4, 3, 2, 1].map((n) => ({ n, count: reviews.filter((r) => r.rating === n).length }));
-  const priceText = priced ? `${(product.priceMinor! / 100).toLocaleString("uz-UZ")} ${product.currency}` : "Narx so‘rov bo‘yicha";
-
   return <div className="container page-shell">
     <nav className="shop-crumbs" aria-label="Breadcrumb">
       <Link href="/products">Katalog</Link><span>/</span>
@@ -97,7 +96,10 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
       </div>
 
       <aside className="shop-buybox" aria-label="Xarid">
-        <div className={`shop-price${priced ? "" : " is-request"}`} style={{ fontSize: "1.6rem" }}>{priceText}</div>
+        <CurrencySelector />
+        <div className={`shop-price${priced ? "" : " is-request"}`} style={{ fontSize: "1.6rem" }}>
+          {priced ? <CurrencyPrice amountMinor={product.priceMinor!} currency={product.currency} /> : "Narx so‘rov bo‘yicha"}
+        </div>
         <span className={`shop-stock ${product.stockStatus === "IN_STOCK" ? "in" : product.stockStatus === "OUT_OF_STOCK" ? "out" : "req"}`}>{stockLabels[product.stockStatus] ?? "Noma’lum"}</span>
         <AddToCartButton product={{ productId: product.id, name: product.name, slug: product.slug, categorySlug: product.category?.slug ?? null }} disabled={product.stockStatus === "OUT_OF_STOCK"} />
         <Link className="button ghost" href="/request-quote">Texnik taklif so‘rash</Link>
@@ -153,7 +155,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
       <div className="shop-grid" style={{ marginTop: 14 }}>
         {related.map((r) => <Link key={r.id} className="shop-card" href={`/products/${r.slug}`}>
           <ProductVisual categorySlug={product.category?.slug} />
-          <div className="shop-card-body"><h2>{r.name}</h2><span className="shop-price is-request">{r.priceMinor === null ? "Narx so‘rov bo‘yicha" : `${(r.priceMinor / 100).toLocaleString("uz-UZ")} ${r.currency}`}</span></div>
+          <div className="shop-card-body"><h2>{r.name}</h2><span className="shop-price">{r.priceMinor === null ? "Narx so‘rov bo‘yicha" : <CurrencyPrice amountMinor={r.priceMinor} currency={r.currency} />}</span></div>
         </Link>)}
       </div>
     </section>}

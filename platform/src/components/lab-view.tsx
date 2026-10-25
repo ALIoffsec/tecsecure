@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { PublicLab } from "@/lib/learning-labs";
+import { ToastMessage } from "@/components/toast-provider";
 
 type Props = {
   lab: PublicLab;
@@ -71,7 +72,7 @@ export function LabView({ lab, meta, unlocked, price, listPrice, tecBalance, sol
     {!unlocked ? <section className="practice-lock">
       <h2>Laboratoriya yopiq</h2>
       <p>{meta.evidenceCount} ta dalil fayli va {meta.taskCount} ta topshiriq. Narx: <strong>{price === 0 ? "Bepul (Expert)" : `${price} TEC`}</strong>{price !== listPrice && price > 0 && <s> {listPrice}</s>}. Balansingiz: {tecBalance} TEC.</p>
-      {error && <p className="form-error" role="alert">{error}</p>}
+      <ToastMessage message={error} variant="error" />
       {tecBalance < price ? <Link href="/store" className="button">TEC olish</Link> : <button type="button" className="button" disabled={busy === "unlock"} onClick={unlock}>{price === 0 ? "Ochish" : `${price} TEC evaziga ochish`}</button>}
     </section> : <>
       <section className="lab-scenario"><h2>Vaziyat</h2><p>{lab.scenario}</p></section>
@@ -95,8 +96,8 @@ export function LabView({ lab, meta, unlocked, price, listPrice, tecBalance, sol
                 <button className="button ghost" type="button" onClick={() => setHints((current) => new Set(current).add(task.id))}>Maslahat</button>
               </div>
               {hints.has(task.id) && <p className="muted">💡 {task.hint}</p>}
-              {feedback[task.id] && <p className="muted" role="status">{feedback[task.id]}</p>}
             </>}
+            <ToastMessage message={feedback[task.id]} variant={solved.has(task.id) ? "success" : "error"} />
           </form>;
         })}
       </section>

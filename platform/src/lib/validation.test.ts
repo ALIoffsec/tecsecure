@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { productSchema, projectSchema, requestSchema, serviceSchema } from "./validation";
+import { convertMinorAmount, parseCbuRates } from "./currency";
+import { formatProductDetails, parseProductDetails } from "./product-details";
 
 const validCuid = "c12345678901234567890123";
 
@@ -49,4 +51,29 @@ test("product supports category, specs, compatibility, and image/video media ids
   assert.equal(productSchema.safeParse({ ...product, categoryId: "invalid" }).success, false);
   assert.equal(productSchema.safeParse({ ...product, specifications: ["not", "an", "object"] }).success, false);
   assert.equal(productSchema.safeParse({ ...product, compatibility: [42] }).success, false);
+});
+
+test("product details accept readable text and preserve JSON input", () => {
+  assert.deepEqual(parseProductDetails("Portlar: 8\nTezlik: 1 Gbit/s\nPoE: true", "specifications"), {
+    Portlar: 8,
+    Tezlik: "1 Gbit/s",
+    PoE: true
+  });
+  assert.deepEqual(parseProductDetails("Windows\nLinux\nAndroid", "compatibility"), ["Windows", "Linux", "Android"]);
+  assert.deepEqual(parseProductDetails('{"ports": 8}', "specifications"), { ports: 8 });
+  assert.deepEqual(parseProductDetails('["Windows", "Linux"]', "compatibility"), ["Windows", "Linux"]);
+  assert.equal(formatProductDetails({ ports: 8, poe: true }), "ports: 8\npoe: true");
+  assert.throws(() => parseProductDetails("Ports: 8\nPorts: 16", "specifications"), /takrorlangan/);
+  assert.throws(() => parseProductDetails("{invalid}", "specifications"), /JSON formati noto‘g‘ri/);
+});
+
+test("currency conversion normalizes CBU rates by nominal", () => {
+  const rates = parseCbuRates([
+    { Ccy: "USD", Nominal: "1", Rate: "10000", Date: "24.10.2026" },
+    { Ccy: "RUB", Nominal: "10", Rate: "1000", Date: "24.10.2026" }
+  ]);
+  assert.deepEqual(rates, { rates: { UZS: 1, RUB: 100, USD: 10000 }, date: "24.10.2026" });
+  assert.equal(convertMinorAmount(1_200_000, "UZS", "USD", rates.rates), 1.2);
+  assert.equal(convertMinorAmount(10_000, "USD", "RUB", rates.rates), 10_000);
+  assert.equal(convertMinorAmount(10_000, "EUR", "UZS", rates.rates), null);
 });

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { AccountSessionActions } from "@/components/account-session-actions";
 import { PasswordChangeForm } from "@/components/password-change-form";
 import { useSitePreferences } from "@/components/site-preferences";
+import { ToastMessage } from "@/components/toast-provider";
 
 export function ProfileDetails({ user }: { user: { name: string; email: string; phone: string | null; role: string } }) {
   const router = useRouter();
@@ -77,12 +78,12 @@ export function ProfileDetails({ user }: { user: { name: string; email: string; 
       <span className="eyebrow">{t("profile")}</span>
       <h1 className="page-title">{t("accountDetails")}</h1>
       <div>
-        {profileNotice && <div className="notice success" role="status">{profileNotice}</div>}
+        <ToastMessage message={profileNotice} variant="success" />
         {editing ? <form className="form" onSubmit={saveProfile}>
           <div className="field"><label htmlFor="profile-name">{t("name")}</label><input id="profile-name" name="name" defaultValue={user.name} minLength={2} maxLength={100} required /></div>
           <div className="field"><label htmlFor="profile-email">{t("email")}</label><input id="profile-email" name="email" type="email" defaultValue={user.email} maxLength={254} required /></div>
           <div className="field"><label htmlFor="profile-phone">{t("phone")}</label><input id="profile-phone" name="phone" type="tel" defaultValue={user.phone ?? ""} maxLength={40} /></div>
-          {profileError && <div className="notice error" role="alert">{profileError}</div>}
+          <ToastMessage message={profileError} variant="error" />
           <div className="hero-actions"><button className="button" type="submit" disabled={savingProfile}>{savingProfile ? t("saving") : t("save")}</button><button className="button ghost" type="button" disabled={savingProfile} onClick={() => { setEditing(false); setProfileError(""); }}>{t("cancel")}</button></div>
         </form> : <>
           <p>{t("name")}: {user.name}</p>
@@ -102,7 +103,7 @@ export function ProfileDetails({ user }: { user: { name: string; email: string; 
               <label htmlFor="deletePassword">{t("confirmDeleteAccount")}</label>
               <input id="deletePassword" name="deletePassword" type="password" autoComplete="current-password" required maxLength={128} />
             </div>
-            {deleteError && <div className="notice error" role="alert">{deleteError}</div>}
+            <ToastMessage message={deleteError} variant="error" />
             <button className="button danger" type="submit" disabled={deleting}>
               {deleting ? t("deletingAccount") : t("deleteAccount")}
             </button>

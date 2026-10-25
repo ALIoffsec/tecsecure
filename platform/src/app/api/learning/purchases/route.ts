@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { getCurrentUser } from "@/lib/auth";
-import { getModule } from "@/lib/learning-demo";
+import { getLearningModule } from "@/lib/learning-content";
 import { modulePriceTec, sectionPriceTec, sectionPurchaseKey } from "@/lib/learning-pricing";
 import { isPreviewMode } from "@/lib/preview-mode";
 import { prisma } from "@/lib/prisma";
@@ -57,7 +57,7 @@ export async function POST(request: Request) {
   const parsed = purchaseSchema.safeParse(input);
   if (!parsed.success) return Response.json({ error: "Xarid ma’lumotlarini tekshiring." }, { status: 400 });
 
-  const module = getModule(parsed.data.moduleSlug);
+  const module = await getLearningModule(parsed.data.moduleSlug);
   if (!module) return Response.json({ error: "O‘quv moduli topilmadi." }, { status: 404 });
   const sectionIndex = parsed.data.kind === "SECTION" ? parsed.data.sectionIndex : null;
   if (sectionIndex !== null && sectionIndex >= module.sections.length) {

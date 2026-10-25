@@ -3,6 +3,7 @@
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSitePreferences } from "@/components/site-preferences";
+import { ToastMessage } from "@/components/toast-provider";
 
 type CatalogItem = { id: string; name: string; kind: "product" | "service" };
 
@@ -61,8 +62,8 @@ export function ProjectRequestForm({ catalog }: { catalog: CatalogItem[] }) {
       </div>
       <div className="field"><label htmlFor="project-quantity">{t("quantity")}</label><input id="project-quantity" name="quantity" type="number" min="1" max="1000" defaultValue="1" /></div>
       <div className="field"><label htmlFor="project-notes">{t("projectRequirements")}</label><textarea id="project-notes" name="notes" maxLength={3000} /></div>
-      {notice && <div className="notice success" role="status">{notice}</div>}
-      {error && <div className="notice error" role="alert">{error}</div>}
+      <ToastMessage message={notice} variant="success" />
+      <ToastMessage message={error} variant="error" />
       <button className="button" disabled={busy}>{busy ? t("sending") : t("sendQuoteRequest")}</button>
     </form>
   );

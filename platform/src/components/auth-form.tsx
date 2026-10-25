@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { useSitePreferences } from "@/components/site-preferences";
+import { ToastMessage } from "@/components/toast-provider";
 import { OAuthSignIn } from "@/components/oauth-sign-in";
 
 type Props = { mode: "login" | "register"; audience?: "customer" | "staff" };
@@ -54,7 +55,7 @@ export function AuthForm({ mode, audience = "customer" }: Props) {
           <input id="password" name="password" type="password" autoComplete={mode === "login" ? "current-password" : "new-password"} minLength={mode === "register" ? 8 : 1} maxLength={128} required />
           {mode === "register" && <span className="small muted">{t("minimum8Characters")}</span>}
         </div>
-        {error && <div className="notice error" role="alert">{error}</div>}
+        <ToastMessage message={error} variant="error" />
         <button className="button" type="submit" disabled={busy}>{busy ? t("waiting") : mode === "login" ? t("signIn") : t("createAccountButton")}</button>
       </form>
       {audience === "customer" && <OAuthSignIn mode={mode} />}

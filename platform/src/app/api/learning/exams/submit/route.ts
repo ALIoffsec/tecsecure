@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { z } from "zod";
-import { getExam, gradeExam } from "@/lib/learning-exams";
+import { gradeExam } from "@/lib/learning-exams";
+import { getLearningExam } from "@/lib/learning-content";
 import { readJson, requirePracticeUser } from "@/lib/practice-server";
 import { prisma } from "@/lib/prisma";
 
@@ -26,7 +27,7 @@ export async function POST(request: Request) {
   const userId = auth.user.id;
 
   const attempt = await prisma.learningExamAttempt.findFirst({ where: { id: parsed.data.attemptId, userId } });
-  const exam = attempt ? getExam(attempt.examSlug) : undefined;
+  const exam = attempt ? await getLearningExam(attempt.examSlug) : undefined;
   if (!attempt || !exam) return Response.json({ error: "Urinish topilmadi." }, { status: 404 });
   if (attempt.submittedAt) return Response.json({ error: "Bu urinish allaqachon topshirilgan." }, { status: 409 });
 

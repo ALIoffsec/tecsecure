@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSitePreferences } from "@/components/site-preferences";
+import { ToastMessage } from "@/components/toast-provider";
 
 export function AdminSecurityBoundary() {
   const [error, setError] = useState("");
@@ -48,5 +49,5 @@ export function AdminSecurityBoundary() {
     };
   }, [t]);
 
-  return error ? <div className="container"><div className="notice error" role="alert">{error}</div></div> : null;
+  return <ToastMessage message={error} variant="error" />;
 }

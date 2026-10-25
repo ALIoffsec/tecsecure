@@ -39,26 +39,26 @@ The current worker polls every 15 seconds in batches of up to 50. It marks exter
 
 Do not advertise external notification delivery or live monitoring until configured providers and real checks pass tests.
 
-## Google and GitHub customer sign-in
+## OAuth customer sign-in
 
-Google and GitHub OAuth are supported as optional customer sign-in and registration methods. Create OAuth apps in the provider consoles, register the exact callback URLs `https://your-domain/api/auth/callback/google` and `https://your-domain/api/auth/callback/github`, then store `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GITHUB_CLIENT_ID`, and `GITHUB_CLIENT_SECRET` in the hosting provider's secret store. Set `NEXTAUTH_URL` to the canonical HTTPS site origin and `NEXTAUTH_SECRET` to a unique random value of at least 32 characters, then redeploy. Google is the provider for Gmail accounts; it does not send email.
+Google, GitHub, Yandex, and Microsoft OAuth are supported as optional customer sign-in and registration methods. Create OAuth apps in the provider consoles and register the exact callback URLs `https://your-domain/api/auth/callback/{provider}`. An administrator can enter client IDs and secrets under Admin → System → Integration settings; changes take effect without redeploying. Set `NEXTAUTH_URL` to the canonical HTTPS site origin and `NEXTAUTH_SECRET` to a unique random value of at least 32 characters. Google is the provider for Gmail accounts; it does not send email.
 
-OAuth sign-in only creates CUSTOMER accounts. Existing accounts with a matching email are not automatically linked; users must use the sign-in method already attached to that account. Keep OAuth secrets out of source control, logs, and support chat.
+OAuth credentials are encrypted in the database. Set a stable random `INTEGRATION_CREDENTIALS_KEY` (at least 32 bytes) in the host secret store; if it is absent, `NEXTAUTH_SECRET` is used, and changing that secret makes stored credentials unreadable. Secret fields never display saved values: leave them blank to preserve, or select Clear to remove them. OAuth sign-in only creates CUSTOMER accounts. Existing accounts with a matching email are not automatically linked; users must use the sign-in method already attached to that account. Keep OAuth secrets out of source control, logs, and support chat.
 
 ## Telegram support bot
 
 The web application can forward new service requests, orders, and project/quote inquiries to one private administrator chat. The bot webhook accepts `/reply REFERENCE message`, stores the administrator reply in the customer's portal conversation, creates an in-app notification, and sends the reply to customers who linked their Telegram account.
 
-Required hosting secrets:
+Credentials can be entered by an administrator under Admin → System → Integration settings, or supplied as environment fallbacks:
 
 - `TELEGRAM_BOT_TOKEN`
 - `TELEGRAM_BOT_USERNAME` (without `@`)
 - `TELEGRAM_ADMIN_CHAT_ID` (private chat only)
 - `TELEGRAM_WEBHOOK_SECRET` (high-entropy secret)
 
-Create the bot through `@BotFather` with `/newbot`, then save the returned token and bot username. Start the bot from the administrator's personal Telegram account and send it a message. Before setting a webhook, obtain that private chat's ID from the bot's `getUpdates` API using a trusted private terminal; do not put the bot token in a browser URL, source code, logs, shell history, or support chat. Generate a separate high-entropy webhook secret. Store all four values (`TELEGRAM_BOT_TOKEN`, `TELEGRAM_BOT_USERNAME`, `TELEGRAM_ADMIN_CHAT_ID`, `TELEGRAM_WEBHOOK_SECRET`) in the hosting secret store.
+Create the bot through `@BotFather` with `/newbot`, then enter the returned token and bot username in the admin integration settings. Start the bot from the administrator's personal Telegram account and send it a message. Before setting a webhook, obtain that private chat's ID from the bot's `getUpdates` API using a trusted private terminal; do not put the bot token in a browser URL, source code, logs, shell history, or support chat. Generate a separate high-entropy webhook secret. Admin-entered values are encrypted at rest; a stable `INTEGRATION_CREDENTIALS_KEY` is recommended (with `NEXTAUTH_SECRET` as fallback).
 
-Apply the Prisma migration through the reviewed deployment process. Set the webhook URL to `https://your-domain/api/telegram/webhook` and pass the same webhook secret as Telegram's `secret_token` parameter; verify the response reports success before testing. Customers link their Telegram from `/portal/profile` → “Xabarlarim”; linking tokens expire after 10 minutes and are single-use. New request, order, and project notifications go to the configured private administrator chat. Reply with `/reply REFERENCE your message`; the reply appears in the customer's profile and is sent to their linked Telegram.
+Set the webhook URL to `https://your-domain/api/telegram/webhook` and pass the same webhook secret as Telegram's `secret_token` parameter; verify the response reports success before testing. Customers link their Telegram from `/portal/profile` → “Xabarlarim”; linking tokens expire after 10 minutes and are single-use. New request, order, and project notifications go to the configured private administrator chat. Reply with `/reply REFERENCE your message`; the reply appears in the customer's profile and is sent to their linked Telegram.
 
 Telegram delivery is best-effort after the database transaction commits. If Telegram fails, the request and its portal thread remain stored and the error is logged. SMS delivery and native APK/IPA packages are not included. The navigation install action is a PWA flow and requires HTTPS plus a browser that supports web app installation.
 

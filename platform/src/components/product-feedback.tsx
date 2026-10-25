@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { ToastMessage } from "@/components/toast-provider";
 
 async function send(url: string, method: string, body: unknown) {
   const response = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
@@ -33,7 +34,7 @@ export function ReviewForm({ productId }: { productId: string }) {
     <input placeholder="Afzalliklari" value={pros} maxLength={500} onChange={(e) => setPros(e.target.value)} />
     <input placeholder="Kamchiliklari" value={cons} maxLength={500} onChange={(e) => setCons(e.target.value)} />
     <textarea placeholder="Fikringiz (kamida 10 belgi)" required minLength={10} maxLength={2000} rows={4} value={comment} onChange={(e) => setComment(e.target.value)} />
-    {error && <p role="alert" className="small" style={{ color: "#e5604f" }}>{error}</p>}
+    <ToastMessage message={error} variant="error" />
     <button className="button" disabled={busy}>{busy ? "Yuborilmoqda…" : "Yuborish"}</button>
   </form>;
 }
@@ -53,7 +54,7 @@ export function QuestionForm({ productId }: { productId: string }) {
   return <form className="shop-review-form" onSubmit={submit}>
     <strong>Savol berish</strong>
     <textarea placeholder="Mahsulot haqida savolingiz" required minLength={5} maxLength={500} rows={3} value={question} onChange={(e) => setQuestion(e.target.value)} />
-    {error && <p role="alert" className="small" style={{ color: "#e5604f" }}>{error}</p>}
+    <ToastMessage message={error} variant="error" />
     <button className="button" disabled={busy}>{busy ? "Yuborilmoqda…" : "Savol yuborish"}</button>
   </form>;
 }
@@ -70,6 +71,6 @@ export function AnswerForm({ productId, questionId }: { productId: string; quest
   return <form onSubmit={submit} style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
     <input style={{ flex: 1, minWidth: 180 }} placeholder="Javob (xodim)" required value={answer} onChange={(e) => setAnswer(e.target.value)} />
     <button className="button secondary">Javob berish</button>
-    {error && <span role="alert" className="small" style={{ color: "#e5604f" }}>{error}</span>}
+    <ToastMessage message={error} variant="error" />
   </form>;
 }

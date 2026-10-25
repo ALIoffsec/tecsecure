@@ -5,8 +5,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CoinStack, PlanArt } from "@/components/store-art";
 import { useSitePreferences } from "@/components/site-preferences";
+import { ToastMessage } from "@/components/toast-provider";
 import { learningSubscriptionPlans } from "@/lib/learning-subscriptions";
-import { learningModules } from "@/lib/learning-demo";
 import { tecPacks, tecPurchaseCostMinor, TEC_PRICE_UZS } from "@/lib/tec-pricing";
 
 type Subscription = { planKey: string; endsAt: string; active: boolean } | null;
@@ -59,7 +59,7 @@ const perkText: Record<string, string> = {
   expert: "Laboratoriyalar bepul, imtihonlarga 50% chegirma."
 };
 
-export function StoreView({ walletBalanceMinor }: { walletBalanceMinor: number }) {
+export function StoreView({ walletBalanceMinor, moduleCount }: { walletBalanceMinor: number; moduleCount: number }) {
   const router = useRouter();
   const { locale } = useSitePreferences();
   const c = copy[locale];
@@ -95,7 +95,7 @@ export function StoreView({ walletBalanceMinor }: { walletBalanceMinor: number }
       <div><span className="eyebrow">TEC</span><h1 className="page-title">{c.title}</h1><p className="page-intro">{c.intro}</p></div>
       <div className="store-wallet"><span>{c.balance}</span><strong>{money(walletBalanceMinor / 100)} UZS</strong><Link href="/portal/profile" className="small">{c.topUp}</Link></div>
     </section>
-    {error && <div className="notice error" role="alert">{error}</div>}
+    <ToastMessage message={error} variant="error" />
     {celebration && <CelebrationModal data={celebration} locale={locale} onClose={() => setCelebration(null)} />}
 
     <h2>{c.tecTitle}</h2>
@@ -128,7 +128,7 @@ export function StoreView({ walletBalanceMinor }: { walletBalanceMinor: number }
     {activePlan && subscription && <p className="notice success">{c.active}: <strong>{learningSubscriptionPlans.find((p) => p.key === activePlan)?.name}</strong> · {c.until} {new Date(subscription.endsAt).toLocaleDateString(nf)}</p>}
     <div className="store-grid store-plans">
       {learningSubscriptionPlans.map((plan, index) => {
-        const count = plan.modules === "all" ? learningModules.length : plan.modules.length;
+        const count = plan.modules === "all" ? moduleCount : plan.modules.length;
         const affordable = walletBalanceMinor >= plan.priceMinor;
         return <article className={`store-card plan-${plan.key} ${activePlan === plan.key ? "is-active" : ""}`} key={plan.key}>
           {plan.key === "standard" && <span className="store-ribbon">★</span>}

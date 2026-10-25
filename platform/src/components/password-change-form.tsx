@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import { useSitePreferences } from "@/components/site-preferences";
+import { ToastMessage } from "@/components/toast-provider";
 
 export function PasswordChangeForm() {
   const { t } = useSitePreferences();
@@ -39,8 +40,8 @@ export function PasswordChangeForm() {
     <div className="field"><label htmlFor="currentPassword">{t("currentPassword")}</label><input id="currentPassword" name="currentPassword" type="password" autoComplete="current-password" required /></div>
     <div className="field"><label htmlFor="newPassword">{t("newPassword")} (8+)</label><input id="newPassword" name="newPassword" type="password" minLength={8} maxLength={128} autoComplete="new-password" required /></div>
     <div className="field"><label htmlFor="confirmPassword">{t("confirmPassword")}</label><input id="confirmPassword" name="confirmPassword" type="password" minLength={8} maxLength={128} autoComplete="new-password" required /></div>
-    {error && <div className="notice error" role="alert">{error}</div>}
-    {success && <div className="notice success" role="status">{success}</div>}
+    <ToastMessage message={error} variant="error" />
+    <ToastMessage message={success} variant="success" />
     <button className="button secondary" disabled={busy}>{busy ? t("saving") : t("updatePassword")}</button>
   </form>;
 }

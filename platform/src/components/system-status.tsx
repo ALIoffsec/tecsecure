@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useSitePreferences } from "@/components/site-preferences";
+import { ToastMessage } from "@/components/toast-provider";
 
 type Status = {
   status: "ok" | "degraded";
@@ -49,8 +50,8 @@ export function SystemStatus() {
 
   return <section className="panel-card">
     <div className="section-head"><div><h2>{t("serverStatus")}</h2><p className="small muted">{t("serverStatusDescription")}</p></div><button className="button secondary small" type="button" disabled={loading} onClick={() => void refresh()}>{loading ? t("loading") : t("refresh")}</button></div>
-    {error && <div className="notice error" role="alert">{error}</div>}
-    {status && <div className="dashboard-grid">
+    <ToastMessage message={error} variant="error" />
+    {status && <div className="dashboard-grid admin-system-metrics">
       <div className="metric"><strong className={`status-value ${status.status}`}>{status.status === "ok" ? t("systemOperational") : t("systemDegraded")}</strong><span>{t("applicationStatus")}</span></div>
       <div className="metric"><strong className={`status-value ${status.database}`}>{status.database === "ok" ? t("systemOperational") : t("systemUnavailable")}</strong><span>{t("databaseStatus")}</span></div>
       <div className="metric"><strong>{formatUptime(status.uptimeSeconds)}</strong><span>{t("serverUptime")}</span></div>

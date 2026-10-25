@@ -114,7 +114,7 @@ export async function POST(request: Request) {
   }
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   const user = await getCurrentUser();
   if (!user) return Response.json({ error: "Kirish talab qilinadi." }, { status: 401 });
   if (user.role !== "CUSTOMER") {
@@ -129,10 +129,23 @@ export async function GET() {
     });
     return Response.json({ requests });
   }
-  const requests = await prisma.serviceRequest.findMany({
-    include: { service: { select: { name: true } }, history: { orderBy: { createdAt: "asc" } } },
-    orderBy: { createdAt: "desc" },
-    take: 100
+  const cursor = new URL(request.url).searchParams.get("cursor");
+  if (cursor && !/^[a-zA-Z0-9_-]{1,100}$/.test(cursor)) {
+    return Response.json({ error: "Arizalar sahifasi noto‘g‘ri." }, { status: 400 });
+  }
+  const page = await prisma.serviceRequest.findMany({
+    include: {
+      service: { select: { name: true } },
+      customer: { select: { id: true, name: true, email: true, phone: true } },
+      history: { include: { actor: { select: { name: true, email: true } } }, orderBy: { createdAt: "asc" } }
+    },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+    take: 101
   });
-  return Response.json({ requests });
+  const requests = page.slice(0, 100);
+  return Response.json({
+    requests,
+    nextCursor: page.length > 100 ? requests[requests.length - 1]?.id ?? null : null
+  }, { headers: { "Cache-Control": "no-store" } });
 }

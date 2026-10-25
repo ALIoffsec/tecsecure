@@ -4,6 +4,7 @@ import { ProductVisual } from "@/components/product-visual";
 import Link from "next/link";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { CurrencyPrice, CurrencySelector } from "@/components/currency-context";
 
 export const dynamic = "force-dynamic";
 
@@ -86,6 +87,7 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
           <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8" /><path d="m16 16 4.5 4.5" /></svg>
         </button>
       </form>
+      <CurrencySelector />
     </section>
 
     <FilterPanel
@@ -120,7 +122,7 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
                 <div className="shop-card-foot">
                   <div>
                     <div className={`shop-price${product.priceMinor === null ? " is-request" : ""}`}>
-                      {product.priceMinor === null ? "Narx so‘rov bo‘yicha" : `${(product.priceMinor / 100).toLocaleString("uz-UZ")} ${product.currency}`}
+                      {product.priceMinor === null ? "Narx so‘rov bo‘yicha" : <CurrencyPrice amountMinor={product.priceMinor} currency={product.currency} />}
                     </div>
                     <span className={`shop-stock ${stockClass(product.stockStatus)}`}>{stockLabels[product.stockStatus] ?? "Noma’lum"}</span>
                   </div>

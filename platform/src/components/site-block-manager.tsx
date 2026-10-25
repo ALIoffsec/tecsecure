@@ -1,9 +1,10 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useRef, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { MediaGallery, MediaUploader } from "@/components/media-uploader";
 import { useSitePreferences } from "@/components/site-preferences";
+import { ToastMessage } from "@/components/toast-provider";
 import type { CSSProperties } from "react";
 import type { MessageKey } from "@/lib/messages";
 
@@ -34,10 +35,12 @@ export function SiteBlockManager({ blocks }: { blocks: SiteBlockRecord[] }) {
   const [media, setMedia] = useState<string[]>([]);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const editorRef = useRef<HTMLDetailsElement>(null);
 
   function edit(block: SiteBlockRecord) {
     setEditing(block);
     setMedia(Array.isArray(block.media) ? block.media.filter((item): item is string => typeof item === "string") : []);
+    if (editorRef.current) editorRef.current.open = true;
   }
 
   async function save(event: FormEvent<HTMLFormElement>) {
@@ -68,6 +71,7 @@ export function SiteBlockManager({ blocks }: { blocks: SiteBlockRecord[] }) {
       setEditing(null);
       setMedia([]);
       form.reset();
+      if (editorRef.current) editorRef.current.open = false;
       router.refresh();
     } catch (issue) {
       setError(issue instanceof Error ? issue.message : t("requestFailed"));
@@ -87,6 +91,7 @@ export function SiteBlockManager({ blocks }: { blocks: SiteBlockRecord[] }) {
       if (editing?.id === block.id) {
         setEditing(null);
         setMedia([]);
+        if (editorRef.current) editorRef.current.open = false;
       }
       router.refresh();
     } catch (issue) {
@@ -99,8 +104,10 @@ export function SiteBlockManager({ blocks }: { blocks: SiteBlockRecord[] }) {
   return <section className="panel-card">
     <h2>{t("siteBlocks")}</h2>
     <p className="small muted">{t("siteBlocksDescription")}</p>
-    {error && <div className="notice error" role="alert">{error}</div>}
-    <form className="form" key={editing?.id ?? "new-site-block"} onSubmit={save}>
+    <ToastMessage message={error} variant="error" />
+    <details className="admin-editor-accordion" ref={editorRef}>
+      <summary>{editing ? `${t("edit")} · ${editing.title}` : t("addSiteBlock")}</summary>
+      <form className="form" key={editing?.id ?? "new-site-block"} onSubmit={save}>
       <div className="form-row">
         <div className="field"><label htmlFor="block-title">{t("blockTitle")}</label><input id="block-title" name="title" defaultValue={editing?.title ?? ""} minLength={2} maxLength={180} required /></div>
         <div className="field"><label htmlFor="block-page">{t("blockPage")}</label><select id="block-page" name="page" defaultValue={editing?.page ?? "home"}>{pageOptions.map((page) => <option value={page} key={page}>{t(pageLabels[page])}</option>)}</select></div>
@@ -116,14 +123,23 @@ export function SiteBlockManager({ blocks }: { blocks: SiteBlockRecord[] }) {
         <div className="field"><label htmlFor="block-speed">{t("animationDuration")}</label><input id="block-speed" name="animationDurationMs" type="number" min="100" max="10000" step="100" defaultValue={editing?.animationDurationMs ?? 600} /></div>
       </div>
       <label className="permission-option"><input type="checkbox" name="enabled" defaultChecked={editing?.enabled ?? true} />{t("blockEnabled")}</label>
-      <div className="hero-actions"><button className="button" disabled={busy}>{editing ? t("save") : t("addSiteBlock")}</button>{editing && <button className="button ghost" type="button" disabled={busy} onClick={() => { setEditing(null); setMedia([]); }}>{t("cancel")}</button>}</div>
-    </form>
-    <div className="list" style={{ marginTop: 24 }}>
-      {blocks.map((block) => <article className="list-row portfolio-admin-card" key={block.id}>
-        <div><strong>{block.title}</strong><p className="small muted">{block.page} · {block.enabled ? t("active") : t("archived")} · {block.columns} {t("blockColumns").toLowerCase()}</p><p>{block.body}</p><MediaGallery media={block.media} title={block.title} /></div>
-        <div className="hero-actions"><button className="button secondary small" type="button" disabled={busy} onClick={() => edit(block)}>{t("edit")}</button><button className="button danger small" type="button" disabled={busy} onClick={() => void remove(block)}>{t("delete")}</button></div>
-      </article>)}
-    </div>
+        <div className="hero-actions"><button className="button" disabled={busy}>{editing ? t("save") : t("addSiteBlock")}</button>{editing && <button className="button ghost" type="button" disabled={busy} onClick={() => { setEditing(null); setMedia([]); if (editorRef.current) editorRef.current.open = false; }}>{t("cancel")}</button>}</div>
+      </form>
+    </details>
+    <details className="admin-records-accordion">
+      <summary>{t("siteBlocks")} · {blocks.length}</summary>
+      <div className="admin-managed-record-list">
+        {blocks.map((block) => <details className="admin-managed-record" key={block.id}>
+          <summary><span>{block.title}</span><small>{block.page} · {block.enabled ? t("active") : t("archived")}</small></summary>
+          <div className="admin-managed-record-content">
+            <p>{block.body || t("siteBlocksDescription")}</p>
+            <p className="small muted">{block.columns} {t("blockColumns").toLowerCase()} · {t("blockAnimation")}: {block.animation}</p>
+            <MediaGallery media={block.media} title={block.title} />
+            <div className="hero-actions"><button className="button secondary small" type="button" disabled={busy} onClick={() => edit(block)}>{t("edit")}</button><button className="button danger small" type="button" disabled={busy} onClick={() => void remove(block)}>{t("delete")}</button></div>
+          </div>
+        </details>)}
+      </div>
+    </details>
   </section>;
 }
 

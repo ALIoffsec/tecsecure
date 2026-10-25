@@ -5,6 +5,7 @@ import { useState } from "react";
 import { DeliveryMap } from "@/components/delivery-map";
 import { clearCart, setQuantity, useCart } from "@/components/cart";
 import { ProductVisual } from "@/components/product-visual";
+import { ToastMessage } from "@/components/toast-provider";
 
 function Steps({ current }: { current: 1 | 2 | 3 }) {
   const items = ["Savat", "Yetkazib berish", "Tasdiqlash"];
@@ -126,7 +127,7 @@ export function CartCheckout() {
         <div className="row"><span>Yetkazib berish nuqtasi</span><strong>{coords ? "Tanlangan ✓" : form.address ? "Matn bilan" : "—"}</strong></div>
         <div className="row"><span>Narx</span><strong>Tasdiqlanganda</strong></div>
         <p className="small muted">To‘lov hozircha onlayn emas: xodim narxni tasdiqlaydi va to‘lov usulini kelishasiz.</p>
-        {error && <p role="alert" style={{ color: "var(--danger)", margin: 0 }}>{error}</p>}
+        <ToastMessage message={error} variant="error" />
         <button className="button" type="submit" disabled={busy}>{busy ? "Yuborilmoqda…" : "Buyurtma berish"}</button>
         <Link className="button ghost" href="/products">← Katalogga qaytish</Link>
       </aside>

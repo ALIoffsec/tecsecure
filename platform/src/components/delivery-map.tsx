@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { ToastMessage } from "@/components/toast-provider";
 
 type Coords = [number, number];
 type GeoResult = { geoObjects: { get: (i: number) => { getAddressLine?: () => string } | undefined } };
@@ -20,10 +21,9 @@ type YPlacemark = { geometry: { setCoordinates: (c: Coords) => void } };
 declare global { interface Window { ymaps?: YMaps } }
 
 const TASHKENT: Coords = [41.311081, 69.240562];
-const apiKey = process.env.NEXT_PUBLIC_YANDEX_MAPS_API_KEY;
 
 let loader: Promise<YMaps> | null = null;
-function loadYandex(): Promise<YMaps> {
+function loadYandex(apiKey: string): Promise<YMaps> {
   if (window.ymaps) return new Promise((resolve) => window.ymaps!.ready(() => resolve(window.ymaps!)));
   loader ??= new Promise<YMaps>((resolve, reject) => {
     const script = document.createElement("script");
@@ -45,6 +45,9 @@ export function DeliveryMap({ value, address, onChange }: {
   const onChangeRef = useRef(onChange);
   const [open, setOpen] = useState(false);
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
+  const [apiKey, setApiKey] = useState("");
+  const [apiKeyLoaded, setApiKeyLoaded] = useState(false);
+  const [apiKeyError, setApiKeyError] = useState(false);
   const [locating, setLocating] = useState(false);
   const [error, setError] = useState("");
   const [mapReadyCount, setMapReadyCount] = useState(0);
@@ -54,11 +57,30 @@ export function DeliveryMap({ value, address, onChange }: {
   useEffect(() => { onChangeRef.current = onChange; }, [onChange]);
 
   useEffect(() => {
+    let cancelled = false;
+    fetch("/api/public/integrations/yandex-maps", { cache: "no-store" })
+      .then(async (response) => {
+        if (!response.ok) throw new Error(`Map configuration request failed: ${response.status}`);
+        const result: unknown = await response.json();
+        if (typeof result !== "object" || result === null || !("apiKey" in result) || typeof result.apiKey !== "string") {
+          throw new Error("Map configuration response has an invalid format.");
+        }
+        if (!cancelled) setApiKey(result.apiKey);
+      })
+      .catch((error: unknown) => {
+        console.error("Yandex Maps configuration could not be loaded", error instanceof Error ? error.name : "UnknownError");
+        if (!cancelled) setApiKeyError(true);
+      })
+      .finally(() => { if (!cancelled) setApiKeyLoaded(true); });
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
     if (!open || !apiKey || !container.current) return;
     let cancelled = false;
     setState("loading");
     setError("");
-    loadYandex().then((ymaps) => {
+    loadYandex(apiKey).then((ymaps) => {
       if (cancelled || !container.current) return;
       const map = new ymaps.Map(container.current, {
         center: value ?? TASHKENT,
@@ -93,7 +115,7 @@ export function DeliveryMap({ value, address, onChange }: {
       mapRef.current = null;
       placeRef.current = null;
     };
-  }, [open]);
+  }, [open, apiKey]);
 
   function useMyLocation() {
     setError("");
@@ -122,7 +144,11 @@ export function DeliveryMap({ value, address, onChange }: {
     );
   }
 
-  if (!apiKey) return <p className="small muted">Xarita ulanmagan. Manzilni qo‘lda kiriting.</p>;
+  if (!apiKeyLoaded || !apiKey) return <p className="small muted">{apiKeyError
+    ? "Xarita sozlamasini yuklab bo‘lmadi. Manzilni qo‘lda kiriting."
+    : apiKeyLoaded
+      ? "Xarita ulanmagan. Manzilni qo‘lda kiriting."
+      : "Xarita sozlamasi tekshirilmoqda…"}</p>;
   return <>
     <div className="shop-map-picker">
       <div className="shop-map-summary">
@@ -145,13 +171,13 @@ export function DeliveryMap({ value, address, onChange }: {
         <div className="shop-map-toolbar">
           <p className="small muted">Xaritada nuqtani bosing yoki qidiruvdan foydalaning.</p>
         </div>
-        {state === "error" && <p className="shop-map-error" role="alert">Xarita yuklanmadi. Sahifani yangilang yoki manzilni izohda yozing.</p>}
+        <ToastMessage message={state === "error" ? "Xarita yuklanmadi. Sahifani yangilang yoki manzilni izohda yozing." : ""} variant="error" />
         <div className="shop-map-canvas-wrap">
           <div ref={container} className="shop-map-canvas" aria-label="Yetkazish manzilini tanlash xaritasi" />
           <button className="shop-map-locate" type="button" onClick={useMyLocation} disabled={locating || state !== "ready"} aria-label="Mening joylashuvim" title="Mening joylashuvim">
             {locating ? <span className="shop-map-spinner" aria-hidden="true" /> : <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v3m0 14v3M2 12h3m14 0h3M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10Zm0 3v4m-2-2h4" /></svg>}
           </button>
-          {error && <p className="shop-map-status" role="status">{error}</p>}
+          <ToastMessage message={error} variant="error" />
         </div>
         <footer className="shop-map-dialog-foot">
           <span className="small muted">{value ? "Tanlangan nuqtani tekshirib tasdiqlang." : "Nuqta tanlanmaguncha tasdiqlash mumkin emas."}</span>

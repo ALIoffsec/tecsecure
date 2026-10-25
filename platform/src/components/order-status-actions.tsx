@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { nextStatuses, orderStatusLabels, type OrderStatusValue } from "@/lib/orders";
+import { ToastMessage } from "@/components/toast-provider";
 
 export function OrderStatusActions({ id, status }: { id: string; status: OrderStatusValue }) {
   const router = useRouter();
@@ -20,6 +21,6 @@ export function OrderStatusActions({ id, status }: { id: string; status: OrderSt
   }
   return <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
     {options.map((next) => <button key={next} type="button" className={next === "CANCELLED" ? "button secondary" : "button"} disabled={busy} onClick={() => change(next)}>{orderStatusLabels[next]}</button>)}
-    {error && <span role="alert" className="small" style={{ color: "#b3261e" }}>{error}</span>}
+    <ToastMessage message={error} variant="error" />
   </div>;
 }

@@ -9,6 +9,11 @@ export type ProfileInput = {
   examsPassed: string[];
   certificates: number;
   pathsFinished: number;
+  catalogs?: {
+    modules: typeof learningModules;
+    labs: typeof learningLabs;
+    exams: typeof learningExams;
+  };
 };
 
 export const XP_RULES = { section: 10, module: 100, labByLevel: { "boshlang‘ich": 100, "o‘rta": 150, "ilg‘or": 200 } as Record<string, number>, exam: 400 };
@@ -41,6 +46,9 @@ export type PracticeProfile = {
 const skillLabel = (score: number) => (score >= 75 ? "Ilg‘or" : score >= 45 ? "Amaliy" : score >= 15 ? "Asos" : "Boshlang‘ich");
 
 export function computeProfile(input: ProfileInput): PracticeProfile {
+  const modulesCatalog = input.catalogs?.modules ?? learningModules;
+  const labsCatalog = input.catalogs?.labs ?? learningLabs;
+  const examsCatalog = input.catalogs?.exams ?? learningExams;
   const sectionSet = new Set(input.sections.map((item) => `${item.moduleSlug}:${item.sectionIndex}`));
   const modulesDone = new Set(input.modulesDone);
   const labsDone = new Set(input.labsDone);
@@ -48,8 +56,8 @@ export function computeProfile(input: ProfileInput): PracticeProfile {
 
   const sectionsXp = sectionSet.size * XP_RULES.section;
   const modulesXp = modulesDone.size * XP_RULES.module;
-  const labsXp = learningLabs.filter((lab) => labsDone.has(lab.slug)).reduce((sum, lab) => sum + (XP_RULES.labByLevel[lab.level] ?? 100), 0);
-  const examsXp = learningExams.filter((exam) => examsPassed.has(exam.slug)).length * XP_RULES.exam;
+  const labsXp = labsCatalog.filter((lab) => labsDone.has(lab.slug)).reduce((sum, lab) => sum + (XP_RULES.labByLevel[lab.level] ?? 100), 0);
+  const examsXp = examsCatalog.filter((exam) => examsPassed.has(exam.slug)).length * XP_RULES.exam;
   const xp = sectionsXp + modulesXp + labsXp + examsXp;
 
   let level = 1;
@@ -58,11 +66,11 @@ export function computeProfile(input: ProfileInput): PracticeProfile {
   const levelCeil = levelSteps[level] ?? null;
 
   const skills = skillDefs.map((skill) => {
-    const modules = learningModules.filter((item) => skill.modules.includes(item.slug));
+    const modules = modulesCatalog.filter((item) => skill.modules.includes(item.slug));
     const totalSections = modules.reduce((sum, item) => sum + item.sections.length, 0);
     const doneSections = modules.reduce((sum, item) => sum + item.sections.filter((_, index) => sectionSet.has(`${item.slug}:${index}`)).length, 0);
-    const labs = learningLabs.filter((lab) => skill.modules.includes(lab.moduleSlug));
-    const exams = learningExams.filter((exam) => exam.requiredModules.some((slug) => skill.modules.includes(slug)));
+    const labs = labsCatalog.filter((lab) => skill.modules.includes(lab.moduleSlug));
+    const exams = examsCatalog.filter((exam) => exam.requiredModules.some((slug) => skill.modules.includes(slug)));
     const parts: [number, number][] = [[totalSections ? doneSections / totalSections : 0, 50]];
     if (labs.length) parts.push([labs.filter((lab) => labsDone.has(lab.slug)).length / labs.length, 30]);
     if (exams.length) parts.push([exams.filter((exam) => examsPassed.has(exam.slug)).length / exams.length, 20]);
@@ -78,9 +86,9 @@ export function computeProfile(input: ProfileInput): PracticeProfile {
     { id: "three-modules", title: "Keng qamrov", hint: "3 ta modulni tugating", earned: modulesDone.size >= 3, tone: "green" },
     { id: "first-lab", title: "Birinchi dalil", hint: "Birinchi laboratoriyani yakunlang", earned: labsDone.size >= 1, tone: "violet" },
     { id: "lab-hunter", title: "Dalil ovchisi", hint: "4 ta laboratoriyani yakunlang", earned: labsDone.size >= 4, tone: "violet" },
-    { id: "all-labs", title: "Laboratoriya ustasi", hint: "Barcha laboratoriyalarni yakunlang", earned: labsDone.size >= learningLabs.length, tone: "violet" },
+    { id: "all-labs", title: "Laboratoriya ustasi", hint: "Barcha laboratoriyalarni yakunlang", earned: labsDone.size >= labsCatalog.length, tone: "violet" },
     { id: "first-exam", title: "Imtihondan o‘tdi", hint: "Birinchi imtihondan o‘ting", earned: examsPassed.size >= 1, tone: "gold" },
-    { id: "all-exams", title: "To‘liq tasdiq", hint: "Barcha imtihonlardan o‘ting", earned: examsPassed.size >= learningExams.length, tone: "gold" },
+    { id: "all-exams", title: "To‘liq tasdiq", hint: "Barcha imtihonlardan o‘ting", earned: examsPassed.size >= examsCatalog.length, tone: "gold" },
     { id: "path", title: "Yo‘nalish yakuni", hint: "Bitta yo‘nalishni to‘liq tugating", earned: input.pathsFinished >= 1, tone: "green" },
     { id: "level-5", title: "5-daraja", hint: "5-darajaga yeting", earned: level >= 5, tone: "gold" },
     { id: "xp-1000", title: "1000 XP", hint: "1000 XP to‘plang", earned: xp >= 1000, tone: "cyan" }

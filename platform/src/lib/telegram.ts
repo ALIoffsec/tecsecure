@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { getTelegramCredentials } from "@/lib/integration-credentials";
 
 type TelegramResponse = {
   ok: boolean;
@@ -10,9 +11,7 @@ export function escapeTelegramHtml(value: string): string {
   return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
 }
 
-export async function sendTelegramMessage(chatId: string, text: string): Promise<void> {
-  const token = process.env.TELEGRAM_BOT_TOKEN;
-  if (!token) throw new Error("TELEGRAM_BOT_TOKEN is not configured");
+async function sendWithToken(token: string, chatId: string, text: string): Promise<void> {
   const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -24,14 +23,20 @@ export async function sendTelegramMessage(chatId: string, text: string): Promise
   }
 }
 
+export async function sendTelegramMessage(chatId: string, text: string): Promise<void> {
+  const { botToken } = await getTelegramCredentials();
+  if (!botToken) throw new Error("Telegram bot token is not configured");
+  await sendWithToken(botToken, chatId, text);
+}
+
 export async function notifyTelegramAdmins(text: string): Promise<boolean> {
-  const chatId = process.env.TELEGRAM_ADMIN_CHAT_ID;
-  if (!process.env.TELEGRAM_BOT_TOKEN || !chatId) {
-    console.warn("Telegram admin notification skipped: bot token or admin chat ID is not configured.");
-    return false;
-  }
   try {
-    await sendTelegramMessage(chatId, text);
+    const { botToken, adminChatId } = await getTelegramCredentials();
+    if (!botToken || !adminChatId) {
+      console.warn("Telegram admin notification skipped: bot token or admin chat ID is not configured.");
+      return false;
+    }
+    await sendWithToken(botToken, adminChatId, text);
     return true;
   } catch (error) {
     console.error("Telegram admin notification failed", error);

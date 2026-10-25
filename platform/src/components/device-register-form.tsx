@@ -3,6 +3,7 @@
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSitePreferences } from "@/components/site-preferences";
+import { ToastMessage } from "@/components/toast-provider";
 
 type OrganizationOption = { id: string; name: string };
 
@@ -44,7 +45,7 @@ export function DeviceRegisterForm({ organizations }: { organizations: Organizat
     <div className="form-row"><div className="field"><label htmlFor="device-type">{t("deviceType")}</label><input id="device-type" name="type" required minLength={2} maxLength={100} /></div><div className="field"><label htmlFor="device-model">{t("model")}</label><input id="device-model" name="model" maxLength={120} /></div></div>
     <div className="form-row"><div className="field"><label htmlFor="device-brand">{t("manufacturer")}</label><input id="device-brand" name="manufacturer" maxLength={100} /></div><div className="field"><label htmlFor="device-serial">{t("serialNumber")}</label><input id="device-serial" name="serialNumber" maxLength={160} /></div></div>
     <p className="small muted">{t("deviceMonitoringDisclaimer")}</p>
-    {error && <div className="notice error" role="alert">{error}</div>}
+    <ToastMessage message={error} variant="error" />
     <button className="button secondary" disabled={busy}>{busy ? t("saving") : t("addDevice")}</button>
   </form>;
 }

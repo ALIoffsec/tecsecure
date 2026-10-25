@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useSitePreferences } from "@/components/site-preferences";
+import { ToastMessage } from "@/components/toast-provider";
 
 type Provider = { id: string; name: string };
 type ProviderState = { providers: Provider[]; error: boolean } | null;
@@ -100,6 +101,6 @@ export function OAuthSignIn({ mode }: { mode: "login" | "register" }) {
           </button>)}
         </div>
         : <p className="small muted">{text.unavailable}</p>}
-    {providerError && <p className="small notice error" role="alert">{providerError}</p>}
+    <ToastMessage message={providerError} variant="error" />
   </div>;
 }
