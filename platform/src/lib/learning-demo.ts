@@ -1,6 +1,15 @@
 import type { Locale } from "@/lib/messages";
 import { careerLearningModules, careerLearningPaths } from "./learning-career-content";
 import { linuxFundamentalsSections } from "./linux-fundamentals-content";
+import { networkFundamentalsPractices } from "./network-fundamentals-content";
+import { windowsFundamentalsSections } from "./windows-fundamentals-content";
+import { mikrotikDeepSections, mikrotikDeepReferences } from "./learning-deep-mikrotik";
+import { wifiDeepSections, wifiDeepReferences } from "./learning-deep-wifi";
+import { cybersecurityDeepSections, cybersecurityDeepReferences } from "./learning-deep-cybersecurity";
+import { socDeepSections, socDeepReferences } from "./learning-deep-soc";
+import { owaspDeepSections, owaspDeepReferences } from "./learning-deep-owasp";
+import { adDeepSections, adDeepReferences } from "./learning-deep-ad";
+import { cctvDeepSections, cctvDeepReferences } from "./learning-deep-cctv";
 
 export type Localized = Record<Locale, string>;
 export type Difficulty = "fundamental" | "easy" | "medium" | "hard";
@@ -26,6 +35,7 @@ export type LearningSection = {
   images?: LearningImage[];
   diagram?: LearningDiagram;
   terminalPractice?: LinuxTerminalPractice;
+  interactivePractice?: LearningInteractivePractice;
   question?: { prompt: Localized; answers: string[] };
 };
 
@@ -38,6 +48,12 @@ export type LinuxTerminalTask = {
 export type LinuxTerminalPractice = {
   instructions: Localized;
   tasks: LinuxTerminalTask[];
+};
+
+export type LearningInteractivePractice = {
+  platform: "windows" | "network";
+  instructions: Localized;
+  tasks: (LinuxTerminalTask & { output: Localized })[];
 };
 
 export type LearningImage = {
@@ -92,6 +108,16 @@ const lesson = (
   exampleExplanation: Localized,
   extras: Pick<LearningSection, "diagram" | "question"> = {}
 ): LearningSection => ({ title, content, example, exampleExplanation, ...extras });
+
+const interactivePractice = (
+  platform: LearningInteractivePractice["platform"],
+  instructions: string,
+  tasks: [id: string, command: string, prompt: string, output: string][]
+): LearningInteractivePractice => ({
+  platform,
+  instructions: l(instructions),
+  tasks: tasks.map(([id, command, prompt, output]) => ({ id, command, prompt: l(prompt), output: l(output) }))
+});
 
 export const learningModules: LearningModule[] = [
   {
@@ -261,58 +287,27 @@ export const learningModules: LearningModule[] = [
   {
     slug: "windows-fundamentals",
     title: l("Windows va Active Directory asoslari", "Основы Windows и Active Directory", "Windows and Active Directory Basics"),
-    summary: l("Windows arxitekturasi, boshqaruv vositalari va domen muhiti.", "Архитектура Windows, средства управления и доменная среда.", "Windows architecture, admin tools and domain environment."),
-    difficulty: "easy", category: "systems", hours: 6, hasLab: true,
-    sections: [
-      {
-        title: l("Windows arxitekturasi", "Архитектура Windows", "Windows architecture"),
-        content: l(
-          "Windows ish stoli va Windows Server birgalikda yadro, xizmatlar, registr, fayl tizimi va foydalanuvchi sessiyalaridan foydalanadi. Administrator muammolarni hodisalar jurnali, Task Manager va PowerShell bilan tekshiradi. Buyruqni yuqori huquqda bajarishdan oldin nima o‘zgartirishini tekshiring.",
-          "Windows для рабочих станций и Windows Server используют ядро, службы, реестр, файловую систему и пользовательские сеансы. Администраторы исследуют проблемы через журнал событий, диспетчер задач и PowerShell. Перед выполнением команды с повышенными правами проверяйте её влияние.",
-          "Windows desktop and Windows Server use a kernel, services, registry, filesystem, and user sessions. Administrators investigate issues with Event Viewer, Task Manager, and PowerShell. Check what a command changes before running it elevated."
-        ),
-        example: l("Get-ComputerInfo | Select-Object WindowsProductName, WindowsVersion\nGet-Service | Where-Object Status -eq 'Running' | Select-Object -First 10 Name, Status\nGet-WinEvent -LogName System -MaxEvents 5", "Get-ComputerInfo | Select-Object WindowsProductName, WindowsVersion\nGet-Service | Where-Object Status -eq 'Running' | Select-Object -First 10 Name, Status\nGet-WinEvent -LogName System -MaxEvents 5", "Get-ComputerInfo | Select-Object WindowsProductName, WindowsVersion\nGet-Service | Where-Object Status -eq 'Running' | Select-Object -First 10 Name, Status\nGet-WinEvent -LogName System -MaxEvents 5"),
-        exampleExplanation: l(
-          "Misollar Windows versiyasi, ishlayotgan xizmatlar va System jurnalidagi so‘nggi yozuvlarni faqat o‘qiydi. PowerShell’ni oddiy foydalanuvchi sifatida ishga tushirib ko‘ring.",
-          "Примеры только читают версию Windows, работающие службы и последние записи журнала System. Сначала запускайте PowerShell от обычного пользователя.",
-          "These examples only read the Windows version, running services, and latest System log entries. Try them in a standard, non-elevated PowerShell session."
-        )
-      },
-      {
-        title: l("Active Directory kirish", "Введение в Active Directory", "Introduction to Active Directory"),
-        content: l(
-          "Active Directory Domain Services (AD DS) markazlashgan katalogda foydalanuvchi, kompyuter, guruh va resurs obyektlarini saqlaydi. Domain Controller autentifikatsiya va siyosat xizmatlarini taqdim etadi. OU va guruhlar delegatsiya hamda boshqaruvni tartibga soladi; DNS esa domen xizmatlarini topishda zarur.",
-          "Active Directory Domain Services (AD DS) хранит объекты пользователей, компьютеров, групп и ресурсов в централизованном каталоге. Контроллер домена предоставляет аутентификацию и политики. OU и группы помогают организовать управление и делегирование; DNS необходим для обнаружения служб домена.",
-          "Active Directory Domain Services (AD DS) stores user, computer, group, and resource objects in a centralized directory. A Domain Controller provides authentication and policy services. OUs and groups organize management and delegation; DNS is essential for locating domain services."
-        ),
-        example: l("whoami /all\nnltest /dsgetdc:corp.example", "whoami /all\nnltest /dsgetdc:corp.example", "whoami /all\nnltest /dsgetdc:corp.example"),
-        exampleExplanation: l(
-          "`whoami /all` joriy hisob va guruhlarini ko‘rsatadi. `nltest` dagi `corp.example` o‘rniga o‘zingizning ruxsat berilgan laboratoriya domeningizni yozing; buyruq domen kontrollerini topadi.",
-          "`whoami /all` показывает текущую учётную запись и группы. Замените `corp.example` в `nltest` на домен вашей разрешённой лаборатории; команда находит контроллер домена.",
-          "`whoami /all` displays the current account and groups. Replace `corp.example` in `nltest` with your authorized lab domain; the command discovers a domain controller."
-        )
-      },
-      {
-        title: l("Group Policy asoslari", "Основы групповых политик", "Group Policy basics"),
-        content: l(
-          "Group Policy (GPO) Windows domenidagi foydalanuvchi va kompyuter sozlamalarini markazlashgan boshqaradi. GPO domen, sayt yoki OU ga bog‘lanishi va xavfsizlik guruhlari orqali filtrlashi mumkin. Avval natijaviy siyosatni hisobotda tekshirib, kichik test OU da sinang; to‘g‘ridan-to‘g‘ri keng doiraga tatbiq qilmang.",
-          "Group Policy (GPO) централизованно управляет настройками пользователей и компьютеров в домене Windows. GPO связывают с доменом, сайтом или OU и фильтруют по группам безопасности. Сначала проверьте итоговые параметры в отчёте и испытайте их на небольшой тестовой OU; не применяйте сразу ко всему домену.",
-          "Group Policy (GPO) centrally manages user and computer settings in a Windows domain. A GPO can link to a domain, site, or OU and be filtered by security groups. Review resultant settings and test in a small OU before applying changes broadly."
-        ),
-        example: l("gpresult /scope computer /r\ngpresult /h \"$env:TEMP\\policy-report.html\"", "gpresult /scope computer /r\ngpresult /h \"$env:TEMP\\policy-report.html\"", "gpresult /scope computer /r\ngpresult /h \"$env:TEMP\\policy-report.html\""),
-        exampleExplanation: l(
-          "`gpresult` amalda qo‘llangan siyosatlarni ko‘rsatadi; HTML hisobot vaqtinchalik katalogda saqlanadi. Bu buyruqlar GPO ni o‘zgartirmaydi.",
-          "`gpresult` показывает применённые политики; HTML-отчёт сохраняется во временный каталог. Команды не меняют GPO.",
-          "`gpresult` reports applied policies; the HTML report is saved in the temporary directory. These commands do not modify GPOs."
-        )
-      }
-    ]
+    summary: l("Windows va AD DS’ni arxitektura hamda PowerShell’dan DNS/Kerberos, GPO, replikatsiya va xavfsiz operatsion boshqaruvgacha o‘rganing.", "Изучите Windows и AD DS: от архитектуры и PowerShell до DNS/Kerberos, GPO, репликации и безопасного администрирования.", "Study Windows and AD DS from architecture and PowerShell through DNS/Kerberos, Group Policy, replication, and secure operations."),
+    difficulty: "medium", category: "systems", hours: 22, hasLab: true,
+    labPlan: l("Windows client va Server boshqaruvi, AD DS lab topologiyasi, DNS/Kerberos, OU/GPO, guruh va ruxsatlarni xavfsiz test domenida o‘rganing."),
+    references: [
+      { label: l("Microsoft Learn: Active Directory Domain Services"), href: "https://learn.microsoft.com/windows-server/identity/ad-ds/get-started/virtual-dc/active-directory-domain-services-overview" },
+      { label: l("Microsoft Learn: Group Policy"), href: "https://learn.microsoft.com/windows-server/identity/ad-ds/manage/group-policy/group-policy-overview" },
+      { label: l("Microsoft Learn: Kerberos authentication"), href: "https://learn.microsoft.com/windows-server/security/kerberos/kerberos-authentication-overview" }
+    ],
+    sections: windowsFundamentalsSections
   },
   {
     slug: "mikrotik-routeros-basics",
     title: l("MikroTik RouterOS asoslari", "Основы MikroTik RouterOS", "MikroTik RouterOS Basics"),
     summary: l("RouterOS interfeysi, firewall/NAT, VLAN va Wi-Fi sozlamalari.", "Интерфейс RouterOS, firewall/NAT, VLAN и Wi-Fi.", "RouterOS interface, firewall/NAT, VLAN and Wi-Fi."),
-    difficulty: "easy", category: "networking", hours: 8, hasLab: true,
+    difficulty: "medium", category: "networking", hours: 24, hasLab: true,
+    labPlan: l("Sintetik RouterOS eksportida xizmatlar, firewall input/forward va VLAN holatini tekshiring. Faqat o‘qish uchun dalillardan foydalaning; haqiqiy routerda o‘zgarish qilmang."),
+    references: [
+      { label: l("MikroTik: RouterOS hujjatlari", "MikroTik: документация RouterOS", "MikroTik: RouterOS documentation"), href: "https://manual.mikrotik.com/docs/introduction/" },
+      { label: l("MikroTik: MTCNA rasmiy treningi", "MikroTik: официальное обучение MTCNA", "MikroTik: official MTCNA training"), href: "https://mikrotik.com/training" },
+      ...mikrotikDeepReferences
+    ],
     sections: [
       {
         title: l("RouterOS va WinBox", "RouterOS и WinBox", "RouterOS and WinBox"),
@@ -356,14 +351,22 @@ export const learningModules: LearningModule[] = [
           "Команды только показывают членство VLAN, bridge-порты и Wi-Fi-интерфейсы. VLAN ID, тегирование trunk и настройки SSID зависят от модели и версии RouterOS; перед изменениями проверьте документацию производителя и резервную конфигурацию.",
           "These commands only inspect VLAN membership, bridge ports, and Wi-Fi interfaces. VLAN IDs, trunk tagging, and SSID configuration vary by device and RouterOS version; check vendor documentation and back up configuration before changes."
         )
-      }
+      },
+      ...mikrotikDeepSections
     ]
   },
   {
     slug: "intro-cybersecurity",
     title: l("Kiberxavfsizlikka kirish", "Введение в кибербезопасность", "Introduction to Cybersecurity"),
-    summary: l("CIA triadasi, tahdidlar va himoyaning asosiy tamoyillari.", "Триада CIA, угрозы и базовые принципы защиты.", "CIA triad, threats and core defense principles."),
-    difficulty: "fundamental", category: "security", hours: 4, hasLab: false,
+    summary: l("CIA triadasi, risk fikrlashi, NIST CSF 2.0 va xavfsiz himoya amaliyotlariga kirish.", "Триада CIA, оценка рисков, NIST CSF 2.0 и основы безопасной защиты.", "An introduction to the CIA triad, risk thinking, NIST CSF 2.0, and defensive security."),
+    difficulty: "medium", category: "security", hours: 20, hasLab: true,
+    labPlan: l("Sintetik port ro‘yxati va inventarizatsiyadan attack surface’ni baholang; tasdiqlanmagan skan yoki real manzilga murojaat qilmang."),
+    references: [
+      { label: l("NIST Cybersecurity Framework 2.0", "NIST Cybersecurity Framework 2.0", "NIST Cybersecurity Framework 2.0"), href: "https://www.nist.gov/cyberframework" },
+      { label: l("NIST SP 800-61 Rev. 3: incident response", "NIST SP 800-61 Rev. 3: реагирование на инциденты", "NIST SP 800-61 Rev. 3: incident response"), href: "https://doi.org/10.6028/NIST.SP.800-61r3" },
+      { label: l("CISA: kiberxavfsizlik bo‘yicha tavsiyalar", "CISA: рекомендации по кибербезопасности", "CISA: cybersecurity best practices"), href: "https://www.cisa.gov/topics/cybersecurity-best-practices" },
+      ...cybersecurityDeepReferences
+    ],
     sections: [
       {
         title: l("CIA triadasi", "Триада CIA", "The CIA triad"),
@@ -407,14 +410,22 @@ export const learningModules: LearningModule[] = [
           "Первая команда читает состояние Microsoft Defender; вторая показывает состояние UFW. `sudo` для UFW запрашивает права администратора; пример не меняет конфигурацию.",
           "The first command reads Microsoft Defender status; the second displays UFW firewall status. `sudo` requests administrator privileges for UFW; this example does not change configuration."
         )
-      }
+      },
+      ...cybersecurityDeepSections
     ]
   },
   {
     slug: "web-security-owasp",
     title: l("Web xavfsizlik (OWASP)", "Веб-безопасность (OWASP)", "Web Security (OWASP)"),
-    summary: l("OWASP Top 10: injection, autentifikatsiya va kirish nazorati.", "OWASP Top 10: инъекции, аутентификация и контроль доступа.", "OWASP Top 10: injection, authentication and access control."),
-    difficulty: "medium", category: "security", hours: 10, hasLab: true,
+    summary: l("OWASP Top 10:2025 asosida injection, access control, konfiguratsiya va secure design tamoyillari.", "На основе OWASP Top 10:2025: injection, контроль доступа, конфигурация и secure design.", "Injection, access control, configuration, and secure design based on OWASP Top 10:2025."),
+    difficulty: "hard", category: "security", hours: 26, hasLab: true,
+    labPlan: l("Sintetik HTTP loglarida input validation va autentifikatsiya alomatlarini toping; zaif payload yuborish o‘rniga secure design qarorini hujjatlashtiring."),
+    references: [
+      { label: l("OWASP Top 10:2025", "OWASP Top 10:2025", "OWASP Top 10:2025"), href: "https://owasp.org/Top10/" },
+      { label: l("OWASP Application Security Verification Standard", "OWASP Application Security Verification Standard", "OWASP Application Security Verification Standard"), href: "https://owasp.org/www-project-application-security-verification-standard/" },
+      { label: l("OWASP Cheat Sheet Series", "Серия памяток OWASP", "OWASP Cheat Sheet Series"), href: "https://cheatsheetseries.owasp.org/" },
+      ...owaspDeepReferences
+    ],
     sections: [
       {
         title: l("Injection hujumlari", "Атаки внедрения", "Injection attacks"),
@@ -457,14 +468,23 @@ export const learningModules: LearningModule[] = [
           "Запрос одновременно проверяет ID и владельца из сессии; знание чужого ID не даёт доступа к документу. Дополнительные проверки роли и организации также выполняйте на сервере.",
           "The query checks both the requested ID and session owner; knowing another user's ID does not grant access. Enforce any additional role or tenant restrictions on the server too."
         )
-      }
+      },
+      ...owaspDeepSections
     ]
   },
   {
     slug: "soc-log-analysis",
     title: l("SOC: log tahlili", "SOC: анализ журналов", "SOC: Log Analysis"),
     summary: l("Log manbalari, SIEM ogohlantirishlari va hodisalarni saralash.", "Источники журналов, оповещения SIEM и триаж инцидентов.", "Log sources, SIEM alerts and incident triage."),
-    difficulty: "medium", category: "security", hours: 9, hasLab: true,
+    difficulty: "hard", category: "security", hours: 26, hasLab: true,
+    labPlan: l("Sintetik endpoint, identity va firewall jurnallaridan vaqt chizig‘i tuzing; signalni mustaqil dalil bilan tasdiqlang va noaniqlikni qayd eting."),
+    references: [
+      { label: l("MITRE ATT&CK knowledge base", "База знаний MITRE ATT&CK", "MITRE ATT&CK knowledge base"), href: "https://attack.mitre.org/" },
+      { label: l("NIST SP 800-61 Rev. 3: incident response", "NIST SP 800-61 Rev. 3: реагирование на инциденты", "NIST SP 800-61 Rev. 3: incident response"), href: "https://doi.org/10.6028/NIST.SP.800-61r3" },
+      { label: l("CISA: Logging Made Easy", "CISA: Logging Made Easy", "CISA: Logging Made Easy"), href: "https://www.cisa.gov/resources-tools/services/logging-made-easy" },
+      { label: l("Sigma: vendor-neutral detection rules", "Sigma: универсальные правила обнаружения", "Sigma: vendor-neutral detection rules"), href: "https://github.com/SigmaHQ/sigma" },
+      ...socDeepReferences
+    ],
     sections: [
       {
         title: l("Log manbalari", "Источники журналов", "Log sources"),
@@ -507,7 +527,8 @@ export const learningModules: LearningModule[] = [
           "Шаблон отделяет вывод от доказательств. В реальной записи не включайте пароли/токены, сохраняйте время UTC и журналируйте доступ к доказательствам.",
           "This triage record separates conclusion from evidence. Never include passwords or tokens in real tickets; preserve UTC timestamps and log evidence access."
         )
-      }
+      },
+      ...socDeepSections
     ]
   },
   {
@@ -518,7 +539,14 @@ export const learningModules: LearningModule[] = [
       "Архитектура беспроводных сетей, стандарты защиты, выявление рисков и укрепление точек доступа.",
       "Wireless network architecture, security standards, risk detection, and access-point hardening."
     ),
-    difficulty: "medium", category: "security", hours: 6, hasLab: true,
+    difficulty: "medium", category: "security", hours: 20, hasLab: true,
+    labPlan: l("Ruxsatli sintetik site-survey ma’lumotlaridan RSSI, kanal bandligi, SSID segmentatsiyasi va guest isolation’ni tekshiring."),
+    references: [
+      { label: l("Wi-Fi Alliance: Wi-Fi xavfsizligi", "Wi-Fi Alliance: безопасность Wi-Fi", "Wi-Fi Alliance: Wi-Fi security"), href: "https://www.wi-fi.org/discover-wi-fi/security" },
+      { label: l("NIST SP 800-153: WLAN xavfsizligi", "NIST SP 800-153: безопасность WLAN", "NIST SP 800-153: WLAN security"), href: "https://csrc.nist.gov/pubs/sp/800/153/final" },
+      { label: l("IEEE 802.11 Working Group", "Рабочая группа IEEE 802.11", "IEEE 802.11 Working Group"), href: "https://www.ieee802.org/11/" },
+      ...wifiDeepReferences
+    ],
     sections: [
       {
         title: l("Wi-Fi arxitekturasi va inventarizatsiya", "Архитектура Wi-Fi и инвентаризация", "Wi-Fi Architecture and Inventory"),
@@ -531,9 +559,9 @@ export const learningModules: LearningModule[] = [
       {
         title: l("Autentifikatsiya va shifrlash", "Аутентификация и шифрование", "Authentication and Encryption"),
         content: l(
-          "WPA2-AES va WPA3 zamonaviy Wi-Fi himoyasining asosiy variantlaridir. Eskirgan WEP va TKIP’dan foydalanmang. Imkon bo‘lsa WPA3-Personal yoki WPA3-Enterprise’ni tanlang; moslik talab qilinsa WPA2-AES’ni xavfsiz muqobil sifatida ishlating.\n\nTarmoq paroli uzun va noyob bo‘lsin, router boshqaruv paroli esa Wi-Fi parolidan alohida saqlansin. WPS’ni zarurat bo‘lmasa o‘chiring, dasturiy ta’minotni yangilang va mehmon qurilmalarini ichki tizimlardan alohida tarmoqda joylashtiring.",
-          "WPA2-AES и WPA3 — основные современные варианты защиты Wi-Fi. Не используйте устаревшие WEP и TKIP. По возможности выбирайте WPA3-Personal или WPA3-Enterprise; если этого требует совместимость, используйте WPA2-AES.\n\nЗадайте длинный уникальный пароль сети, а пароль управления маршрутизатором храните отдельно. Отключите WPS, если он не нужен, обновляйте прошивку и размещайте гостевые устройства в отдельной от внутренних систем сети.",
-          "WPA2-AES and WPA3 are the primary modern Wi-Fi security options. Avoid obsolete WEP and TKIP. Prefer WPA3-Personal or WPA3-Enterprise when supported; use WPA2-AES when compatibility requires it.\n\nUse a long, unique network passphrase and a separate administrator password for the router. Disable WPS when it is not needed, keep firmware updated, and isolate guest devices from internal systems."
+          "Yangi dizaynda WPA3-Personal (SAE) yoki tashkilotlarda WPA3-Enterprise’ni afzal ko‘ring; eski mijozlar mosligi talab qilsa, WPA2-AES’ni vaqtinchalik muqobil sifatida qo‘llab, migratsiya rejasini belgilang. WEP, WPA va TKIP faqat tarixiy/legacy risk sifatida ko‘riladi, xavfsiz tanlov emas. WPA3 transition mode ham eski mijozlarga downgrade yo‘lini qoldirishi mumkin — compatibility va siyosatni tekshiring.\n\nTarmoq paroli uzun va noyob bo‘lsin; router boshqaruv parolini alohida saqlang. WPS’ni zarurat bo‘lmasa o‘chiring, firmware’ni yangilang va mehmon qurilmalarini ichki tizimlardan VLAN yoki boshqa tasdiqlangan segmentatsiya bilan ajrating.",
+          "В новом проекте предпочитайте WPA3-Personal (SAE), а в организациях — WPA3-Enterprise; если нужна совместимость со старыми клиентами, используйте WPA2-AES как временную альтернативу с планом миграции. WEP, WPA и TKIP рассматривайте только как исторические/устаревшие риски, а не безопасный выбор. Режим WPA3 transition также может сохранять путь downgrade для старых клиентов — проверьте совместимость и политику.\n\nИспользуйте длинный уникальный пароль сети и отдельный пароль управления точкой доступа. Отключите ненужный WPS, обновляйте firmware и отделяйте гостей от внутренних систем VLAN или другой утверждённой сегментацией.",
+          "Prefer WPA3-Personal (SAE) for new designs and WPA3-Enterprise for organizations. If legacy client compatibility requires WPA2-AES, treat it as a transitional fallback with a migration plan. WEP, WPA, and TKIP are historical/legacy risks, not secure choices. WPA3 transition mode may preserve downgrade paths for older clients, so review compatibility and policy.\n\nUse a long, unique network passphrase and a separate AP administrator password. Disable unneeded WPS, update firmware, and isolate guest devices from internal systems through VLANs or another approved segmentation control."
         ),
         question: {
           prompt: l("Tashkilot yangi qurilmalarni qo‘llasa, qaysi xavfsizlik standartini afzal ko‘rish kerak?", "Какой стандарт защиты предпочтителен, если устройства его поддерживают?", "Which security standard should be preferred when organizational devices support it?"),
@@ -555,7 +583,8 @@ export const learningModules: LearningModule[] = [
           "Неожиданные отключения, рост ошибок аутентификации, неизвестные точки доступа или изменения настроек могут потребовать проверки. Один признак не доказывает атаку: сопоставьте журналы AP, систему управления, обращения пользователей и временные метки, учитывая возможность ложного срабатывания.\n\nВключите PMF/802.11w на поддерживаемых клиентах, централизованно управляйте точками доступа, настройте резервное копирование конфигурации и оповещения. При подтверждённом инциденте уведомите ответственную команду, сохраните доказательства и защитите затронутые устройства и учётные записи согласно плану восстановления.",
           "Unexpected disconnects, a rise in authentication failures, unknown APs, or configuration changes may warrant investigation. No single signal proves an attack: correlate AP logs, management-system events, user reports, and timestamps, while considering false positives.\n\nEnable PMF/802.11w for supported clients, centrally manage APs, and configure configuration backups and alerts. If an incident is confirmed, notify the authorized team, preserve evidence, and protect affected devices and accounts according to the recovery plan."
         )
-      }
+      },
+      ...wifiDeepSections
     ]
   },
   {
@@ -566,7 +595,14 @@ export const learningModules: LearningModule[] = [
       "Инвентаризация объектов домена, контроль разрешений, снижение риска lateral movement и обнаружение инцидентов.",
       "Inventory domain objects, control permissions, reduce lateral-movement risk, and detect incidents."
     ),
-    difficulty: "medium", category: "security", hours: 8, hasLab: true,
+    difficulty: "hard", category: "security", hours: 22, hasLab: true,
+    labPlan: l("Sintetik AD audit eksportida privilege, event va delegation belgilarini ko‘rib chiqing; haqiqiy domenni o‘zgartirmang yoki tekshirmang."),
+    references: [
+      { label: l("Microsoft Learn: Active Directory xavfsizligi", "Microsoft Learn: безопасность Active Directory", "Microsoft Learn: securing Active Directory"), href: "https://learn.microsoft.com/en-us/windows-server/identity/ad-ds/plan/security-best-practices-for-securing-active-directory" },
+      { label: l("Microsoft: Enterprise Access Model", "Microsoft: Enterprise Access Model", "Microsoft: Enterprise Access Model"), href: "https://learn.microsoft.com/en-us/security/privileged-access-workstations/privileged-access-access-model" },
+      { label: l("MITRE ATT&CK: Enterprise matrix", "MITRE ATT&CK: матрица Enterprise", "MITRE ATT&CK: Enterprise matrix"), href: "https://attack.mitre.org/matrices/enterprise/windows/" },
+      ...adDeepReferences
+    ],
     sections: [
       {
         title: l("Domen va Active Directory tuzilishi", "Домен и структура Active Directory", "Domain and Active Directory Structure"),
@@ -603,7 +639,8 @@ export const learningModules: LearningModule[] = [
           "Следите в журналах контроллеров домена и конечных точек за необычным временем или источником входа, сериями ошибок аутентификации, изменениями состава привилегированных групп и обновлениями Group Policy. Сопоставляйте оповещения с другими источниками: плановое обслуживание тоже может создавать похожие события.\n\nПри инциденте следуйте утверждённому плану реагирования: уведомите ответственную команду, сохраните журналы, защитите затронутые учётные записи и восстановите системы через процесс организации. Фиксируйте этапы, время и доказательства.",
           "Monitor Domain Controller and endpoint logs for unusual login times or sources, repeated authentication failures, changes to privileged-group membership, and Group Policy updates. Correlate alerts with other sources because routine maintenance can produce similar events.\n\nDuring an incident, follow the approved response plan: notify the responsible team, preserve logs, secure affected accounts, and restore systems through the organization's recovery process. Record each action, timestamp, and relevant evidence."
         )
-      }
+      },
+      ...adDeepSections
     ]
   },
   {
@@ -616,9 +653,9 @@ export const learningModules: LearningModule[] = [
     ),
     difficulty: "fundamental", category: "networking", hours: 24, hasLab: true,
     labPlan: l(
-      "Virtual laboratoriyalar hali ulanmagan. Hozir buyruqlarni o‘qing va sxemani chizing; keyingi bosqichda Packet Tracer, litsenziyalangan IOS image bilan GNS3 va Linux hostlar qo‘shiladi. IOS image’ni faqat Cisco ruxsat bergan manbadan oling. Konfiguratsiya buyruqlarini haqiqiy routerga ruxsatsiz yubormang.",
-      "Виртуальные лаборатории пока не подключены. Сейчас изучайте команды и рисуйте схемы; позднее добавим Packet Tracer, GNS3 с лицензированным образом IOS и Linux-хосты. Получайте образ IOS только из разрешённого Cisco источника. Не применяйте команды конфигурации на реальном роутере без разрешения.",
-      "Virtual labs are not connected yet. Study the commands and draw the topology first; later we can add Packet Tracer, GNS3 with a properly licensed IOS image, and Linux hosts. Obtain IOS images only through Cisco-authorized channels. Never apply configuration commands to a real router without authorization."
+      "Sintetik `show vlan` va trunk natijalaridan VLAN muammosini aniqlang, so‘ng topologiya va xavfsiz rollback rejasini yozing. Haqiqiy qurilmaga ruxsatsiz konfiguratsiya yubormang. Kengaytirilgan simulyatsiya uchun Packet Tracer yoki faqat litsenziyalangan IOS image’dan foydalaning.",
+      "По синтетическим результатам `show vlan` и trunk определите проблему VLAN, затем опишите топологию и безопасный план отката. Не отправляйте конфигурацию на реальное устройство без разрешения. Для расширенной симуляции используйте Packet Tracer или только лицензированный образ IOS.",
+      "Use synthetic `show vlan` and trunk output to identify a VLAN issue, then document the topology and a safe rollback plan. Do not send configuration to a real device without authorization. For extended simulation, use Packet Tracer or a properly licensed IOS image."
     ),
     references: [
       {
@@ -901,7 +938,15 @@ export const learningModules: LearningModule[] = [
     slug: "cctv-system-design",
     title: l("CCTV tizimini loyihalash", "Проектирование CCTV", "CCTV System Design"),
     summary: l("Kamera turlari, xotira/bandwidth hisobi va PoE kabel tarmog‘i.", "Типы камер, расчёт хранилища/полосы и PoE-кабелирование.", "Camera types, storage/bandwidth sizing and PoE cabling."),
-    difficulty: "easy", category: "physical", hours: 5, hasLab: false,
+    difficulty: "medium", category: "physical", hours: 20, hasLab: true,
+    labPlan: l("Sintetik kamera talablari asosida bitrate/storage va PoE hisobini bajaring; coverage, masking, retention va ko‘rish huquqini maxfiylik nuqtai nazaridan baholang."),
+    references: [
+      { label: l("ONVIF Profiles", "Профили ONVIF", "ONVIF Profiles"), href: "https://www.onvif.org/profiles/" },
+      { label: l("ONVIF specifications", "Спецификации ONVIF", "ONVIF specifications"), href: "https://www.onvif.org/specs/" },
+      { label: l("Axis: technical notes", "Axis: технические заметки", "Axis: technical notes"), href: "https://www.axis.com/support/technical-notes" },
+      { label: l("Hikvision: rasmiy texnik hujjatlar", "Hikvision: официальная техническая документация", "Hikvision: official technical documentation"), href: "https://www.hikvision.com/en/support/download/" },
+      ...cctvDeepReferences
+    ],
     sections: [
       {
         title: l("Kamera turlari", "Типы камер", "Camera types"),
@@ -944,7 +989,8 @@ export const learningModules: LearningModule[] = [
           "Недостаточно проверить только общий бюджет: проверьте IEEE PoE-стандарт каждого порта, качество кабеля и пиковую мощность при запуске. Соблюдайте местные нормы длины кабеля и наружного монтажа.",
           "Total budget alone is not sufficient: check each port's IEEE PoE standard, cable quality, and peak startup draw. Follow local standards for cable length and outdoor installation."
         )
-      }
+      },
+      ...cctvDeepSections
     ]
   },
   {
@@ -1160,6 +1206,28 @@ export const supplementalLessonExamples: Record<string, LearningExample[]> = {
     }
   ]
 };
+
+const networkModule = learningModules.find((module) => module.slug === "network-fundamentals");
+if (!networkModule) throw new Error("Network fundamentals module is missing.");
+if (networkFundamentalsPractices.length !== networkModule.sections.length) {
+  throw new Error("Network lessons and interactive practice tasks must have matching counts.");
+}
+networkModule.hours = 22;
+const networkQuestions = [
+  { prompt: l("Kursda amaliy tahlil qilinadigan ikkita asosiy model qaysi?"), answers: ["osi va tcp/ip", "osi tcp/ip", "osi/tcp-ip", "osi and tcp/ip"] },
+  { prompt: l("IP paketini keyingi tarmoqqa yo‘naltirish OSI modelining qaysi qatlamida bajariladi?"), answers: ["tarmoq", "network", "3", "l3", "network layer"] },
+  { prompt: l("TCP/IP kapsullashida ilova ma’lumoti qaysi qatlamdan pastga uzatiladi?"), answers: ["application transport internet link", "application, transport, internet, link", "ilova transport internet kanal"] },
+  { prompt: l("Tartibli va ishonchli bayt oqimini ta’minlaydigan transport protokoli qaysi?"), answers: ["tcp"] },
+  { prompt: l("Wireshark’da capture tugagach, ko‘rinayotgan paketlarni cheklaydigan filtr turi nima?"), answers: ["display filter", "displey filtri", "display"] },
+  { prompt: l("tcpdump’da manzil va portlarni DNS nomiga aylantirmaslik uchun qaysi flag ishlatiladi?"), answers: ["-n"] },
+  { prompt: l("IPv4 manzilini lokal Ethernet MAC manziliga moslaydigan protokol qaysi?"), answers: ["arp"] },
+  { prompt: l("PAT bitta public IP ortidagi ulanishlarni farqlashda qaysi qiymatdan foydalanadi?"), answers: ["port", "port raqami", "ports"] }
+];
+networkModule.sections = networkModule.sections.map((section, index) => ({
+  ...section,
+  interactivePractice: networkFundamentalsPractices[index],
+  question: section.question ?? networkQuestions[index]
+}));
 
 export const learningPaths: LearningPath[] = [
   {

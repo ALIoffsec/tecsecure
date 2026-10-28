@@ -8,7 +8,7 @@ import { examPriceFor, labPriceFor } from "./practice-perks";
 
 test("labs have unique tasks, valid modules and no leaked answers in public view", () => {
   assert.equal(careerLearningLabs.length, 43);
-  assert.equal(learningLabs.length, 54);
+  assert.equal(learningLabs.length, 60);
   for (const lab of learningLabs) {
     assert.ok(getModule(lab.moduleSlug), `module ${lab.moduleSlug}`);
     assert.ok(lab.tasks.length >= 4);

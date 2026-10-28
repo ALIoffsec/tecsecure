@@ -125,7 +125,7 @@ export function LearningCatalog(props: LearningCatalogProps) {
                 <p>{tx.catalogModulesDescription}</p>
                 <span className="learn-catalog-tile-action">{tx.learningHomeOpenSection}<span aria-hidden="true">→</span></span>
               </Link>
-              <Link className="learn-catalog-tile card" href="/learning/labs">
+              <Link className="learn-catalog-tile card" href="/learning/practice/labs">
                 <span className="learn-catalog-tile-heading"><UiIcon name="toolbox" /><strong>{tx.catalogLabs}</strong></span>
                 <p>{tx.catalogLabsDescription}</p>
                 <span className="learn-catalog-tile-action">{tx.learningHomeOpenSection}<span aria-hidden="true">→</span></span>

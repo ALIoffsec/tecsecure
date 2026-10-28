@@ -5,6 +5,7 @@ import { firewallZeroToHeroDetails } from "@/lib/firewall-zero-to-hero-content";
 import { firewallKerioTerminalExamples } from "@/lib/firewall-kerio-terminal-examples";
 import { kerioControlDetails } from "@/lib/kerio-control-content";
 import { linuxFundamentalsDetails } from "@/lib/linux-fundamentals-content";
+import { learningSpecialistDetails } from "@/lib/learning-specialist-content";
 import { learningTeachingVisuals } from "@/lib/learning-teaching-visuals";
 import { getLearningSectionQuestion } from "@/lib/learning-completion";
 import { networkFundamentalsDetails } from "@/lib/network-fundamentals-content";
@@ -19,7 +20,8 @@ const extendedLessons: Record<string, Record<number, string>> = {
   "network-fundamentals": networkFundamentalsDetails,
   "firewall-zero-to-hero": firewallZeroToHeroDetails,
   "kerio-control-zero-to-hero": kerioControlDetails,
-  "linux-fundamentals": linuxFundamentalsDetails
+  "linux-fundamentals": linuxFundamentalsDetails,
+  ...learningSpecialistDetails
 };
 
 export async function GET(_request: Request, { params }: { params: Promise<{ slug: string; index: string }> }) {

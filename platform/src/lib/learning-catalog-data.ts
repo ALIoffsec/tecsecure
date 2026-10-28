@@ -14,7 +14,10 @@ export function toLearningModulePreview(module: LearningModule): LearningModuleP
     hasLab: module.hasLab,
     labPlan: module.labPlan,
     references: module.references,
-    sections: module.sections.map(({ title }) => ({ title })),
+    sections: module.sections.map(({ title, terminalPractice, interactivePractice }) => ({
+      title,
+      requiresPractice: Boolean(terminalPractice?.tasks.length || interactivePractice?.tasks.length)
+    })),
     sectionPricesTec,
     individualPriceTec: sectionPricesTec.reduce((total, price) => total + price, 0),
     modulePriceTec: modulePriceTec(module)

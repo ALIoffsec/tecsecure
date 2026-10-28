@@ -1,5 +1,6 @@
 import { normalizeLearningAnswer } from "@/lib/learning-completion";
 import { careerLearningLabs } from "./learning-career-labs";
+import { learningSpecialistLabs } from "./learning-specialist-labs";
 
 export type LabTask = { id: string; prompt: string; answers: string[]; hint: string };
 export type LabDef = {
@@ -382,6 +383,7 @@ export const learningLabs: LabDef[] = [
   firewallLab(), webLab(), windowsLab(), mikrotikLab()
 ];
 learningLabs.push(...careerLearningLabs);
+learningLabs.push(...learningSpecialistLabs);
 
 export const getLab = (slug: string) => learningLabs.find((lab) => lab.slug === slug);
 

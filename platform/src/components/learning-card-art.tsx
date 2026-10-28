@@ -30,18 +30,38 @@ const illustrations: Record<string, Illustration> = {
   "cisco-ios-fundamentals": "switch",
   "cctv-system-design": "camera",
   "firewall-zero-to-hero": "firewall",
-  "kerio-control-zero-to-hero": "kerio"
+  "kerio-control-zero-to-hero": "kerio",
+  "computer-science-core": "switch",
+  "linux-systems-administration": "terminal",
+  "windows-active-directory-operations": "directory",
+  "network-engineering-advanced": "topology",
+  "soc-incident-response-detection": "analytics",
+  "security-engineering-appsec": "browser",
+  "cloud-devsecops-operations": "kerio",
+  "iso-27001-isms": "firewall",
+  "gdpr-privacy-engineering": "shield",
+  "senior-infrastructure-architecture": "router"
 };
 
 const pathIllustrations: Record<string, Illustration> = {
   "it-support-networking": "switch",
+  "linux-systems-administrator": "terminal",
   "soc-analyst": "shield",
   "network-admin-mikrotik": "router",
   "firewall-engineering-zero-to-hero": "kerio",
   "cisco-ios-zero-to-hero": "topology",
   "wireless-network-security": "browser",
   "active-directory-security": "windows",
-  "cctv-physical-security": "analytics"
+  "cctv-physical-security": "analytics",
+  "windows-enterprise-administrator": "directory",
+  "network-engineer": "switch",
+  "soc-analyst-to-incident-lead": "analytics",
+  "security-engineer": "browser",
+  "cloud-devsecops-engineer": "kerio",
+  "iso27001-grc-practitioner": "firewall",
+  "gdpr-privacy-engineer": "shield",
+  "computer-science-foundations": "terminal",
+  "senior-platform-security-architect": "router"
 };
 
 const illustrationLabel: Record<Illustration, string> = {
@@ -64,13 +84,17 @@ export function getPathArtCategory(slug: string, fallback: Category): Category {
   return pathArtCategory[slug] ?? fallback;
 }
 
+export function hasLearningCardArt(slug: string, kind: "module" | "path" = "module") {
+  return Boolean((kind === "path" ? pathIllustrations : illustrations)[slug]);
+}
+
 export function LearningCardArt({ category, slug, title, kind = "module" }: { category: Category; slug: string; title: string; kind?: "module" | "path" }) {
   const art = theme[category];
-  const illustration = (kind === "path" ? pathIllustrations[slug] : illustrations[slug])
-    ?? (category === "systems" ? "terminal" : category === "security" ? "shield" : category === "physical" ? "camera" : "topology");
+  const illustration = (kind === "path" ? pathIllustrations[slug] : illustrations[slug]);
+  if (!illustration) throw new Error(`Missing learning card illustration for ${kind} "${slug}".`);
   const gradientId = `learn-art-${kind}-${slug.replace(/[^a-z0-9-]/gi, "")}`;
   return (
-    <div className={`learn-card-art learn-card-art-${art.className} learn-card-art-${illustration}`} role="img" aria-label={`${title} — ${illustrationLabel[illustration] || art.label}`}>
+    <div className={`learn-card-art learn-card-art-${art.className} learn-card-art-${illustration} learn-card-art-${slug}`} role="img" aria-label={`${title} — ${illustrationLabel[illustration] || art.label}`}>
       <svg viewBox="0 0 520 180" aria-hidden="true" focusable="false">
         <defs>
           <linearGradient id={gradientId} x1="0" y1="0" x2="1" y2="1">

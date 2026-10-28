@@ -2,6 +2,14 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { learningModules } from "./learning-demo";
 import { createLinuxVirtualTerminalState, runLinuxVirtualCommand } from "./linux-virtual-terminal";
+import { getPracticeCommandCompletion } from "./practice-command-completion";
+
+test("practice command completion uses only the listed commands", () => {
+  assert.equal(getPracticeCommandCompletion("un", ["uname -a", "uname -m"]), "uname -");
+  assert.equal(getPracticeCommandCompletion("pwd", ["pwd"]), null);
+  assert.equal(getPracticeCommandCompletion("unknown", ["pwd"]), null);
+  assert.equal(getPracticeCommandCompletion("", ["pwd"]), null);
+});
 
 test("every assigned Linux practice command runs in the browser-only simulator", () => {
   const module = learningModules.find((item) => item.slug === "linux-fundamentals");

@@ -3,11 +3,12 @@ import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import { getPath, learningModules, learningPaths } from "./learning-demo";
+import { hasLearningCardArt } from "../components/learning-card-art";
 import { firewallZeroToHeroDetails } from "./firewall-zero-to-hero-content";
 import { firewallKerioTerminalExamples } from "./firewall-kerio-terminal-examples";
 import { kerioControlDetails } from "./kerio-control-content";
 import { learningTeachingChecks, learningTeachingVisuals } from "./learning-teaching-visuals";
-import { networkFundamentalsDetails } from "./network-fundamentals-content";
+import { networkFundamentalsDetails, networkFundamentalsPractices } from "./network-fundamentals-content";
 import { freeLearningModules, modulePriceTec, sectionPriceTec } from "./learning-pricing";
 import { toLearningModulePreview } from "./learning-catalog-data";
 import { getTecPack, TEC_PRICE_MINOR, TEC_PRICE_UZS, tecPacks, tecPurchaseCostMinor } from "./tec-pricing";
@@ -17,11 +18,20 @@ import { moduleCompletionRewardTec } from "./learning-rewards";
 import { getLearningSectionQuestion, isLearningAnswerCorrect } from "./learning-completion";
 import { linuxFundamentalsCommandCatalog, linuxFundamentalsDetails } from "./linux-fundamentals-content";
 import { learningLabs } from "./learning-labs";
+import { learningSpecialistDetails } from "./learning-specialist-content";
 
 test("network fundamentals keeps rewritten lessons and screenshots on the site", () => {
   const module = learningModules.find((item) => item.slug === "network-fundamentals");
   assert.ok(module, "network fundamentals course exists");
   assert.equal(module.sections.length, 8);
+  assert.equal(networkFundamentalsPractices.length, module.sections.length);
+  for (const [index, section] of module.sections.entries()) {
+    assert.ok(section.interactivePractice, `lesson ${index + 1} has an interactive lab`);
+    assert.ok((section.interactivePractice?.tasks.length ?? 0) >= 2, `lesson ${index + 1} includes multiple practical tasks`);
+    assert.ok(section.interactivePractice?.tasks.every((task) => task.output.uz.includes("sintetik")), `lesson ${index + 1} uses clearly labeled synthetic output`);
+    assert.ok(section.question, `lesson ${index + 1} has a knowledge check`);
+  }
+  assert.ok(toLearningModulePreview(module).sections.every((section) => section.requiresPractice), "each network lesson is blocked until its practice is complete");
   for (const [index, section] of module.sections.entries()) {
     const details = networkFundamentalsDetails[index];
     assert.ok(details, `lesson ${index + 1} has rewritten in-page material`);
@@ -42,6 +52,83 @@ test("network fundamentals keeps rewritten lessons and screenshots on the site",
     const imagePath = join(process.cwd(), "public", image.src.slice(1));
     assert.ok(existsSync(imagePath), `screenshot exists: ${image.src}`);
     assert.equal(readFileSync(imagePath).subarray(0, 8).toString("hex"), "89504e470d0a1a0a");
+  }
+});
+
+test("Windows and Active Directory course has sequential, practice-based lessons", () => {
+  const module = learningModules.find((item) => item.slug === "windows-fundamentals");
+  assert.ok(module, "Windows and Active Directory course exists");
+  assert.equal(module.sections.length, 9);
+  assert.ok(module.hours >= 20);
+  assert.ok((module.references?.length ?? 0) >= 3);
+  for (const [index, section] of module.sections.entries()) {
+    assert.ok(section.interactivePractice, `lesson ${index + 1} has a safe interactive practice`);
+    assert.ok((section.interactivePractice?.tasks.length ?? 0) >= 2, `lesson ${index + 1} contains multiple practice tasks`);
+    assert.ok(section.question, `lesson ${index + 1} has a knowledge check`);
+    assert.equal(section.interactivePractice?.platform, "windows");
+  }
+});
+
+test("all published learning modules and paths have explicit individual card art", () => {
+  for (const module of learningModules) {
+    assert.ok(hasLearningCardArt(module.slug), `module art exists: ${module.slug}`);
+  }
+  for (const path of learningPaths) {
+    assert.ok(hasLearningCardArt(path.slug, "path"), `path art exists: ${path.slug}`);
+  }
+});
+
+test("each learning module has a module-specific independent lab entry point", () => {
+  const modules = [...new Map(learningModules.map((module) => [module.slug, module])).values()];
+  assert.equal(modules.length, 23, "all core and career modules are represented once");
+  for (const module of modules) {
+    assert.ok(module.hasLab, `${module.slug} advertises its independent lab`);
+    assert.ok(learningLabs.some((lab) => lab.moduleSlug === module.slug), `${module.slug} has a directly linked lab`);
+  }
+
+  for (const slug of [
+    "mikrotik-routeros-basics",
+    "intro-cybersecurity",
+    "web-security-owasp",
+    "soc-log-analysis",
+    "wifi-security",
+    "active-directory-security",
+    "cctv-system-design"
+  ]) {
+    const module = modules.find((item) => item.slug === slug);
+    assert.ok(module, `${slug} exists`);
+    assert.ok((module.references?.length ?? 0) >= 2, `${slug} provides authoritative further reading`);
+    assert.ok(module.references?.every((source) => source.href.startsWith("https://")), `${slug} references use HTTPS`);
+  }
+});
+
+test("short specialist courses load expanded lesson material for every section", () => {
+  const slugs = [
+    "mikrotik-routeros-basics",
+    "intro-cybersecurity",
+    "web-security-owasp",
+    "soc-log-analysis",
+    "wifi-security",
+    "active-directory-security",
+    "cctv-system-design"
+  ];
+  assert.equal(Object.keys(learningSpecialistDetails).length, slugs.length);
+  for (const slug of slugs) {
+    const module = learningModules.find((item) => item.slug === slug);
+    const details = learningSpecialistDetails[slug];
+    assert.ok(module, `${slug} is published`);
+    assert.ok(details, `${slug} has extended content`);
+    assert.ok(module.sections.length > Object.keys(details).length, `${slug} has deep chapters beyond the original specialist notes`);
+    for (const [index, section] of module.sections.entries()) {
+      const hasExpandedContent = (details[index]?.length ?? 0) > 1_000;
+      const hasSubstantialOwnContent = section.content.uz.length > 1_000;
+      assert.ok(
+        hasExpandedContent || hasSubstantialOwnContent,
+        `${slug} lesson ${index + 1} has substantial expanded or inline content`
+      );
+      assert.ok(getLearningSectionQuestion(module, index), `${slug} lesson ${index + 1} has a checked question`);
+      assert.ok(section.title.uz, `${slug} lesson ${index + 1} has a title`);
+    }
   }
 });
 
@@ -220,7 +307,10 @@ test("learning module previews expose titles and pricing without lesson bodies",
   const module = learningModules.find((item) => item.slug === "firewall-zero-to-hero");
   assert.ok(module);
   const preview = toLearningModulePreview(module);
-  assert.deepEqual(preview.sections, module.sections.map(({ title }) => ({ title })));
+  assert.deepEqual(preview.sections, module.sections.map(({ title, terminalPractice, interactivePractice }) => ({
+    title,
+    requiresPractice: Boolean(terminalPractice?.tasks.length || interactivePractice?.tasks.length)
+  })));
   for (const section of preview.sections) {
     assert.equal("content" in section, false);
     assert.equal("images" in section, false);
@@ -269,8 +359,8 @@ test("module completion awards one difficulty-scaled TEC reward", () => {
   assert.equal(moduleCompletionRewardTec(difficult), 11);
   assert.equal(moduleCompletionRewardTec({ ...fundamental, difficulty: "hard" }), 16);
   const currentRewards = learningModules.map(moduleCompletionRewardTec);
-  assert.equal(Math.min(...currentRewards), 5);
-  assert.equal(Math.max(...currentRewards), 16);
+  assert.equal(Math.min(...currentRewards), 6);
+  assert.equal(Math.max(...currentRewards), 22);
 });
 
 test("career books cover foundational through senior topics with validated source links", () => {

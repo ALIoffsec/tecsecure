@@ -34,7 +34,16 @@ export function PageBackLink() {
 
   return (
     <div className="container page-back-wrap">
-      <Link className="page-back-link" href={getParentRoute(pathname)}>
+      <Link
+        className="page-back-link"
+        href={getParentRoute(pathname)}
+        onClick={(event) => {
+          if (window.history.length > 1) {
+            event.preventDefault();
+            window.history.back();
+          }
+        }}
+      >
         <span aria-hidden="true">←</span>
         {t("goBack")}
       </Link>

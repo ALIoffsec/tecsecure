@@ -55,6 +55,16 @@ const terminalPracticeSchema = z.object({
     prompt: localizedSchema
   }).strict()).min(1).max(100)
 }).strict();
+const interactivePracticeSchema = z.object({
+  platform: z.enum(["windows", "network"]),
+  instructions: localizedSchema,
+  tasks: z.array(z.object({
+    id: slugSchema,
+    command: z.string().trim().min(1).max(500),
+    prompt: localizedSchema,
+    output: localizedSchema
+  }).strict()).min(1).max(100)
+}).strict();
 const sectionSchema = z.object({
   title: localizedSchema,
   content: localizedSchema.optional(),
@@ -63,7 +73,8 @@ const sectionSchema = z.object({
   images: z.array(learningImageSchema).max(30).optional(),
   diagram: diagramSchema.optional(),
   question: questionSchema.optional(),
-  terminalPractice: terminalPracticeSchema.optional()
+  terminalPractice: terminalPracticeSchema.optional(),
+  interactivePractice: interactivePracticeSchema.optional()
 }).strict();
 const referenceSchema = z.object({ label: localizedSchema, href: z.string().trim().min(1).max(2000) }).strict();
 

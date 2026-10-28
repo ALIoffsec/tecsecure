@@ -6,7 +6,7 @@ import { getActivePlanKey } from "@/lib/practice-server";
 import { isPreviewMode } from "@/lib/preview-mode";
 import { prisma } from "@/lib/prisma";
 
-export async function PracticeHubPage({ view }: { view: PracticeHubView }) {
+export async function PracticeHubPage({ view, moduleSlug }: { view: PracticeHubView; moduleSlug?: string }) {
   if (isPreviewMode) return <div className="container page-shell"><PreviewModeNotice /></div>;
 
   const user = await requireUser();
@@ -31,12 +31,15 @@ export async function PracticeHubPage({ view }: { view: PracticeHubView }) {
     const title = learningModules.find((module) => module.slug === slug)?.title;
     return typeof title === "string" ? title : title?.uz ?? slug;
   };
+  const selectedModuleTitle = moduleSlug ? moduleTitle(moduleSlug) : undefined;
+  const visibleLabs = moduleSlug ? learningLabs.filter((lab) => lab.moduleSlug === moduleSlug) : learningLabs;
 
   return <PracticeHub
     view={view}
     tecBalance={account?.rewardPoints ?? 0}
     planKey={planKey}
-    labs={learningLabs.map((lab) => ({
+    moduleTitle={selectedModuleTitle}
+    labs={visibleLabs.map((lab) => ({
       slug: lab.slug, title: lab.title, summary: lab.summary, level: lab.level, minutes: lab.minutes, priceTec: lab.priceTec,
       taskCount: lab.tasks.length, solved: solved[lab.slug] ?? 0, unlocked: unlocked.has(lab.slug), completed: completed.has(lab.slug)
     }))}

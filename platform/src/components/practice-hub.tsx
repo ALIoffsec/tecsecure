@@ -10,7 +10,7 @@ type HubExam = { slug: string; title: string; summary: string; feeTec: number; m
 type HubCert = { code: string; title: string; scorePercent: number; issuedAt: string };
 export type PracticeHubView = "overview" | "labs" | "exams";
 
-export function PracticeHub({ view, tecBalance, planKey, labs, exams, certificates }: { view: PracticeHubView; tecBalance: number; planKey: string | null; labs: HubLab[]; exams: HubExam[]; certificates: HubCert[] }) {
+export function PracticeHub({ view, tecBalance, planKey, labs, exams, certificates, moduleTitle }: { view: PracticeHubView; tecBalance: number; planKey: string | null; labs: HubLab[]; exams: HubExam[]; certificates: HubCert[]; moduleTitle?: string }) {
   const { tx } = useLearningText();
   const title = view === "labs" ? tx.practiceLabsTitle : view === "exams" ? tx.practiceExamsTitle : tx.practiceOverviewTitle;
   const intro = view === "labs" ? tx.practiceLabsIntro : view === "exams" ? tx.practiceExamsIntro : tx.practiceOverviewIntro;
@@ -44,7 +44,8 @@ export function PracticeHub({ view, tecBalance, planKey, labs, exams, certificat
     </div>}
 
     {view === "labs" && <>
-    <h2>{tx.catalogLabs}</h2>
+    <h2>{moduleTitle ? `${tx.catalogLabs} · ${moduleTitle}` : tx.catalogLabs}</h2>
+    {labs.length === 0 && <p className="muted">{tx.labsEmpty}</p>}
     <div className="practice-grid">
       {labs.map((lab) => {
         const price = labPriceFor(planKey, lab.priceTec);
