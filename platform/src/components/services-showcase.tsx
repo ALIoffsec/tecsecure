@@ -4,27 +4,24 @@ import { useState } from "react";
 import { useSitePreferences } from "@/components/site-preferences";
 import { UiIcon } from "@/components/ui-icon";
 
-type ServiceCategory = "network" | "installation" | "consulting" | "equipment";
+type ServiceCategory = "network" | "installation" | "consulting";
 
-const categories: { id: ServiceCategory; title: "serviceNetworkCategory" | "serviceInstallationCategory" | "serviceConsultingCategory" | "serviceEquipmentCategory"; image: "network" | "camera" | "clipboard" | "toolbox" }[] = [
+const categories: { id: ServiceCategory; title: "serviceNetworkCategory" | "serviceInstallationCategory" | "serviceConsultingCategory"; image: "network" | "camera" | "clipboard" }[] = [
   { id: "network", title: "serviceNetworkCategory", image: "network" },
   { id: "installation", title: "serviceInstallationCategory", image: "camera" },
-  { id: "consulting", title: "serviceConsultingCategory", image: "clipboard" },
-  { id: "equipment", title: "serviceEquipmentCategory", image: "toolbox" }
+  { id: "consulting", title: "serviceConsultingCategory", image: "clipboard" }
 ];
 
-const contentKeys: Record<ServiceCategory, "networkInfrastructureServices" | "installationServices" | "consultingServices" | "equipmentBrands"> = {
+const contentKeys: Record<ServiceCategory, "networkInfrastructureServices" | "installationServices" | "consultingServices"> = {
   network: "networkInfrastructureServices",
   installation: "installationServices",
-  consulting: "consultingServices",
-  equipment: "equipmentBrands"
+  consulting: "consultingServices"
 };
 
-const illustrationKeys: Record<ServiceCategory, "networkIllustration" | "installationIllustration" | "consultingIllustration" | "equipmentIllustration"> = {
+const illustrationKeys: Record<ServiceCategory, "networkIllustration" | "installationIllustration" | "consultingIllustration"> = {
   network: "networkIllustration",
   installation: "installationIllustration",
-  consulting: "consultingIllustration",
-  equipment: "equipmentIllustration"
+  consulting: "consultingIllustration"
 };
 
 function ServiceArtwork({ category, description }: { category: ServiceCategory; description: string }) {
@@ -57,14 +54,6 @@ function ServiceArtwork({ category, description }: { category: ServiceCategory; 
         <rect x="188" y="108" width="22" height="74" rx="4" className="art-node" />
         <circle cx="285" cy="60" r="25" className="art-node" />
         <path d="M278 60l6 6 11-14M74 157l16 16 21-30" className="art-connector" />
-      </svg>}
-      {category === "equipment" && <svg viewBox="0 0 360 230" aria-hidden="true">
-        <rect x="58" y="42" width="105" height="64" rx="12" className="art-frame" />
-        <rect x="198" y="42" width="105" height="64" rx="12" className="art-frame" />
-        <rect x="58" y="126" width="105" height="64" rx="12" className="art-frame" />
-        <rect x="198" y="126" width="105" height="64" rx="12" className="art-frame" />
-        <path d="M86 73h50m-25-15v30M224 73h52m-43-12v24m14-24v24m14-24v24M82 157h57m-49-12v25m16-25v25m16-25v25M225 158h51" className="art-line" />
-        <circle cx="288" cy="172" r="6" className="art-light" />
       </svg>}
       <span className="service-art-label">{description}</span>
     </div>
@@ -102,9 +91,7 @@ export function ServicesShowcase() {
         <div className="service-category-details">
           <span className="eyebrow">{t(active.title)}</span>
           <h3>{t(active.title)}</h3>
-          {active.id === "equipment"
-            ? <div className="equipment-brand-list">{services.map((brand) => <span className="equipment-brand" key={brand}>{brand}</span>)}</div>
-            : <ul className="service-bullet-list">{services.map((service) => <li key={service}>{service}</li>)}</ul>}
+          <ul className="service-bullet-list">{services.map((service) => <li key={service}>{service}</li>)}</ul>
         </div>
       </div>
     </div>

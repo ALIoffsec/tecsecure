@@ -47,6 +47,14 @@ const questionSchema = z.object({
   prompt: localizedSchema,
   answers: z.array(z.string().trim().min(1).max(500)).min(1).max(100)
 }).strict();
+const terminalPracticeSchema = z.object({
+  instructions: localizedSchema,
+  tasks: z.array(z.object({
+    id: slugSchema,
+    command: z.string().trim().min(1).max(500),
+    prompt: localizedSchema
+  }).strict()).min(1).max(100)
+}).strict();
 const sectionSchema = z.object({
   title: localizedSchema,
   content: localizedSchema.optional(),
@@ -54,7 +62,8 @@ const sectionSchema = z.object({
   exampleExplanation: localizedSchema.optional(),
   images: z.array(learningImageSchema).max(30).optional(),
   diagram: diagramSchema.optional(),
-  question: questionSchema.optional()
+  question: questionSchema.optional(),
+  terminalPractice: terminalPracticeSchema.optional()
 }).strict();
 const referenceSchema = z.object({ label: localizedSchema, href: z.string().trim().min(1).max(2000) }).strict();
 

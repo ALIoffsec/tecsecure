@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useSitePreferences } from "@/components/site-preferences";
 import { UiIcon } from "@/components/ui-icon";
 import { MediaGallery } from "@/components/media-uploader";
-import { HomeHeroAlbum } from "@/components/home-hero-album";
+import { HomeHero } from "@/components/home-hero";
 
 const fallbackPhones = ["+998200141455", "+998990782102", "+998931970006"];
 const partnerBrands = [
@@ -33,8 +33,8 @@ export function HomeContent({ contact, work }: { contact: Record<string, string>
   const telegram = (contact.telegram || "@abdiazizov_m_ali").replace(/^@/, "");
   const instagram = (contact.instagram || "@abdiazizov_m_ali").replace(/^@/, "");
   return (
-    <>
-      <HomeHeroAlbum />
+    <div className="home-page">
+      <HomeHero />
 
       <section className="section">
         <div className="container">
@@ -43,30 +43,75 @@ export function HomeContent({ contact, work }: { contact: Record<string, string>
             <p>{t("whatWeDoDescription")}</p>
           </div>
           <div className="card-grid">
-            <article className="card"><div className="card-icon" aria-hidden="true"><UiIcon name="network" /></div><h3>{t("networkTitle")}</h3><p>{t("networkDescription")}</p></article>
-            <article className="card"><div className="card-icon" aria-hidden="true"><UiIcon name="shield" /></div><h3>{t("securityTitle")}</h3><p>{t("securityDescription")}</p></article>
-            <article className="card"><div className="card-icon" aria-hidden="true"><UiIcon name="settings" /></div><h3>{t("supportTitle")}</h3><p>{t("supportDescription")}</p></article>
+            <article className="card home-service-card"><div className="card-icon" aria-hidden="true"><UiIcon name="network" /></div><h3>{t("networkTitle")}</h3><p>{t("networkDescription")}</p><Link className="home-card-action" href="/services">{t("homeCardServicesAction")} <span aria-hidden="true">→</span></Link></article>
+            <article className="card home-service-card"><div className="card-icon" aria-hidden="true"><UiIcon name="shield" /></div><h3>{t("securityTitle")}</h3><p>{t("securityDescription")}</p><Link className="home-card-action" href="/services">{t("homeCardServicesAction")} <span aria-hidden="true">→</span></Link></article>
+            <article className="card home-service-card"><div className="card-icon" aria-hidden="true"><UiIcon name="settings" /></div><h3>{t("supportTitle")}</h3><p>{t("supportDescription")}</p><Link className="home-card-action" href="/learning">{t("homeCardLearningAction")} <span aria-hidden="true">→</span></Link></article>
+          </div>
+        </div>
+      </section>
+
+      <section className="section home-resource-section">
+        <div className="container">
+          <div className="section-head">
+            <div><span className="eyebrow">{t("homeExploreEyebrow")}</span><h2>{t("chooseDirectionTitle")}</h2></div>
+            <p>{t("chooseDirectionDescription")}</p>
+          </div>
+          <div className="home-resource-grid">
+            <article className="panel-card home-resource-card">
+              <span className="home-resource-kicker">01 · {t("navEducation")}</span>
+              <h3>{t("homeLearningResourceTitle")}</h3>
+              <p>{t("homeLearningResourceDescription")}</p>
+              <Link className="home-card-action" href="/learning">{t("homeLearningResourceAction")} <span aria-hidden="true">→</span></Link>
+            </article>
+            <article className="panel-card home-resource-card">
+              <span className="home-resource-kicker">02 · {t("productCatalog")}</span>
+              <h3>{t("homeProductsResourceTitle")}</h3>
+              <p>{t("homeProductsResourceDescription")}</p>
+              <Link className="home-card-action" href="/products">{t("homeProductsResourceAction")} <span aria-hidden="true">→</span></Link>
+            </article>
+            <article className="panel-card home-resource-card">
+              <span className="home-resource-kicker">03 · {t("cctvCalculator")}</span>
+              <h3>{t("homeToolResourceTitle")}</h3>
+              <p>{t("homeToolResourceDescription")}</p>
+              <Link className="home-card-action" href="/monitoring">{t("homeToolResourceAction")} <span aria-hidden="true">→</span></Link>
+            </article>
           </div>
         </div>
       </section>
 
       <section className="section alt">
-        <div className="container intro-columns">
-          <article className="intro-panel">
-            <span className="eyebrow">{t("howWeWork")}</span>
-            <h2>{t("clearProcessTitle")}</h2>
-            <p className="muted">{t("clearProcessDescription")}</p>
-          </article>
-          <article className="intro-panel">
-            <span className="eyebrow">{t("partnerships")}</span>
-            <h2>{t("partnershipTitle")}</h2>
-            <p className="muted">{t("partnershipDescription")}</p>
-          </article>
-          <article className="intro-panel">
-            <span className="eyebrow">{t("outcomes")}</span>
-            <h2>{t("outcomesTitle")}</h2>
-            <p className="muted">{t("outcomesDescription")}</p>
-          </article>
+        <div className="container">
+          <div className="intro-columns">
+            <article className="intro-panel">
+              <span className="eyebrow">{t("howWeWork")}</span>
+              <h2>{t("clearProcessTitle")}</h2>
+              <p className="muted">{t("clearProcessDescription")}</p>
+              <Link className="home-card-action" href="/request-quote">{t("requestAQuote")} <span aria-hidden="true">→</span></Link>
+            </article>
+            <article className="intro-panel">
+              <span className="eyebrow">{t("partnerships")}</span>
+              <h2>{t("partnershipTitle")}</h2>
+              <p className="muted">{t("partnershipDescription")}</p>
+              <Link className="home-card-action" href="/consultation">{t("discussTechnicalNeeds")} <span aria-hidden="true">→</span></Link>
+            </article>
+            <article className="intro-panel">
+              <span className="eyebrow">{t("outcomes")}</span>
+              <h2>{t("outcomesTitle")}</h2>
+              <p className="muted">{t("outcomesDescription")}</p>
+              <Link className="home-card-action" href="/login">{t("signIn")} <span aria-hidden="true">→</span></Link>
+            </article>
+          </div>
+          <aside className="home-account-panel">
+            <div>
+              <span className="eyebrow">{t("homeAccountEyebrow")}</span>
+              <h2>{t("homeAccountTitle")}</h2>
+              <p>{t("homeAccountDescription")}</p>
+            </div>
+            <div className="home-account-actions">
+              <Link className="button" href="/register">{t("createAccountButton")}</Link>
+              <Link className="button ghost" href="/login">{t("signIn")}</Link>
+            </div>
+          </aside>
         </div>
       </section>
 
@@ -106,26 +151,30 @@ export function HomeContent({ contact, work }: { contact: Record<string, string>
               <Link className="button ghost" href="/request-quote">{t("requestAQuote")}</Link>
             </div>
           </div>
-          <div className="contact-details">
-            <div className="contact-detail">
-              <span>{t("phoneNumbers")}</span>
-              {phones.map((phone) => <a key={phone} href={`tel:${phone.replace(/[^\d+]/g, "")}`}>{phone}</a>)}
+          <nav className="contact-details" aria-label={t("quickContactTitle")}>
+            <div className="contact-icon-group" role="group" aria-label={t("phoneNumbers")}>
+              {phones.map((phone) => (
+                <a className="contact-icon-link" key={phone} href={`tel:${phone.replace(/[^\d+]/g, "")}`} aria-label={`${t("phoneNumbers")}: ${phone}`} title={`${t("phoneNumbers")}: ${phone}`}>
+                  <UiIcon name="phone" />
+                  <span className="sr-only">{phone}</span>
+                </a>
+              ))}
             </div>
-            <div className="contact-detail">
-              <span>{t("contactEmail")}</span>
-              <a href={`mailto:${email}`}>{email}</a>
-            </div>
-            <div className="contact-detail">
-              <span>{t("contactTelegram")}</span>
-              <a href={`https://t.me/${telegram}`} target="_blank" rel="noreferrer">@{telegram}</a>
-            </div>
-            <div className="contact-detail">
-              <span>{t("contactInstagram")}</span>
-              <a href={`https://instagram.com/${instagram}`} target="_blank" rel="noreferrer">@{instagram}</a>
-            </div>
-          </div>
+            <a className="contact-icon-link" href={`mailto:${email}`} aria-label={`${t("contactEmail")}: ${email}`} title={`${t("contactEmail")}: ${email}`}>
+              <UiIcon name="mail" />
+              <span className="sr-only">{email}</span>
+            </a>
+            <a className="contact-icon-link" href={`https://t.me/${telegram}`} target="_blank" rel="noreferrer" aria-label={`${t("contactTelegram")}: @${telegram}`} title={`${t("contactTelegram")}: @${telegram}`}>
+              <UiIcon name="send" />
+              <span className="sr-only">@{telegram}</span>
+            </a>
+            <a className="contact-icon-link" href={`https://instagram.com/${instagram}`} target="_blank" rel="noreferrer" aria-label={`${t("contactInstagram")}: @${instagram}`} title={`${t("contactInstagram")}: @${instagram}`}>
+              <UiIcon name="instagram" />
+              <span className="sr-only">@{instagram}</span>
+            </a>
+          </nav>
         </div>
       </section>
-    </>
+    </div>
   );
 }

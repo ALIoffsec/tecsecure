@@ -35,7 +35,7 @@ export const learningSubscriptionPlans: {
     name: "Expert",
     priceMinor: 19_990_000,
     durationDays: 30,
-    description: "Hozirgi katalogdagi barcha 13 modul. Bu senior malakasi yoki ish tajribasi kafolati emas.",
+    description: "Katalogdagi barcha modullar. Obuna senior malakasi yoki ish tajribasi kafolati emas.",
     modules: "all"
   }
 ];

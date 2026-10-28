@@ -7,13 +7,14 @@ import { useSitePreferences } from "@/components/site-preferences";
 import { ToastMessage } from "@/components/toast-provider";
 import { OAuthSignIn } from "@/components/oauth-sign-in";
 
-type Props = { mode: "login" | "register"; audience?: "customer" | "staff" };
+type Props = { mode: "login" | "register"; audience?: "customer" | "staff"; redirectTo?: string };
 
-export function AuthForm({ mode, audience = "customer" }: Props) {
+export function AuthForm({ mode, audience = "customer", redirectTo }: Props) {
   const router = useRouter();
   const { t } = useSitePreferences();
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const nextQuery = redirectTo ? `?next=${encodeURIComponent(redirectTo)}` : "";
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -31,7 +32,7 @@ export function AuthForm({ mode, audience = "customer" }: Props) {
         setError(result.error ?? t("requestFailed"));
         return;
       }
-      router.replace(audience === "staff" ? "/admin" : "/portal");
+      router.replace(audience === "staff" ? "/admin" : redirectTo ?? "/portal");
       router.refresh();
     } catch {
       setError(t("serverUnavailable"));
@@ -58,9 +59,9 @@ export function AuthForm({ mode, audience = "customer" }: Props) {
         <ToastMessage message={error} variant="error" />
         <button className="button" type="submit" disabled={busy}>{busy ? t("waiting") : mode === "login" ? t("signIn") : t("createAccountButton")}</button>
       </form>
-      {audience === "customer" && <OAuthSignIn mode={mode} />}
+      {audience === "customer" && <OAuthSignIn mode={mode} redirectTo={redirectTo} />}
       {audience === "customer" && <p className="small muted" style={{ marginTop: 18 }}>
-        {mode === "login" ? <>{t("noAccount")} <Link className="text-link" href="/register">{t("registerLink")}</Link></> : <>{t("alreadyHaveAccount")} <Link className="text-link" href="/login">{t("signIn")}</Link></>}
+        {mode === "login" ? <>{t("noAccount")} <Link className="text-link" href={`/register${nextQuery}`}>{t("registerLink")}</Link></> : <>{t("alreadyHaveAccount")} <Link className="text-link" href={`/login${nextQuery}`}>{t("signIn")}</Link></>}
       </p>}
     </section>
   );

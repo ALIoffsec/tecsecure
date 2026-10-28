@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="420" viewBox="0 0 1100 420" role="img" aria-labelledby="title description">
+  <title id="title">Linux matn pipeline’i va checksum tekshiruvi</title>
+  <desc id="description">Fayldan sintetik yozuvlarni filtrlash, natijani saqlash va checksumni ishonchli manba bilan solishtirish oqimi.</desc>
+  <rect width="1100" height="420" rx="26" fill="#111c30"/>
+  <text x="52" y="56" fill="#f3f7ff" font-family="Segoe UI, Arial, sans-serif" font-size="25" font-weight="700">Oqimni tahlil qiling, natijani tekshiring</text>
+  <text x="52" y="88" fill="#a9bad1" font-family="Segoe UI, Arial, sans-serif" font-size="15">Faqat sintetik yoki ruxsatli ma’lumotdan foydalaning; ishonchsiz arxivni avval tekshiring.</text>
+  <g font-family="Segoe UI, Arial, sans-serif">
+    <rect x="52" y="142" width="198" height="100" rx="16" fill="#1c2f47" stroke="#4e739b"/>
+    <text x="151" y="178" fill="#9dcaff" font-size="15" font-weight="700" text-anchor="middle">KIRITISH</text>
+    <text x="151" y="210" fill="#edf5ff" font-family="Consolas, monospace" font-size="17" text-anchor="middle">app.log</text>
+    <path d="M259 192h49" stroke="#7ea3c7" stroke-width="3"/>
+    <path d="m300 184 12 8-12 8" fill="none" stroke="#7ea3c7" stroke-width="3"/>
+    <rect x="320" y="142" width="198" height="100" rx="16" fill="#173b37" stroke="#368a71"/>
+    <text x="419" y="178" fill="#8ce0c0" font-size="15" font-weight="700" text-anchor="middle">FILTRLASH</text>
+    <text x="419" y="210" fill="#effcf7" font-family="Consolas, monospace" font-size="16" text-anchor="middle">grep 'ERROR'</text>
+    <path d="M527 192h49" stroke="#7ea3c7" stroke-width="3"/>
+    <path d="m568 184 12 8-12 8" fill="none" stroke="#7ea3c7" stroke-width="3"/>
+    <rect x="588" y="142" width="198" height="100" rx="16" fill="#403722" stroke="#a78743"/>
+    <text x="687" y="178" fill="#f4d184" font-size="15" font-weight="700" text-anchor="middle">TAHLIL</text>
+    <text x="687" y="210" fill="#fff9e9" font-family="Consolas, monospace" font-size="16" text-anchor="middle">sort | uniq -c</text>
+    <path d="M795 192h49" stroke="#7ea3c7" stroke-width="3"/>
+    <path d="m836 184 12 8-12 8" fill="none" stroke="#7ea3c7" stroke-width="3"/>
+    <rect x="856" y="142" width="192" height="100" rx="16" fill="#292744" stroke="#7566a9"/>
+    <text x="952" y="178" fill="#c0b3ff" font-size="15" font-weight="700" text-anchor="middle">NATIJA</text>
+    <text x="952" y="210" fill="#f2efff" font-family="Consolas, monospace" font-size="16" text-anchor="middle">errors.txt</text>
+  </g>
+  <rect x="52" y="277" width="996" height="91" rx="16" fill="#19283a" stroke="#40566f"/>
+  <text x="76" y="310" fill="#82c7ff" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="700">YAXLITLIKNI SOLISHTIRISH</text>
+  <text x="76" y="340" fill="#dce8f6" font-family="Consolas, monospace" font-size="15">sha256sum errors.txt</text>
+  <text x="332" y="340" fill="#b9c9dc" font-family="Segoe UI, Arial, sans-serif" font-size="15">→ digestni ishonchli manbadan olingan qiymat bilan tekshiring</text>
+  <text x="76" y="391" fill="#8fa4bd" font-family="Segoe UI, Arial, sans-serif" font-size="13">Checksum o‘xshashligini ko‘rsatadi; ishonchli manba bo‘lmasa, fayl muallifini tasdiqlamaydi.</text>
+</svg>

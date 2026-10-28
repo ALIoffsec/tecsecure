@@ -2,11 +2,13 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { getExam, gradeExam, learningExams, toPublicQuestions } from "./learning-exams";
 import { getLab, isLabAnswerCorrect, learningLabs, toPublicLab } from "./learning-labs";
+import { careerLearningLabs } from "./learning-career-labs";
 import { getModule } from "./learning-demo";
 import { examPriceFor, labPriceFor } from "./practice-perks";
 
 test("labs have unique tasks, valid modules and no leaked answers in public view", () => {
-  assert.ok(learningLabs.length >= 8);
+  assert.equal(careerLearningLabs.length, 43);
+  assert.equal(learningLabs.length, 54);
   for (const lab of learningLabs) {
     assert.ok(getModule(lab.moduleSlug), `module ${lab.moduleSlug}`);
     assert.ok(lab.tasks.length >= 4);

@@ -1,4 +1,6 @@
 import type { Locale } from "@/lib/messages";
+import { careerLearningModules, careerLearningPaths } from "./learning-career-content";
+import { linuxFundamentalsSections } from "./linux-fundamentals-content";
 
 export type Localized = Record<Locale, string>;
 export type Difficulty = "fundamental" | "easy" | "medium" | "hard";
@@ -23,7 +25,19 @@ export type LearningSection = {
   exampleExplanation?: Localized;
   images?: LearningImage[];
   diagram?: LearningDiagram;
+  terminalPractice?: LinuxTerminalPractice;
   question?: { prompt: Localized; answers: string[] };
+};
+
+export type LinuxTerminalTask = {
+  id: string;
+  command: string;
+  prompt: Localized;
+};
+
+export type LinuxTerminalPractice = {
+  instructions: Localized;
+  tasks: LinuxTerminalTask[];
 };
 
 export type LearningImage = {
@@ -225,53 +239,24 @@ export const learningModules: LearningModule[] = [
   {
     slug: "linux-fundamentals",
     title: l("Linux asoslari", "Основы Linux", "Linux Fundamentals"),
-    summary: l("Buyruq qatori, fayl tizimi, foydalanuvchilar va xizmatlar.", "Командная строка, файловая система, пользователи и службы.", "Command line, filesystem, users and services."),
-    difficulty: "fundamental", category: "systems", hours: 5, hasLab: true,
-    sections: [
-      {
-        title: l("Shell va fayl tizimi", "Оболочка и файловая система", "Shell and filesystem"),
-        content: l(
-          "Shell buyruqlarni qabul qilib, dasturlarni ishga tushiradi; kataloglar `/` ildizidan boshlanadi. `~` joriy foydalanuvchi uy katalogini anglatadi. Fayllarni avval ro‘yxatlang, so‘ng maqsadli o‘qing; `sudo` bilan noma’lum buyruqni ishga tushirmang.",
-          "Оболочка принимает команды и запускает программы; дерево каталогов начинается с корня `/`. `~` обозначает домашний каталог пользователя. Сначала просматривайте список файлов, затем читайте нужные; не запускайте неизвестные команды через `sudo`.",
-          "A shell accepts commands and launches programs; the directory tree starts at `/`. `~` represents the current user's home directory. List files before reading them, and do not run unfamiliar commands with `sudo`."
-        ),
-        example: l("pwd\nls -lah ~/Documents\nmkdir -p ~/lab/network-notes\ncp notes.txt ~/lab/network-notes/", "pwd\nls -lah ~/Documents\nmkdir -p ~/lab/network-notes\ncp notes.txt ~/lab/network-notes/", "pwd\nls -lah ~/Documents\nmkdir -p ~/lab/network-notes\ncp notes.txt ~/lab/network-notes/"),
-        exampleExplanation: l(
-          "`pwd` joriy yo‘lni chiqaradi, `ls -lah` yashirin fayllarni ham ko‘rsatadi, `mkdir -p` ichma-ich katalog yaratadi, `cp` fayl nusxalaydi. `notes.txt` misol fayl nomi; o‘zingizdagi nom bilan almashtiring.",
-          "`pwd` выводит текущий путь, `ls -lah` показывает и скрытые файлы, `mkdir -p` создаёт вложенные каталоги, `cp` копирует файл. `notes.txt` — пример имени, замените его своим.",
-          "`pwd` prints the current path, `ls -lah` includes hidden files, `mkdir -p` creates parent directories, and `cp` copies a file. `notes.txt` is a placeholder filename; replace it with your own."
-        ),
-        question: { prompt: l("Joriy papkani ko‘rsatuvchi buyruq?", "Команда, показывающая текущий каталог?", "Which command prints the current directory?"), answers: ["pwd"] }
-      },
-      {
-        title: l("Foydalanuvchilar va ruxsatlar", "Пользователи и права доступа", "Users and permissions"),
-        content: l(
-          "Linux ruxsatlari egasi, guruh va boshqalar uchun o‘qish (r), yozish (w), bajarish (x) huquqlarini ajratadi. Masalan, 640 egaga o‘qish/yozish, guruhga faqat o‘qish, boshqalarga esa ruxsat bermaydi. Kerakli eng kam huquq tamoyiliga amal qiling; maxfiy fayllarga 777 bermang.",
-          "Права Linux задают чтение (r), запись (w) и выполнение (x) для владельца, группы и остальных. Например, 640 разрешает владельцу чтение и запись, группе — только чтение, остальным — ничего. Соблюдайте принцип минимальных привилегий и не назначайте конфиденциальным файлам права 777.",
-          "Linux permissions grant read (r), write (w), and execute (x) to an owner, group, and others. Mode 640 lets the owner read/write, the group read, and denies access to others. Follow least privilege; never make sensitive files world-writable with 777."
-        ),
-        example: l("chmod 640 report.txt\nchown analyst:security report.txt\nid analyst", "chmod 640 report.txt\nchown analyst:security report.txt\nid analyst", "chmod 640 report.txt\nchown analyst:security report.txt\nid analyst"),
-        exampleExplanation: l(
-          "`chmod 640` ruxsatlarni o‘zgartiradi; `chown` egasi/guruhni tayinlaydi; `id` foydalanuvchi guruhlarini ko‘rsatadi. Faqat o‘zingiz boshqaradigan laboratoriya fayllarida qo‘llang; egasi yoki guruhni almashtirish administrator huquqini talab qilishi mumkin.",
-          "`chmod 640` меняет права, `chown` задаёт владельца и группу, `id` показывает группы пользователя. Используйте только на своих лабораторных файлах; смена владельца может требовать прав администратора.",
-          "`chmod 640` changes permissions, `chown` sets owner and group, and `id` lists a user's groups. Use these only on files in your lab; changing ownership may require administrator privileges."
-        )
-      },
-      {
-        title: l("Xizmatlar va loglar", "Службы и журналы", "Services and logs"),
-        content: l(
-          "Xizmatlar fonda tarmoq va tizim vazifalarini bajaradi. Systemd tizimlarida `systemctl status` ishlash holatini, `journalctl` esa jurnal yozuvlarini ko‘rsatadi. Loglar vaqt, jarayon va xato sababini bog‘lashga yordam beradi; vaqt zonasi va tizim soati to‘g‘ri ekanini ham tekshiring.",
-          "Службы выполняют фоновые системные и сетевые задачи. В системах с systemd команда `systemctl status` показывает состояние, а `journalctl` — записи журнала. Журналы помогают сопоставить время, процесс и причину ошибки; проверяйте часовой пояс и системное время.",
-          "Services perform background system and network tasks. On systemd hosts, `systemctl status` shows service state and `journalctl` displays logs. Logs help correlate time, process, and error cause; also verify the clock and time zone."
-        ),
-        example: l("systemctl status ssh\njournalctl -u ssh --since today\nsystemctl is-enabled ssh", "systemctl status ssh\njournalctl -u ssh --since today\nsystemctl is-enabled ssh", "systemctl status ssh\njournalctl -u ssh --since today\nsystemctl is-enabled ssh"),
-        exampleExplanation: l(
-          "Buyruqlar SSH xizmatining holati, bugungi loglari va avtomatik ishga tushish sozlamasini faqat o‘qiydi. Xizmat nomi tarqatmaga qarab `ssh` yoki `sshd` bo‘lishi mumkin.",
-          "Команды только читают состояние службы SSH, сегодняшние записи журнала и настройку автозапуска. Имя службы может быть `ssh` или `sshd` в зависимости от дистрибутива.",
-          "These commands only inspect SSH service state, today's logs, and whether it starts at boot. The service may be named `ssh` or `sshd`, depending on distribution."
-        )
-      }
-    ]
+    summary: l(
+      "Linux nima, kernel va distributiv qanday ishlaydi — arxitekturadan kundalik buyruqlargacha 8 bosqichli kursda o‘rganing. Har bir darsdagi buyruqlarni brauzer ichidagi xavfsiz virtual terminalda bajarib ko‘ring.",
+      "Узнайте, что такое Linux, как работают ядро и дистрибутив, и пройдите 8 уроков от архитектуры до повседневных команд. Практикуйте команды в безопасном виртуальном терминале браузера.",
+      "Learn what Linux is and how its kernel and distributions work in eight lessons, from architecture to everyday commands. Practice each lesson's commands in a safe browser-based virtual terminal."
+    ),
+    difficulty: "fundamental", category: "systems", hours: 12, hasLab: true,
+    labPlan: l(
+      "Har darsdagi belgilangan buyruqlarni terminal simulyatorida bajarmaguncha bilim savoli va keyingi dars ochilmaydi. Fayllar faqat virtual muhitda; laboratoriyalar sintetik dalillardan foydalanadi.",
+      "Пока не выполнены назначенные команды в симуляторе, проверочный вопрос и следующий урок останутся закрыты. Файлы существуют только в виртуальной среде; лаборатории используют синтетические данные.",
+      "The knowledge check and next lesson stay locked until you run every assigned command in the simulator. Files exist only in the virtual environment, and labs use synthetic evidence."
+    ),
+    references: [
+      { label: l("GeeksforGeeks: Linux buyruqlari ro‘yxati", "GeeksforGeeks: список команд Linux", "GeeksforGeeks: Linux commands list"), href: "https://www.geeksforgeeks.org/linux-unix/linux-commands-cheat-sheet/" },
+      { label: l("GNU Coreutils qo‘llanmasi", "Руководство GNU Coreutils", "GNU Coreutils manual"), href: "https://www.gnu.org/software/coreutils/manual/" },
+      { label: l("Bash qo‘llanmasi", "Руководство Bash", "Bash manual"), href: "https://www.gnu.org/software/bash/manual/bash.html" },
+      { label: l("Linux man-pages loyihasi", "Проект Linux man-pages", "Linux man-pages project"), href: "https://man7.org/linux/man-pages/" }
+    ],
+    sections: linuxFundamentalsSections
   },
   {
     slug: "windows-fundamentals",
@@ -1274,6 +1259,9 @@ export const learningPaths: LearningPath[] = [
     modules: ["network-fundamentals", "cctv-system-design"]
   }
 ];
+
+learningModules.push(...careerLearningModules);
+learningPaths.push(...careerLearningPaths);
 
 export const sectionId = (moduleSlug: string, index: number) => `${moduleSlug}:${index}`;
 export const getModule = (slug: string) => learningModules.find((item) => item.slug === slug);

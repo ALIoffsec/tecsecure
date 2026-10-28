@@ -37,7 +37,7 @@ function ProviderIcon({ id }: { id: string }) {
   </svg>;
 }
 
-export function OAuthSignIn({ mode }: { mode: "login" | "register" }) {
+export function OAuthSignIn({ mode, redirectTo }: { mode: "login" | "register"; redirectTo?: string }) {
   const { locale } = useSitePreferences();
   const [state, setState] = useState<ProviderState>(null);
   const [busy, setBusy] = useState("");
@@ -111,7 +111,7 @@ export function OAuthSignIn({ mode }: { mode: "login" | "register" }) {
               setBusy(provider.id);
               setProviderError("");
               try {
-                const result = await signIn(provider.id, { callbackUrl: "/portal", redirect: false });
+                const result = await signIn(provider.id, { callbackUrl: redirectTo ?? "/portal", redirect: false });
                 if (result?.error) {
                   setProviderError(locale === "uz"
                     ? "Kirish amalga oshmadi. Akkauntga avval bog‘langan kirish usulidan foydalaning."

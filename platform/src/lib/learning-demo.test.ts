@@ -15,6 +15,8 @@ import { learningSubscriptionPlans, planIncludesModule } from "./learning-subscr
 import { getProductStockMessageKey } from "./products";
 import { moduleCompletionRewardTec } from "./learning-rewards";
 import { getLearningSectionQuestion, isLearningAnswerCorrect } from "./learning-completion";
+import { linuxFundamentalsCommandCatalog, linuxFundamentalsDetails } from "./linux-fundamentals-content";
+import { learningLabs } from "./learning-labs";
 
 test("network fundamentals keeps rewritten lessons and screenshots on the site", () => {
   const module = learningModules.find((item) => item.slug === "network-fundamentals");
@@ -40,6 +42,61 @@ test("network fundamentals keeps rewritten lessons and screenshots on the site",
     const imagePath = join(process.cwd(), "public", image.src.slice(1));
     assert.ok(existsSync(imagePath), `screenshot exists: ${image.src}`);
     assert.equal(readFileSync(imagePath).subarray(0, 8).toString("hex"), "89504e470d0a1a0a");
+  }
+});
+
+test("Linux fundamentals publishes its command catalog, full lessons, visuals, and safe labs", () => {
+  const module = learningModules.find((item) => item.slug === "linux-fundamentals");
+  assert.ok(module, "Linux fundamentals course exists");
+  assert.equal(module.sections.length, 8);
+  assert.equal(Object.keys(linuxFundamentalsDetails).length, module.sections.length);
+  assert.ok((module.references?.length ?? 0) >= 3);
+  assert.ok(module.references?.every((source) => source.href.startsWith("https://")));
+  assert.ok(linuxFundamentalsCommandCatalog.length >= 30 && linuxFundamentalsCommandCatalog.length <= 45, "the course focuses on frequently used commands");
+
+  for (const [index, section] of module.sections.entries()) {
+    const details = linuxFundamentalsDetails[index];
+    assert.notEqual(details, undefined, `lesson ${index + 1} has an expanded-content entry`);
+    if (details) {
+      assert.ok(details.length > 200, `lesson ${index + 1} explains its command groups`);
+      assert.match(details, /^### /m, `lesson ${index + 1} has topic headings`);
+    }
+    assert.ok(section.example?.uz.length, `lesson ${index + 1} has a practical example`);
+    assert.ok(section.exampleExplanation?.uz.length, `lesson ${index + 1} explains its example`);
+    assert.ok(section.terminalPractice?.tasks.length, `lesson ${index + 1} requires terminal practice`);
+    assert.ok(getLearningSectionQuestion(module, index), `lesson ${index + 1} has a server-checked question`);
+    assert.doesNotMatch(
+      `${section.title.uz}\n${section.content?.uz}\n${details}\n${section.example?.uz}\n${section.exampleExplanation?.uz}`,
+      /[\u0400-\u04FF]/,
+      `lesson ${index + 1} uses Uzbek Latin rather than untranslated Cyrillic`
+    );
+    for (const image of section.images ?? []) {
+      assert.ok(image.src.startsWith("/learning-assets/linux-fundamentals/"));
+      assert.ok(image.width > 0 && image.height > 0);
+      assert.ok(image.alt.uz && image.caption.uz);
+      assert.ok(existsSync(join(process.cwd(), "public", image.src.slice(1))), `diagram exists: ${image.src}`);
+    }
+  }
+
+  for (const item of linuxFundamentalsCommandCatalog) {
+    const index = module.sections.findIndex((section) => section.title.uz === item.section);
+    assert.notEqual(index, -1, `${item.command} belongs to a published lesson`);
+    assert.ok(linuxFundamentalsDetails[index].includes(`\`${item.command}\``), `${item.command} has an explanation in its lesson`);
+  }
+  const commandNames = new Set(linuxFundamentalsCommandCatalog.map(({ command }) => command.split(" ")[0]));
+  for (const section of module.sections) {
+    for (const item of section.terminalPractice?.tasks ?? []) {
+      assert.ok(commandNames.has(item.command.split(" ")[0]), `${item.command} is taught in its lesson`);
+    }
+  }
+
+  for (const slug of [
+    "linux-permissions-audit",
+    "linux-journal-service-triage",
+    "linux-log-text-pipeline",
+    "linux-storage-readonly-review"
+  ]) {
+    assert.ok(learningLabs.some((lab) => lab.slug === slug), `${slug} is available in the lab catalog`);
   }
 });
 
@@ -116,7 +173,8 @@ test("firewall and Kerio zero-to-hero courses are complete and discoverable", ()
 });
 
 test("published learning paths disclose estimates, prerequisites, outcomes, and capstone expectations", () => {
-  assert.equal(learningPaths.length, 8);
+  assert.equal(learningModules.length, 23);
+  assert.equal(learningPaths.length, 18);
   for (const path of learningPaths) {
     assert.ok(path.modules.length > 0, `${path.slug} includes modules`);
     assert.ok(path.timeEstimate.uz.includes("Taxminan"), `${path.slug} labels its time as an estimate`);
@@ -212,7 +270,31 @@ test("module completion awards one difficulty-scaled TEC reward", () => {
   assert.equal(moduleCompletionRewardTec({ ...fundamental, difficulty: "hard" }), 16);
   const currentRewards = learningModules.map(moduleCompletionRewardTec);
   assert.equal(Math.min(...currentRewards), 5);
-  assert.equal(Math.max(...currentRewards), 14);
+  assert.equal(Math.max(...currentRewards), 16);
+});
+
+test("career books cover foundational through senior topics with validated source links", () => {
+  const careerSlugs = [
+    "computer-science-core",
+    "linux-systems-administration",
+    "windows-active-directory-operations",
+    "network-engineering-advanced",
+    "soc-incident-response-detection",
+    "security-engineering-appsec",
+    "cloud-devsecops-operations",
+    "iso-27001-isms",
+    "gdpr-privacy-engineering",
+    "senior-infrastructure-architecture"
+  ];
+  for (const slug of careerSlugs) {
+    const module = learningModules.find((item) => item.slug === slug);
+    assert.ok(module, `${slug} exists`);
+    assert.equal(module.sections.length, 8, `${slug} has 8 chapters`);
+    assert.ok(module.sections.every((section) => (section.content?.uz.length ?? 0) > 400), `${slug} chapters contain substantial lesson text`);
+    assert.ok(module.sections.every((section) => section.question?.answers.length), `${slug} chapters include checks`);
+    assert.ok((module.references?.length ?? 0) >= 2, `${slug} has credible references`);
+    assert.ok(module.references?.every((source) => source.href.startsWith("https://")), `${slug} links use HTTPS`);
+  }
 });
 
 test("server-side learning checks accept only configured answers", () => {

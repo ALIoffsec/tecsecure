@@ -1,4 +1,5 @@
 import { normalizeLearningAnswer } from "@/lib/learning-completion";
+import { careerLearningLabs } from "./learning-career-labs";
 
 export type LabTask = { id: string; prompt: string; answers: string[]; hint: string };
 export type LabDef = {
@@ -156,6 +157,93 @@ function linuxLab(): LabDef {
   };
 }
 
+function linuxLogTriageLab(): LabDef {
+  return {
+    slug: "linux-journal-service-triage",
+    moduleSlug: "linux-fundamentals",
+    title: "Linux xizmat jurnalini tahlil qilish",
+    level: "boshlang‘ich",
+    minutes: 20,
+    priceTec: 0,
+    summary: "Sintetik systemd jurnalidan xizmat nosozligi va uning vaqtini aniqlang.",
+    scenario: "Demo muhitida api-demo xizmati javob bermay qoldi. Sizga sintetik journalctl chiqishi berilgan; real serverga ulanmasdan dalillar asosida xulosa qiling.",
+    skills: ["journalctl chiqishini o‘qish", "vaqt bo‘yicha hodisalarni bog‘lash", "dalil va taxminni ajratish"],
+    evidence: [{
+      name: "journalctl -u api-demo --since today (sintetik)",
+      content: [
+        "2025-03-14T09:10:02Z api-demo[431]: Started request worker",
+        "2025-03-14T09:11:18Z api-demo[431]: WARN queue depth=72",
+        "2025-03-14T09:12:41Z api-demo[431]: ERROR unable to write /var/lib/api-demo/cache: No space left on device",
+        "2025-03-14T09:12:42Z systemd[1]: api-demo.service: Main process exited, status=1/FAILURE",
+        "2025-03-14T09:12:43Z systemd[1]: api-demo.service: Failed with result 'exit-code'"
+      ].join("\n")
+    }],
+    tasks: [
+      { id: "service", prompt: "Jurnalda xato bergan xizmat nomi?", answers: ["api-demo"], hint: "Xabar satrlaridagi jarayon va service nomini ajrating." },
+      { id: "time", prompt: "Diskka yozish xatosi qaysi vaqtda qayd etilgan? (HH:MM:SS)", answers: ["09:12:41"], hint: "No space left on device yozilgan satrning vaqtini toping." },
+      { id: "cause", prompt: "Xatoda ko‘rsatilgan asosiy sabab nima? (inglizcha ibora)", answers: ["no space left on device"], hint: "ERROR satrining oxiridagi xabarni o‘qing." },
+      { id: "path", prompt: "Yozish imkoni bo‘lmagan katalog yo‘li?", answers: ["/var/lib/api-demo/cache"], hint: "ERROR satrida ko‘rsatilgan maqsad yo‘lini ko‘chiring." }
+    ],
+    debrief: "Dalil diskka joy yetmaganini ko‘rsatadi, ammo qaysi fayllarni o‘chirish kerakligini isbotlamaydi. Keyingi xavfsiz qadamlar: ruxsatli muhitda `df -hT` va `df -i` bilan holatni tekshirish, yozuvlarni saqlash va egasi bilan tozalash rejasini tasdiqlash. Tasdiqsiz fayl o‘chirmang yoki xizmatni qayta ishga tushirmang."
+  };
+}
+
+function linuxTextPipelineLab(): LabDef {
+  const log = [
+    "2025-03-14T10:01:00Z INFO GET /health status=200",
+    "2025-03-14T10:01:04Z ERROR GET /api/auth status=503",
+    "2025-03-14T10:01:09Z WARN GET /api/items status=429",
+    "2025-03-14T10:01:13Z ERROR GET /api/auth status=503",
+    "2025-03-14T10:01:17Z ERROR GET /api/items status=500",
+    "2025-03-14T10:01:22Z INFO GET /health status=200"
+  ].join("\n");
+  return {
+    slug: "linux-log-text-pipeline",
+    moduleSlug: "linux-fundamentals",
+    title: "Loglardan matn pipeline’i tuzish",
+    level: "boshlang‘ich",
+    minutes: 25,
+    priceTec: 0,
+    summary: "Sintetik logni filtrlab, xatolar soni va muammoli endpointni aniqlang.",
+    scenario: "Test servisining olti qatorli sintetik logi taqdim etilgan. Maqsad — grep, sort, uniq yoki awk yordamida dalillarni ajratish; tizimda hech qanday o‘zgarish qilinmaydi.",
+    skills: ["grep bilan filtrlash", "maydonlarni ajratish", "natijani tekshirish"],
+    evidence: [{ name: "api-demo.log (sintetik)", content: log }],
+    tasks: [
+      { id: "errors", prompt: "Logda nechta ERROR yozuvi bor?", answers: ["3"], hint: "Faqat ERROR darajasi bilan boshlangan satrlarni sanang." },
+      { id: "auth", prompt: "/api/auth endpointida nechta so‘rov xato bilan tugagan?", answers: ["2"], hint: "Endpoint va status=503 maydonlarini birga tekshiring." },
+      { id: "failed-endpoint", prompt: "Xatolar eng ko‘p qayd etilgan endpoint qaysi?", answers: ["/api/auth"], hint: "ERROR satrlaridagi endpointlarni guruhlab sanang." },
+      { id: "healthy", prompt: "status=200 bilan yakunlangan /health so‘rovlari soni?", answers: ["2"], hint: "Faqat /health va status=200 bo‘lgan satrlarni sanang." }
+    ],
+    debrief: "Natijalarni pipeline’ning har bosqichida tekshiring: avval mos satrlar, keyin ajratilgan maydonlar, oxirida guruhlangan hisob. Haqiqiy loglar token yoki shaxsiy ma’lumot saqlashi mumkin; ularni ommaga chiqarishdan oldin tozalang."
+  };
+}
+
+function linuxStorageReadOnlyLab(): LabDef {
+  return {
+    slug: "linux-storage-readonly-review",
+    moduleSlug: "linux-fundamentals",
+    title: "Disk va inode holatini xavfsiz tekshirish",
+    level: "o‘rta",
+    minutes: 20,
+    priceTec: 0,
+    summary: "Sintetik df va lsblk natijalaridan joy tanqisligini aniqlang; hech qanday disk o‘zgartirilmaydi.",
+    scenario: "Sizga laboratoriya serverining soxta disk hisobotlari berilgan. Maqsad — xavf belgilarini topish va faqat o‘qish diagnostikasini tavsiya qilish.",
+    skills: ["df -hT natijasini o‘qish", "inode va blok joyini farqlash", "xavfsiz tekshiruvni rejalash"],
+    evidence: [
+      { name: "df -hT (sintetik)", content: "Filesystem     Type  Size  Used Avail Use% Mounted on\n/dev/vda1      ext4   20G   19G  1.0G  95% /\n/dev/vdb1      xfs   100G   20G   80G  20% /data" },
+      { name: "df -i (sintetik)", content: "Filesystem     Inodes IUsed IFree IUse% Mounted on\n/dev/vda1      1000000 980000 20000 98% /\n/dev/vdb1      5000000 120000 4880000 3% /data" },
+      { name: "lsblk -f (sintetik)", content: "NAME FSTYPE SIZE MOUNTPOINTS\nvda         20G\n└─vda1 ext4 20G /\nvdb        100G\n└─vdb1 xfs 100G /data" }
+    ],
+    tasks: [
+      { id: "block", prompt: "Blok joyi eng yuqori ishlatilgan mount nuqtasi qaysi?", answers: ["/"], hint: "df -hT natijasidagi Use% ustunini solishtiring." },
+      { id: "inode", prompt: "Inode ishlatilishi 90 foizdan yuqori bo‘lgan mount nuqtasi qaysi?", answers: ["/"], hint: "df -i natijasidagi IUse% ustuniga qarang." },
+      { id: "read-only", prompt: "Joriy blok joyini o‘zgartirmasdan ko‘rsatadigan buyruq qaysi?", answers: ["df -hT"], hint: "Filesystem turi, hajm va ishlatilgan joy ko‘rsatiladigan buyruqni tanlang." },
+      { id: "next-step", prompt: "Tizim bo‘yicha joy ishlatilishini faqat o‘qish rejimida ko‘rish uchun mos katalog tahlil buyrug‘i?", answers: ["du -xhd1 /"], hint: "`du` disk ishlatilishini o‘lchaydi; `-x` boshqa filesystem’ga o‘tishni cheklaydi." }
+    ],
+    debrief: "Hisobotda `/` mount nuqtasida ham blok, ham inode bosimi ko‘rinadi. Bu hali qaysi faylni o‘chirish kerakligini bildirmaydi. Ruxsatli muhitda `du -xhd1 /` bilan kataloglarni tahlil qiling, natijani xizmat egasi bilan ko‘rib chiqing va tasdiqlangan tozalash rejasini tuzing. `rm`, filesystem repair yoki partition vositalarini bu mashqda ishlatmang."
+  };
+}
+
 function firewallLab(): LabDef {
   return {
     slug: "firewall-ruleset-review",
@@ -288,7 +376,12 @@ function mikrotikLab(): LabDef {
   };
 }
 
-export const learningLabs: LabDef[] = [sshLab(), nmapLab(), subnetLab(), linuxLab(), firewallLab(), webLab(), windowsLab(), mikrotikLab()];
+export const learningLabs: LabDef[] = [
+  sshLab(), nmapLab(), subnetLab(), linuxLab(),
+  linuxLogTriageLab(), linuxTextPipelineLab(), linuxStorageReadOnlyLab(),
+  firewallLab(), webLab(), windowsLab(), mikrotikLab()
+];
+learningLabs.push(...careerLearningLabs);
 
 export const getLab = (slug: string) => learningLabs.find((lab) => lab.slug === slug);
 

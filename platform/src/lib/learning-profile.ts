@@ -22,12 +22,14 @@ const levelSteps = [0, 100, 300, 600, 1000, 1600, 2400, 3400, 4600, 6000];
 const levelNames = ["Yangi", "O‘quvchi", "Amaliyotchi", "Tahlilchi", "Tajribali", "Mutaxassis", "Ekspert", "Usta", "Ustoz", "Afsona"];
 
 const skillDefs = [
-  { key: "net", title: "Tarmoq", modules: ["network-fundamentals", "cisco-ios-fundamentals", "mikrotik-routeros-basics", "wifi-security"] },
-  { key: "sys", title: "Tizimlar", modules: ["linux-fundamentals", "windows-fundamentals"] },
-  { key: "sec", title: "Xavfsizlik", modules: ["intro-cybersecurity", "web-security-owasp", "cctv-system-design"] },
-  { key: "soc", title: "SOC tahlil", modules: ["soc-log-analysis"] },
+  { key: "net", title: "Tarmoq", modules: ["network-fundamentals", "network-engineering-advanced", "computer-science-core", "cisco-ios-fundamentals", "mikrotik-routeros-basics", "wifi-security"] },
+  { key: "sys", title: "Tizimlar", modules: ["linux-fundamentals", "linux-systems-administration", "windows-fundamentals", "windows-active-directory-operations"] },
+  { key: "sec", title: "Xavfsizlik", modules: ["intro-cybersecurity", "web-security-owasp", "security-engineering-appsec", "cloud-devsecops-operations", "senior-infrastructure-architecture", "cctv-system-design"] },
+  { key: "soc", title: "SOC tahlil", modules: ["soc-log-analysis", "soc-incident-response-detection"] },
   { key: "fw", title: "Firewall", modules: ["firewall-zero-to-hero", "kerio-control-zero-to-hero"] },
-  { key: "ad", title: "Identifikatsiya", modules: ["active-directory-security"] }
+  { key: "ad", title: "Identifikatsiya", modules: ["active-directory-security", "windows-active-directory-operations"] },
+  { key: "cloud", title: "Cloud/DevOps", modules: ["cloud-devsecops-operations", "linux-systems-administration"] },
+  { key: "grc", title: "GRC va Privacy", modules: ["iso-27001-isms", "gdpr-privacy-engineering"] }
 ];
 
 export type SkillRating = { key: string; title: string; score: number; label: string };

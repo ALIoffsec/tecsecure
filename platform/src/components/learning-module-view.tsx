@@ -4,9 +4,15 @@ import Link from "next/link";
 import Image from "next/image";
 import { FormEvent, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { ProgressBar, TecAmount, useLearningProgress, useLearningPurchases, useLearningText } from "@/components/learning-shared";
+import { LinuxVirtualTerminal } from "@/components/linux-virtual-terminal";
 import { ToastMessage } from "@/components/toast-provider";
 import type { LearningDiagram, LearningImage, LearningSection, Localized } from "@/lib/learning-demo";
 import type { LearningModulePreview } from "@/lib/learning-catalog-types";
+
+type LinuxPracticeProgress = {
+  tasksBySection: Record<number, string[]>;
+  completedSections: number[];
+};
 
 type LearningLessonData = Omit<LearningSection, "question"> & {
   expandedContent?: string;
@@ -105,6 +111,7 @@ function LearningScreenshot({ image, pick }: {
         alt={pick(image.alt)}
         width={image.width}
         height={image.height}
+        loading="eager"
         sizes="(max-width: 700px) 100vw, (max-width: 1200px) 85vw, 1100px"
       />
       <figcaption>{pick(image.caption)}</figcaption>
@@ -202,8 +209,10 @@ export function LearningModuleView({ module }: { module: LearningModulePreview }
   const [buying, setBuying] = useState<"MODULE" | number | null>(null);
   const [lesson, setLesson] = useState<LearningLessonData | null>(null);
   const [lessonError, setLessonError] = useState("");
+  const [linuxPracticeProgress, setLinuxPracticeProgress] = useState<LinuxPracticeProgress>({ tasksBySection: {}, completedSections: [] });
   const positioned = useRef(false);
   const { ready, touch, isDone } = progress;
+  const isLinuxCourse = module.slug === "linux-fundamentals";
   const modulePurchase = access.purchases.some((purchase) => purchase.sectionIndex === null);
   const hasAccess = useCallback((index: number) => access.subscriptionAccess || module.sectionPricesTec[index] === 0
     || modulePurchase
@@ -214,9 +223,13 @@ export function LearningModuleView({ module }: { module: LearningModulePreview }
     if (!ready || !access.loaded || positioned.current) return;
     positioned.current = true;
     touch(module.slug);
+    if (isLinuxCourse) {
+      setActive(0);
+      return;
+    }
     const firstOpen = module.sections.findIndex((_, index) => hasAccess(index) && !isDone(module.slug, index));
     setActive(firstOpen === -1 ? 0 : firstOpen);
-  }, [ready, access.loaded, touch, module, isDone, hasAccess]);
+  }, [ready, access.loaded, touch, module, isDone, hasAccess, isLinuxCourse]);
 
   const section = module.sections[active];
   const sectionLocked = !hasAccess(active);
@@ -229,6 +242,34 @@ export function LearningModuleView({ module }: { module: LearningModulePreview }
   const exampleExplanation = lesson?.exampleExplanation;
   const status = progress.moduleProgress(module);
   const sectionDone = progress.isDone(module.slug, active);
+  const terminalPractice = isLinuxCourse ? lesson?.terminalPractice : undefined;
+  const completedTerminalTasks = linuxPracticeProgress.tasksBySection[active] ?? [];
+  const terminalPracticeDone = !isLinuxCourse || (
+    Boolean(terminalPractice?.tasks.length)
+    && linuxPracticeProgress.completedSections.includes(active)
+  );
+
+  function canOpenLinuxSection(index: number) {
+    if (!isLinuxCourse || index === 0) return true;
+    return module.sections.slice(0, index).every((_, previousIndex) =>
+      progress.isDone(module.slug, previousIndex)
+      && linuxPracticeProgress.completedSections.includes(previousIndex)
+    );
+  }
+
+  function completeLinuxTerminalTask(sectionIndex: number, taskId: string, allComplete: boolean) {
+    setLinuxPracticeProgress((current) => {
+      const currentTasks = current.tasksBySection[sectionIndex] ?? [];
+      const tasksBySection = {
+        ...current.tasksBySection,
+        [sectionIndex]: currentTasks.includes(taskId) ? currentTasks : [...currentTasks, taskId]
+      };
+      const completedSections = allComplete && !current.completedSections.includes(sectionIndex)
+        ? [...current.completedSections, sectionIndex]
+        : current.completedSections;
+      return { tasksBySection, completedSections };
+    });
+  }
 
   useEffect(() => {
     if (sectionLocked) {
@@ -255,6 +296,7 @@ export function LearningModuleView({ module }: { module: LearningModulePreview }
   }, [active, module.slug, sectionLocked, tx.purchaseFailed]);
 
   function select(index: number) {
+    if (!canOpenLinuxSection(index)) return;
     setActive(index);
     setAnswer("");
     setFeedback("idle");
@@ -270,6 +312,10 @@ export function LearningModuleView({ module }: { module: LearningModulePreview }
 
   async function submitAnswer(event: FormEvent) {
     event.preventDefault();
+    if (!terminalPracticeDone) {
+      setAnswerError("Darsni yakunlashdan oldin virtual terminaldagi barcha buyruqlarni bajaring.");
+      return;
+    }
     setCheckingAnswer(true);
     setFeedback("idle");
     setCompletionNotice("");
@@ -336,7 +382,7 @@ export function LearningModuleView({ module }: { module: LearningModulePreview }
           <ol>
             {module.sections.map((item, index) => (
               <li key={index}>
-                <button className={`learn-toc-item${active === index ? " active" : ""}`} onClick={() => select(index)} type="button" aria-current={active === index ? "step" : undefined}>
+                <button className={`learn-toc-item${active === index ? " active" : ""}`} onClick={() => select(index)} type="button" aria-current={active === index ? "step" : undefined} disabled={isLinuxCourse && !canOpenLinuxSection(index)}>
                   <span className={`learn-check${progress.isDone(module.slug, index) ? " done" : ""}${!hasAccess(index) ? " locked" : ""}`} aria-hidden="true">{progress.isDone(module.slug, index) ? "✓" : !hasAccess(index) ? "◇" : index + 1}</span>
                   <span>{pick(item.title)}</span>
                   {!hasAccess(index) && <span className="learn-toc-price">{module.sectionPricesTec[index]} TEC</span>}
@@ -390,12 +436,25 @@ export function LearningModuleView({ module }: { module: LearningModulePreview }
               {exampleExplanation && <p className="muted">{pick(exampleExplanation)}</p>}
             </div>
           )}
+          {terminalPractice && (
+            <LinuxVirtualTerminal
+              key={`${module.slug}-${active}`}
+              practice={terminalPractice}
+              completedTaskIds={completedTerminalTasks}
+              onTaskComplete={(taskId, allComplete) => completeLinuxTerminalTask(active, taskId, allComplete)}
+            />
+          )}
+          {isLinuxCourse && !terminalPracticeDone && (
+            <p className="linux-terminal-required" role="status">
+              Darsni yakunlash uchun virtual terminaldagi {terminalPractice?.tasks.length ?? "barcha"} ta buyruq mashqini bajaring.
+            </p>
+          )}
           {question && (
             <form className="learn-question" onSubmit={submitAnswer}>
               <label htmlFor="learn-answer"><strong>{tx.question}:</strong> {pick(question.prompt)}</label>
               <div className="learn-question-row">
-                <input className="input" id="learn-answer" value={answer} onChange={(event) => setAnswer(event.target.value)} placeholder={tx.answerPlaceholder} disabled={sectionDone} autoComplete="off" />
-                <button className="button" disabled={sectionDone || checkingAnswer || !answer.trim()} type="submit">{checkingAnswer ? tx.purchasing : tx.check}</button>
+                <input className="input" id="learn-answer" value={answer} onChange={(event) => setAnswer(event.target.value)} placeholder={tx.answerPlaceholder} disabled={sectionDone || !terminalPracticeDone} autoComplete="off" />
+                <button className="button" disabled={sectionDone || checkingAnswer || !answer.trim() || !terminalPracticeDone} type="submit">{checkingAnswer ? tx.purchasing : tx.check}</button>
               </div>
               <ToastMessage message={answerError} variant="error" />
               <ToastMessage message={feedback === "wrong" ? tx.wrong : ""} variant="error" />
@@ -411,7 +470,7 @@ export function LearningModuleView({ module }: { module: LearningModulePreview }
                 {sectionDone ? `✓ ${tx.sectionDone}` : tx.markComplete}
               </button>
             )}
-            <button className="button ghost" disabled={active === module.sections.length - 1} onClick={() => select(active + 1)} type="button">{tx.next} →</button>
+            <button className="button ghost" disabled={active === module.sections.length - 1 || (isLinuxCourse && (!sectionDone || !terminalPracticeDone))} onClick={() => select(active + 1)} type="button">{tx.next} →</button>
           </div>
         </article>
       </div>
@@ -420,10 +479,14 @@ export function LearningModuleView({ module }: { module: LearningModulePreview }
         <section className="panel-card learn-lab">
           <div>
             <span className="eyebrow">{tx.labTitle}</span>
-            <p className="muted">{tx.labDescription}</p>
+            {isLinuxCourse ? (
+              <p className="muted">Linux bo‘yicha sintetik log, fayl amallari va disk diagnostikasi laboratoriyalari ham mavjud.</p>
+            ) : <p className="muted">{tx.labDescription}</p>}
             {module.labPlan && <p className="muted">{pick(module.labPlan)}</p>}
           </div>
-          <button className="button secondary" disabled type="button">{tx.labSoon}</button>
+          {isLinuxCourse
+            ? <Link className="button secondary" href="/learning/practice/labs">Linux laboratoriyalarini ochish</Link>
+            : <button className="button secondary" disabled type="button">{tx.labSoon}</button>}
         </section>
       )}
 

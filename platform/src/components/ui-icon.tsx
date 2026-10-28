@@ -1,4 +1,4 @@
-export type IconName = "home" | "user" | "sun" | "moon" | "monitor" | "network" | "camera" | "clipboard" | "toolbox" | "settings" | "phone" | "clock" | "cloud" | "shield" | "refresh" | "box" | "newspaper" | "building" | "users" | "receipt" | "creditCard" | "layout" | "briefcase" | "wallet" | "server" | "book";
+export type IconName = "home" | "user" | "sun" | "moon" | "monitor" | "network" | "camera" | "clipboard" | "toolbox" | "settings" | "phone" | "mail" | "send" | "instagram" | "clock" | "cloud" | "shield" | "refresh" | "box" | "newspaper" | "building" | "users" | "receipt" | "creditCard" | "layout" | "briefcase" | "wallet" | "server" | "book" | "download";
 
 export function UiIcon({ name, size = 20 }: { name: IconName; size?: number }) {
   const common = { fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
@@ -14,6 +14,9 @@ export function UiIcon({ name, size = 20 }: { name: IconName; size?: number }) {
     toolbox: <><rect x="3" y="8" width="18" height="12" rx="2" /><path d="M8 8V5h8v3M3 13h18m-11-1v3h4v-3" /></>,
     settings: <><circle cx="12" cy="12" r="3" /><path d="m19.4 15 .1.1 1.4 1.1-1.4 2.4-1.7-.7a8 8 0 0 1-1.7 1l-.3 1.8h-2.8l-.3-1.8a8 8 0 0 1-1.7-1l-1.7.7-1.4-2.4 1.4-1.1a8 8 0 0 1 0-2l-1.4-1.1 1.4-2.4 1.7.7a8 8 0 0 1 1.7-1l.3-1.8h2.8l.3 1.8a8 8 0 0 1 1.7 1l1.7-.7 1.4 2.4-1.4 1.1a8 8 0 0 1 0 1.9Z" /></>,
     phone: <path d="M6.6 3h2.8l1.4 4.2-2 1.6a15 15 0 0 0 6.4 6.4l1.6-2 4.2 1.4v2.8a2 2 0 0 1-2.2 2A16 16 0 0 1 4.6 5.2 2 2 0 0 1 6.6 3Z" />,
+    mail: <><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m4 7 8 6 8-6" /></>,
+    send: <><path d="m22 2-7 20-4-9-9-4 20-7Z" /><path d="M22 2 11 13" /></>,
+    instagram: <><rect x="3" y="3" width="18" height="18" rx="5" /><circle cx="12" cy="12" r="4" /><path d="M17.5 6.5h.01" /></>,
     clock: <><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>,
     cloud: <path d="M7 18h10a4 4 0 0 0 .5-8A6 6 0 0 0 6 9a4.5 4.5 0 0 0 1 9Z" />,
     shield: <><path d="M12 22s8-4 8-11V5l-8-3-8 3v6c0 7 8 11 8 11Z" /><path d="m9 12 2 2 4-4" /></>,
@@ -28,7 +31,8 @@ export function UiIcon({ name, size = 20 }: { name: IconName; size?: number }) {
     briefcase: <><rect x="3" y="7" width="18" height="14" rx="2" /><path d="M8 7V4h8v3M3 12h18m-11-1v3h4v-3" /></>,
     wallet: <><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4H20v16H5a2 2 0 0 1-2-2V6.5Z" /><path d="M3 8h17m-5 5h5m-5 0a1 1 0 1 0 0 .01" /></>,
     server: <><rect x="3" y="3" width="18" height="8" rx="2" /><rect x="3" y="13" width="18" height="8" rx="2" /><path d="M7 7h.01M7 17h.01m4-10h6m-6 10h6" /></>,
-    book: <><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v17H6.5A2.5 2.5 0 0 0 4 22z" /><path d="M4 5.5v14A2.5 2.5 0 0 1 6.5 17H20M8 7h8m-8 4h8" /></>
+    book: <><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v17H6.5A2.5 2.5 0 0 0 4 22z" /><path d="M4 5.5v14A2.5 2.5 0 0 1 6.5 17H20M8 7h8m-8 4h8" /></>,
+    download: <><path d="M12 3v12m-5-5 5 5 5-5" /><path d="M5 21h14" /></>
   };
 
   return <svg aria-hidden="true" width={size} height={size} viewBox="0 0 24 24" {...common}>{paths[name]}</svg>;

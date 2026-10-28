@@ -78,6 +78,7 @@ export function SiteFooter() {
         <span>© {new Date().getFullYear()} Tecsecure</span>
         <span>{t("footerTagline")}</span>
         <div className="footer-legal-links">
+          <Link href="/careers">{t("navCareers")}</Link>
           <Link href="/privacy">{t("privacyPolicy")}</Link>
           <Link href="/terms">{t("termsOfUse")}</Link>
         </div>

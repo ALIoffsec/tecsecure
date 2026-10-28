@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="440" viewBox="0 0 1100 440" role="img" aria-labelledby="title description">
+  <title id="title">Linux fayl ruxsatlarining uch qismi</title>
+  <desc id="description">Owner, group va others uchun rwx bitlari hamda 754 rejimining qiymatlari.</desc>
+  <rect width="1100" height="440" rx="26" fill="#111c30"/>
+  <text x="54" y="58" fill="#f3f7ff" font-family="Segoe UI, Arial, sans-serif" font-size="26" font-weight="700">Ruxsatlar: owner, group, others</text>
+  <text x="54" y="91" fill="#a9bad1" font-family="Segoe UI, Arial, sans-serif" font-size="16">Har bir guruh uch bitdan iborat: read (r), write (w), execute (x).</text>
+  <text x="550" y="146" fill="#a9bad1" font-family="Segoe UI, Arial, sans-serif" font-size="15" text-anchor="middle">Misol: chmod 754 report.sh</text>
+  <g font-family="Segoe UI, Arial, sans-serif" text-anchor="middle">
+    <rect x="143" y="172" width="240" height="118" rx="18" fill="#173c36" stroke="#42a885"/>
+    <text x="263" y="207" fill="#8de3c0" font-size="17" font-weight="700">OWNER · 7</text>
+    <text x="263" y="250" fill="#f0fff8" font-family="Consolas, monospace" font-size="25">rwx</text>
+    <text x="263" y="274" fill="#c6e5d8" font-size="13">4 + 2 + 1 = 7</text>
+    <rect x="430" y="172" width="240" height="118" rx="18" fill="#233953" stroke="#5784b7"/>
+    <text x="550" y="207" fill="#9fcaff" font-size="17" font-weight="700">GROUP · 5</text>
+    <text x="550" y="250" fill="#f0f7ff" font-family="Consolas, monospace" font-size="25">r-x</text>
+    <text x="550" y="274" fill="#c9d8e9" font-size="13">4 + 0 + 1 = 5</text>
+    <rect x="717" y="172" width="240" height="118" rx="18" fill="#403522" stroke="#a78743"/>
+    <text x="837" y="207" fill="#f4d184" font-size="17" font-weight="700">OTHERS · 4</text>
+    <text x="837" y="250" fill="#fff9e9" font-family="Consolas, monospace" font-size="25">r--</text>
+    <text x="837" y="274" fill="#e3dbc6" font-size="13">4 + 0 + 0 = 4</text>
+  </g>
+  <rect x="143" y="324" width="814" height="70" rx="14" fill="#1a2639" stroke="#3b506b"/>
+  <text x="170" y="353" fill="#d7e5f5" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="700">Eslab qoling</text>
+  <text x="170" y="378" fill="#b9c9dc" font-family="Segoe UI, Arial, sans-serif" font-size="15">4 = o‘qish · 2 = yozish · 1 = bajarish. Raqamlar har bir ustun uchun alohida qo‘shiladi.</text>
+</svg>

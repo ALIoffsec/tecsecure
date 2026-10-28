@@ -93,6 +93,7 @@ export function SiteNav() {
               <Link href="/news" onClick={closeMenu}>{t("news")}</Link>
             </div>
           </div>
+          <Link className="nav-item-link" href="/careers" onClick={closeMenu}>{t("navCareers")}</Link>
           <div className="nav-utilities">
             <AppInstallButton />
             <button
