@@ -1,11 +1,13 @@
 # Tecsecure operations runbook
 
 **Status:** initial repository-grounded runbook; production access and restore procedures are not verified.
-**Last checked:** 2026-10-24.
+**Last checked:** 2026-10-30.
 
 ## Verified hosting shape
 
-`../render.yaml` defines a Render Node web service and a separate Node worker, both rooted at `platform/`, plus a managed PostgreSQL database. It configures Node 22 and a web health endpoint at `/api/health`. No Docker Compose, Dockerfile, Nginx, or Ubuntu VPS configuration was found in the inspected repository. Do not assume an unrelated VPS is the active production host.
+`../render.yaml` defines a Render Node web service and a separate Node worker, both rooted at `platform/`, plus a managed PostgreSQL database. It configures Node 22 and a web health endpoint at `/api/health`.
+
+The user-authorized production Ubuntu VPS was verified on 2026-10-30. Its application directory is `/var/www/tecsecure/platform`; `tecsecure-web` runs the Next.js standalone server on `127.0.0.1:3001`, and `tecsecure-worker` runs the background worker. The repository's `scripts/deploy.sh` is the deployment entry point for this host. Do not assume these VPS settings apply to Render.
 
 The local `.env` is ignored. Never print, copy, commit, or send its values. `.env.example` uses placeholders.
 
@@ -32,6 +34,12 @@ Build generation and database migration are separate operations. Do not run `npm
 - Health endpoint: `/api/health`
 
 These are the committed blueprint commands, not proof that a Render deployment is active or healthy. The web start command runs migrations on application startup; before scaling web instances, verify migration serialization and operational behavior with the hosting provider.
+
+## Ubuntu VPS deployment
+
+From `/var/www/tecsecure/platform`, run `bash scripts/deploy.sh`. The script takes a pre-deploy database backup, builds and verifies `.next/standalone/server.js` before applying migrations, installs the tracked `scripts/tecsecure-web.service` unit, and restarts the web and worker services only after those checks pass. It then verifies both systemd units and `/api/health`; a failed health check returns a non-zero exit code and prints the service status and recent journal.
+
+The web unit checks for a non-empty standalone server file before starting and limits rapid restart loops. If the artifact is missing or the production build fails, fix the build first; do not manually restart the web unit until the standalone server file exists. Verify recovery with `systemctl is-active tecsecure-web tecsecure-worker` and `curl -fsS http://127.0.0.1:3001/api/health`.
 
 ## Worker behavior and limitations
 

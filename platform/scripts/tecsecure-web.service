@@ -1,0 +1,20 @@
+[Unit]
+Description=Tecsecure Next.js web application
+After=network.target postgresql.service
+StartLimitIntervalSec=60
+StartLimitBurst=3
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/var/www/tecsecure/platform
+EnvironmentFile=/var/www/tecsecure/platform/.env.production
+Environment=PORT=3001
+Environment=HOSTNAME=127.0.0.1
+ExecStartPre=/usr/bin/test -s /var/www/tecsecure/platform/.next/standalone/server.js
+ExecStart=/usr/bin/node /var/www/tecsecure/platform/.next/standalone/server.js
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
