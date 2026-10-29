@@ -121,7 +121,7 @@ test("short specialist courses load expanded lesson material for every section",
     assert.ok(module.sections.length > Object.keys(details).length, `${slug} has deep chapters beyond the original specialist notes`);
     for (const [index, section] of module.sections.entries()) {
       const hasExpandedContent = (details[index]?.length ?? 0) > 1_000;
-      const hasSubstantialOwnContent = section.content.uz.length > 1_000;
+      const hasSubstantialOwnContent = (section.content?.uz.length ?? 0) > 1_000;
       assert.ok(
         hasExpandedContent || hasSubstantialOwnContent,
         `${slug} lesson ${index + 1} has substantial expanded or inline content`

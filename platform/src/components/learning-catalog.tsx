@@ -227,7 +227,7 @@ export function LearningCatalog(props: LearningCatalogProps) {
       {exams && <section className="learn-block">
         <div className="section-head learn-section-title">
           <div><span className="eyebrow">{tx.eyebrow}</span><h1 className="page-title">{tx.catalogExams}</h1></div>
-          <Link className="button secondary" href="/learning/practice/exams">{tx.catalogMyPractice}</Link>
+          <Link className="button secondary" href="/learning/practice/exams">{tx.examsOpen}</Link>
         </div>
         <p className="learn-source-note">{tx.catalogExamsDescription}</p>
         {exams.length === 0 ? <p className="muted">{tx.examsEmpty}</p> : (
