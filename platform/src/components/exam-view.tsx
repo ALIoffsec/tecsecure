@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import type { CSSProperties } from "react";
 import { useEffect, useRef, useState } from "react";
 import { ToastMessage } from "@/components/toast-provider";
 import { useRouter } from "next/navigation";
@@ -9,7 +10,7 @@ type Req = { slug: string; title: string; done: boolean };
 type Question = { id: string; text: string; options: string[] };
 type Result = { expired: boolean; scorePercent: number; correctCount: number; total: number; passed: boolean; passPercent: number; certificateCode: string | null; review: { id: string; text: string; correctOption: string; explanation: string }[] };
 type Props = {
-  exam: { slug: string; title: string; summary: string; minutes: number; passPercent: number; questionCount: number; topics: string[] };
+  exam: { slug: string; title: string; summary: string; minutes: number; passPercent: number; questionCount: number; topics: string[]; credential: string; acronym: string; accent: string };
   price: number;
   listPrice: number;
   tecBalance: number;
@@ -76,7 +77,9 @@ export function ExamView({ exam, price, listPrice, tecBalance, modules, labs, ha
       <h1>{result.passed ? "Imtihondan o‘tdingiz 🎉" : "Bu safar o‘tmadingiz"}</h1>
       <p className="exam-score">{result.scorePercent}%</p>
       <p className="muted">{result.correctCount}/{result.total} to‘g‘ri · o‘tish balli {result.passPercent}%{result.expired ? " · vaqt tugagan" : ""}</p>
-      {result.certificateCode && <p><Link className="button" href={`/verify/${result.certificateCode}`}>Sertifikatni ochish</Link></p>}
+      {result.certificateCode && <Link className="htb-cert exam-result-cert" href={`/verify/${result.certificateCode}`} style={{ "--cert-accent": exam.accent } as CSSProperties}>
+        <i /><span><b>{exam.acronym}</b><strong>{exam.credential}</strong><small>Sertifikatni ochish va tekshirish →</small></span>
+      </Link>}
       {result.review.length > 0 && <div className="exam-review"><h2>Xatolar tahlili</h2>
         {result.review.map((item) => <article key={item.id}><p><strong>{item.text}</strong></p><p className="lab-ok">To‘g‘ri javob: {item.correctOption}</p><p className="muted">{item.explanation}</p></article>)}
       </div>}
@@ -115,7 +118,9 @@ export function ExamView({ exam, price, listPrice, tecBalance, modules, labs, ha
         {modules.map((item) => <li key={item.slug} className={item.done ? "ok" : ""}>{item.done ? "✓" : "○"} Modul: <Link href={`/learning/${item.slug}`}>{item.title}</Link></li>)}
         {labs.map((item) => <li key={item.slug} className={item.done ? "ok" : ""}>{item.done ? "✓" : "○"} Lab: <Link href={`/learning/labs/${item.slug}`}>{item.title}</Link></li>)}
       </ul>
-      {certificateCode && <p>Sizda sertifikat bor: <Link href={`/verify/${certificateCode}`}>{certificateCode}</Link></p>}
+      {certificateCode && <Link className="htb-cert exam-precert" href={`/verify/${certificateCode}`} style={{ "--cert-accent": exam.accent } as CSSProperties}>
+        <i /><span><b>{exam.acronym}</b><strong>{exam.credential}</strong><small>Sizda sertifikat bor · {certificateCode}</small></span>
+      </Link>}
       <p>Narx: <strong>{hasOpenAttempt ? "to‘lov olingan" : `${price} TEC`}</strong>{!hasOpenAttempt && price !== listPrice && <s> {listPrice}</s>}. Balansingiz: {tecBalance} TEC.</p>
       <ToastMessage message={error} variant="error" />
       {!ready && !hasOpenAttempt ? <p className="muted">Avval yuqoridagi shartlarni bajaring.</p> :

@@ -38,14 +38,15 @@ const learningImageSchema = z.object({
   height: z.number().int().positive().max(10000)
 }).strict();
 const diagramSchema = z.object({
-  kind: z.enum(["cli-modes", "topology"]),
+  kind: z.enum(["cli-modes", "topology", "flow", "hierarchy"]),
   caption: localizedSchema,
   nodes: z.array(localizedSchema).max(100),
   links: z.array(localizedSchema).max(100)
 }).strict();
 const questionSchema = z.object({
   prompt: localizedSchema,
-  answers: z.array(z.string().trim().min(1).max(500)).min(1).max(100)
+  answers: z.array(z.string().trim().min(1).max(500)).min(1).max(100),
+  options: z.array(localizedSchema).min(2).max(8).optional()
 }).strict();
 const terminalPracticeSchema = z.object({
   instructions: localizedSchema,

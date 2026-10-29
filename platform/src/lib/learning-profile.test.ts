@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { computeProfile } from "./learning-profile";
 import { learningLabs } from "./learning-labs";
+import { learningExams } from "./learning-exams";
 
 test("profile xp breakdown and level are computed correctly", () => {
   const profile = computeProfile({
@@ -34,8 +35,8 @@ test("skills and achievements react to full completion", () => {
     ],
     modulesDone: ["network-fundamentals", "linux-fundamentals", "soc-log-analysis"],
     labsDone: learningLabs.map((item) => item.slug),
-    examsPassed: ["tec-network-foundations", "tec-linux-security-foundations", "tec-soc-foundations"],
-    certificates: 3,
+    examsPassed: learningExams.map((exam) => exam.slug),
+    certificates: learningExams.length,
     pathsFinished: 1
   });
 

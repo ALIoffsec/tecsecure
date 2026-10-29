@@ -1,6 +1,6 @@
 import type { LearningInteractivePractice, Localized } from "@/lib/learning-demo";
 
-const l = (uz: string): Localized => ({ uz, ru: uz, en: uz });
+const l = (uz: string, ru: string, en: string): Localized => ({ uz, ru, en });
 
 export const networkFundamentalsDetails: Record<number, string> = {
   0: `### Kursda nimalarni o‘rganasiz?
@@ -193,45 +193,61 @@ VPN umumiy tarmoq orqali shifrlangan tunnel yaratib, ruxsat etilgan xususiy tarm
 Ulanish muammosini navbat bilan tekshiring: server, port va protokol to‘g‘rimi; sertifikat va tizim vaqti mosmi; mijoz jurnalida qanday xato bor; virtual interfeys yaratildimi; IP olindimi; kerakli yo‘nalish jadvalga qo‘shildimi. VPN’ni bir necha marta ishga tushirish \`tun1\` kabi qo‘shimcha interfeys yaratishi mumkin. VPN sozlama faylida server nomi, kalit yoki sertifikat bo‘lishi mumkin, uni maxfiy saqlang.`,
 };
 
-type PracticeTask = [id: string, command: string, prompt: string, output: string];
+type PracticeTask = [
+  id: string,
+  command: string,
+  promptUz: string,
+  promptRu: string,
+  promptEn: string,
+  output: string
+];
 
 const networkPractice = (...tasks: PracticeTask[]): LearningInteractivePractice => ({
   platform: "network",
-  instructions: l("Buyruqlar sintetik laboratoriya ma’lumotlari bilan ishlaydi. Hech qanday haqiqiy qurilma yoki internetga so‘rov yuborilmaydi."),
-  tasks: tasks.map(([id, command, prompt, output]) => ({ id, command, prompt: l(prompt), output: l(output) }))
+  instructions: l(
+    "Buyruqlar sintetik laboratoriya ma’lumotlari bilan ishlaydi. Hech qanday haqiqiy qurilma yoki internetga so‘rov yuborilmaydi.",
+    "Команды работают с синтетическими лабораторными данными. Ни одному реальному устройству или интернету запрос не отправляется.",
+    "The commands work with synthetic lab data. No request is sent to any real device or the internet."
+  ),
+  tasks: tasks.map(([id, command, promptUz, promptRu, promptEn, output]) => ({
+    id,
+    command,
+    prompt: l(promptUz, promptRu, promptEn),
+    output: l(output, output, output)
+  }))
 });
 
 export const networkFundamentalsPractices: LearningInteractivePractice[] = [
   networkPractice(
-    ["adapter", "ipconfig /all", "Interfeysning IP, gateway va DNS sozlamalarini aniqlang.", "IPv4 Address: 192.0.2.25\nSubnet Mask: 255.255.255.0\nDefault Gateway: 192.0.2.1\nDNS Server: 192.0.2.53\nLab ma’lumoti: sintetik."],
-    ["routes", "route print", "Jadvaldagi default route va interfeysni toping.", "Network Destination  Netmask          Gateway       Interface\n0.0.0.0              0.0.0.0          192.0.2.1     192.0.2.25\n192.0.2.0            255.255.255.0    On-link       192.0.2.25\nLab ma’lumoti: sintetik."]
+    ["adapter", "ipconfig /all", "Interfeysning IP, gateway va DNS sozlamalarini aniqlang.", "Определите IP-адрес интерфейса, шлюз и настройки DNS.", "Identify the interface's IP, gateway, and DNS settings.", "IPv4 Address: 192.0.2.25\nSubnet Mask: 255.255.255.0\nDefault Gateway: 192.0.2.1\nDNS Server: 192.0.2.53\nLab ma’lumoti: sintetik."],
+    ["routes", "route print", "Jadvaldagi default route va interfeysni toping.", "Найдите в таблице маршрут по умолчанию и соответствующий интерфейс.", "Find the default route and its interface in the table.", "Network Destination  Netmask          Gateway       Interface\n0.0.0.0              0.0.0.0          192.0.2.1     192.0.2.25\n192.0.2.0            255.255.255.0    On-link       192.0.2.25\nLab ma’lumoti: sintetik."]
   ),
   networkPractice(
-    ["gateway-ping", "ping -n 2 192.0.2.1", "ICMP echo natijasini ko‘ring; ping muvaffaqiyati faqat shu testdan dalolat beradi.", "Pinging 192.0.2.1 with 32 bytes of data:\nReply from 192.0.2.1: bytes=32 time<1ms TTL=64\nReply from 192.0.2.1: bytes=32 time<1ms TTL=64\nPackets: Sent = 2, Received = 2, Lost = 0\nLab ma’lumoti: sintetik."],
-    ["route-trace", "tracert 192.0.2.25", "Traceroute hop’lari qaysi yo‘lni ko‘rsatishini kuzating.", "Tracing route to 192.0.2.25\n1  <1 ms  192.0.2.1\n2  <1 ms  192.0.2.25\nTrace complete.\nLab ma’lumoti: sintetik."]
+    ["gateway-ping", "ping -n 2 192.0.2.1", "ICMP echo natijasini ko‘ring; ping muvaffaqiyati faqat shu testdan dalolat beradi.", "Посмотрите результат ICMP echo; успешный ping подтверждает только этот конкретный тест.", "Look at the ICMP echo result; a successful ping only confirms this specific test.", "Pinging 192.0.2.1 with 32 bytes of data:\nReply from 192.0.2.1: bytes=32 time<1ms TTL=64\nReply from 192.0.2.1: bytes=32 time<1ms TTL=64\nPackets: Sent = 2, Received = 2, Lost = 0\nLab ma’lumoti: sintetik."],
+    ["route-trace", "tracert 192.0.2.25", "Traceroute hop’lari qaysi yo‘lni ko‘rsatishini kuzating.", "Проследите, какой путь показывают переходы (hops) traceroute.", "Observe which path the traceroute hops reveal.", "Tracing route to 192.0.2.25\n1  <1 ms  192.0.2.1\n2  <1 ms  192.0.2.25\nTrace complete.\nLab ma’lumoti: sintetik."]
   ),
   networkPractice(
-    ["dns-lookup", "nslookup lab.example", "DNS so‘rovidagi server va javob manzilini aniqlang.", "Server:  resolver.lab\nAddress: 192.0.2.53\nName:    lab.example\nAddress: 192.0.2.80\nLab ma’lumoti: sintetik."],
-    ["connections", "netstat -ano", "TCP state va local/remote portlarni farqlang.", "Proto  Local Address      Foreign Address    State        PID\nTCP    192.0.2.25:51520   192.0.2.80:443    ESTABLISHED  2416\nTCP    0.0.0.0:3389      0.0.0.0:0         LISTENING    1080\nLab ma’lumoti: sintetik."]
+    ["dns-lookup", "nslookup lab.example", "DNS so‘rovidagi server va javob manzilini aniqlang.", "Определите сервер и адрес в ответе DNS-запроса.", "Identify the server and the response address in the DNS query.", "Server:  resolver.lab\nAddress: 192.0.2.53\nName:    lab.example\nAddress: 192.0.2.80\nLab ma’lumoti: sintetik."],
+    ["connections", "netstat -ano", "TCP state va local/remote portlarni farqlang.", "Различите состояние TCP (state) и локальные/удалённые порты.", "Distinguish the TCP state and the local/remote ports.", "Proto  Local Address      Foreign Address    State        PID\nTCP    192.0.2.25:51520   192.0.2.80:443    ESTABLISHED  2416\nTCP    0.0.0.0:3389      0.0.0.0:0         LISTENING    1080\nLab ma’lumoti: sintetik."]
   ),
   networkPractice(
-    ["arp-cache", "arp -a", "ARP jadvalida lokal IP va MAC mosligini toping.", "Interface: 192.0.2.25\nInternet Address  Physical Address      Type\n192.0.2.1         02-00-5e-10-00-01     dynamic\nLab ma’lumoti: sintetik."],
-    ["address-plan", "ipconfig /all", "IPv4 manzil va /24 maskadan subnet chegarasini tekshiring.", "IPv4 Address: 192.0.2.25\nSubnet Mask: 255.255.255.0 (/24)\nNetwork: 192.0.2.0/24\nBroadcast: 192.0.2.255\nLab ma’lumoti: sintetik."]
+    ["arp-cache", "arp -a", "ARP jadvalida lokal IP va MAC mosligini toping.", "Найдите в таблице ARP соответствие локального IP-адреса и MAC-адреса.", "Find the local IP-to-MAC mapping in the ARP table.", "Interface: 192.0.2.25\nInternet Address  Physical Address      Type\n192.0.2.1         02-00-5e-10-00-01     dynamic\nLab ma’lumoti: sintetik."],
+    ["address-plan", "ipconfig /all", "IPv4 manzil va /24 maskadan subnet chegarasini tekshiring.", "Определите границы подсети по IPv4-адресу и маске /24.", "Check the subnet boundary from the IPv4 address and the /24 mask.", "IPv4 Address: 192.0.2.25\nSubnet Mask: 255.255.255.0 (/24)\nNetwork: 192.0.2.0/24\nBroadcast: 192.0.2.255\nLab ma’lumoti: sintetik."]
   ),
   networkPractice(
-    ["tcp-listener", "netstat -ano", "Listener va established TCP sessiyalarini taqqoslang.", "Proto  Local Address      Foreign Address    State        PID\nTCP    0.0.0.0:443        0.0.0.0:0         LISTENING    3180\nTCP    192.0.2.25:51520   192.0.2.80:443    ESTABLISHED  2416\nLab ma’lumoti: sintetik."],
-    ["https-check", "Test-NetConnection 192.0.2.80 -Port 443", "TCP/443 ulanish tekshiruvining natijasini o‘qing.", "ComputerName: 192.0.2.80\nRemotePort: 443\nTcpTestSucceeded: True\nLab ma’lumoti: sintetik."]
+    ["tcp-listener", "netstat -ano", "Listener va established TCP sessiyalarini taqqoslang.", "Сравните TCP-сессии в состоянии listener и established.", "Compare listener and established TCP sessions.", "Proto  Local Address      Foreign Address    State        PID\nTCP    0.0.0.0:443        0.0.0.0:0         LISTENING    3180\nTCP    192.0.2.25:51520   192.0.2.80:443    ESTABLISHED  2416\nLab ma’lumoti: sintetik."],
+    ["https-check", "Test-NetConnection 192.0.2.80 -Port 443", "TCP/443 ulanish tekshiruvining natijasini o‘qing.", "Прочитайте результат проверки подключения по TCP/443.", "Read the result of the TCP/443 connectivity check.", "ComputerName: 192.0.2.80\nRemotePort: 443\nTcpTestSucceeded: True\nLab ma’lumoti: sintetik."]
   ),
   networkPractice(
-    ["dns-record", "nslookup -type=SRV _ldap._tcp.dc._msdcs.lab.example", "SRV yozuvi xizmat va portni qanday aniqlashini ko‘ring.", "Service: _ldap._tcp.dc._msdcs.lab.example\nTarget: dc01.lab.example\nPort: 389\nLab ma’lumoti: sintetik."],
-    ["neighbor-cache", "arp -a", "ARP jadvalining lokal segment doirasida ishlashini ko‘ring.", "Interface: 192.0.2.25\nInternet Address  Physical Address      Type\n192.0.2.1         02-00-5e-10-00-01     dynamic\nLab ma’lumoti: sintetik."]
+    ["dns-record", "nslookup -type=SRV _ldap._tcp.dc._msdcs.lab.example", "SRV yozuvi xizmat va portni qanday aniqlashini ko‘ring.", "Посмотрите, как запись SRV определяет службу и порт.", "See how the SRV record identifies the service and port.", "Service: _ldap._tcp.dc._msdcs.lab.example\nTarget: dc01.lab.example\nPort: 389\nLab ma’lumoti: sintetik."],
+    ["neighbor-cache", "arp -a", "ARP jadvalining lokal segment doirasida ishlashini ko‘ring.", "Убедитесь, что таблица ARP действует только в пределах локального сегмента.", "See that the ARP table works only within the local segment.", "Interface: 192.0.2.25\nInternet Address  Physical Address      Type\n192.0.2.1         02-00-5e-10-00-01     dynamic\nLab ma’lumoti: sintetik."]
   ),
   networkPractice(
-    ["default-route", "route print", "Default route va next-hop’ni aniqlang.", "Network Destination  Netmask          Gateway       Interface\n0.0.0.0              0.0.0.0          192.0.2.1     192.0.2.25\nLab ma’lumoti: sintetik."],
-    ["vpn-route", "route print", "VPN uchun ajratilgan xususiy subnet yo‘nalishini kuzating.", "Network Destination  Netmask          Gateway       Interface\n10.20.0.0            255.255.0.0      10.8.0.1      10.8.0.2\n0.0.0.0              0.0.0.0          192.0.2.1     192.0.2.25\nLab ma’lumoti: sintetik."]
+    ["default-route", "route print", "Default route va next-hop’ni aniqlang.", "Определите маршрут по умолчанию и next-hop.", "Identify the default route and the next hop.", "Network Destination  Netmask          Gateway       Interface\n0.0.0.0              0.0.0.0          192.0.2.1     192.0.2.25\nLab ma’lumoti: sintetik."],
+    ["vpn-route", "route print", "VPN uchun ajratilgan xususiy subnet yo‘nalishini kuzating.", "Проследите маршрут к приватной подсети, выделенной для VPN.", "Observe the route to the private subnet allocated for the VPN.", "Network Destination  Netmask          Gateway       Interface\n10.20.0.0            255.255.0.0      10.8.0.1      10.8.0.2\n0.0.0.0              0.0.0.0          192.0.2.1     192.0.2.25\nLab ma’lumoti: sintetik."]
   ),
   networkPractice(
-    ["trace-lab", "tracert lab.example", "DNS nomidan hostga traceroute yo‘lini sintetik hop’lar orqali kuzating.", "Tracing route to lab.example [192.0.2.80]\n1  <1 ms  192.0.2.1\n2  2 ms   192.0.2.80\nTrace complete.\nLab ma’lumoti: sintetik."],
-    ["dns-again", "nslookup lab.example", "Tarmoq muammosida DNS javobini alohida tasdiqlang.", "Server:    resolver.lab\nAddress:   192.0.2.53\nName:      lab.example\nAddress:   192.0.2.80\nLab ma’lumoti: sintetik."]
+    ["trace-lab", "tracert lab.example", "DNS nomidan hostga traceroute yo‘lini sintetik hop’lar orqali kuzating.", "Проследите маршрут от DNS-имени к хосту через синтетические переходы (hops).", "Trace the route from the DNS name to the host through synthetic hops.", "Tracing route to lab.example [192.0.2.80]\n1  <1 ms  192.0.2.1\n2  2 ms   192.0.2.80\nTrace complete.\nLab ma’lumoti: sintetik."],
+    ["dns-again", "nslookup lab.example", "Tarmoq muammosida DNS javobini alohida tasdiqlang.", "При сетевой проблеме отдельно подтвердите ответ DNS.", "When troubleshooting a network issue, confirm the DNS response separately.", "Server:    resolver.lab\nAddress:   192.0.2.53\nName:      lab.example\nAddress:   192.0.2.80\nLab ma’lumoti: sintetik."]
   )
 ];

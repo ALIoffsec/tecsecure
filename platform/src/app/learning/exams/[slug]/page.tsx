@@ -35,7 +35,7 @@ export default async function ExamPage({ params }: { params: Promise<{ slug: str
     prisma.learningCertificate.findUnique({ where: { userId_examSlug: { userId: user.id, examSlug: exam.slug } }, select: { code: true } })
   ]);
   return <ExamView
-    exam={{ slug: exam.slug, title: exam.title, summary: exam.summary, minutes: exam.minutes, passPercent: exam.passPercent, questionCount: exam.questions.length, topics: exam.topics }}
+    exam={{ slug: exam.slug, title: exam.title, summary: exam.summary, minutes: exam.minutes, passPercent: exam.passPercent, questionCount: exam.questions.length, topics: exam.topics, credential: exam.credential, acronym: exam.acronym, accent: exam.accent }}
     price={examPriceFor(planKey, exam.feeTec)}
     listPrice={exam.feeTec}
     tecBalance={account?.rewardPoints ?? 0}

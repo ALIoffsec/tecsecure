@@ -7,6 +7,7 @@ import { kerioControlDetails } from "@/lib/kerio-control-content";
 import { linuxFundamentalsDetails } from "@/lib/linux-fundamentals-content";
 import { learningSpecialistDetails } from "@/lib/learning-specialist-content";
 import { learningTeachingVisuals } from "@/lib/learning-teaching-visuals";
+import { careerTeachingVisuals } from "@/lib/learning-teaching-visuals-career";
 import { getLearningSectionQuestion } from "@/lib/learning-completion";
 import { networkFundamentalsDetails } from "@/lib/network-fundamentals-content";
 import { sectionPriceTec } from "@/lib/learning-pricing";
@@ -49,8 +50,8 @@ export async function GET(_request: Request, { params }: { params: Promise<{ slu
     lesson: {
       ...section,
       expandedContent: extendedLessons[module.slug]?.[index],
-      diagram: section.diagram ?? learningTeachingVisuals[module.slug]?.[index],
-      question: { prompt: question.prompt },
+      diagram: section.diagram ?? learningTeachingVisuals[module.slug]?.[index] ?? careerTeachingVisuals[module.slug]?.[index],
+      question: { prompt: question.prompt, options: question.options },
       example: section.example ?? terminalExample?.code ?? supplementalExample?.code,
       exampleExplanation: section.exampleExplanation ?? terminalExample?.explanation ?? supplementalExample?.explanation
     }

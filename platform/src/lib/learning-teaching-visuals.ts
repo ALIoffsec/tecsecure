@@ -41,110 +41,116 @@ export const learningTeachingVisuals: Record<string, Record<number, LearningDiag
   }
 };
 
-const check = (prompt: string, ...answers: string[]): NonNullable<LearningSection["question"]> => ({
+const check = (
+  prompt: string,
+  options: [string, string, string, string] | [string, string, string],
+  correctIndex: number,
+  ...extraAnswers: string[]
+): NonNullable<LearningSection["question"]> => ({
   prompt: l(prompt),
-  answers
+  answers: [options[correctIndex], ...extraAnswers],
+  options: options.map(l)
 });
 
 export const learningTeachingChecks: Record<string, Record<number, NonNullable<LearningSection["question"]>>> = {
   "network-fundamentals": {
-    1: check("OSI modelida router odatda qaysi qatlamda marshrutlash qarorini qabul qiladi?", "network", "tarmoq", "layer 3", "l3", "3"),
-    2: check("TCP/IP transport qatlamida TCP ma’lumot birligi odatda nima deyiladi?", "segment", "tcp segment"),
-    3: check("Ulanish o‘rnatmasdan datagram yuboradigan transport protokoli qaysi?", "udp"),
-    4: check("Wireshark’da TCP port 443 trafigini ko‘rsatadigan display filter qanday yoziladi?", "tcp.port == 443"),
-    5: check("tcpdump’da yozib olish uchun tarmoq interfeysini tanlaydigan parametr qaysi?", "-i", "-i interface"),
-    6: check("Mahalliy IPv4 manziliga mos MAC manzilni topishda qaysi protokol ishlatiladi?", "arp"),
-    7: check("Xususiy IPv4 manzilni tashqi manzilga tarjima qilish texnologiyasi nima?", "nat", "pat", "nat/pat")
+    1: check("OSI modelida router odatda qaysi qatlamda marshrutlash qarorini qabul qiladi?", ["Network", "Data link", "Transport", "Physical"], 0, "tarmoq", "layer 3", "l3", "3"),
+    2: check("TCP/IP transport qatlamida TCP ma’lumot birligi odatda nima deyiladi?", ["Segment", "Datagram", "Frame", "Paket"], 0, "tcp segment"),
+    3: check("Ulanish o‘rnatmasdan datagram yuboradigan transport protokoli qaysi?", ["UDP", "TCP", "ICMP", "IP"], 0),
+    4: check("Wireshark’da TCP port 443 trafigini ko‘rsatadigan display filter qanday yoziladi?", ["tcp.port == 443", "ip.addr == 443", "http.port == 443", "tcp.srcport != 443"], 0),
+    5: check("tcpdump’da yozib olish uchun tarmoq interfeysini tanlaydigan parametr qaysi?", ["-i", "-n", "-v", "-X"], 0, "-i interface"),
+    6: check("Mahalliy IPv4 manziliga mos MAC manzilni topishda qaysi protokol ishlatiladi?", ["ARP", "DHCP", "DNS", "ICMP"], 0),
+    7: check("Xususiy IPv4 manzilni tashqi manzilga tarjima qilish texnologiyasi nima?", ["NAT", "Routing", "VLAN", "Firewall qoidasi"], 0, "pat", "nat/pat")
   },
   "linux-fundamentals": {
-    1: check("Linux’da fayl va katalog ruxsatlarini o‘zgartirish buyrug‘i qaysi?", "chmod"),
-    2: check("systemd jurnalidagi xizmat loglarini ko‘rish uchun qaysi buyruq ishlatiladi?", "journalctl")
+    1: check("Linux’da fayl va katalog ruxsatlarini o‘zgartirish buyrug‘i qaysi?", ["chmod", "chown", "chgrp", "ls -l"], 0),
+    2: check("systemd jurnalidagi xizmat loglarini ko‘rish uchun qaysi buyruq ishlatiladi?", ["journalctl", "dmesg", "syslog", "tail -f /var/log/messages"], 0)
   },
   "windows-fundamentals": {
-    0: check("Windows’da jarayonlar, xotira va drayverlarni boshqaradigan asosiy tizim qismi nima?", "kernel", "yadro"),
-    1: check("Markazlashgan foydalanuvchi va kompyuter boshqaruvi uchun Windows’da qaysi katalog xizmati ishlatiladi?", "active directory", "ad"),
-    2: check("Domen qurilmalariga markaziy konfiguratsiya siyosatini tarqatadigan Windows mexanizmi nima?", "group policy", "gpo")
+    0: check("Windows’da jarayonlar, xotira va drayverlarni boshqaradigan asosiy tizim qismi nima?", ["Kernel", "Shell", "Registry", "Explorer"], 0, "yadro"),
+    1: check("Markazlashgan foydalanuvchi va kompyuter boshqaruvi uchun Windows’da qaysi katalog xizmati ishlatiladi?", ["Active Directory", "DNS Server", "DHCP Server", "Group Policy"], 0, "ad"),
+    2: check("Domen qurilmalariga markaziy konfiguratsiya siyosatini tarqatadigan Windows mexanizmi nima?", ["Group Policy", "Active Directory", "Registry Editor", "Task Scheduler"], 0, "gpo")
   },
   "mikrotik-routeros-basics": {
-    0: check("MikroTik routerlarida ishlaydigan operatsion tizim nomi nima?", "routeros"),
-    2: check("MikroTik’da VLAN interfeyslarini ko‘prikda bir-biridan ajratish uchun qaysi bridge xususiyati yoqiladi?", "vlan filtering", "vlan-filtering")
+    0: check("MikroTik routerlarida ishlaydigan operatsion tizim nomi nima?", ["RouterOS", "Cisco IOS", "JunOS", "pfSense"], 0),
+    2: check("MikroTik’da VLAN interfeyslarini ko‘prikda bir-biridan ajratish uchun qaysi bridge xususiyati yoqiladi?", ["VLAN filtering", "Bridge port isolation", "Spanning tree", "Fast forward"], 0, "vlan-filtering")
   },
   "intro-cybersecurity": {
-    1: check("Soxta xabar yoki sayt orqali foydalanuvchini aldab ma’lumot olish hujumi nima deyiladi?", "phishing"),
-    2: check("Keraksiz xizmatlarni o‘chirish, yangilash va eng kam ruxsat berish amaliyoti umumiy nima deb ataladi?", "hardening", "mustahkamlash")
+    1: check("Soxta xabar yoki sayt orqali foydalanuvchini aldab ma’lumot olish hujumi nima deyiladi?", ["Phishing", "Malware", "DDoS", "Brute-force"], 0),
+    2: check("Keraksiz xizmatlarni o‘chirish, yangilash va eng kam ruxsat berish amaliyoti umumiy nima deb ataladi?", ["Hardening", "Patching only", "Penetration testing", "Monitoring"], 0, "mustahkamlash")
   },
   "web-security-owasp": {
-    0: check("SQL injection xavfini kamaytirish uchun SQL so‘roviga qiymatlarni qanday uzatish kerak?", "parameterized query", "parameterized queries", "prepared statement", "prepared statements", "parametrli so‘rov"),
-    1: check("Foydalanuvchi tizimga kirganini keyingi so‘rovlarda bog‘lab turadigan mexanizm nima?", "session", "sessiya"),
-    2: check("Serverda foydalanuvchi qaysi amalni bajarishi mumkinligini tekshiruvchi nazorat nima?", "authorization", "avtorizatsiya")
+    0: check("SQL injection xavfini kamaytirish uchun SQL so‘roviga qiymatlarni qanday uzatish kerak?", ["parameterized query", "String concatenation", "Dynamic SQL without binding", "Disabling SQL logging"], 0, "parameterized queries", "prepared statement", "prepared statements", "parametrli so‘rov"),
+    1: check("Foydalanuvchi tizimga kirganini keyingi so‘rovlarda bog‘lab turadigan mexanizm nima?", ["Session", "Cache", "DNS record", "Local storage"], 0, "sessiya"),
+    2: check("Serverda foydalanuvchi qaysi amalni bajarishi mumkinligini tekshiruvchi nazorat nima?", ["Authorization", "Authentication", "Encryption", "Logging"], 0, "avtorizatsiya")
   },
   "soc-log-analysis": {
-    0: check("Windows tizimida login va xavfsizlik hodisalari ko‘p uchraydigan jurnal qaysi?", "security event log", "windows security log", "security log"),
-    1: check("SIEM ogohlantirishini tekshirishda avval uni dalillar bilan tasdiqlash yoki rad etish bosqichi nima?", "triage", "saralash"),
-    2: check("Hodisani ta’siri va shoshilinchligiga qarab ustuvorlashtirish jarayoni nima deyiladi?", "triage", "saralash", "prioritization")
+    0: check("Windows tizimida login va xavfsizlik hodisalari ko‘p uchraydigan jurnal qaysi?", ["Security event log", "Application log", "System log", "Setup log"], 0, "windows security log", "security log"),
+    1: check("SIEM ogohlantirishini tekshirishda avval uni dalillar bilan tasdiqlash yoki rad etish bosqichi nima?", ["Triage", "Containment", "Eradication", "Recovery"], 0, "saralash"),
+    2: check("Hodisani ta’siri va shoshilinchligiga qarab ustuvorlashtirish jarayoni nima deyiladi?", ["Prioritization", "Automation", "Escalation only", "Archiving"], 0, "triage", "saralash")
   },
   "wifi-security": {
-    0: check("Simsiz tarmoqni foydalanuvchilar ko‘radigan nomi qanday ataladi?", "ssid"),
-    2: check("Wi-Fi xavfsizlik sinovini boshlashdan oldin yozma ravishda belgilanishi kerak bo‘lgan ruxsat chegarasi nima deyiladi?", "scope", "qamrov"),
-    3: check("Bir nechta kirish nuqtalaridan kelgan shubhali hodisalarni markaziy kuzatishga qaysi turdagi tizim yordam beradi?", "wids", "wireless intrusion detection system", "wireless ids")
+    0: check("Simsiz tarmoqni foydalanuvchilar ko‘radigan nomi qanday ataladi?", ["SSID", "BSSID", "Channel", "MAC address"], 0),
+    2: check("Wi-Fi xavfsizlik sinovini boshlashdan oldin yozma ravishda belgilanishi kerak bo‘lgan ruxsat chegarasi nima deyiladi?", ["Scope", "Timeline only", "Budget", "Report format"], 0, "qamrov"),
+    3: check("Bir nechta kirish nuqtalaridan kelgan shubhali hodisalarni markaziy kuzatishga qaysi turdagi tizim yordam beradi?", ["WIDS", "Firewall", "VPN gateway", "SIEM"], 0, "wireless intrusion detection system", "wireless ids")
   },
   "active-directory-security": {
-    0: check("Windows domenida foydalanuvchi va kompyuter obyektlarini markaziy saqlaydigan katalog xizmati nima?", "active directory", "ad"),
-    2: check("Hujumchining bir tizimdan boshqasiga o‘tishini cheklashda foydali asosiy ruxsat tamoyili nima?", "least privilege", "eng kam ruxsat"),
-    3: check("Domen boshqaruvchisidagi autentifikatsiya va siyosat hodisalarini tahlil qilish uchun qaysi manba muhim?", "security event log", "windows security log", "security log")
+    0: check("Windows domenida foydalanuvchi va kompyuter obyektlarini markaziy saqlaydigan katalog xizmati nima?", ["Active Directory", "DNS", "DHCP", "Group Policy"], 0, "ad"),
+    2: check("Hujumchining bir tizimdan boshqasiga o‘tishini cheklashda foydali asosiy ruxsat tamoyili nima?", ["Least privilege", "Zero trust", "Defense in depth", "Separation of duties"], 0, "eng kam ruxsat"),
+    3: check("Domen boshqaruvchisidagi autentifikatsiya va siyosat hodisalarini tahlil qilish uchun qaysi manba muhim?", ["Security event log", "System log", "Application log", "Setup log"], 0, "windows security log", "security log")
   },
   "cisco-ios-fundamentals": {
-    0: check("Cisco IOS laboratoriyasida noto‘g‘ri sozlamalar real tarmoqqa ta’sir qilmasligi uchun qayerda ishlash kerak?", "izolyatsiyalangan lab", "laboratoriya", "packet tracer", "gns3"),
-    1: check("Cisco IOS’da konfiguratsiya buyruqlarini kiritish uchun qaysi rejimga o‘tiladi?", "global configuration", "global config", "configure terminal"),
-    2: check("IOS CLI’da buyruq variantlari va parametrlarini ko‘rsatadigan tugma qaysi?", "?", "question mark"),
-    3: check("Hozir ishlayotgan, ammo hali saqlanmagan konfiguratsiya qayerda turadi?", "running-config", "running config"),
-    4: check("Cisco IOS’da interfeysga IPv4 manzil berishdan oldin qaysi konfiguratsiya rejimiga kiriladi?", "interface configuration", "interface config", "interface"),
-    5: check("Ikki router orasida paket yo‘lini tekshirish uchun ishlatiladigan asosiy ICMP buyrug‘i qaysi?", "ping"),
-    6: check("VLAN ichidagi oddiy oxirgi qurilmaga ulanadigan switch port rejimi nima?", "access"),
-    7: check("Bir fizik switch porti orqali bir nechta VLAN’ni olib o‘tuvchi rejim nima?", "trunk"),
-    8: check("Layer 2 halqalaridan saqlashda ortiqcha ulanishlarni boshqaradigan protokol nima?", "spanning tree", "stp"),
-    9: check("Router-on-a-stick yordamida VLAN’lar o‘rtasidagi trafik qaysi switch porti orqali o‘tadi?", "trunk"),
-    10: check("Boshqa aniq marshrut topilmasa, trafikni chiqaradigan marshrut nima deyiladi?", "default route", "standart marshrut"),
-    11: check("Cisco қурилмаларида ички маршрутларни динамик алмашиш протоколи сифатида курсда қайси протокол созланади?", "ospf"),
-    12: check("Cisco IOS’da кирувчи ёки чиқувчи пакетларни шартлар бўйича рухсатлаш/рад этиш рўйхати нима?", "acl", "access control list"),
-    13: check("Бир умумий ташқи IPv4 манзил орқали кўп ички қурилмалар уланишида портларни ҳам таржима қиладиган усул нима?", "pat", "nat overload"),
-    14: check("Cisco qurilmasini shifrlangan masofaviy boshqarish uchun qaysi protokol sozlanadi?", "ssh"),
-    15: check("Tarmoq muammosini bosqichma-bosqich ajratishda birinchi tekshiriladigan eng quyi qatlam qaysi?", "layer 1", "l1", "physical", "fizik qatlam"),
-    16: check("IOS konfiguratsiyasini qayta yuklangandan keyin ham saqlash uchun qaysi konfiguratsiya fayliga yoziladi?", "startup-config", "startup config"),
-    17: check("Yakuniy kichik ofis laboratoriyasida VLAN’лар ўртасидаги алоқани текшириш учун муҳим буйруқ қайси?", "ping")
+    0: check("Cisco IOS laboratoriyasida noto‘g‘ri sozlamalar real tarmoqqa ta’sir qilmasligi uchun qayerda ishlash kerak?", ["Izolyatsiyalangan lab", "Jonli production tarmog‘i", "Ofis Wi-Fi tarmog‘i", "Mijoz routeri"], 0, "laboratoriya", "packet tracer", "gns3"),
+    1: check("Cisco IOS’da konfiguratsiya buyruqlarini kiritish uchun qaysi rejimga o‘tiladi?", ["Global configuration", "Privileged EXEC", "User EXEC", "Interface configuration"], 0, "global config", "configure terminal"),
+    2: check("IOS CLI’da buyruq variantlari va parametrlarini ko‘rsatadigan tugma qaysi?", ["?", "Tab", "Ctrl+Z", "!"], 0, "question mark"),
+    3: check("Hozir ishlayotgan, ammo hali saqlanmagan konfiguratsiya qayerda turadi?", ["running-config", "startup-config", "NVRAM", "Flash"], 0, "running config"),
+    4: check("Cisco IOS’da interfeysga IPv4 manzil berishdan oldin qaysi konfiguratsiya rejimiga kiriladi?", ["Interface configuration", "Global configuration", "Router configuration", "Line configuration"], 0, "interface config", "interface"),
+    5: check("Ikki router orasida paket yo‘lini tekshirish uchun ishlatiladigan asosiy ICMP buyrug‘i qaysi?", ["Ping", "Traceroute", "Telnet", "SSH"], 0),
+    6: check("VLAN ichidagi oddiy oxirgi qurilmaga ulanadigan switch port rejimi nima?", ["Access", "Trunk", "Dynamic desirable", "Voice"], 0),
+    7: check("Bir fizik switch porti orqali bir nechta VLAN’ni olib o‘tuvchi rejim nima?", ["Trunk", "Access", "Dynamic auto", "Native"], 0),
+    8: check("Layer 2 halqalaridan saqlashda ortiqcha ulanishlarni boshqaradigan protokol nima?", ["Spanning tree", "VLAN Trunking Protocol", "HSRP", "Link Aggregation"], 0, "stp"),
+    9: check("Router-on-a-stick yordamida VLAN’lar o‘rtasidagi trafik qaysi switch porti orqali o‘tadi?", ["Trunk", "Access", "Voice", "Native VLAN only"], 0),
+    10: check("Boshqa aniq marshrut topilmasa, trafikni chiqaradigan marshrut nima deyiladi?", ["Default route", "Static route", "Directly connected route", "Summary route"], 0, "standart marshrut"),
+    11: check("Cisco қурилмаларида ички маршрутларни динамик алмашиш протоколи сифатида курсда қайси протокол созланади?", ["OSPF", "RIP", "BGP", "EIGRP"], 0),
+    12: check("Cisco IOS’da кирувчи ёки чиқувчи пакетларни шартлар бўйича рухсатлаш/рад этиш рўйхати нима?", ["ACL", "NAT", "VLAN", "QoS policy"], 0, "acl", "access control list"),
+    13: check("Бир умумий ташқи IPv4 манзил орқали кўп ички қурилмалар уланишида портларни ҳам таржима қиладиган усул нима?", ["PAT", "Static NAT", "ACL", "VLAN trunking"], 0, "pat", "nat overload"),
+    14: check("Cisco qurilmasini shifrlangan masofaviy boshqarish uchun qaysi protokol sozlanadi?", ["SSH", "Telnet", "HTTP", "FTP"], 0),
+    15: check("Tarmoq muammosini bosqichma-bosqich ajratishda birinchi tekshiriladigan eng quyi qatlam qaysi?", ["Physical", "Data link", "Network", "Transport"], 0, "layer 1", "l1", "fizik qatlam"),
+    16: check("IOS konfiguratsiyasini qayta yuklangandan keyin ham saqlash uchun qaysi konfiguratsiya fayliga yoziladi?", ["startup-config", "running-config", "NVRAM backup file", "Flash image"], 0, "startup config"),
+    17: check("Yakuniy kichik ofis laboratoriyasida VLAN’лар ўртасидаги алоқани текшириш учун муҳим буйруқ қайси?", ["Ping", "Show vlan brief", "Traceroute", "Telnet"], 0)
   },
   "cctv-system-design": {
-    0: check("Tarmoq orqali video uzatadigan zamonaviy kameraning keng tarqalgan turi nima?", "ip camera", "ip kamera"),
-    1: check("Video saqlash hajmini hisoblashda bitrate’dan tashqari qaysi vaqt o‘lchovi majburiy kerak?", "retention", "saqlash muddati"),
-    2: check("Ethernet kabeli orqali qurilmaga elektr va ma’lumotni birga uzatish texnologiyasi nima?", "poe")
+    0: check("Tarmoq orqali video uzatadigan zamonaviy kameraning keng tarqalgan turi nima?", ["IP camera", "Analog camera", "PTZ controller", "NVR"], 0, "ip kamera"),
+    1: check("Video saqlash hajmini hisoblashda bitrate’dan tashqari qaysi vaqt o‘lchovi majburiy kerak?", ["Retention", "Resolution", "Frame rate", "Compression"], 0, "saqlash muddati"),
+    2: check("Ethernet kabeli orqali qurilmaga elektr va ma’lumotni birga uzatish texnologiyasi nima?", ["PoE", "VLAN", "QoS", "NAT"], 0)
   },
   "firewall-zero-to-hero": {
-    0: check("Bitta kompyuterning kiruvchi va chiquvchi trafikini qaysi firewall turi boshqaradi?", "host firewall", "host"),
-    1: check("Qaytish paketini sessiya holati asosida taniydigan firewall qanday ataladi?", "stateful", "stateful firewall"),
-    2: check("Faqat ish uchun zarur bo‘lgan ruxsatlarni berish tamoyili nima?", "least privilege", "eng kam ruxsat"),
-    3: check("Windows’dagi Public profil odatda qaysi tarmoqda qo‘llanadi?", "public", "public network"),
-    4: check("Linux’da kernel packet filter qoidalarini zamonaviy boshqaruvchi vositalardan biri qaysi?", "nftables"),
-    5: check("Internetga qaragan serverlarni ichki LAN’dan ajratib turuvchi zona nima?", "dmz"),
-    6: check("NGFW’da ma’lum hujum naqshlarini aniqlab to‘sishga yordam beradigan modul nima?", "ips"),
-    7: check("HTTP so‘rovlarini web ilova qoidalari bo‘yicha tekshiruvchi himoya nima?", "waf", "web application firewall"),
-    8: check("Cloud’da VM yoki interfeysga biriktiriladigan virtual trafik qoidalari ko‘pincha nima deb ataladi?", "security group", "security groups"),
-    9: check("Provayder chetida hajmli hujum trafikini kamaytirish xizmati qanday ataladi?", "ddos mitigation", "ddos protection", "ddos"),
-    10: check("Masofadan xavfsiz tunnel orqali ulanish texnologiyasi nima?", "vpn"),
-    11: check("Loglarni markaziy yig‘ish va o‘zaro bog‘lashga qaysi turdagi tizim yordam beradi?", "siem"),
-    12: check("Asosiy firewall ishdan chiqsa, xizmatni zaxira qurilma davom ettirish qobiliyati nima?", "ha", "high availability", "yuqori mavjudlik"),
-    13: check("Nosozlikda firewall qarori va qoida ID’sini ko‘rsatadigan asosiy dalil nima?", "firewall log", "log", "jurnal")
+    0: check("Bitta kompyuterning kiruvchi va chiquvchi trafikini qaysi firewall turi boshqaradi?", ["Host firewall", "Network firewall (NGFW)", "WAF", "Cloud security group"], 0, "host"),
+    1: check("Qaytish paketini sessiya holati asosida taniydigan firewall qanday ataladi?", ["Stateful firewall", "Stateless firewall", "Proxy firewall", "Packet sniffer"], 0, "stateful"),
+    2: check("Faqat ish uchun zarur bo‘lgan ruxsatlarni berish tamoyili nima?", ["Least privilege", "Zero trust", "Defense in depth", "Fail-open"], 0, "eng kam ruxsat"),
+    3: check("Windows’dagi Public profil odatda qaysi tarmoqda qo‘llanadi?", ["Public", "Private", "Domain", "Guest"], 0, "public network"),
+    4: check("Linux’da kernel packet filter qoidalarini zamonaviy boshqaruvchi vositalardan biri qaysi?", ["nftables", "iptables (legacy)", "UFW", "firewalld"], 0),
+    5: check("Internetga qaragan serverlarni ichki LAN’dan ajratib turuvchi zona nima?", ["DMZ", "VLAN", "VPN", "Subnet"], 0),
+    6: check("NGFW’da ma’lum hujum naqshlarini aniqlab to‘sishga yordam beradigan modul nima?", ["IPS", "WAF", "NAT", "VPN"], 0),
+    7: check("HTTP so‘rovlarini web ilova qoidalari bo‘yicha tekshiruvchi himoya nima?", ["WAF", "IPS", "SIEM", "DMZ"], 0, "waf", "web application firewall"),
+    8: check("Cloud’da VM yoki interfeysga biriktiriladigan virtual trafik qoidalari ko‘pincha nima deb ataladi?", ["Security group", "Routing table", "DNS zone", "Load balancer"], 0, "security group", "security groups"),
+    9: check("Provayder chetida hajmli hujum trafikini kamaytirish xizmati qanday ataladi?", ["DDoS mitigation", "Firewall logging", "VPN concentrator", "Load balancing"], 0, "ddos mitigation", "ddos protection", "ddos"),
+    10: check("Masofadan xavfsiz tunnel orqali ulanish texnologiyasi nima?", ["VPN", "VLAN", "NAT", "DMZ"], 0),
+    11: check("Loglarni markaziy yig‘ish va o‘zaro bog‘lashga qaysi turdagi tizim yordam beradi?", ["SIEM", "IPS", "WAF", "DNS sinkhole"], 0),
+    12: check("Asosiy firewall ishdan chiqsa, xizmatni zaxira qurilma davom ettirish qobiliyati nima?", ["HA", "Load balancing", "VPN failover", "DNS round robin"], 0, "ha", "high availability", "yuqori mavjudlik"),
+    13: check("Nosozlikda firewall qarori va qoida ID’sini ko‘rsatadigan asosiy dalil nima?", ["Firewall log", "DHCP lease", "ARP table", "Routing table"], 0, "firewall log", "log", "jurnal")
   },
   "kerio-control-zero-to-hero": {
-    0: check("Kerio topologiyasida internet provayderiga qaragan interfeys zonasi nima?", "wan"),
-    1: check("Kerio sozlamasini o‘zgartirishdan oldin konfiguratsiyani qayerga saqlash kerak?", "backup", "zaxira", "zaxira nusxa"),
-    2: check("Ichki foydalanuvchilar segmenti odatda qaysi zonada bo‘ladi?", "lan"),
-    3: check("Faqat zarur manba, manzil va portga ruxsat berish tamoyili nima?", "least privilege", "eng kam ruxsat"),
-    4: check("LAN’dan internetga chiqishda ichki manzilni WAN manziliga tarjima qilish nima?", "nat", "source nat", "masquerade"),
-    5: check("Port mapping bilan internetga chiqarilgan serverni qaysi ajratilgan zonada saqlash ma’qul?", "dmz"),
-    6: check("Saytlarni toifa yoki URL bo‘yicha cheklovchi Kerio funksiyasi nima?", "web filter", "web filtering"),
-    7: check("Remote VPN hisobini qo‘shimcha tasdiqlash uchun tavsiya qilinadigan omil nima?", "mfa"),
-    8: check("VPN tunnelidan keyin ichki xizmatga kirishni yana qaysi qurilma siyosati cheklaydi?", "firewall", "firewall policy", "firewall rule"),
-    9: check("Konfiguratsiyaning maxfiy ma’lumot bo‘lishi mumkin bo‘lgan nusxasini qanday saqlash kerak?", "backup", "backup configuration", "zaxira"),
-    10: check("Marshrut, firewall log, NAT va server javobini tekshirib sababni topish nima deyiladi?", "troubleshooting", "nosozlikni aniqlash", "diagnostics")
+    0: check("Kerio topologiyasida internet provayderiga qaragan interfeys zonasi nima?", ["WAN", "LAN", "DMZ", "Loopback"], 0),
+    1: check("Kerio sozlamasini o‘zgartirishdan oldin konfiguratsiyani qayerga saqlash kerak?", ["Backup", "Syslog server", "DNS cache", "Browser history"], 0, "zaxira", "zaxira nusxa"),
+    2: check("Ichki foydalanuvchilar segmenti odatda qaysi zonada bo‘ladi?", ["LAN", "WAN", "DMZ", "Internet"], 0),
+    3: check("Faqat zarur manba, manzil va portga ruxsat berish tamoyili nima?", ["Least privilege", "Zero trust", "Defense in depth", "Fail-open"], 0, "eng kam ruxsat"),
+    4: check("LAN’dan internetga chiqishda ichki manzilni WAN manziliga tarjima qilish nima?", ["NAT", "VLAN", "ACL", "Routing"], 0, "source nat", "masquerade"),
+    5: check("Port mapping bilan internetga chiqarilgan serverni qaysi ajratilgan zonada saqlash ma’qul?", ["DMZ", "LAN", "WAN", "VPN pool"], 0),
+    6: check("Saytlarni toifa yoki URL bo‘yicha cheklovchi Kerio funksiyasi nima?", ["Web filter", "Firewall policy", "Port mapping", "VPN policy"], 0, "web filtering"),
+    7: check("Remote VPN hisobini qo‘shimcha tasdiqlash uchun tavsiya qilinadigan omil nima?", ["MFA", "Longer username", "Static IP only", "Shared password"], 0),
+    8: check("VPN tunnelidan keyin ichki xizmatga kirishni yana qaysi qurilma siyosati cheklaydi?", ["Firewall", "DNS server", "Switch port", "Load balancer"], 0, "firewall policy", "firewall rule"),
+    9: check("Konfiguratsiyaning maxfiy ma’lumot bo‘lishi mumkin bo‘lgan nusxasini qanday saqlash kerak?", ["Backup", "Public share", "Email attachment", "USB left on desk"], 0, "backup configuration", "zaxira"),
+    10: check("Marshrut, firewall log, NAT va server javobini tekshirib sababni topish nima deyiladi?", ["Troubleshooting", "Hardening", "Patching", "Provisioning"], 0, "nosozlikni aniqlash", "diagnostics")
   }
 };

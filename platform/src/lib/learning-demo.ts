@@ -16,7 +16,7 @@ export type Difficulty = "fundamental" | "easy" | "medium" | "hard";
 export type Category = "networking" | "systems" | "security" | "physical";
 
 export type LearningDiagram = {
-  kind: "cli-modes" | "topology";
+  kind: "cli-modes" | "topology" | "flow" | "hierarchy";
   caption: Localized;
   nodes: Localized[];
   links: Localized[];
@@ -36,7 +36,7 @@ export type LearningSection = {
   diagram?: LearningDiagram;
   terminalPractice?: LinuxTerminalPractice;
   interactivePractice?: LearningInteractivePractice;
-  question?: { prompt: Localized; answers: string[] };
+  question?: { prompt: Localized; answers: string[]; options?: Localized[] };
 };
 
 export type LinuxTerminalTask = {
@@ -137,7 +137,16 @@ export const learningModules: LearningModule[] = [
           "Этот курс последовательно объясняет основы сетей: модели OSI и TCP/IP, Ethernet/IP/TCP/UDP, анализ пакетов в Wireshark и tcpdump, ARP/ICMP/DHCP, маршрутизацию, firewall, NAT/PAT и VPN. Каждая тема изложена на этой странице с пояснениями, примерами и соответствующими скриншотами.\n\nПрактикуйте только на собственных устройствах и сетях либо при наличии письменного разрешения. В захватах могут оказаться пароли, токены, личные данные и внутренние адреса; защищайте лабораторные записи и удаляйте их, когда они больше не нужны.",
           "This course teaches networking fundamentals step by step: OSI and TCP/IP, Ethernet/IP/TCP/UDP, packet analysis with Wireshark and tcpdump, ARP/ICMP/DHCP, routing, firewalls, NAT/PAT, and VPNs. Each topic is explained here with clear explanations, practical examples, and relevant screenshots.\n\nPractice only on devices and networks you own or are explicitly authorized to assess. Captures can contain credentials, tokens, personal data, and internal addresses; protect lab captures and delete them when no longer needed."
         ),
-        question: { prompt: l("Kursda amaliy tahlil qilinadigan ikkita asosiy model qaysi?", "Какие две основные модели изучаются в курсе?", "Which two core models does this course study?"), answers: ["osi va tcp/ip", "osi tcp/ip", "osi/tcp-ip", "osi and tcp/ip", "tcp/ip and osi", "osi и tcp/ip"] }
+        question: {
+          prompt: l("Kursda amaliy tahlil qilinadigan ikkita asosiy model qaysi?", "Какие две основные модели изучаются в курсе?", "Which two core models does this course study?"),
+          answers: ["osi va tcp/ip", "osi tcp/ip", "osi/tcp-ip", "osi and tcp/ip", "tcp/ip and osi", "osi и tcp/ip"],
+          options: [
+            l("OSI va TCP/IP", "OSI и TCP/IP", "OSI and TCP/IP"),
+            l("ISO va POSIX modellari", "Модели ISO и POSIX", "The ISO and POSIX models"),
+            l("LAN va WAN modellari", "Модели LAN и WAN", "The LAN and WAN models"),
+            l("HTTP va FTP modellari", "Модели HTTP и FTP", "The HTTP and FTP models")
+          ]
+        }
       },
       {
         title: l("1. OSI modeli va qatlamlar bo‘yicha nosozlik qidirish", "1. Модель OSI и поиск неисправностей по уровням", "1. OSI model and layer-by-layer troubleshooting"),
@@ -336,7 +345,16 @@ export const learningModules: LearningModule[] = [
           "Команды RouterOS показывают существующие правила filter/NAT и число активных соединений; конфигурация не меняется. Для выхода LAN в интернет часто используют `srcnat`/`masquerade`, но только при корректно определённых интерфейсах WAN/LAN.",
           "These RouterOS commands inspect existing filter/NAT rules and active connection counts without changing configuration. LAN internet egress commonly uses `srcnat`/`masquerade`, but only when WAN/LAN interfaces are correctly identified."
         ),
-        question: { prompt: l("Ichki tarmoqni internetga chiqarish uchun qaysi NAT turi ishlatiladi? (masquerade/…)", "Какой тип NAT используется для выхода в интернет? (masquerade/…)", "Which NAT action is typically used for internet access? (masquerade/…)"), answers: ["masquerade"] }
+        question: {
+          prompt: l("Ichki tarmoqni internetga chiqarish uchun qaysi NAT turi ishlatiladi? (masquerade/…)", "Какой тип NAT используется для выхода в интернет? (masquerade/…)", "Which NAT action is typically used for internet access? (masquerade/…)"),
+          answers: ["masquerade"],
+          options: [
+            l("Masquerade", "Masquerade", "Masquerade"),
+            l("Dst-nat", "Dst-nat", "Dst-nat"),
+            l("Netmap", "Netmap", "Netmap"),
+            l("Statik src-nat", "Статический src-nat", "Static src-nat")
+          ]
+        }
       },
       {
         title: l("VLAN va Wi-Fi", "VLAN и Wi-Fi", "VLAN and Wi-Fi"),
@@ -381,7 +399,16 @@ export const learningModules: LearningModule[] = [
           "Хеш SHA-256 помогает сравнивать целостность, но не шифрует файл и сам по себе не гарантирует доверенность источника. Сравните его с безопасно сохранённым эталонным хешем.",
           "A SHA-256 digest helps compare integrity, but does not encrypt a file or prove the digest source is trustworthy. Compare it with a trusted baseline."
         ),
-        question: { prompt: l("CIA dagi “C” nimani anglatadi?", "Что означает «C» в CIA?", "What does the “C” in CIA stand for?"), answers: ["confidentiality", "maxfiylik", "конфиденциальность"] }
+        question: {
+          prompt: l("CIA dagi “C” nimani anglatadi?", "Что означает «C» в CIA?", "What does the “C” in CIA stand for?"),
+          answers: ["confidentiality", "maxfiylik", "конфиденциальность"],
+          options: [
+            l("Maxfiylik", "Конфиденциальность", "Confidentiality"),
+            l("Yaxlitlik", "Целостность", "Integrity"),
+            l("Mavjudlik", "Доступность", "Availability"),
+            l("Nazorat", "Контроль", "Control")
+          ]
+        }
       },
       {
         title: l("Keng tarqalgan hujumlar", "Распространённые атаки", "Common attacks"),
@@ -565,7 +592,13 @@ export const learningModules: LearningModule[] = [
         ),
         question: {
           prompt: l("Tashkilot yangi qurilmalarni qo‘llasa, qaysi xavfsizlik standartini afzal ko‘rish kerak?", "Какой стандарт защиты предпочтителен, если устройства его поддерживают?", "Which security standard should be preferred when organizational devices support it?"),
-          answers: ["wpa3", "WPA3"]
+          answers: ["wpa3", "WPA3"],
+          options: [
+            l("WPA3", "WPA3", "WPA3"),
+            l("WPA2-AES", "WPA2-AES", "WPA2-AES"),
+            l("WEP", "WEP", "WEP"),
+            l("TKIP", "TKIP", "TKIP")
+          ]
         }
       },
       {
@@ -621,7 +654,13 @@ export const learningModules: LearningModule[] = [
         ),
         question: {
           prompt: l("Foydalanuvchiga faqat vazifasi uchun zarur ruxsatlarni berish tamoyili qanday ataladi?", "Как называется принцип выдачи пользователю только необходимых для работы разрешений?", "What principle limits a user to only the permissions needed for their job?"),
-          answers: ["eng kam imtiyoz", "least privilege", "минимальные привилегии", "принцип наименьших привилегий"]
+          answers: ["eng kam imtiyoz", "least privilege", "минимальные привилегии", "принцип наименьших привилегий"],
+          options: [
+            l("Eng kam imtiyoz", "Минимальные привилегии", "Least privilege"),
+            l("Zero Trust", "Zero Trust", "Zero Trust"),
+            l("Chuqurlashtirilgan himoya", "Эшелонированная защита", "Defense in depth"),
+            l("Majburiy autentifikatsiya", "Обязательная аутентификация", "Mandatory authentication")
+          ]
         }
       },
       {
@@ -1214,14 +1253,89 @@ if (networkFundamentalsPractices.length !== networkModule.sections.length) {
 }
 networkModule.hours = 22;
 const networkQuestions = [
-  { prompt: l("Kursda amaliy tahlil qilinadigan ikkita asosiy model qaysi?"), answers: ["osi va tcp/ip", "osi tcp/ip", "osi/tcp-ip", "osi and tcp/ip"] },
-  { prompt: l("IP paketini keyingi tarmoqqa yo‘naltirish OSI modelining qaysi qatlamida bajariladi?"), answers: ["tarmoq", "network", "3", "l3", "network layer"] },
-  { prompt: l("TCP/IP kapsullashida ilova ma’lumoti qaysi qatlamdan pastga uzatiladi?"), answers: ["application transport internet link", "application, transport, internet, link", "ilova transport internet kanal"] },
-  { prompt: l("Tartibli va ishonchli bayt oqimini ta’minlaydigan transport protokoli qaysi?"), answers: ["tcp"] },
-  { prompt: l("Wireshark’da capture tugagach, ko‘rinayotgan paketlarni cheklaydigan filtr turi nima?"), answers: ["display filter", "displey filtri", "display"] },
-  { prompt: l("tcpdump’da manzil va portlarni DNS nomiga aylantirmaslik uchun qaysi flag ishlatiladi?"), answers: ["-n"] },
-  { prompt: l("IPv4 manzilini lokal Ethernet MAC manziliga moslaydigan protokol qaysi?"), answers: ["arp"] },
-  { prompt: l("PAT bitta public IP ortidagi ulanishlarni farqlashda qaysi qiymatdan foydalanadi?"), answers: ["port", "port raqami", "ports"] }
+  {
+    prompt: l("Kursda amaliy tahlil qilinadigan ikkita asosiy model qaysi?"),
+    answers: ["osi va tcp/ip", "osi tcp/ip", "osi/tcp-ip", "osi and tcp/ip", "osi и tcp/ip"],
+    options: [
+      l("OSI va TCP/IP", "OSI и TCP/IP", "OSI and TCP/IP"),
+      l("ISO va POSIX modellari", "Модели ISO и POSIX", "The ISO and POSIX models"),
+      l("LAN va WAN modellari", "Модели LAN и WAN", "The LAN and WAN models")
+    ]
+  },
+  {
+    prompt: l("IP paketini keyingi tarmoqqa yo‘naltirish OSI modelining qaysi qatlamida bajariladi?"),
+    answers: ["tarmoq", "network", "3", "l3", "network layer", "сетевой", "tarmoq qatlami (l3)", "network layer (l3)", "сетевой уровень (l3)"],
+    options: [
+      l("Tarmoq qatlami (L3)", "Сетевой уровень (L3)", "Network layer (L3)"),
+      l("Transport qatlami (L4)", "Транспортный уровень (L4)", "Transport layer (L4)"),
+      l("Kanal qatlami (L2)", "Канальный уровень (L2)", "Data link layer (L2)"),
+      l("Ilova qatlami (L7)", "Прикладной уровень (L7)", "Application layer (L7)")
+    ]
+  },
+  {
+    prompt: l("TCP/IP kapsullashida ilova ma’lumoti qaysi qatlamdan pastga uzatiladi?"),
+    answers: [
+      "application transport internet link",
+      "application, transport, internet, link",
+      "ilova transport internet kanal",
+      "ilova, transport, internet, kanal",
+      "приложение, транспорт, интернет, канал"
+    ],
+    options: [
+      l("Ilova, transport, internet, kanal", "Приложение, транспорт, интернет, канал", "Application, transport, internet, link"),
+      l("Kanal, internet, transport, ilova", "Канал, интернет, транспорт, приложение", "Link, internet, transport, application"),
+      l("Fizik, kanal, tarmoq, transport", "Физический, канальный, сетевой, транспортный", "Physical, data link, network, transport")
+    ]
+  },
+  {
+    prompt: l("Tartibli va ishonchli bayt oqimini ta’minlaydigan transport protokoli qaysi?"),
+    answers: ["tcp"],
+    options: [
+      l("TCP", "TCP", "TCP"),
+      l("UDP", "UDP", "UDP"),
+      l("ICMP", "ICMP", "ICMP"),
+      l("IP", "IP", "IP")
+    ]
+  },
+  {
+    prompt: l("Wireshark’da capture tugagach, ko‘rinayotgan paketlarni cheklaydigan filtr turi nima?"),
+    answers: ["display filter", "displey filtri", "display", "фильтр отображения"],
+    options: [
+      l("Displey filtri", "Фильтр отображения", "Display filter"),
+      l("Capture filtri", "Фильтр захвата", "Capture filter"),
+      l("Rangli qoidalar", "Правила подсветки", "Coloring rules")
+    ]
+  },
+  {
+    prompt: l("tcpdump’da manzil va portlarni DNS nomiga aylantirmaslik uchun qaysi flag ishlatiladi?"),
+    answers: ["-n"],
+    options: [
+      l("-n", "-n", "-n"),
+      l("-v", "-v", "-v"),
+      l("-i", "-i", "-i"),
+      l("-X", "-X", "-X")
+    ]
+  },
+  {
+    prompt: l("IPv4 manzilini lokal Ethernet MAC manziliga moslaydigan protokol qaysi?"),
+    answers: ["arp"],
+    options: [
+      l("ARP", "ARP", "ARP"),
+      l("DHCP", "DHCP", "DHCP"),
+      l("DNS", "DNS", "DNS"),
+      l("ICMP", "ICMP", "ICMP")
+    ]
+  },
+  {
+    prompt: l("PAT bitta public IP ortidagi ulanishlarni farqlashda qaysi qiymatdan foydalanadi?"),
+    answers: ["port", "port raqami", "ports", "port number", "номер порта"],
+    options: [
+      l("Port raqami", "Номер порта", "Port number"),
+      l("IP manzil", "IP-адрес", "IP address"),
+      l("MAC manzil", "MAC-адрес", "MAC address"),
+      l("VLAN ID", "VLAN ID", "VLAN ID")
+    ]
+  }
 ];
 networkModule.sections = networkModule.sections.map((section, index) => ({
   ...section,

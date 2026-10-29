@@ -18,7 +18,7 @@ type LinuxPracticeProgress = {
 type LearningLessonData = Omit<LearningSection, "question"> & {
   expandedContent?: string;
   diagram?: LearningDiagram;
-  question?: { prompt: Localized };
+  question?: { prompt: Localized; options?: Localized[] };
   example?: Localized;
   exampleExplanation?: Localized;
 };
@@ -38,19 +38,70 @@ function LearningDiagramFigure({ diagram, moduleSlug, pick }: {
   moduleSlug: string;
   pick: (value: Localized) => string;
 }) {
+  const markerId = `learning-arrow-${moduleSlug}`;
+
+  if (diagram.kind === "hierarchy") {
+    const [root, ...children] = diagram.nodes;
+    const childCount = Math.max(children.length, 1);
+    const viewWidth = Math.max(910, childCount * 190);
+    const rootX = viewWidth / 2;
+    const rootY = 54;
+    const childY = 150;
+    const nodeWidth = 150;
+    const nodeHeight = 60;
+    const childCenters = children.map((_, index) => ((index + 0.5) * viewWidth) / childCount);
+    return (
+      <figure className="learn-diagram">
+        <figcaption>{pick(diagram.caption)}</figcaption>
+        <svg className="learn-diagram-svg" viewBox={`0 0 ${viewWidth} 220`} role="img" aria-label={pick(diagram.caption)}>
+          <defs>
+            <marker id={markerId} markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+              <path d="M0,0 L8,4 L0,8 Z" fill="var(--accent)" />
+            </marker>
+          </defs>
+          {childCenters.map((cx, index) => (
+            <line key={`edge-${index}`} x1={rootX} y1={rootY + nodeHeight / 2} x2={cx} y2={childY - nodeHeight / 2} markerEnd={`url(#${markerId})`} />
+          ))}
+          {root && (
+            <g>
+              <rect className="learn-diagram-node source" x={rootX - nodeWidth / 2} y={rootY} width={nodeWidth} height={nodeHeight} rx="12" />
+              <DiagramText className="learn-diagram-label" value={pick(root)} x={rootX} y={rootY + nodeHeight / 2 + 4} />
+            </g>
+          )}
+          {children.map((node, index) => {
+            const cx = childCenters[index];
+            const label = pick(diagram.links[index] ?? { uz: "", ru: "", en: "" } as Localized);
+            return (
+              <g key={`child-${index}`}>
+                {label && <DiagramText className="learn-diagram-link" value={label} x={(rootX + cx) / 2} y={(rootY + childY) / 2} />}
+                <rect className={`learn-diagram-node${index === children.length - 1 ? " outcome" : " control"}`} x={cx - nodeWidth / 2} y={childY} width={nodeWidth} height={nodeHeight} rx="12" />
+                <DiagramText className="learn-diagram-label" value={pick(node)} x={cx} y={childY + nodeHeight / 2 + 4} />
+              </g>
+            );
+          })}
+        </svg>
+      </figure>
+    );
+  }
+
+  // "cli-modes", "topology" and the generic "flow" kind share a horizontal chain layout,
+  // sized dynamically to however many nodes the content actually provides.
   const isCli = diagram.kind === "cli-modes";
-  const centers = isCli ? [100, 306, 512, 718] : [82, 268, 454, 640, 826];
-  const width = isCli ? 150 : 128;
+  const nodeCount = Math.max(diagram.nodes.length, 1);
+  const width = nodeCount <= 4 ? 150 : 128;
   const top = isCli ? 76 : 116;
   const height = isCli ? 60 : 64;
-  const markerId = `learning-arrow-${moduleSlug}`;
+  const linkTextY = isCli ? 57 : 85;
+  const viewWidth = Math.max(820, nodeCount * (width + 86));
+  const viewHeight = isCli ? 170 : 205;
+  const centers = diagram.nodes.map((_, index) => ((index + 0.5) * viewWidth) / nodeCount);
 
   return (
     <figure className="learn-diagram">
       <figcaption>{pick(diagram.caption)}</figcaption>
       <svg
         className="learn-diagram-svg"
-        viewBox={isCli ? "0 0 820 170" : "0 0 910 205"}
+        viewBox={`0 0 ${viewWidth} ${viewHeight}`}
         role="img"
         aria-label={pick(diagram.caption)}
       >
@@ -60,6 +111,7 @@ function LearningDiagramFigure({ diagram, moduleSlug, pick }: {
           </marker>
         </defs>
         {diagram.links.map((link, index) => {
+          if (index >= centers.length - 1) return null;
           const mid = (centers[index] + centers[index + 1]) / 2;
           const lines = pick(link).split("\n");
           return (
@@ -75,7 +127,7 @@ function LearningDiagramFigure({ diagram, moduleSlug, pick }: {
                 className="learn-diagram-link"
                 value={lines.join("\n")}
                 x={mid}
-                y={isCli ? 57 : 85}
+                y={linkTextY}
               />
             </g>
           );
@@ -348,8 +400,7 @@ export function LearningModuleView({ module, nickname }: { module: LearningModul
     setBuying(null);
   }
 
-  async function submitAnswer(event: FormEvent) {
-    event.preventDefault();
+  async function submitAnswerValue(value: string) {
     if (!sectionPracticeDone) {
       setAnswerError("Darsni yakunlashdan oldin virtual terminaldagi barcha buyruqlarni bajaring.");
       return;
@@ -362,7 +413,7 @@ export function LearningModuleView({ module, nickname }: { module: LearningModul
       const response = await fetch("/api/learning/answer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ moduleSlug: module.slug, sectionIndex: active, answer })
+        body: JSON.stringify({ moduleSlug: module.slug, sectionIndex: active, answer: value })
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error ?? tx.purchaseFailed);
@@ -370,7 +421,7 @@ export function LearningModuleView({ module, nickname }: { module: LearningModul
         setFeedback("wrong");
         return;
       }
-      const saved = await progress.complete(module.slug, active, answer);
+      const saved = await progress.complete(module.slug, active, value);
       if (!saved) return;
       setCompletionNotice(tx.correct);
     } catch (issue) {
@@ -378,6 +429,16 @@ export function LearningModuleView({ module, nickname }: { module: LearningModul
     } finally {
       setCheckingAnswer(false);
     }
+  }
+
+  async function submitAnswer(event: FormEvent) {
+    event.preventDefault();
+    await submitAnswerValue(answer);
+  }
+
+  async function submitOption(optionText: string) {
+    setAnswer(optionText);
+    await submitAnswerValue(optionText);
   }
 
   return (
@@ -541,7 +602,32 @@ export function LearningModuleView({ module, nickname }: { module: LearningModul
               Darsni yakunlash uchun virtual laboratoriyadagi barcha amaliy vazifalarni bajaring.
             </p>
           )}
-          {question && (
+          {question && question.options?.length ? (
+            <div className="learn-question learn-question-mcq">
+              <strong>{tx.question}:</strong> {pick(question.prompt)}
+              <div className="learn-question-options" role="group" aria-label={tx.question}>
+                {question.options.map((option, optionIndex) => {
+                  const optionText = pick(option);
+                  const isSelected = answer === optionText;
+                  const isWrongSelected = isSelected && feedback === "wrong";
+                  return (
+                    <button
+                      key={`${active}-${optionIndex}`}
+                      type="button"
+                      className={`button ghost learn-question-option${isSelected ? " selected" : ""}${isWrongSelected ? " wrong" : ""}`}
+                      disabled={sectionDone || checkingAnswer || !sectionPracticeDone}
+                      onClick={() => submitOption(optionText)}
+                    >
+                      {optionText}
+                    </button>
+                  );
+                })}
+              </div>
+              <ToastMessage message={answerError} variant="error" />
+              <ToastMessage message={feedback === "wrong" ? tx.wrong : ""} variant="error" />
+              <ToastMessage message={completionNotice} variant="success" />
+            </div>
+          ) : question && (
             <form className="learn-question" onSubmit={submitAnswer}>
               <label htmlFor="learn-answer"><strong>{tx.question}:</strong> {pick(question.prompt)}</label>
               <div className="learn-question-row">
