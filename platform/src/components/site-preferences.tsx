@@ -16,8 +16,6 @@ type Preferences = {
 };
 
 const PreferencesContext = createContext<Preferences | null>(null);
-const localeStorageKey = "tecsecure-locale";
-const themeStorageKey = "tecsecure-theme";
 const consentCookie = "tecsecure-cookie-consent";
 const preferenceCookie = "tecsecure-preferences";
 type CookieConsent = "essential" | "all";
@@ -52,10 +50,10 @@ export function SitePreferencesProvider({ children, overrides = {} }: { children
         cookiePreferences = {};
       }
     }
-    const savedLocale = cookiePreferences.locale ?? localStorage.getItem(localeStorageKey);
+    const savedLocale = cookiePreferences.locale;
     if (savedLocale === "uz" || savedLocale === "ru" || savedLocale === "en") setLocaleState(savedLocale);
 
-    const savedTheme = cookiePreferences.theme ?? localStorage.getItem(themeStorageKey);
+    const savedTheme = cookiePreferences.theme;
     if (savedTheme === "light" || savedTheme === "dark" || savedTheme === "system") setThemeState(savedTheme);
     setReady(true);
   }, []);
@@ -64,7 +62,6 @@ export function SitePreferencesProvider({ children, overrides = {} }: { children
     if (!ready) return;
     document.documentElement.lang = locale;
     document.title = messages[locale].siteTitle;
-    localStorage.setItem(localeStorageKey, locale);
     if (cookieConsent === "all") {
       writeCookie(preferenceCookie, encodeURIComponent(JSON.stringify({ locale, theme })));
     }
@@ -80,7 +77,6 @@ export function SitePreferencesProvider({ children, overrides = {} }: { children
     };
     applyTheme();
     media.addEventListener("change", applyTheme);
-    localStorage.setItem(themeStorageKey, theme);
     if (cookieConsent === "all") {
       writeCookie(preferenceCookie, encodeURIComponent(JSON.stringify({ locale, theme })));
     }
@@ -159,4 +155,4 @@ export function CookieSettingsButton() {
   return <button className="button ghost" type="button" onClick={openCookieSettings}>{t("cookieSettings")}</button>;
 }
 
-export const preferenceBootstrapScript = `(()=>{const r=document.documentElement;try{const c=document.cookie.split("; ").find(x=>x.startsWith("${consentCookie}="))?.slice("${consentCookie}".length+1);const p=c==="all"?document.cookie.split("; ").find(x=>x.startsWith("${preferenceCookie}="))?.slice("${preferenceCookie}".length+1):null;const v=p?JSON.parse(decodeURIComponent(p)):{};const t=v.theme||localStorage.getItem("${themeStorageKey}")||"dark";const l=v.locale||localStorage.getItem("${localeStorageKey}")||"uz";const d=t==="system"?(window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"):t;r.dataset.theme=d;r.style.colorScheme=d;r.lang=["uz","ru","en"].includes(l)?l:"uz"}catch{r.dataset.theme="dark";r.style.colorScheme="dark"}})()`;
+export const preferenceBootstrapScript = `(()=>{const r=document.documentElement;try{const c=document.cookie.split("; ").find(x=>x.startsWith("${consentCookie}="))?.slice("${consentCookie}".length+1);const p=c==="all"?document.cookie.split("; ").find(x=>x.startsWith("${preferenceCookie}="))?.slice("${preferenceCookie}".length+1):null;const v=p?JSON.parse(decodeURIComponent(p)):{};const t=v.theme||"dark";const l=v.locale||"uz";const d=t==="system"?(window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"):t;r.dataset.theme=d;r.style.colorScheme=d;r.lang=["uz","ru","en"].includes(l)?l:"uz"}catch{r.dataset.theme="dark";r.style.colorScheme="dark"}})()`;
