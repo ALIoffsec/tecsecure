@@ -230,6 +230,13 @@ h2 { font-size: clamp(1.8rem, 4vw, 2.8rem); letter-spacing: -.045em; }
 .muted { color: var(--muted); }
 .empty-state { padding: 25px; border: 1px dashed var(--line); border-radius: 14px; color: var(--muted); }
 .two-col { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); gap: 44px; align-items: start; }
+.contact-page { min-width: 0; }
+.contact-page .two-col { grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); gap: clamp(16px, 3vw, 32px); }
+.contact-page .two-col > * { min-width: 0; }
+.contact-info-card { display: grid; align-content: start; gap: 10px; }
+.contact-info-card h2 { margin: 0 0 4px; font-size: clamp(1.15rem, 2.4vw, 1.35rem); }
+.contact-info-card > p { min-width: 0; margin: 0; overflow-wrap: anywhere; }
+.contact-address a { display: inline-block; margin-left: 4px; }
 .form { display: grid; gap: 15px; }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .field { display: grid; gap: 6px; }
@@ -862,6 +869,7 @@ th { color: var(--muted); font-size: .8rem; text-transform: uppercase; letter-sp
   .managed-service-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .service-category-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .service-category-panel, .contact-panel { grid-template-columns: 1fr; }
+  .contact-page .two-col { grid-template-columns: minmax(0, 1fr); gap: 14px; }
   .service-artwork { min-height: 165px; }
   .card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .workspace, .admin-workspace-layout, .admin-workspace-layout:has(.admin-sidebar.collapsed), .customer-workspace, .site-cms-grid { grid-template-columns: 1fr; }
@@ -967,6 +975,7 @@ th { color: var(--muted); font-size: .8rem; text-transform: uppercase; letter-sp
   .app-install-button { width: 40px; min-height: 40px; padding: 0; }
   .app-install-button span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   .page-shell { min-height: 0; padding: 38px 0 58px; }
+  .contact-page .two-col > .panel-card { padding: 16px; }
   .page-title { font-size: clamp(1.75rem, 7vw, 2.35rem); }
   .page-intro { margin-bottom: 20px; }
   .button { min-height: 42px; padding: 9px 13px; }
@@ -1179,19 +1188,14 @@ th { color: var(--muted); font-size: .8rem; text-transform: uppercase; letter-sp
 .home-hero-reason-mark { display: grid; width: 28px; height: 28px; place-items: center; border: 1px solid #50d5e866; border-radius: 9px; color: var(--accent); }
 .home-hero-reasons-list h3 { margin: 0; color: #f5f8fc; font-size: .9rem; line-height: 1.35; }
 .home-hero-reasons-list p { margin: 0; }
-@media (max-width: 820px) {
+@media (max-width: 760px) {
+  .site-design-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .home-page > .section { padding-block: 36px; }
   .home-page .section-head { margin-bottom: 16px; }
   .home-page .home-hero { min-height: auto; padding: 42px 0 30px; }
   .home-hero-content { grid-template-columns: minmax(0, 1fr); gap: 32px; width: min(100% - 28px, 1160px); }
-  .home-hero-copy, .home-hero-reasons { min-width: 0; }
-  .home-hero .hero-actions { display: grid; grid-template-columns: minmax(0, 1fr); }
-  .home-hero .hero-actions .button { width: 100%; }
   .home-resource-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .home-account-panel { grid-template-columns: minmax(0, 1fr); }
-}
-@media (max-width: 760px) {
-  .site-design-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 420px) {
   .home-page .home-hero { padding: 34px 0 26px; }

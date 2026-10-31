@@ -1,0 +1,74 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - navigation "Asosiy navigatsiya" [ref=e3]:
+      - link "Tecsecure" [ref=e4] [cursor=pointer]:
+        - /url: /
+        - generic "Tecsecure" [ref=e6]:
+          - generic [aria-hidden] [ref=e7]: T
+          - generic [aria-hidden] [ref=e8]: e
+          - generic [aria-hidden] [ref=e9]: c
+          - generic [aria-hidden] [ref=e10]: s
+          - generic [aria-hidden] [ref=e11]: e
+          - generic [aria-hidden] [ref=e12]: c
+          - generic [aria-hidden] [ref=e13]: u
+          - generic [aria-hidden] [ref=e14]: r
+          - generic [aria-hidden] [ref=e15]: e
+      - button "Menyu" [ref=e16] [cursor=pointer]
+  - link "Orqaga" [ref=e21] [cursor=pointer]:
+    - /url: /services
+    - generic [aria-hidden] [ref=e22]: ←
+    - text: Orqaga
+  - main [ref=e23]:
+    - generic [ref=e24]:
+      - generic [ref=e25]: Aloqa
+      - heading "Murojaatingizni yuboring" [level=1] [ref=e26]
+      - generic [ref=e27]:
+        - generic [ref=e28]:
+          - heading "Tecsecure bilan bog‘lanish" [level=2] [ref=e29]
+          - paragraph [ref=e30]:
+            - text: "Telefon:"
+            - link "+998200141455" [ref=e31] [cursor=pointer]:
+              - /url: tel:+998200141455
+          - paragraph [ref=e32]:
+            - text: "Telefon:"
+            - link "+998990782102" [ref=e33] [cursor=pointer]:
+              - /url: tel:+998990782102
+          - paragraph [ref=e34]:
+            - text: "Telefon:"
+            - link "+998931970006" [ref=e35] [cursor=pointer]:
+              - /url: tel:+998931970006
+          - paragraph [ref=e36]:
+            - text: "Email:"
+            - link "itstars134567890@gmail.com" [ref=e37] [cursor=pointer]:
+              - /url: mailto:itstars134567890@gmail.com
+          - paragraph [ref=e38]:
+            - text: "Telegram:"
+            - link "@abdiazizov_m_ali" [ref=e39] [cursor=pointer]:
+              - /url: https://t.me/abdiazizov_m_ali
+          - paragraph [ref=e40]:
+            - text: "Instagram:"
+            - link "@abdiazizov_m_ali" [ref=e41] [cursor=pointer]:
+              - /url: https://instagram.com/abdiazizov_m_ali
+        - status [ref=e42]: Bu amal hozircha mavjud emas.
+  - contentinfo [ref=e43]:
+    - generic [ref=e44]:
+      - generic [ref=e45]: © 2026 Tecsecure
+      - generic [ref=e46]: IT va xavfsizlik yechimlari
+      - generic [ref=e47]:
+        - link "Jamoaga qo‘shiling" [ref=e48] [cursor=pointer]:
+          - /url: /careers
+        - link "Maxfiylik" [ref=e49] [cursor=pointer]:
+          - /url: /privacy
+        - link "Foydalanish shartlari" [ref=e50] [cursor=pointer]:
+          - /url: /terms
+        - button "Cookie sozlamalari" [ref=e51] [cursor=pointer]
+      - link "Xodimlar kirishi" [ref=e52] [cursor=pointer]:
+        - /url: /staff/login
+  - dialog [ref=e53]:
+    - generic [ref=e54]:
+      - strong [ref=e55]: Cookie sozlamalari
+      - paragraph [ref=e56]: Kirish va xavfsizlik uchun zarur cookie’lar ishlatiladi. Rozilik bersangiz, til va mavzu tanlovingiz ixtiyoriy cookie’da saqlanadi. Reklama yoki tahlil cookie’lari ishlatilmaydi.
+    - generic [ref=e57]:
+      - button "Faqat zarur cookie’lar" [ref=e58] [cursor=pointer]
+      - button "Til va mavzuni saqlash" [ref=e59] [cursor=pointer]
+  - button "Open Next.js Dev Tools" [ref=e65] [cursor=pointer]
