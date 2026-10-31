@@ -3,7 +3,14 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-git pull --ff-only
+git restore --worktree -- package-lock.json
+if [[ -n "$(git status --porcelain --untracked-files=all)" ]]; then
+  echo "Deployment blocked: resolve the following local changes first:" >&2
+  git status --short --untracked-files=all >&2
+  exit 1
+fi
+git fetch --prune origin main
+git merge --ff-only origin/main
 set -a; . ./.env.production; set +a
 
 mkdir -p "$HOME/backups"
@@ -12,8 +19,7 @@ pg_dump "${DATABASE_URL%%\?*}" | gzip > "$HOME/backups/db-pre-deploy-$(date +%F-
 ls -1t "$HOME"/backups/db-pre-deploy-*.sql.gz | tail -n +11 | xargs -r rm --
 
 npm ci
-# server npm rewrites package-lock.json; keep the working tree clean for auto-deploy
-git checkout -- package-lock.json
+git -C .. restore --worktree -- platform/package-lock.json
 npx prisma generate
 # 1GB RAM + swap: default Node heap (~490MB) is too small for next build type-check
 NODE_OPTIONS="--max-old-space-size=1536" npm run build
@@ -29,8 +35,12 @@ sudo install -o root -g root -m 0644 scripts/ensure-standalone-build.sh /usr/loc
 sudo install -o root -g root -m 0644 scripts/tecsecure-web.service /etc/systemd/system/tecsecure-web.service
 sudo install -d -o root -g root -m 0755 /etc/systemd/system/tecsecure-web.service.d
 sudo install -o root -g root -m 0644 scripts/tecsecure-web-recovery.conf /etc/systemd/system/tecsecure-web.service.d/standalone-recovery.conf
+sudo install -o root -g root -m 0755 scripts/tecsecure-auto-deploy.sh /usr/local/sbin/tecsecure-deploy
+sudo install -o root -g root -m 0644 scripts/tecsecure-deploy.service /etc/systemd/system/tecsecure-deploy.service
+sudo install -o root -g root -m 0644 scripts/tecsecure-deploy.timer /etc/systemd/system/tecsecure-deploy.timer
 sudo systemctl daemon-reload
 sudo systemctl reset-failed tecsecure-web
+sudo systemctl enable --now tecsecure-deploy.timer
 
 sudo systemctl restart tecsecure-web tecsecure-worker
 

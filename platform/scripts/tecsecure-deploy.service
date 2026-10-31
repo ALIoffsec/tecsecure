@@ -1,0 +1,10 @@
+[Unit]
+Description=Deploy Tecsecure from GitHub main
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=ubuntu
+ExecStart=/usr/local/sbin/tecsecure-deploy
+TimeoutStartSec=15min
