@@ -24,7 +24,11 @@ fi
 
 npm run db:migrate
 
+sudo install -d -o root -g root -m 0755 /usr/local/libexec
+sudo install -o root -g root -m 0644 scripts/ensure-standalone-build.sh /usr/local/libexec/tecsecure-ensure-standalone-build
 sudo install -o root -g root -m 0644 scripts/tecsecure-web.service /etc/systemd/system/tecsecure-web.service
+sudo install -d -o root -g root -m 0755 /etc/systemd/system/tecsecure-web.service.d
+sudo install -o root -g root -m 0644 scripts/tecsecure-web-recovery.conf /etc/systemd/system/tecsecure-web.service.d/standalone-recovery.conf
 sudo systemctl daemon-reload
 sudo systemctl reset-failed tecsecure-web
 

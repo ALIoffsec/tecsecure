@@ -11,10 +11,11 @@ WorkingDirectory=/var/www/tecsecure/platform
 EnvironmentFile=/var/www/tecsecure/platform/.env.production
 Environment=PORT=3001
 Environment=HOSTNAME=127.0.0.1
-ExecStartPre=/usr/bin/test -s /var/www/tecsecure/platform/.next/standalone/server.js
+ExecStartPre=/usr/bin/bash /usr/local/libexec/tecsecure-ensure-standalone-build
 ExecStart=/usr/bin/node /var/www/tecsecure/platform/.next/standalone/server.js
 Restart=on-failure
 RestartSec=5
+TimeoutStartSec=10min
 
 [Install]
 WantedBy=multi-user.target

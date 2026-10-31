@@ -39,7 +39,7 @@ These are the committed blueprint commands, not proof that a Render deployment i
 
 From `/var/www/tecsecure/platform`, run `bash scripts/deploy.sh`. The script takes a pre-deploy database backup, builds and verifies `.next/standalone/server.js` before applying migrations, installs the tracked `scripts/tecsecure-web.service` unit, and restarts the web and worker services only after those checks pass. It then verifies both systemd units and `/api/health`; a failed health check returns a non-zero exit code and prints the service status and recent journal.
 
-The web unit checks for a non-empty standalone server file before starting and limits rapid restart loops. If the artifact is missing or the production build fails, fix the build first; do not manually restart the web unit until the standalone server file exists. Verify recovery with `systemctl is-active tecsecure-web tecsecure-worker` and `curl -fsS http://127.0.0.1:3001/api/health`.
+The deploy script installs `scripts/ensure-standalone-build.sh` under `/usr/local/libexec` and a systemd drop-in that runs it before web startup, even if a later deployment replaces the base service unit. If a reboot or interrupted deployment left `.next/standalone/server.js` missing, the helper rebuilds the production app and verifies the artifact before startup; the unit allows up to ten minutes for this recovery build. If the build fails, inspect `journalctl -u tecsecure-web` and repair the reported build error. Verify recovery with `systemctl is-active tecsecure-web tecsecure-worker` and `curl -fsS http://127.0.0.1:3001/api/health`.
 
 ## Worker behavior and limitations
 
