@@ -1,0 +1,259 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - navigation "Asosiy navigatsiya" [ref=e3]:
+      - link [ref=e4] [cursor=pointer]:
+        - /url: /
+        - generic "Tecsecure" [ref=e6]:
+          - generic [aria-hidden] [ref=e7]: T
+          - generic [aria-hidden] [ref=e8]: e
+          - generic [aria-hidden] [ref=e9]: c
+          - generic [aria-hidden] [ref=e10]: s
+          - generic [aria-hidden] [ref=e11]: e
+          - generic [aria-hidden] [ref=e12]: c
+          - generic [aria-hidden] [ref=e13]: u
+          - generic [aria-hidden] [ref=e14]: r
+          - generic [aria-hidden] [ref=e15]: e
+      - button "Menyu" [ref=e16] [cursor=pointer]
+  - main [ref=e20]:
+    - generic [ref=e21]:
+      - region [ref=e22]:
+        - generic [ref=e23]:
+          - generic [ref=e24]:
+            - generic [ref=e25]: IT · Xavfsizlik · Infratuzilma
+            - heading "IT va xavfsizlik tizimlaringiz bir-biriga mos ishlasin." [level=1] [ref=e26]
+            - paragraph [ref=e27]: Tarmoq, server, videokuzatuv va kirishni boshqarishdan texnik xizmat hamda auditgacha — avval vazifangizni aniqlaymiz, so‘ng ish ko‘lami, narx va muddatni kelishamiz.
+            - generic [ref=e28]:
+              - link "Qayta qo‘ng‘iroq so‘rash" [ref=e29] [cursor=pointer]:
+                - /url: /contact
+              - link "Xizmatlarni ko‘rish" [ref=e30] [cursor=pointer]:
+                - /url: /services
+            - navigation "Tecsecure bo‘limlari" [ref=e31]:
+              - link "Ta’lim" [ref=e32] [cursor=pointer]:
+                - /url: /learning
+                - text: Ta’lim ↗
+              - link "Mahsulotlar katalogi" [ref=e33] [cursor=pointer]:
+                - /url: /products
+                - text: Mahsulotlar katalogi ↗
+          - complementary [ref=e34]:
+            - heading "Nega Tecsecure?" [level=2] [ref=e35]
+            - list [ref=e36]:
+              - listitem [ref=e37]:
+                - generic [ref=e44]:
+                  - heading "Bog‘liq tizimlar — bir loyiha doirasida" [level=3] [ref=e45]
+                  - paragraph [ref=e46]: Tarmoq, server va xavfsizlik ehtiyojlarini birgalikda muhokama qilamiz.
+              - listitem [ref=e47]:
+                - generic [ref=e52]:
+                  - heading "Boshlashdan oldin aniq kelishuv" [level=3] [ref=e53]
+                  - paragraph [ref=e54]: Talab va obyekt sharoiti o‘rganilib, ko‘lam, narx va muddat taklifda kelishiladi.
+              - listitem [ref=e55]:
+                - generic [ref=e60]:
+                  - heading "Avval suhbat, keyin qaror" [level=3] [ref=e61]
+                  - paragraph [ref=e62]: Murojaat — maslahat yoki taklif so‘rovi; darhol xarid yoki to‘lov shart emas.
+      - generic [ref=e64]:
+        - generic [ref=e65]:
+          - generic [ref=e66]:
+            - generic [ref=e67]: Faoliyatimiz
+            - heading "Biznesingizga kerakli yo‘nalishni tanlang" [level=2] [ref=e68]
+          - paragraph [ref=e69]: IT infratuzilmasi, jismoniy xavfsizlik va texnik yordam bo‘yicha xizmatlarni ko‘ring; mos keladigan keyingi qadamni tanlang.
+        - generic [ref=e70]:
+          - article [ref=e71]:
+            - heading "IT infratuzilmasi" [level=3] [ref=e78]
+            - paragraph [ref=e79]: Tarmoq, Wi-Fi, server va ish joylari uchun talablarni aniqlash, joriy etish va texnik ko‘mak.
+            - link "Xizmatlar ro‘yxati" [ref=e80] [cursor=pointer]:
+              - /url: /services
+              - text: Xizmatlar ro‘yxati
+              - generic [aria-hidden] [ref=e81]: →
+          - article [ref=e82]:
+            - heading "Xavfsizlik tizimlari" [level=3] [ref=e87]
+            - paragraph [ref=e88]: Videokuzatuv, kirishni boshqarish va axborot xavfsizligini aniq kelishilgan doirada rejalash.
+            - link "Xizmatlar ro‘yxati" [ref=e89] [cursor=pointer]:
+              - /url: /services
+              - text: Xizmatlar ro‘yxati
+              - generic [aria-hidden] [ref=e90]: →
+          - article [ref=e91]:
+            - heading "Texnik xizmat va bilim" [level=3] [ref=e96]
+            - paragraph [ref=e97]: Uskuna va xizmatlar bo‘yicha amaliy yordam, texnik maslahat hamda o‘rganish uchun materiallar.
+            - link "Darslarni ko‘rish" [ref=e98] [cursor=pointer]:
+              - /url: /learning
+              - text: Darslarni ko‘rish
+              - generic [aria-hidden] [ref=e99]: →
+      - generic [ref=e101]:
+        - generic [ref=e102]:
+          - generic [ref=e103]:
+            - generic [ref=e104]: Saytda sinab ko‘ring
+            - heading "Faqat ko‘rib chiqmang — birini sinab ko‘ring" [level=2] [ref=e105]
+          - paragraph [ref=e106]: Bepul darsni boshlang, uskunalar katalogini ko‘ring yoki kamera tizimi uchun dastlabki hisob-kitob qiling.
+        - generic [ref=e107]:
+          - article [ref=e108]:
+            - generic [ref=e109]: 01 · Ta’lim
+            - heading "Amaliy bilimni darhol boshlang" [level=3] [ref=e110]
+            - paragraph [ref=e111]: Tarmoq va kiberxavfsizlik bo‘yicha modullar, yo‘nalishlar va laboratoriyalar. Bepul materiallardan akkauntsiz boshlang.
+            - link "Darslarni ko‘rish" [ref=e112] [cursor=pointer]:
+              - /url: /learning
+              - text: Darslarni ko‘rish
+              - generic [aria-hidden] [ref=e113]: →
+          - article [ref=e114]:
+            - generic [ref=e115]: 02 · Mahsulotlar katalogi
+            - heading "Loyihaga mos uskunani toping" [level=3] [ref=e116]
+            - paragraph [ref=e117]: Brend, kategoriya va mavjudlik bo‘yicha qidiring; narxi so‘rov asosida bo‘lgan mahsulotlar uchun taklif so‘rang.
+            - link "Katalogni ochish" [ref=e118] [cursor=pointer]:
+              - /url: /products
+              - text: Katalogni ochish
+              - generic [aria-hidden] [ref=e119]: →
+          - article [ref=e120]:
+            - generic [ref=e121]: 03 · CCTV hisoblagich
+            - heading "Kamera tizimini hisoblab ko‘ring" [level=3] [ref=e122]
+            - paragraph [ref=e123]: Kameralar soni va yozuvni saqlash talablarini kiriting. Natija dastlabki hisob bo‘lib, mutaxassis tekshiruvi kerak.
+            - link "Hisob-kitobni ochish" [ref=e124] [cursor=pointer]:
+              - /url: /monitoring
+              - text: Hisob-kitobni ochish
+              - generic [aria-hidden] [ref=e125]: →
+      - generic [ref=e127]:
+        - generic [ref=e128]:
+          - article [ref=e129]:
+            - generic [ref=e130]: Ish uslubimiz
+            - heading "Aniq talabdan o‘lchanadigan rejaga" [level=2] [ref=e131]
+            - paragraph [ref=e132]: Avval ehtiyoj va obyekt sharoiti o‘rganiladi. Keyin ish ko‘lami, yechim, narx va muddat taklifda kelishiladi; bajarilish holatini kabinetda kuzatish mumkin.
+            - link "Narx taklifini so‘rash" [ref=e133] [cursor=pointer]:
+              - /url: /request-quote
+              - text: Narx taklifini so‘rash
+              - generic [aria-hidden] [ref=e134]: →
+          - article [ref=e135]:
+            - generic [ref=e136]: Hamkorlik
+            - heading "Loyihaga mos hamkorlik modeli" [level=2] [ref=e137]
+            - paragraph [ref=e138]: Yetkazib beruvchilar, integratorlar va buyurtmachi jamoasi bilan vazifa, mas’uliyat va texnik chegaralarni oldindan kelishishga intilamiz.
+            - link "Texnik talabni muhokama qilamiz" [ref=e139] [cursor=pointer]:
+              - /url: /consultation
+              - text: Texnik talabni muhokama qilamiz
+              - generic [aria-hidden] [ref=e140]: →
+          - article [ref=e141]:
+            - generic [ref=e142]: Natija va sifat
+            - heading "Jarayonni o‘z kabinetingizda kuzating" [level=2] [ref=e143]
+            - paragraph [ref=e144]: Ariza va loyiha holati kabinetda ko‘rinadi; akkaunt bilan o‘qish progressi va TEC mukofotlari saqlanadi. Tekshirilmagan raqam yoki kafolat va’da qilmaymiz.
+            - link "Kirish" [ref=e145] [cursor=pointer]:
+              - /url: /login
+              - text: Kirish
+              - generic [aria-hidden] [ref=e146]: →
+        - complementary [ref=e147]:
+          - generic [ref=e148]:
+            - generic [ref=e149]: Davom ettirish uchun
+            - heading "O‘qish va murojaatlarni bir joyda boshqaring" [level=2] [ref=e150]
+            - paragraph [ref=e151]: Akkaunt bilan dars progressi va TEC mukofotlari serverda saqlanadi, ariza va loyihalaringiz holatini kabinetda kuzatasiz. Bepul darslar, katalog va dastlabki hisob-kitobni akkauntsiz ham sinab ko‘rishingiz mumkin.
+          - generic [ref=e152]:
+            - link "Akkaunt yaratish" [ref=e153] [cursor=pointer]:
+              - /url: /register
+            - link "Kirish" [ref=e154] [cursor=pointer]:
+              - /url: /login
+      - region "Hamkorlar va Biz ishonadigan texnologiyalar" [ref=e155]:
+        - generic [ref=e156]:
+          - generic [ref=e157]: Hamkorlar va Biz ishonadigan texnologiyalar
+          - generic [ref=e158]: Tarmoq va xavfsizlik uskunalari brendlari
+        - list [ref=e160]:
+          - listitem [ref=e161]:
+            - strong [ref=e162]: Cisco
+          - listitem [ref=e163]:
+            - strong [ref=e164]: MikroTik
+          - listitem [ref=e165]:
+            - strong [ref=e166]: TP-Link
+          - listitem [ref=e167]:
+            - strong [ref=e168]: Cudy
+          - listitem [ref=e169]:
+            - strong [ref=e170]: Ubiquiti
+          - listitem [ref=e171]:
+            - strong [ref=e172]: Juniper
+          - listitem [ref=e173]:
+            - strong [ref=e174]: D-Link
+          - listitem [ref=e175]:
+            - strong [ref=e176]: Hikvision
+          - listitem [ref=e177]:
+            - strong [ref=e178]: Zyxel
+          - listitem [ref=e179]:
+            - strong [ref=e180]: Huawei
+          - listitem [ref=e181]:
+            - strong [ref=e182]: Grandstream
+          - listitem [ref=e183]:
+            - strong [ref=e184]: Tenda
+          - listitem [ref=e185]:
+            - strong [ref=e186]: ASUS
+          - listitem [aria-hidden] [ref=e187]:
+            - strong [ref=e188]: Cisco
+          - listitem [aria-hidden] [ref=e189]:
+            - strong [ref=e190]: MikroTik
+          - listitem [aria-hidden] [ref=e191]:
+            - strong [ref=e192]: TP-Link
+          - listitem [aria-hidden] [ref=e193]:
+            - strong [ref=e194]: Cudy
+          - listitem [aria-hidden] [ref=e195]:
+            - strong [ref=e196]: Ubiquiti
+          - listitem [aria-hidden] [ref=e197]:
+            - strong [ref=e198]: Juniper
+          - listitem [aria-hidden] [ref=e199]:
+            - strong [ref=e200]: D-Link
+          - listitem [aria-hidden] [ref=e201]:
+            - strong [ref=e202]: Hikvision
+          - listitem [aria-hidden] [ref=e203]:
+            - strong [ref=e204]: Zyxel
+          - listitem [aria-hidden] [ref=e205]:
+            - strong [ref=e206]: Huawei
+          - listitem [aria-hidden] [ref=e207]:
+            - strong [ref=e208]: Grandstream
+          - listitem [aria-hidden] [ref=e209]:
+            - strong [ref=e210]: Tenda
+          - listitem [aria-hidden] [ref=e211]:
+            - strong [ref=e212]: ASUS
+      - generic [ref=e214]:
+        - generic [ref=e216]:
+          - generic [ref=e217]: Real loyihalardan lavhalar
+          - heading "Real loyihalardan lavhalar" [level=2] [ref=e218]
+        - article [ref=e220]:
+          - heading "Some pictures and videos" [level=3] [ref=e221]
+          - paragraph [ref=e222]: from jobs
+          - generic:
+            - list
+      - generic [ref=e224]:
+        - generic [ref=e225]:
+          - generic [ref=e226]: Tez bog‘lanish
+          - heading "Tecsecure" [level=2] [ref=e227]
+          - heading "Biznesingiz xavfsizligini ta’minlashga tayyormisiz?" [level=3] [ref=e228]
+          - paragraph [ref=e229]: Loyihangiz haqida qisqacha yozing — jamoamiz ehtiyojingizni ko‘rib chiqib, mos yechim va narx taklifini tayyorlaydi.
+          - generic [ref=e230]:
+            - link "Qayta qo‘ng‘iroq so‘rash" [ref=e231] [cursor=pointer]:
+              - /url: /contact
+            - link "Narx taklifini so‘rash" [ref=e232] [cursor=pointer]:
+              - /url: /request-quote
+        - navigation "Tecsecure" [ref=e233]:
+          - group "Telefon raqamlari" [ref=e234]:
+            - 'link "Telefon raqamlari: +998 20 014 14 55" [ref=e235] [cursor=pointer]':
+              - /url: tel:+998200141455
+              - generic [ref=e238]: +998 20 014 14 55
+          - 'link "Email: tecsecure.uz@gmail.com" [ref=e239] [cursor=pointer]':
+            - /url: mailto:tecsecure.uz@gmail.com
+            - generic [ref=e243]: tecsecure.uz@gmail.com
+          - 'link "Telegram: @tecsecure_uz" [ref=e244] [cursor=pointer]':
+            - /url: https://t.me/tecsecure_uz
+            - generic [ref=e248]: "@tecsecure_uz"
+          - 'link "Instagram: @tecsecure.uz" [ref=e249] [cursor=pointer]':
+            - /url: https://instagram.com/tecsecure.uz
+            - generic [ref=e253]: "@tecsecure.uz"
+  - contentinfo [ref=e254]:
+    - generic [ref=e255]:
+      - generic [ref=e256]: © 2026 Tecsecure
+      - generic [ref=e257]: IT va xavfsizlik yechimlari
+      - generic [ref=e258]:
+        - link "Jamoaga qo‘shiling" [ref=e259] [cursor=pointer]:
+          - /url: /careers
+        - link "Maxfiylik" [ref=e260] [cursor=pointer]:
+          - /url: /privacy
+        - link "Foydalanish shartlari" [ref=e261] [cursor=pointer]:
+          - /url: /terms
+        - button "Cookie sozlamalari" [ref=e262] [cursor=pointer]
+      - link "Xodimlar kirishi" [ref=e263] [cursor=pointer]:
+        - /url: /staff/login
+  - dialog [ref=e264]:
+    - generic [ref=e265]:
+      - strong [ref=e266]: Cookie sozlamalari
+      - paragraph [ref=e267]: Kirish va xavfsizlik uchun zarur cookie’lar ishlatiladi. Rozilik bersangiz, til va mavzu tanlovingiz ixtiyoriy cookie’da saqlanadi. Reklama yoki tahlil cookie’lari ishlatilmaydi.
+    - generic [ref=e268]:
+      - button "Faqat zarur cookie’lar" [ref=e269] [cursor=pointer]
+      - button "Til va mavzuni saqlash" [ref=e270] [cursor=pointer]
+  - alert [ref=e271]
