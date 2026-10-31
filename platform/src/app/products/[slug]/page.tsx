@@ -72,7 +72,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
 
     <div className="shop-pdp">
       <div className="shop-pdp-media">
-        {hasMedia ? <MediaGallery media={product.media} title={product.name} /> : <ProductVisual categorySlug={product.category?.slug} large />}
+        {hasMedia ? <MediaGallery media={product.media} title={product.name} variant="product-detail" preserveAspectRatio /> : <ProductVisual categorySlug={product.category?.slug} large />}
         {!hasMedia && <p className="small muted" style={{ marginTop: 8 }}>Rasm namunaviy; aniq model taklifda ko‘rsatiladi.</p>}
       </div>
 

@@ -1,6 +1,7 @@
 import { AddToCartButton, CartFab } from "@/components/cart";
 import { FilterPanel } from "@/components/filter-panel";
 import { ProductVisual } from "@/components/product-visual";
+import { MediaGallery } from "@/components/media-uploader";
 import Link from "next/link";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
@@ -56,7 +57,7 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
   const [products, total, allCount, categories, brands] = await Promise.all([
     prisma.product.findMany({
       where,
-      select: { id: true, name: true, slug: true, description: true, brand: true, model: true, priceMinor: true, currency: true, stockStatus: true, createdAt: true, category: { select: { name: true, slug: true } } },
+      select: { id: true, name: true, slug: true, description: true, brand: true, model: true, priceMinor: true, currency: true, stockStatus: true, createdAt: true, media: true, category: { select: { name: true, slug: true } } },
       orderBy: sorts[sort].order,
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE
@@ -111,7 +112,9 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
                   {product.stockStatus === "IN_STOCK" && <span className="shop-badge ok">Omborda</span>}
                   {product.stockStatus === "OUT_OF_STOCK" && <span className="shop-badge warn">Tugagan</span>}
                 </div>
-                <ProductVisual categorySlug={product.category?.slug} />
+                {Array.isArray(product.media) && product.media.length > 0
+                  ? <MediaGallery media={product.media} title={product.name} variant="product-card" firstOnly />
+                  : <ProductVisual categorySlug={product.category?.slug} />}
               </Link>
               <div className="shop-card-body">
                 <span className="shop-card-cat">{[product.category?.name, product.brand].filter(Boolean).join(" · ") || "Tecsecure"}</span>

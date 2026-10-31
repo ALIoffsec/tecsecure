@@ -54,24 +54,37 @@ export function MediaUploader({ scope, value, onChange }: {
   );
 }
 
-export function MediaGallery({ media, title, marquee = false }: { media: unknown; title: string; marquee?: boolean }) {
+export function MediaGallery({ media, title, marquee = false, firstOnly = false, preserveAspectRatio = false, variant = "default" }: {
+  media: unknown;
+  title: string;
+  marquee?: boolean;
+  firstOnly?: boolean;
+  preserveAspectRatio?: boolean;
+  variant?: "default" | "product-card" | "product-detail";
+}) {
   if (!Array.isArray(media)) return null;
   const ids = media.filter((value): value is string => typeof value === "string");
   if (!ids.length) return null;
   return (
-    <div className={`media-gallery${marquee ? " media-gallery-marquee" : ""}`}>
+    <div className={`media-gallery${marquee ? " media-gallery-marquee" : ""}${variant !== "default" ? ` media-gallery-${variant}` : ""}`}>
       {marquee ? (
         <div className="media-marquee-track" role="list">
           {[...ids, ...ids].map((id, index) => (
             <MediaPreview key={`${id}-${index}`} id={id} title={title} marquee decorative={index >= ids.length} />
           ))}
         </div>
-      ) : ids.map((id) => <MediaPreview key={id} id={id} title={title} />)}
+      ) : (firstOnly ? ids.slice(0, 1) : ids).map((id) => <MediaPreview key={id} id={id} title={title} preserveAspectRatio={preserveAspectRatio} />)}
     </div>
   );
 }
 
-function MediaPreview({ id, title, marquee = false, decorative = false }: { id: string; title: string; marquee?: boolean; decorative?: boolean }) {
+function MediaPreview({ id, title, marquee = false, decorative = false, preserveAspectRatio = false }: {
+  id: string;
+  title: string;
+  marquee?: boolean;
+  decorative?: boolean;
+  preserveAspectRatio?: boolean;
+}) {
   const [mime, setMime] = useState("");
   const [aspectRatio, setAspectRatio] = useState(16 / 9);
   const source = `/api/media/${id}`;
@@ -88,7 +101,7 @@ function MediaPreview({ id, title, marquee = false, decorative = false }: { id: 
   }, [source]);
   if (!mime) return null;
   const itemClassName = marquee ? "media-marquee-item" : undefined;
-  const itemStyle = marquee ? { aspectRatio: String(aspectRatio) } : undefined;
+  const itemStyle = marquee || preserveAspectRatio ? { aspectRatio: String(aspectRatio) } : undefined;
   if (mime.startsWith("video/")) return (
     <div className={itemClassName} style={itemStyle} role={marquee ? "listitem" : undefined} aria-hidden={decorative || undefined}>
       <video className={marquee ? "media-preview media-marquee-preview" : "media-preview"} src={source} controls preload="metadata" aria-label={decorative ? undefined : title} onLoadedMetadata={(event) => {
