@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useSitePreferences } from "@/components/site-preferences";
 import { ToastMessage } from "@/components/toast-provider";
 import { MediaLightbox } from "./media-lightbox";
@@ -67,20 +67,99 @@ export function MediaGallery({ media, title, marquee = false, firstOnly = false,
   if (!Array.isArray(media)) return null;
   const ids = media.filter((value): value is string => typeof value === "string");
   if (!ids.length) return null;
+  if (marquee) return <MediaCarousel ids={ids} title={title} />;
   return (
-    <div className={`${marquee ? "gallery-scroll" : "media-gallery"}${variant !== "default" ? ` media-gallery-${variant}` : ""}`}>
-      {marquee ? (
-        ids.map(id => <MediaPreview key={id} id={id} title={title} />)
-      ) : (firstOnly ? ids.slice(0, 1) : ids).map((id) => <MediaPreview key={id} id={id} title={title} preserveAspectRatio={preserveAspectRatio} />)}
+    <div className={`media-gallery${variant !== "default" ? ` media-gallery-${variant}` : ""}`}>
+      {(firstOnly ? ids.slice(0, 1) : ids).map((id) => <MediaPreview key={id} id={id} title={title} preserveAspectRatio={preserveAspectRatio} />)}
     </div>
   );
 }
 
-function MediaPreview({ id, title, marquee = false, decorative = false, preserveAspectRatio = false }: {
+function MediaCarousel({ ids, title }: { ids: string[]; title: string }) {
+  const { locale } = useSitePreferences();
+  const c = journeyCopy[locale];
+  const track = useRef<HTMLDivElement>(null);
+  const trackId = useId();
+  const [active, setActive] = useState(0);
+  const [playing, setPlaying] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(true);
+  const [hovered, setHovered] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const [inView, setInView] = useState(false);
+  const [pageVisible, setPageVisible] = useState(true);
+  useEffect(() => {
+    const preference = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setReducedMotion(preference.matches);
+    setPlaying(!preference.matches);
+    const onPreference = () => { setReducedMotion(preference.matches); if (preference.matches) setPlaying(false); };
+    const onVisibility = () => setPageVisible(!document.hidden);
+    onVisibility();
+    preference.addEventListener("change", onPreference);
+    document.addEventListener("visibilitychange", onVisibility);
+    const observer = new IntersectionObserver(([entry]) => setInView(entry.isIntersecting), { threshold: 0.25 });
+    if (track.current) observer.observe(track.current);
+    return () => { observer.disconnect(); preference.removeEventListener("change", onPreference); document.removeEventListener("visibilitychange", onVisibility); };
+  }, []);
+  const goTo = useCallback((index: number) => {
+    const element = track.current;
+    if (!element) return;
+    const target = (index + ids.length) % ids.length;
+    const slide = element.children[target];
+    if (!(slide instanceof HTMLElement)) return;
+    const left = slide.getBoundingClientRect().left - element.getBoundingClientRect().left + element.scrollLeft;
+    element.scrollTo({ left, behavior: reducedMotion || index < 0 || index >= ids.length ? "instant" : "smooth" });
+  }, [ids.length, reducedMotion]);
+  const running = playing && !hovered && !focused && inView && pageVisible && ids.length > 1;
+  useEffect(() => {
+    if (!running) return;
+    const timer = window.setTimeout(() => goTo(active + 1), 5000);
+    return () => window.clearTimeout(timer);
+  }, [running, active, goTo]);
+  function move(index: number) { setPlaying(false); goTo(index); }
+  return <div className="portfolio-carousel" role="region" aria-label={`${c.galleryLabel}: ${title}`}
+    onPointerEnter={event => { if (event.pointerType === "mouse") setHovered(true); }} onPointerLeave={() => setHovered(false)}
+    onFocusCapture={() => setFocused(true)} onBlurCapture={event => { if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false); }}
+    onPlayCapture={() => setPlaying(false)}>
+    <div className="gallery-toolbar">
+      <p>{c.galleryHint}</p>
+      {ids.length > 1 && <div className="gallery-controls">
+        <button type="button" className="gallery-play" aria-controls={trackId} onClick={() => { setPlaying(value => !value); setFocused(false); }}><span aria-hidden="true">{playing ? "Ⅱ" : "▷"}</span>{playing ? c.galleryPause : c.galleryPlay}</button>
+        <span className="gallery-count" aria-live={running ? "off" : "polite"} aria-atomic="true">{String(active + 1).padStart(2, "0")} / {String(ids.length).padStart(2, "0")}</span>
+        <button type="button" className="gallery-arrow" aria-label={c.previous} aria-controls={trackId} onClick={() => move(active - 1)}>←</button>
+        <button type="button" className="gallery-arrow" aria-label={c.next} aria-controls={trackId} onClick={() => move(active + 1)}>→</button>
+      </div>}
+    </div>
+    <div className="gallery-scroll" id={trackId} ref={track} tabIndex={0} role="group" aria-label={c.galleryLabel}
+      onPointerDown={() => setPlaying(false)}
+      onKeyDown={event => {
+        if (event.target !== event.currentTarget) return;
+        const index = event.key === "ArrowRight" ? active + 1 : event.key === "ArrowLeft" ? active - 1 : event.key === "Home" ? 0 : event.key === "End" ? ids.length - 1 : null;
+        if (index !== null) { event.preventDefault(); move(index); }
+      }}
+      onScroll={() => {
+        const element = track.current;
+        if (!element) return;
+        const left = element.getBoundingClientRect().left;
+        let nearest = 0;
+        let distance = Infinity;
+        Array.from(element.children).forEach((slide, index) => {
+          const delta = Math.abs(slide.getBoundingClientRect().left - left);
+          if (delta < distance) { distance = delta; nearest = index; }
+        });
+        setActive(nearest);
+      }}>
+      {ids.map((id, index) => <div className="gallery-slide" key={id} role="group" aria-label={`${index + 1} / ${ids.length}`}>
+        <MediaPreview id={id} title={`${title} — ${index + 1}`} carousel />
+        <span className="gallery-slide-number" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
+      </div>)}
+    </div>
+  </div>;
+}
+
+function MediaPreview({ id, title, carousel = false, preserveAspectRatio = false }: {
   id: string;
   title: string;
-  marquee?: boolean;
-  decorative?: boolean;
+  carousel?: boolean;
   preserveAspectRatio?: boolean;
 }) {
   const [mime, setMime] = useState("");
@@ -109,25 +188,24 @@ function MediaPreview({ id, title, marquee = false, decorative = false, preserve
   }, [source, attempt]);
   if (failed) return <div className="product-media-error" role="status"><p>{copy.mediaError}</p><button type="button" className="button secondary" onClick={() => setAttempt(value => value + 1)}>{copy.retry}</button></div>;
   if (!mime) return <div className="media-preview-frame" aria-busy="true" />;
-  const itemClassName = marquee ? "media-marquee-item" : undefined;
-  const itemStyle = marquee || preserveAspectRatio ? { aspectRatio: String(aspectRatio) } : undefined;
+  const itemStyle = preserveAspectRatio ? { aspectRatio: String(aspectRatio) } : undefined;
   if (mime.startsWith("video/")) return (
-    <div className={itemClassName} style={itemStyle} role={marquee ? "listitem" : undefined} aria-hidden={decorative || undefined}>
-      <video className={marquee ? "media-preview media-marquee-preview" : "media-preview"} src={source} controls preload="metadata" aria-label={decorative ? undefined : title} onLoadedMetadata={(event) => {
+    <div className="media-preview-frame" style={itemStyle}>
+      <video className="media-preview" src={source} controls preload="metadata" aria-label={title} onError={() => setFailed(true)} onLoadedMetadata={(event) => {
         const { videoWidth, videoHeight } = event.currentTarget;
         if (videoWidth && videoHeight) setAspectRatio(videoWidth / videoHeight);
       }} />
     </div>
   );
   if (mime.startsWith("image/")) return (
-    <div className={itemClassName ?? "media-preview-frame"} style={itemStyle} role={marquee ? "listitem" : undefined} aria-hidden={decorative || undefined}>
+    <div className="media-preview-frame" style={itemStyle}>
       <button className="media-zoom-trigger" type="button" aria-label={`${copy.zoom}: ${title}`} onClick={() => setZoom(true)}>
       <Image
-        className={marquee ? "media-preview media-marquee-preview" : "media-preview"}
+        className="media-preview"
         src={source}
-        alt={decorative ? "" : title}
+        alt={title}
         fill
-        sizes={marquee ? "(max-width: 640px) 75vw, (max-width: 1200px) 42vw, 480px" : "(max-width: 640px) 100vw, (max-width: 1200px) 50vw, 560px"}
+        sizes={carousel ? "(max-width: 640px) 85vw, 360px" : "(max-width: 640px) 100vw, (max-width: 1200px) 50vw, 560px"}
         quality={75}
         onError={() => setFailed(true)}
         onLoad={(event) => {

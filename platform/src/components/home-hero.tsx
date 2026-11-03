@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useSitePreferences } from "./site-preferences";
 import { UiIcon, type IconName } from "./ui-icon";
 import { journeyCopy } from "@/lib/journey-copy";
@@ -13,17 +14,42 @@ export function HomeHero() {
     { href: "/learning", title: c.learning, line: c.learningLine, description: c.learningDesc, action: c.learningAction, icon: "book", tone: "learning" },
     { href: "/products", title: c.shop, line: c.shopLine, description: c.shopDesc, action: c.shopAction, icon: "box", tone: "shop" },
   ];
-  return <section className="hub-hero" aria-labelledby="home-hero-title">
+  return <>
+    <section className="brand-hero" aria-labelledby="home-hero-title">
+      <div className="container brand-hero-layout">
+        <div className="brand-hero-copy">
+          <span className="eyebrow">{c.brandEyebrow}</span>
+          <h1 id="home-hero-title">{c.brandTitle}<span>{c.brandHighlight}</span></h1>
+          <p className="lead">{c.brandIntro}</p>
+          <div className="brand-hero-actions">
+            <a className="button" href="#directions">{c.brandExplore}<span aria-hidden="true">↗</span></a>
+            <Link className="brand-about-link" href="/about">{c.brandAbout}<span aria-hidden="true">→</span></Link>
+          </div>
+          <div className="brand-signature"><span aria-hidden="true" />{c.eyebrow}</div>
+        </div>
+        <div className="brand-visual">
+          <Image src="/hero/infrastructure.webp" alt="" fill sizes="(max-width: 900px) 100vw, 50vw" preload className="brand-visual-image" />
+          <div className="brand-visual-grid" aria-hidden="true" />
+          <div className="brand-visual-top"><span>TECSECURE</span><UiIcon name="shield" size={24} /></div>
+          <div className="brand-visual-orbit" aria-hidden="true"><UiIcon name="network" size={76} /><span /><span /></div>
+          <div className="brand-visual-bottom">
+            <div className="brand-visual-nodes" aria-hidden="true"><UiIcon name="network" /><i /><UiIcon name="server" /><i /><UiIcon name="shield" /></div>
+            <strong>{c.brandVisual}</strong><span>{c.brandVisualNote}</span>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section className="hub-hero" id="directions" aria-labelledby="directions-title">
     <div className="container">
       <div className="hub-heading">
-        <span className="eyebrow">{c.eyebrow}</span>
-        <h1 id="home-hero-title">{c.title}</h1>
-        <p className="lead">{c.intro}</p>
+        <div><span className="eyebrow">{c.explore}</span><h2 id="directions-title">{c.directionsTitle}</h2></div>
+        <p>{c.directionsIntro}</p>
       </div>
       <nav className="hub-paths" aria-label={c.eyebrow}>
         {entries.map((entry, index) => <Link className={`hub-path hub-path-${entry.tone}`} href={entry.href} key={entry.href}>
           <div className="hub-path-top"><span className="hub-icon"><UiIcon name={entry.icon} size={28} /></span><span className="hub-number">0{index + 1}</span></div>
-          <h2>{entry.title}</h2><strong>{entry.line}</strong><p>{entry.description}</p>
+          <div className="hub-path-art" aria-hidden="true"><span /><UiIcon name={index === 0 ? "server" : index === 1 ? "book" : "box"} size={66} /><span /></div>
+          <h3>{entry.title}</h3><strong>{entry.line}</strong><p>{entry.description}</p>
           <span className="hub-path-action">{entry.action}<span aria-hidden="true">→</span></span>
         </Link>)}
       </nav>
@@ -32,5 +58,5 @@ export function HomeHero() {
         <div><input id="hub-search" type="search" name="q" maxLength={80} placeholder={c.searchHint} required /><button className="button" type="submit">{c.search}</button></div>
       </form>
     </div>
-  </section>;
+  </section></>;
 }

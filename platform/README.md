@@ -39,7 +39,8 @@ The production-oriented rebuild lives in `platform/`; the original static files 
 
 ### Public journeys and catalog maintenance
 
-- `/` routes visitors to `/services`, `/learning`, or `/products`. `/store` is specifically for TEC packs and learning subscriptions, not physical equipment.
+- `/` introduces Tecsecure before the three illustrated entry paths to `/services`, `/learning`, or `/products`. The redundant decision/account section is omitted; account navigation remains in the shared header. `/store` is specifically for TEC packs and learning subscriptions, not physical equipment.
+- Published portfolio media uses a scroll-snap carousel with previous/next controls, a position counter, swipe, Arrow/Home/End keyboard navigation and image zoom. The optional slideshow starts only when reduced motion is not requested, pauses on hover/focus, offscreen or in a background tab, and stops on manual interaction or video playback. All original media stays available without duplicate slides.
 - `/services` explains six common needs, scope, deliverables, exclusions and price factors. `/contact?mode=callback` needs a phone and consent; detailed requests still require a name and description. `topic` is bounded and safely included in the saved request; `service` must match an available published service.
 - `/search` groups published product/service matches and learning previews. Lesson bodies, exam answers and private account data are not search results.
 - Product media is resolved from existing `MediaAsset` records on the server. Cards prefer the first image over video; detail pages provide thumbnails and an accessible native-dialog zoom. Missing photos are labelled illustrations, not invented product photographs. Add verified model photos, specifications, compatibility and warranty through the product editor.
