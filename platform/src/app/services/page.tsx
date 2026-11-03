@@ -3,6 +3,7 @@ import { ServicesShowcase } from "@/components/services-showcase";
 import { ManagedServices } from "@/components/managed-services";
 import { prisma } from "@/lib/prisma";
 import { isPreviewMode } from "@/lib/preview-mode";
+import { ServiceJourneys, TechnicalServices } from "@/components/service-journeys";
 
 export const dynamic = "force-dynamic";
 
@@ -18,8 +19,10 @@ export default async function ServicesPage() {
         <h1 className="page-title"><LocalizedText id="servicesPageTitle" /></h1>
         <p className="page-intro"><LocalizedText id="serviceScope" /></p>
       </div>
-      <ServicesShowcase />
+      <ServiceJourneys />
+      <TechnicalServices><ServicesShowcase />
       <ManagedServices services={services.map(({ id, name, description, media }) => ({ id, name, description, media }))} />
+      </TechnicalServices>
     </section>
   </div>;
 }

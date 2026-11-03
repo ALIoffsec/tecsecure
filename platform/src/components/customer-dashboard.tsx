@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { FormEvent, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useSitePreferences } from "@/components/site-preferences";
 import { ProjectRequestForm } from "@/components/project-request-form";
 import { OrganizationSetupForm } from "@/components/organization-setup-form";
@@ -142,7 +142,7 @@ export function CustomerDashboard({ user, requests, orders, conversations, organ
   const copy = portalCopy[locale];
   const numberLocale = locale === "uz" ? "uz-UZ" : locale === "ru" ? "ru-RU" : "en-US";
   const [error, setError] = useState("");
-  const [activeSection, setActiveSection] = useState("overview");
+  const searchParams = useSearchParams();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const sectionChoices = [
     { id: "overview", label: copy.overview },
@@ -158,6 +158,10 @@ export function CustomerDashboard({ user, requests, orders, conversations, organ
     { id: "subscriptions", label: t("monitoringTrials") },
     { id: "messages", label: copy.messages, count: conversations.length }
   ];
+  const activeSection = sectionChoices.find(item => item.id === searchParams.get("section"))?.id ?? "overview";
+  function setActiveSection(section: string) {
+    router.push(`/portal/profile?section=${encodeURIComponent(section)}`, { scroll: false });
+  }
 
   async function cancelRequest(id: string) {
     setError("");

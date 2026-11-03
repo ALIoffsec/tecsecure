@@ -7,9 +7,11 @@ import { isPreviewMode } from "@/lib/preview-mode";
 
 export const dynamic = "force-dynamic";
 
-export default async function ProfilePage() {
+export default async function ProfilePage({ searchParams }: { searchParams: Promise<{ section?: string }> }) {
   if (isPreviewMode) return <div className="container page-shell"><PreviewModeNotice /></div>;
-  const user = await requireUser();
+  const section = (await searchParams).section;
+  const returnTo = typeof section === "string" && /^[a-z]+$/.test(section) ? `/portal/profile?section=${section}` : "/portal/profile";
+  const user = await requireUser(returnTo);
   const profileUser = await prisma.user.findUniqueOrThrow({
     where: { id: user.id },
     select: { id: true, name: true, email: true, phone: true, role: true }

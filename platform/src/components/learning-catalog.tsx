@@ -9,6 +9,8 @@ import { UiIcon } from "@/components/ui-icon";
 import type { Category, Difficulty } from "@/lib/learning-demo";
 import type { LearningModulePreview } from "@/lib/learning-catalog-types";
 import type { VulNyxCatalogResult } from "@/lib/vulnyx-catalog";
+import { journeyCopy } from "@/lib/journey-copy";
+import { useSearchParams } from "next/navigation";
 
 const difficultyOrder: Difficulty[] = ["fundamental", "easy", "medium", "hard"];
 const categoryOrder: Category[] = ["networking", "systems", "security", "physical"];
@@ -16,8 +18,8 @@ type PublicLabPreview = { slug: string; title: string; summary: string; level: s
 type PublicExamPreview = { slug: string; title: string; summary: string; minutes: number; passPercent: number; questionCount: number; topics: string[] };
 type LearningCatalogProps =
   | { section: "overview" | "paths" | "modules" }
-  | { section: "labs"; labs: PublicLabPreview[] }
-  | { section: "exams"; exams: PublicExamPreview[] }
+  | { section: "labs"; labs: PublicLabPreview[]; accountRequired?: boolean }
+  | { section: "exams"; exams: PublicExamPreview[]; accountRequired?: boolean }
   | { section: "ctf"; vulnyx: VulNyxCatalogResult };
 
 export function ModuleCard({ module, percent }: { module: LearningModulePreview; percent: number }) {
@@ -33,7 +35,7 @@ export function ModuleCard({ module, percent }: { module: LearningModulePreview;
       </div>
       <h3>{pick(module.title)}</h3>
       <p>{pick(module.summary)}</p>
-      <div className="learn-meta">{module.sections.length} {tx.sectionsCount}</div>
+      <div className="learn-meta">{module.sections.length} {tx.sectionsCount} · {tx.timeEstimateLabel}: {module.hours} {tx.hours}</div>
       <div className="learn-card-price">
         {module.modulePriceTec === 0 ? <span className="tag learn-free-tag">{tx.free}</span> : <TecAmount amount={module.modulePriceTec} />}
         <span className="muted">{tx.bundlePrice}</span>
@@ -46,20 +48,29 @@ export function ModuleCard({ module, percent }: { module: LearningModulePreview;
 
 export function LearningCatalog(props: LearningCatalogProps) {
   const { tx, pick, locale } = useLearningText();
+  const entry = journeyCopy[locale];
   const catalog = useLearningCatalog();
   const progress = useLearningProgress();
   const section = props.section;
   const labs = section === "labs" ? props.labs : null;
   const exams = section === "exams" ? props.exams : null;
   const vulnyx = section === "ctf" ? props.vulnyx : null;
-  const [difficulty, setDifficulty] = useState<Difficulty | "all">("all");
-  const [category, setCategory] = useState<Category | "all">("all");
+  const searchParams = useSearchParams();
+  const difficulty = difficultyOrder.find(value => value === searchParams.get("level")) ?? "all";
+  const category = categoryOrder.find(value => value === searchParams.get("category")) ?? "all";
+  const moduleQuery = searchParams.get("q")?.slice(0, 80) ?? "";
+  function updateModuleFilter(key: string, value: string) {
+    const params = new URLSearchParams(searchParams);
+    if (value && value !== "all") params.set(key, value); else params.delete(key);
+    window.history.replaceState(null, "", `/learning/modules${params.size ? `?${params}` : ""}`);
+  }
   const [machineQuery, setMachineQuery] = useState("");
   const [machineOs, setMachineOs] = useState("all");
   const [machineDifficulty, setMachineDifficulty] = useState("all");
 
   const visible = catalog.modules.filter((item) =>
-    (difficulty === "all" || item.difficulty === difficulty) && (category === "all" || item.category === category));
+    (difficulty === "all" || item.difficulty === difficulty) && (category === "all" || item.category === category)
+    && `${pick(item.title)} ${pick(item.summary)}`.toLocaleLowerCase(locale).includes(moduleQuery.trim().toLocaleLowerCase(locale)));
   const machines = vulnyx?.status === "ready" ? vulnyx.machines : [];
   const normalizedQuery = machineQuery.trim().toLocaleLowerCase(locale);
   const visibleMachines = machines.filter((machine) =>
@@ -92,8 +103,9 @@ export function LearningCatalog(props: LearningCatalogProps) {
               <span className="eyebrow">{tx.learningHomeEyebrow}</span>
               <h1 className="page-title">{tx.learningHomeTitle}</h1>
               <p className="page-intro">{tx.learningHomeDescription}</p>
-              <p className="learn-home-account-note"><UiIcon name="user" size={18} /><span>{tx.learningHomeAccountNote}</span></p>
+              <p className="learn-home-account-note"><UiIcon name="user" size={18} /><span>{entry.learningNote}</span></p>
               <div className="hero-actions">
+                {progress.ready && progress.last && catalog.modules.some(module => module.slug === progress.last) && <Link className="button" href={`/learning/${progress.last}`}>{entry.resume}</Link>}
                 <Link className="button" href="/learning/paths"><UiIcon name="network" size={18} />{tx.learningHomeStart}</Link>
                 <Link className="button secondary" href="/learning/dashboard"><UiIcon name="layout" size={18} />{tx.openDashboard}</Link>
               </div>
@@ -107,6 +119,13 @@ export function LearningCatalog(props: LearningCatalogProps) {
               </div>
               <p>{tx.learningHomeStatsNote}</p>
             </aside>
+          </section>
+
+          <section className="learn-entry-section" id="start">
+            <h2>{entry.helpTitle}</h2>
+            <div className="journey-grid">
+              {[[entry.beginner, entry.beginnerDesc, "/learning/paths"], [entry.topic, entry.topicDesc, "/learning/modules"], [entry.practice, entry.practiceDesc, "/learning/practice"]].map(([title, description, href]) => <Link className="panel-card journey-card" href={href} key={href}><h3>{title}</h3><p className="muted">{description}</p><span className="text-link">{entry.more} →</span></Link>)}
+            </div>
           </section>
 
           <section className="learn-home-catalog">
@@ -203,7 +222,7 @@ export function LearningCatalog(props: LearningCatalogProps) {
       {labs && <section className="learn-block">
         <div className="section-head learn-section-title">
           <div><span className="eyebrow">{tx.eyebrow}</span><h1 className="page-title">{tx.labsTitle}</h1></div>
-          <Link className="button secondary" href="/learning/practice/labs">{tx.labsOpen}</Link>
+          <Link className="button secondary" href={props.section === "labs" && props.accountRequired ? "/login?next=%2Flearning%2Fpractice%2Flabs" : "/learning/practice/labs"}>{tx.labsOpen}</Link>
         </div>
         <p className="learn-source-note">{tx.labsIntro}</p>
         {labs.length === 0 ? <p className="muted">{tx.labsEmpty}</p> : (
@@ -227,7 +246,7 @@ export function LearningCatalog(props: LearningCatalogProps) {
       {exams && <section className="learn-block">
         <div className="section-head learn-section-title">
           <div><span className="eyebrow">{tx.eyebrow}</span><h1 className="page-title">{tx.catalogExams}</h1></div>
-          <Link className="button secondary" href="/learning/practice/exams">{tx.examsOpen}</Link>
+          <Link className="button secondary" href={props.section === "exams" && props.accountRequired ? "/login?next=%2Flearning%2Fpractice%2Fexams" : "/learning/practice/exams"}>{tx.examsOpen}</Link>
         </div>
         <p className="learn-source-note">{tx.catalogExamsDescription}</p>
         {exams.length === 0 ? <p className="muted">{tx.examsEmpty}</p> : (
@@ -320,16 +339,18 @@ export function LearningCatalog(props: LearningCatalogProps) {
 
       {section === "modules" && <section className="learn-block">
         <div className="section-head"><div><span className="eyebrow">{tx.eyebrow}</span><h1 className="page-title">{tx.modulesTitle}</h1></div></div>
+        <div className="field learn-module-search"><label htmlFor="module-query">{entry.search}</label><input id="module-query" type="search" value={moduleQuery} maxLength={80} onChange={event => updateModuleFilter("q", event.target.value)} placeholder={entry.topic} /></div>
+        {visible.length === 0 && <p role="status">{entry.searchEmpty}</p>}
         <div className="learn-filters" role="group" aria-label={tx.modulesTitle}>
           {(["all", ...difficultyOrder] as const).map((item) => (
-            <button className={`learn-chip${difficulty === item ? " active" : ""}`} key={item} onClick={() => setDifficulty(item)} type="button">
+            <button className={`learn-chip${difficulty === item ? " active" : ""}`} key={item} aria-pressed={difficulty === item} onClick={() => updateModuleFilter("level", item)} type="button">
               {item === "all" ? tx.all : tx.difficulty[item]}
             </button>
           ))}
         </div>
         <div className="learn-filters">
           {(["all", ...categoryOrder] as const).map((item) => (
-            <button className={`learn-chip${category === item ? " active" : ""}`} key={item} onClick={() => setCategory(item)} type="button">
+            <button className={`learn-chip${category === item ? " active" : ""}`} key={item} aria-pressed={category === item} onClick={() => updateModuleFilter("category", item)} type="button">
               {item === "all" ? tx.all : tx.category[item]}
             </button>
           ))}

@@ -2,6 +2,8 @@
 
 import { useEffect, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
+import { useSitePreferences } from "./site-preferences";
+import { shopCopy } from "@/lib/shop-copy";
 
 export type CartLine = { productId: string; name: string; slug: string; categorySlug?: string | null; quantity: number };
 
@@ -73,20 +75,22 @@ export function clearCart() {
 }
 
 export function AddToCartButton({ product, disabled }: { product: Omit<CartLine, "quantity">; disabled?: boolean }) {
+  const { locale } = useSitePreferences();
+  const c = shopCopy[locale];
   const [added, setAdded] = useState(false);
   useEffect(() => {
     if (!added) return;
     const t = window.setTimeout(() => setAdded(false), 1800);
     return () => window.clearTimeout(t);
   }, [added]);
-  const label = disabled ? "Omborda yo‘q" : added ? "Savatga qo‘shildi" : "Savatga qo‘shish";
+  const label = disabled ? c.OUT_OF_STOCK : added ? c.added : c.add;
   return <button type="button" className="button shop-add-to-cart" aria-label={label} title={label} disabled={disabled} onClick={() => { addToCart(product); setAdded(true); }}>
     <svg aria-hidden="true" viewBox="0 0 24 24">
       <path d="M3 4h2l2.2 11.1a2 2 0 0 0 2 1.6h8.1a2 2 0 0 0 1.9-1.5L21 8H6" />
       <circle cx="10" cy="20" r="1" />
       <circle cx="18" cy="20" r="1" />
     </svg>
-    <span className="shop-add-label">{disabled ? "Omborda yo‘q" : added ? "Savatga qo‘shildi" : "Savatga qo‘shish"}</span>
+    <span className="shop-add-label" aria-live="polite">{label}</span>
   </button>;
 }
 

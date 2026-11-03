@@ -1,6 +1,7 @@
 import { PracticeHub, type PracticeHubView } from "@/components/practice-hub";
 import { PreviewModeNotice } from "@/components/preview-mode-notice";
-import { requireUser } from "@/lib/auth";
+import { getCurrentUser } from "@/lib/auth";
+import { LearningCatalog } from "./learning-catalog";
 import { getPublishedLearningDocuments } from "@/lib/learning-content";
 import { getActivePlanKey } from "@/lib/practice-server";
 import { isPreviewMode } from "@/lib/preview-mode";
@@ -9,7 +10,20 @@ import { prisma } from "@/lib/prisma";
 export async function PracticeHubPage({ view, moduleSlug }: { view: PracticeHubView; moduleSlug?: string }) {
   if (isPreviewMode) return <div className="container page-shell"><PreviewModeNotice /></div>;
 
-  const user = await requireUser();
+  const user = await getCurrentUser();
+  if (!user) {
+    if (view === "exams") {
+      const exams = await getPublishedLearningDocuments("exam");
+      return <LearningCatalog section="exams" accountRequired exams={exams.map(exam => ({
+        slug: exam.slug, title: exam.title, summary: exam.summary, minutes: exam.minutes,
+        passPercent: exam.passPercent, questionCount: exam.questions.length, topics: exam.topics
+      }))} />;
+    }
+    const labs = await getPublishedLearningDocuments("lab");
+    return <LearningCatalog section="labs" accountRequired labs={labs.filter(lab => !moduleSlug || lab.moduleSlug === moduleSlug).map(lab => ({
+      slug: lab.slug, title: lab.title, summary: lab.summary, level: lab.level, minutes: lab.minutes, taskCount: lab.tasks.length
+    }))} />;
+  }
   const [account, planKey, labPurchases, labCompletions, labTasks, moduleDone, attempts, certificates, learningLabs, learningExams, learningModules] = await Promise.all([
     prisma.user.findUnique({ where: { id: user.id }, select: { rewardPoints: true } }),
     getActivePlanKey(user.id),

@@ -78,8 +78,19 @@ export function ServicesShowcase() {
             type="button"
             role="tab"
             aria-selected={selected === id}
+            tabIndex={selected === id ? 0 : -1}
             aria-controls="service-category-panel"
             onClick={() => setSelected(id)}
+            onKeyDown={(event) => {
+              const index = categories.findIndex(category => category.id === id);
+              const next = event.key === "Home" ? 0 : event.key === "End" ? categories.length - 1
+                : event.key === "ArrowRight" ? (index + 1) % categories.length
+                : event.key === "ArrowLeft" ? (index + categories.length - 1) % categories.length : -1;
+              if (next < 0) return;
+              event.preventDefault();
+              setSelected(categories[next].id);
+              document.getElementById(`service-tab-${categories[next].id}`)?.focus();
+            }}
           >
             <span aria-hidden="true"><UiIcon name={image} size={25} /></span>
             {t(title)}

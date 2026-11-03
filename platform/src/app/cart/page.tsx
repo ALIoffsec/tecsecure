@@ -1,11 +1,14 @@
 import { CartCheckout } from "@/components/cart-checkout";
+import { getCurrentUser } from "@/lib/auth";
+import { ShopText } from "@/components/shop-text";
 
 export const metadata = { title: "Savat | Tecsecure" };
 
-export default function CartPage() {
+export default async function CartPage() {
+  const user = await getCurrentUser();
   return <div className="container page-shell">
-    <span className="eyebrow">Buyurtma</span>
-    <h1 className="page-title">Savat va yetkazib berish</h1>
-    <CartCheckout />
+    <span className="eyebrow">Tecsecure</span>
+    <h1 className="page-title"><ShopText id="cart" /></h1>
+    <CartCheckout canOrder={user?.role === "CUSTOMER"} />
   </div>;
 }

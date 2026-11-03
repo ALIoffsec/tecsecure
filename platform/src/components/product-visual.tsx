@@ -1,4 +1,4 @@
-type Kind = "camera" | "network" | "shield" | "box";
+type Kind = "camera" | "network" | "shield" | "box" | "recorder" | "wifi" | "access";
 
 function kindOf(slug?: string | null): Kind {
   if (!slug) return "box";
@@ -9,8 +9,8 @@ function kindOf(slug?: string | null): Kind {
 }
 
 // Illustrative category artwork, not a product photograph.
-export function ProductVisual({ categorySlug, large = false }: { categorySlug?: string | null; large?: boolean }) {
-  const kind = kindOf(categorySlug);
+export function ProductVisual({ categorySlug, productSlug, large = false }: { categorySlug?: string | null; productSlug?: string; large?: boolean }) {
+  const kind = productSlug?.includes("nvr") ? "recorder" : productSlug?.includes("wifi") ? "wifi" : productSlug?.includes("kirish") ? "access" : kindOf(categorySlug);
   return <div className={`shop-visual shop-visual-${kind}${large ? " is-large" : ""}`} aria-hidden="true">
     <svg viewBox="0 0 160 120" role="presentation">
       <defs>
@@ -20,6 +20,19 @@ export function ProductVisual({ categorySlug, large = false }: { categorySlug?: 
         </linearGradient>
       </defs>
       <g fill="none" stroke={`url(#g-${kind})`} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+        {kind === "recorder" && <>
+          <rect x="20" y="38" width="120" height="48" rx="8" />
+          <path d="M32 52h60m-60 12h60m-60 12h34" />
+          <circle cx="119" cy="61" r="8" /><path d="M30 90h12m76 0h12" />
+        </>}
+        {kind === "wifi" && <>
+          <ellipse cx="80" cy="78" rx="36" ry="15" /><path d="M44 78v8c0 20 72 20 72 0v-8" />
+          <path d="M49 32a44 44 0 0 1 62 0M61 45a27 27 0 0 1 38 0M73 58a10 10 0 0 1 14 0" /><circle cx="80" cy="78" r="3" />
+        </>}
+        {kind === "access" && <>
+          <rect x="25" y="45" width="25" height="62" rx="5" /><rect x="110" y="45" width="25" height="62" rx="5" />
+          <path d="M50 63h30v40M80 63l28 22M80 63l28-20" /><rect x="59" y="13" width="42" height="28" rx="5" /><path d="m70 27 7 6 13-14" />
+        </>}
         {kind === "camera" && <>
           <rect x="30" y="38" width="76" height="38" rx="10" />
           <path d="M106 50l24-10v36l-24-10z" />

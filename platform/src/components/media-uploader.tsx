@@ -4,6 +4,8 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useSitePreferences } from "@/components/site-preferences";
 import { ToastMessage } from "@/components/toast-provider";
+import { MediaLightbox } from "./media-lightbox";
+import { journeyCopy } from "@/lib/journey-copy";
 
 export function MediaUploader({ scope, value, onChange }: {
   scope: "CONTENT" | "PORTFOLIO" | "SERVICES" | "PRODUCTS" | "NEWS" | "WALLET";
@@ -66,13 +68,9 @@ export function MediaGallery({ media, title, marquee = false, firstOnly = false,
   const ids = media.filter((value): value is string => typeof value === "string");
   if (!ids.length) return null;
   return (
-    <div className={`media-gallery${marquee ? " media-gallery-marquee" : ""}${variant !== "default" ? ` media-gallery-${variant}` : ""}`}>
+    <div className={`${marquee ? "gallery-scroll" : "media-gallery"}${variant !== "default" ? ` media-gallery-${variant}` : ""}`}>
       {marquee ? (
-        <div className="media-marquee-track" role="list">
-          {[...ids, ...ids].map((id, index) => (
-            <MediaPreview key={`${id}-${index}`} id={id} title={title} marquee decorative={index >= ids.length} />
-          ))}
-        </div>
+        ids.map(id => <MediaPreview key={id} id={id} title={title} />)
       ) : (firstOnly ? ids.slice(0, 1) : ids).map((id) => <MediaPreview key={id} id={id} title={title} preserveAspectRatio={preserveAspectRatio} />)}
     </div>
   );
@@ -86,20 +84,31 @@ function MediaPreview({ id, title, marquee = false, decorative = false, preserve
   preserveAspectRatio?: boolean;
 }) {
   const [mime, setMime] = useState("");
+  const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const [zoom, setZoom] = useState(false);
+  const { locale } = useSitePreferences();
+  const copy = journeyCopy[locale];
   const [aspectRatio, setAspectRatio] = useState(16 / 9);
   const source = `/api/media/${id}`;
   useEffect(() => {
     let active = true;
-    fetch(source, { method: "HEAD" })
+    const controller = new AbortController();
+    setFailed(false);
+    fetch(source, { method: "HEAD", signal: controller.signal })
       .then((response) => {
-        if (response.ok && active) setMime(response.headers.get("content-type") ?? "");
+        if (!response.ok) throw new Error(`Media ${response.status}`);
+        const type = response.headers.get("content-type") ?? "";
+        if (!/^(image|video)\//.test(type)) throw new Error("Unsupported media");
+        if (active) setMime(type);
       })
-      .catch(() => {
-        if (active) setMime("image/unknown");
+      .catch((error: unknown) => {
+        if (active) { console.error("Media preview failed", source, error); setFailed(true); }
       });
-    return () => { active = false; };
-  }, [source]);
-  if (!mime) return null;
+    return () => { active = false; controller.abort(); };
+  }, [source, attempt]);
+  if (failed) return <div className="product-media-error" role="status"><p>{copy.mediaError}</p><button type="button" className="button secondary" onClick={() => setAttempt(value => value + 1)}>{copy.retry}</button></div>;
+  if (!mime) return <div className="media-preview-frame" aria-busy="true" />;
   const itemClassName = marquee ? "media-marquee-item" : undefined;
   const itemStyle = marquee || preserveAspectRatio ? { aspectRatio: String(aspectRatio) } : undefined;
   if (mime.startsWith("video/")) return (
@@ -112,6 +121,7 @@ function MediaPreview({ id, title, marquee = false, decorative = false, preserve
   );
   if (mime.startsWith("image/")) return (
     <div className={itemClassName ?? "media-preview-frame"} style={itemStyle} role={marquee ? "listitem" : undefined} aria-hidden={decorative || undefined}>
+      <button className="media-zoom-trigger" type="button" aria-label={`${copy.zoom}: ${title}`} onClick={() => setZoom(true)}>
       <Image
         className={marquee ? "media-preview media-marquee-preview" : "media-preview"}
         src={source}
@@ -119,11 +129,14 @@ function MediaPreview({ id, title, marquee = false, decorative = false, preserve
         fill
         sizes={marquee ? "(max-width: 640px) 75vw, (max-width: 1200px) 42vw, 480px" : "(max-width: 640px) 100vw, (max-width: 1200px) 50vw, 560px"}
         quality={75}
+        onError={() => setFailed(true)}
         onLoad={(event) => {
           const { naturalWidth, naturalHeight } = event.currentTarget;
           if (naturalWidth && naturalHeight) setAspectRatio(naturalWidth / naturalHeight);
         }}
       />
+      </button>
+      {zoom && <MediaLightbox source={source} title={title} onClose={() => setZoom(false)} />}
     </div>
   );
   return null;

@@ -6,15 +6,15 @@ The production-oriented rebuild lives in `platform/`; the original static files 
 
 | Capability | Status |
 |---|---|
-| Public site and published service catalog | Implemented |
+| Public site and published service catalog | Three-way entry to Services, Learning and Equipment Shop; grouped search at `/search`, shared navigation and account links |
 | Service overview with infrastructure, installation, consulting, and equipment sections | Implemented; category details are translated and illustrated |
-| Public product market | Reads published products from the database; shows an honest empty state until real inventory is published; inquiries only, no checkout |
+| Public product market | Published inventory, category/brand/stock/specification filters, currency-scoped price filtering, up to three same-category comparisons, image gallery and customer order requests; no online payment |
 | Public homepage contact details | Implemented; email, phone, and social handles can be edited in admin site settings |
 | Customer registration/login, database-backed sessions, password hashing | Implemented |
 | Google, GitHub, Yandex, and Microsoft customer sign-in | Implemented; each provider requires owner-created OAuth app credentials and callback registration; existing email accounts are not silently linked |
 | Customer logout, account deletion, and request/project data anonymization | Implemented; password-confirmed; financial history is retained |
 | Admin/staff server-side access checks and bootstrap | Implemented; staff has a separate login entry and is limited to request/project operations, while ADMIN manages system settings and user roles |
-| Service requests, unique reference, request history, owner-scoped portal | Implemented |
+| Service requests, unique reference, request history, owner-scoped portal | Detailed requests or phone-and-consent callbacks; selected service/topic is retained; request links open the correct account section |
 | Telegram notifications for new service requests, orders, and project quotes | Implemented; requires the bot secrets and webhook setup below |
 | Telegram admin replies saved in customer profile and sent to linked customers | Implemented; customer must connect Telegram from Profile → My messages |
 | Customer portal with grouped service/order/monitoring/project/learning sections | Implemented |
@@ -31,11 +31,23 @@ The production-oriented rebuild lives in `platform/`; the original static files 
 | Monitoring worker | Not operational; no target checks are executed and all devices remain `UNKNOWN` until real telemetry is integrated |
 | Email and worker-based external notification delivery | Not configured; the worker records undeliverable notifications as `FAILED` |
 | Cybersecurity authorization/reporting | Schema foundation only; customer authorization, evidence access, and reporting workflow pending |
-| Learning catalog and article access | Implemented; 13 static modules, TEC purchases, and 30-day wallet-funded Basic/Standard/Expert subscriptions; no hosted lab runtime or automatic renewal |
+| Learning catalog and article access | Public entry and lab/exam previews, searchable module catalog with URL filters, resume links, TEC purchases and 30-day wallet-funded subscriptions; existing content access rules remain in force |
 | Support tickets, uploads/private file storage, admin audit/history UI | Pending |
 | Public statistics, client logos, prices, project claims | Not carried over as verified; must be confirmed by Tecsecure |
 
 “Implemented” here means a route or workflow exists in source; it is not a claim that it has passed a production database end-to-end test. See `docs/` for the audit and legacy capability mapping.
+
+### Public journeys and catalog maintenance
+
+- `/` routes visitors to `/services`, `/learning`, or `/products`. `/store` is specifically for TEC packs and learning subscriptions, not physical equipment.
+- `/services` explains six common needs, scope, deliverables, exclusions and price factors. `/contact?mode=callback` needs a phone and consent; detailed requests still require a name and description. `topic` is bounded and safely included in the saved request; `service` must match an available published service.
+- `/search` groups published product/service matches and learning previews. Lesson bodies, exam answers and private account data are not search results.
+- Product media is resolved from existing `MediaAsset` records on the server. Cards prefer the first image over video; detail pages provide thumbnails and an accessible native-dialog zoom. Missing photos are labelled illustrations, not invented product photographs. Add verified model photos, specifications, compatibility and warranty through the product editor.
+- Price filtering/sorting is in the selected original currency (UZS by default); display conversion is independent. A missing price is a quote request, never zero. Specification filters appear for categories with structured specifications.
+- `/products/compare?ids=...` accepts up to three published products of one category. Selection is kept in session storage; the comparison page reads current database values.
+- Cart previews fetch current public prices and media without requiring sign-in. Order submission still requires a customer account. Submitted catalog expectations are checked server-side; changes return HTTP 409 for review. Delivery fees and timing are agreed separately, and submitting an order is not payment confirmation.
+- Customer dashboard sections use `/portal/profile?section=...`, so requests and navigation remain addressable. Guest lab/exam previews omit answers, purchases and account progress; starting protected activities retains authentication.
+- No invented project outcomes, client reviews, guaranteed response times, partnerships, stock or shipping promises are added. Those facts must be maintained by the business.
 
 ## Local setup
 

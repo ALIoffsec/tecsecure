@@ -1,25 +1,21 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
-import { MediaGallery } from "@/components/media-uploader";
-import { AddToCartButton, CartFab } from "@/components/cart";
-import { ProductVisual } from "@/components/product-visual";
+import { AddToCartButton } from "@/components/cart";
+import { ProductMedia, ProductGallery } from "@/components/product-media";
+import { ProductGuidance } from "@/components/product-guidance";
+import { CompareButton, CompareTray } from "@/components/product-compare";
+import { ShopText as S } from "@/components/shop-text";
+import { catalogMedia } from "@/lib/catalog-media";
+import { detailRows } from "@/lib/catalog-utils";
+import { inquiryHref } from "@/lib/journey-copy";
 import { ReviewForm } from "@/components/product-feedback";
 import { CollapsibleSpecs, ExpandableText, ProductDetailTabs } from "@/components/product-detail-tabs";
 import { CurrencyPrice, CurrencySelector } from "@/components/currency-context";
 
 export const dynamic = "force-dynamic";
-
-const stockLabels: Record<string, string> = { IN_STOCK: "Omborda bor", ON_REQUEST: "So‘rov bo‘yicha", OUT_OF_STOCK: "Omborda yo‘q" };
-
-function specRows(value: unknown): [string, string][] {
-  if (!value || typeof value !== "object") return [];
-  if (Array.isArray(value)) return value.filter((v): v is string => typeof v === "string").map((v) => ["", v]);
-  return Object.entries(value as Record<string, unknown>)
-    .filter(([, v]) => typeof v === "string" || typeof v === "number" || typeof v === "boolean")
-    .map(([k, v]) => [k, String(v)]);
-}
 
 function maskName(name: string) {
   const [first, second] = name.trim().split(/\s+/);
@@ -40,8 +36,8 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
 
   const [related, reviews, canReview, alreadyReviewed] = await Promise.all([
     prisma.product.findMany({
-      where: { status: "PUBLISHED", id: { not: product.id }, ...(product.categoryId ? { categoryId: product.categoryId } : {}) },
-      select: { id: true, name: true, slug: true, priceMinor: true, currency: true },
+      where: { status: "PUBLISHED", id: { not: product.id }, categoryId: product.categoryId },
+      select: { id: true, name: true, slug: true, priceMinor: true, currency: true, media: true, category: { select: { slug: true } } },
       take: 4
     }),
     prisma.productReview.findMany({ where: { productId: product.id }, orderBy: { createdAt: "desc" }, take: 50, include: { user: { select: { name: true } } } }),
@@ -49,31 +45,29 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
     isCustomer ? prisma.productReview.findUnique({ where: { productId_userId: { productId: product.id, userId: user.id } }, select: { id: true } }) : null
   ]);
 
-  const specs = specRows(product.specifications);
-  const compatibility = specRows(product.compatibility);
-  const detailSpecs: [string, string][] = [
-    ...(product.brand ? [["Brend", product.brand] as [string, string]] : []),
-    ...(product.model ? [["Model", product.model] as [string, string]] : []),
-    ...(product.sku ? [["SKU", product.sku] as [string, string]] : []),
-    ...(product.warrantyDescription ? [["Kafolat", product.warrantyDescription] as [string, string]] : []),
-    ...specs,
-    ...compatibility.map(([label, value]) => [label || "Moslik", value] as [string, string])
-  ];
-  const hasMedia = Array.isArray(product.media) && product.media.length > 0;
+  const getMedia = await catalogMedia([product, ...related]);
+  const specs = detailRows(product.specifications);
+  const compatibility = detailRows(product.compatibility);
+  const detailSpecs: [ReactNode, string][] = [...specs];
+  if (product.brand) detailSpecs.unshift([<S id="brand" />, product.brand]);
+  if (product.model) detailSpecs.unshift([<S id="model" />, product.model]);
+  if (product.sku) detailSpecs.push(["SKU", product.sku]);
+  if (product.warrantyDescription) detailSpecs.push([<S id="warranty" />, product.warrantyDescription]);
+  for (const [label, value] of compatibility) detailSpecs.push([label || <S id="compatibility" />, value]);
   const priced = product.priceMinor !== null;
   const average = reviews.length ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length : 0;
   const distribution = [5, 4, 3, 2, 1].map((n) => ({ n, count: reviews.filter((r) => r.rating === n).length }));
   return <div className="container page-shell">
     <nav className="shop-crumbs" aria-label="Breadcrumb">
-      <Link href="/products">Katalog</Link><span>/</span>
+      <Link href="/products"><S id="catalog" /></Link><span>/</span>
       {product.category && <><Link href={`/products?category=${product.category.slug}`}>{product.category.name}</Link><span>/</span></>}
       <span aria-current="page">{product.name}</span>
     </nav>
 
+    <CompareTray />
     <div className="shop-pdp">
       <div className="shop-pdp-media">
-        {hasMedia ? <MediaGallery media={product.media} title={product.name} variant="product-detail" preserveAspectRatio /> : <ProductVisual categorySlug={product.category?.slug} large />}
-        {!hasMedia && <p className="small muted" style={{ marginTop: 8 }}>Rasm namunaviy; aniq model taklifda ko‘rsatiladi.</p>}
+        <ProductGallery assets={getMedia(product.media)} title={product.name} slug={product.slug} categorySlug={product.category?.slug} />
       </div>
 
       <div className="shop-pdp-info">
@@ -82,14 +76,14 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
           <div className="shop-rating-link">
             <Stars value={average} />
             <strong>{reviews.length ? average.toFixed(1) : "—"}</strong>
-            <span className="muted">{reviews.length ? `${reviews.length} ta sharh` : "Sharhlar yo‘q"}</span>
+            <span className="muted">{reviews.length ? <>{reviews.length} <S id="reviews" /></> : <S id="noReviews" />}</span>
           </div>
-          {product.sku && <span className="muted">Kod: {product.sku}</span>}
+          {product.sku && <span className="muted">SKU: {product.sku}</span>}
         </div>
         <ul className="shop-highlights">
-          {product.brand && <li><span>Brend</span><strong>{product.brand}</strong></li>}
-          {product.model && <li><span>Model</span><strong>{product.model}</strong></li>}
-          {product.category && <li><span>Kategoriya</span><strong>{product.category.name}</strong></li>}
+          {product.brand && <li><span><S id="brand" /></span><strong>{product.brand}</strong></li>}
+          {product.model && <li><span><S id="model" /></span><strong>{product.model}</strong></li>}
+          {product.category && <li><span><S id="category" /></span><strong>{product.category.name}</strong></li>}
           {specs.slice(0, 4).map(([k, v], i) => <li key={`${k}-${i}`}><span>{k || "•"}</span><strong>{v}</strong></li>)}
         </ul>
         <div className="muted"><ExpandableText text={product.description} /></div>
@@ -98,51 +92,52 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
       <aside className="shop-buybox" aria-label="Xarid">
         <CurrencySelector />
         <div className={`shop-price${priced ? "" : " is-request"}`} style={{ fontSize: "1.6rem" }}>
-          {priced ? <CurrencyPrice amountMinor={product.priceMinor!} currency={product.currency} /> : "Narx so‘rov bo‘yicha"}
+          {priced ? <CurrencyPrice amountMinor={product.priceMinor!} currency={product.currency} /> : <S id="priceRequest" />}
         </div>
-        <span className={`shop-stock ${product.stockStatus === "IN_STOCK" ? "in" : product.stockStatus === "OUT_OF_STOCK" ? "out" : "req"}`}>{stockLabels[product.stockStatus] ?? "Noma’lum"}</span>
+        <span className={`shop-stock ${product.stockStatus === "IN_STOCK" ? "in" : product.stockStatus === "OUT_OF_STOCK" ? "out" : "req"}`}><S id={product.stockStatus === "IN_STOCK" ? "IN_STOCK" : product.stockStatus === "ON_REQUEST" ? "ON_REQUEST" : product.stockStatus === "OUT_OF_STOCK" ? "OUT_OF_STOCK" : "UNKNOWN"} /></span>
         <AddToCartButton product={{ productId: product.id, name: product.name, slug: product.slug, categorySlug: product.category?.slug ?? null }} disabled={product.stockStatus === "OUT_OF_STOCK"} />
-        <Link className="button ghost" href="/request-quote">Texnik taklif so‘rash</Link>
+        <CompareButton product={{ id: product.id, name: product.name, category: product.category?.slug ?? "" }} />
+        <Link className="button ghost" href={inquiryHref(product.name)}><S id="quote" /></Link>
       </aside>
     </div>
 
     <ProductDetailTabs tabs={[
       {
         id: "description",
-        label: "Tavsif",
+        label: <S id="description" />,
         content: <section>
-          <h2>Mahsulot tavsifi</h2>
+          <h2><S id="description" /></h2>
           <ExpandableText text={product.description} />
         </section>
       },
       {
         id: "specs",
-        label: "Xususiyatlar",
+        label: <S id="specs" />,
         content: <section>
-          <h2>Xususiyatlari</h2>
+          <h2><S id="specs" /></h2>
           <CollapsibleSpecs rows={detailSpecs} />
         </section>
       },
       {
         id: "reviews",
-        label: "Sharhlar",
+        label: <S id="reviews" />,
         count: reviews.length,
         content: <section>
-          <h2>Xaridorlar sharhlari</h2>
+          <h2><S id="reviews" /></h2>
           <div className="shop-reviews-head">
-            <div className="shop-score"><strong>{reviews.length ? average.toFixed(1) : "—"}</strong><Stars value={average} /><span className="muted small">{reviews.length} ta sharh</span></div>
+            <div className="shop-score"><strong>{reviews.length ? average.toFixed(1) : "—"}</strong><Stars value={average} /><span className="muted small">{reviews.length} <S id="reviews" /></span></div>
             <div className="shop-dist">
               {distribution.map(({ n, count }) => <div key={n}><span>{n} ★</span><div className="shop-bar"><i style={{ width: `${reviews.length ? (count / reviews.length) * 100 : 0}%` }} /></div><span>{count}</span></div>)}
             </div>
           </div>
           {isCustomer && canReview && !alreadyReviewed && <ReviewForm productId={product.id} />}
-          {isCustomer && !canReview && <p className="small muted">Sharhni mahsulotni olgan (yetkazib berilgan) mijozlar qoldira oladi.</p>}
-          {!user && <p className="small muted"><Link href="/login">Kiring</Link> — buyurtma yetkazilgach sharh qoldirishingiz mumkin.</p>}
-          {reviews.length === 0 ? <p className="muted">Hozircha sharhlar yo‘q.</p> : <div className="shop-review-list">
+          {isCustomer && !canReview && <p className="small muted"><S id="reviewNote" /></p>}
+          {!user && <p className="small muted"><Link href={`/login?next=${encodeURIComponent(`/products/${product.slug}`)}`}><S id="signInReview" /></Link></p>}
+          {reviews.length === 0 ? <p className="muted"><S id="noReviews" /></p> : <div className="shop-review-list">
             {reviews.map((r) => <article key={r.id} className="shop-review">
               <header><strong>{maskName(r.user.name)}</strong><Stars value={r.rating} /><span className="muted small">{r.createdAt.toLocaleDateString("uz-UZ")}</span><span className="shop-verified">Xarid qilgan</span></header>
-              {r.pros && <p><b>Afzalliklari:</b> {r.pros}</p>}
-              {r.cons && <p><b>Kamchiliklari:</b> {r.cons}</p>}
+              {r.pros && <p><b><S id="pros" />:</b> {r.pros}</p>}
+              {r.cons && <p><b><S id="cons" />:</b> {r.cons}</p>}
               <p>{r.comment}</p>
             </article>)}
           </div>}
@@ -150,15 +145,15 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
       }
     ]} />
 
+    <ProductGuidance name={product.name} warranty={product.warrantyDescription} />
     {related.length > 0 && <section className="shop-section">
-      <h2>O‘xshash mahsulotlar</h2>
+      <h2><S id="related" /></h2>
       <div className="shop-grid" style={{ marginTop: 14 }}>
         {related.map((r) => <Link key={r.id} className="shop-card" href={`/products/${r.slug}`}>
-          <ProductVisual categorySlug={product.category?.slug} />
-          <div className="shop-card-body"><h2>{r.name}</h2><span className="shop-price">{r.priceMinor === null ? "Narx so‘rov bo‘yicha" : <CurrencyPrice amountMinor={r.priceMinor} currency={r.currency} />}</span></div>
+          <ProductMedia assets={getMedia(r.media)} title={r.name} slug={r.slug} categorySlug={r.category?.slug} />
+          <div className="shop-card-body"><h2>{r.name}</h2><span className="shop-price">{r.priceMinor === null ? <S id="priceRequest" /> : <CurrencyPrice amountMinor={r.priceMinor} currency={r.currency} />}</span></div>
         </Link>)}
       </div>
     </section>}
-    <CartFab />
   </div>;
 }

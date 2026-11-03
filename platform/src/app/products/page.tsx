@@ -1,180 +1,139 @@
-import { AddToCartButton, CartFab } from "@/components/cart";
-import { FilterPanel } from "@/components/filter-panel";
-import { ProductVisual } from "@/components/product-visual";
-import { MediaGallery } from "@/components/media-uploader";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { catalogMedia } from "@/lib/catalog-media";
+import { detailRows, priceBound, specificationFilter } from "@/lib/catalog-utils";
+import { AddToCartButton } from "@/components/cart";
+import { FilterPanel } from "@/components/filter-panel";
+import { ProductMedia } from "@/components/product-media";
+import { CompareButton, CompareTray } from "@/components/product-compare";
+import { ShopText as S, ShopSearchInput } from "@/components/shop-text";
 import { CurrencyPrice, CurrencySelector } from "@/components/currency-context";
+import type { ShopKey } from "@/lib/shop-copy";
 
 export const dynamic = "force-dynamic";
-
 const PAGE_SIZE = 12;
-const NEW_DAYS = 30;
-const sorts: Record<string, { label: string; order: Prisma.ProductOrderByWithRelationInput[] }> = {
-  name: { label: "Nomi bo‘yicha", order: [{ name: "asc" }] },
-  new: { label: "Yangilari", order: [{ createdAt: "desc" }] },
-  priceAsc: { label: "Narx: arzondan", order: [{ priceMinor: { sort: "asc", nulls: "last" } }, { name: "asc" }] },
-  priceDesc: { label: "Narx: qimmatdan", order: [{ priceMinor: { sort: "desc", nulls: "last" } }, { name: "asc" }] }
+const sorts: Record<string, Prisma.ProductOrderByWithRelationInput[]> = {
+  name: [{ name: "asc" }, { id: "asc" }],
+  new: [{ createdAt: "desc" }, { id: "asc" }],
+  priceAsc: [{ priceMinor: { sort: "asc", nulls: "last" } }, { id: "asc" }],
+  priceDesc: [{ priceMinor: { sort: "desc", nulls: "last" } }, { id: "asc" }]
 };
-const stockLabels: Record<string, string> = { IN_STOCK: "Omborda bor", ON_REQUEST: "So‘rov bo‘yicha", OUT_OF_STOCK: "Omborda yo‘q" };
-
-type Search = { q?: string; category?: string; brand?: string; stock?: string; sort?: string; page?: string };
-
-function build(params: Search, patch: Partial<Search> = {}) {
-  const sp = new URLSearchParams();
-  for (const [k, v] of Object.entries({ ...params, ...patch })) if (v) sp.set(k, v);
-  const s = sp.toString();
-  return s ? `/products?${s}` : "/products";
+const stocks = ["IN_STOCK", "ON_REQUEST", "OUT_OF_STOCK", "UNKNOWN"] as const;
+type Search = Partial<Record<"q" | "category" | "brand" | "stock" | "sort" | "page" | "min" | "max" | "currency" | "spec", string>>;
+function build(params: Search, patch: Search = {}) {
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries({ ...params, ...patch })) if (value) query.set(key, value);
+  return `/products${query.size ? `?${query}` : ""}`;
 }
 
-function stockClass(status: string) {
-  return status === "IN_STOCK" ? "in" : status === "OUT_OF_STOCK" ? "out" : "req";
-}
-
-export default async function ProductsPage({ searchParams }: { searchParams: Promise<Search> }) {
-  const sp = await searchParams;
-  const q = sp.q?.trim().slice(0, 80) || undefined;
-  const sort = sp.sort && sorts[sp.sort] ? sp.sort : "name";
+export default async function ProductsPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const raw = await searchParams;
+  const str = (key: string) => typeof raw[key] === "string" ? raw[key].trim().slice(0, key === "spec" ? 1200 : 100) || undefined : undefined;
+  const sp: Search = { q: str("q"), category: str("category"), brand: str("brand"), stock: str("stock"), sort: str("sort"), page: str("page"), min: str("min"), max: str("max"), currency: str("currency"), spec: str("spec") };
+  const sort = sp.sort && Object.hasOwn(sorts, sp.sort) ? sp.sort : "name";
+  const stock = stocks.find(value => value === sp.stock);
   const page = Math.max(1, Math.min(Number.parseInt(sp.page ?? "1", 10) || 1, 1000));
-  const stock = sp.stock && stockLabels[sp.stock] ? sp.stock : undefined;
-  const current: Search = { q, category: sp.category, brand: sp.brand, stock, sort: sp.sort };
-
+  const currency = sp.currency && /^[A-Z]{3}$/.test(sp.currency) ? sp.currency : "UZS";
+  const min = priceBound(sp.min);
+  const max = priceBound(sp.max);
+  const invalidPrice = (Boolean(sp.min) && min === undefined) || (Boolean(sp.max) && max === undefined) || (min !== undefined && max !== undefined && min > max);
+  const usePrice = !invalidPrice && (min !== undefined || max !== undefined || sort.startsWith("price"));
+  const spec = sp.category ? specificationFilter(sp.spec) : null;
+  const current: Search = { ...sp, page: undefined, stock, sort, currency };
   const where: Prisma.ProductWhereInput = {
     status: "PUBLISHED",
     ...(sp.category ? { category: { slug: sp.category } } : {}),
     ...(sp.brand ? { brand: sp.brand } : {}),
     ...(stock ? { stockStatus: stock } : {}),
-    ...(q ? { OR: [
-      { name: { contains: q, mode: "insensitive" } },
-      { description: { contains: q, mode: "insensitive" } },
-      { brand: { contains: q, mode: "insensitive" } },
-      { model: { contains: q, mode: "insensitive" } },
-      { sku: { contains: q, mode: "insensitive" } }
-    ] } : {})
+    ...(usePrice ? { currency, priceMinor: { ...(min !== undefined ? { gte: min } : {}), ...(max !== undefined ? { lte: max } : {}) } } : {}),
+    ...(spec ? { specifications: { path: [spec.key], equals: spec.value } } : {}),
+    ...(sp.q ? { OR: ["name", "description", "brand", "model", "sku"].map(key => ({ [key]: { contains: sp.q, mode: "insensitive" } })) } : {})
   };
-
-  const [products, total, allCount, categories, brands] = await Promise.all([
-    prisma.product.findMany({
-      where,
-      select: { id: true, name: true, slug: true, description: true, brand: true, model: true, priceMinor: true, currency: true, stockStatus: true, createdAt: true, media: true, category: { select: { name: true, slug: true } } },
-      orderBy: sorts[sort].order,
-      skip: (page - 1) * PAGE_SIZE,
-      take: PAGE_SIZE
-    }),
+  const [products, total, categories, brands, currencies, categorySpecs] = await Promise.all([
+    prisma.product.findMany({ where, include: { category: { select: { name: true, slug: true } } }, orderBy: sorts[sort], skip: (page - 1) * PAGE_SIZE, take: PAGE_SIZE }),
     prisma.product.count({ where }),
-    prisma.product.count({ where: { status: "PUBLISHED" } }),
-    prisma.productCategory.findMany({ where: { products: { some: { status: "PUBLISHED" } } }, select: { name: true, slug: true, _count: { select: { products: { where: { status: "PUBLISHED" } } } } }, orderBy: { name: "asc" } }),
-    prisma.product.groupBy({ by: ["brand"], where: { status: "PUBLISHED", brand: { not: null } }, _count: { _all: true }, orderBy: { brand: "asc" } })
+    prisma.productCategory.findMany({ where: { products: { some: { status: "PUBLISHED" } } }, select: { name: true, slug: true }, orderBy: { name: "asc" } }),
+    prisma.product.groupBy({ by: ["brand"], where: { status: "PUBLISHED", brand: { not: null }, ...(sp.category ? { category: { slug: sp.category } } : {}) }, orderBy: { brand: "asc" } }),
+    prisma.product.groupBy({ by: ["currency"], where: { status: "PUBLISHED" }, orderBy: { currency: "asc" } }),
+    sp.category ? prisma.product.findMany({ where: { status: "PUBLISHED", category: { slug: sp.category } }, select: { specifications: true } }) : []
   ]);
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-  const ratingRows = await prisma.productReview.groupBy({ by: ["productId"], where: { productId: { in: products.map((p) => p.id) } }, _avg: { rating: true }, _count: { _all: true } });
-  const ratings = new Map(ratingRows.map((r) => [r.productId, { avg: r._avg.rating ?? 0, count: r._count._all }]));
-  const activeCategory = categories.find((c) => c.slug === sp.category);
+  if (page > pages) redirect(build(current, { page: String(pages) }));
+  const getMedia = await catalogMedia(products);
+  const specOptions = new Map<string, string>();
+  for (const product of categorySpecs) {
+    if (!product.specifications || typeof product.specifications !== "object" || Array.isArray(product.specifications)) continue;
+    for (const [key, value] of Object.entries(product.specifications)) {
+      if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") specOptions.set(JSON.stringify([key, value]), `${key}: ${value}`);
+    }
+  }
   const activeFilters = [
-    q && { label: `“${q}”`, href: build(current, { q: undefined, page: undefined }) },
-    activeCategory && { label: activeCategory.name, href: build(current, { category: undefined }) },
-    sp.brand && { label: sp.brand, href: build(current, { brand: undefined }) },
-    stock && { label: stockLabels[stock], href: build(current, { stock: undefined }) }
-  ].filter(Boolean) as { label: string; href: string }[];
-  const newSince = Date.now() - NEW_DAYS * 86400000;
-
+    sp.q ? { label: sp.q, patch: { q: undefined } } : null,
+    sp.category ? { label: categories.find(category => category.slug === sp.category)?.name ?? sp.category, patch: { category: undefined, spec: undefined } } : null,
+    sp.brand ? { label: sp.brand, patch: { brand: undefined } } : null,
+    stock ? { label: <S id={stock} />, patch: { stock: undefined } } : null,
+    usePrice ? { label: `${sp.min || "0"} – ${sp.max || "∞"} ${currency}`, patch: { min: undefined, max: undefined, sort: "name" } } : null,
+    spec ? { label: `${spec.key}: ${spec.value}`, patch: { spec: undefined } } : null
+  ].filter(item => item !== null);
   return <div className="container page-shell">
+    <header className="shop-heading"><span className="eyebrow">Tecsecure</span><h1 className="page-title"><S id="title" /></h1><p><S id="intro" /></p></header>
     <section className="shop-hero">
       <form method="get" action="/products" role="search" className="shop-search">
-        {sp.category && <input type="hidden" name="category" value={sp.category} />}
-        <input name="q" defaultValue={q ?? ""} placeholder="Mahsulot qidirish…" aria-label="Qidiruv" maxLength={80} />
-        <button className="button shop-search-submit" type="submit" aria-label="Qidirish" title="Qidirish">
-          <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8" /><path d="m16 16 4.5 4.5" /></svg>
-        </button>
-      </form>
-      <CurrencySelector />
+        {Object.entries(current).filter(([key, value]) => key !== "q" && key !== "page" && value).map(([key, value]) => <input type="hidden" name={key} value={value} key={key} />)}
+        <label className="sr-only" htmlFor="shop-search"><S id="search" /></label>
+        <ShopSearchInput key={sp.q ?? ""} value={sp.q} />
+        <button className="button" type="submit"><S id="searchAction" /></button>
+      </form><CurrencySelector />
     </section>
-
-    <FilterPanel
-      activeCount={activeFilters.length}
-      categories={<nav className="shop-cats" aria-label="Kategoriyalar">
-        <Link className={`shop-chip${!sp.category ? " is-active" : ""}`} href={build(current, { category: undefined, page: undefined })}>Hammasi <small>{allCount}</small></Link>
-        {categories.map((c) => <Link key={c.slug} className={`shop-chip${sp.category === c.slug ? " is-active" : ""}`} href={build(current, { category: c.slug, page: undefined })}>{c.name} <small>{c._count.products}</small></Link>)}
+    <CompareTray />
+    {invalidPrice && <p role="alert" className="shop-price-notice"><S id="priceFrom" /> ≤ <S id="priceTo" />. 0 – 20 000 000. <Link href={build(current, { min: undefined, max: undefined })}><S id="clear" /></Link></p>}
+    {sp.spec && !spec && <p role="alert" className="shop-price-notice"><S id="specHint" /> <Link href={build(current, { spec: undefined })}><S id="clear" /></Link></p>}
+    <FilterPanel activeCount={activeFilters.length}
+      categories={<nav className="shop-cats" aria-label="Categories">
+        <Link className={`shop-chip${!sp.category ? " is-active" : ""}`} href={build(current, { category: undefined, spec: undefined, brand: undefined })}><S id="all" /></Link>
+        {categories.map(category => <Link className={`shop-chip${category.slug === sp.category ? " is-active" : ""}`} href={build(current, { category: category.slug, brand: undefined, spec: undefined })} key={category.slug}>{category.name}</Link>)}
       </nav>}
-      results={<section aria-live="polite" aria-label="Mahsulotlar">
-        {activeFilters.length > 0 && <div className="shop-active">
-          {activeFilters.map((f) => <Link key={f.label} className="shop-chip is-active removable" href={f.href}>{f.label}</Link>)}
-        </div>}
-
-        {products.length ? <div className="shop-grid">
-          {products.map((product) => {
-            const isNew = product.createdAt.getTime() > newSince;
-            return <article className="shop-card" key={product.id}>
-              <Link className="shop-card-media" href={`/products/${product.slug}`} aria-label={product.name}>
-                <div className="shop-badges">
-                  {isNew && <span className="shop-badge new">Yangi</span>}
-                  {product.stockStatus === "IN_STOCK" && <span className="shop-badge ok">Omborda</span>}
-                  {product.stockStatus === "OUT_OF_STOCK" && <span className="shop-badge warn">Tugagan</span>}
-                </div>
-                {Array.isArray(product.media) && product.media.length > 0
-                  ? <MediaGallery media={product.media} title={product.name} variant="product-card" firstOnly />
-                  : <ProductVisual categorySlug={product.category?.slug} />}
-              </Link>
-              <div className="shop-card-body">
-                <span className="shop-card-cat">{[product.category?.name, product.brand].filter(Boolean).join(" · ") || "Tecsecure"}</span>
-                <h2><Link href={`/products/${product.slug}`}>{product.name}</Link></h2>
-                {product.model && <span className="small muted">Model: {product.model}</span>}
-                {ratings.get(product.id) && <span className="small"><span style={{ color: "#f5b301" }}>★</span> {ratings.get(product.id)!.avg.toFixed(1)} <span className="muted">({ratings.get(product.id)!.count} sharh)</span></span>}
-                <p className="shop-card-desc">{product.description}</p>
-                <div className="shop-card-foot">
-                  <div>
-                    <div className={`shop-price${product.priceMinor === null ? " is-request" : ""}`}>
-                      {product.priceMinor === null ? "Narx so‘rov bo‘yicha" : <CurrencyPrice amountMinor={product.priceMinor} currency={product.currency} />}
-                    </div>
-                    <span className={`shop-stock ${stockClass(product.stockStatus)}`}>{stockLabels[product.stockStatus] ?? "Noma’lum"}</span>
-                  </div>
-                  <AddToCartButton product={{ productId: product.id, name: product.name, slug: product.slug, categorySlug: product.category?.slug ?? null }} disabled={product.stockStatus === "OUT_OF_STOCK"} />
-                </div>
-              </div>
-            </article>;
-          })}
-        </div> : <div className="empty-state">
-          <p><strong>Hech narsa topilmadi.</strong></p>
-          <p>Boshqa so‘z bilan qidiring yoki filtrlarni tozalang. Kerakli uskuna ro‘yxatda yo‘q bo‘lsa, <Link href="/request-quote" style={{ color: "var(--accent)" }}>taklif so‘rang</Link>.</p>
-          {activeFilters.length > 0 && <Link className="button" href="/products">Filtrlarni tozalash</Link>}
-        </div>}
-
-        {pages > 1 && <nav className="shop-pager" aria-label="Sahifalar">
-          {page > 1 ? <Link className="button secondary" href={build(current, { page: String(page - 1) })}>← Oldingi</Link> : <span />}
-          <span className="small muted">{page} / {pages}</span>
-          {page < pages ? <Link className="button secondary" href={build(current, { page: String(page + 1) })}>Keyingi →</Link> : <span />}
-        </nav>}
-      </section>}
-    >
-        <form method="get" action="/products">
-          <h2>Filtrlar</h2>
-          {q && <input type="hidden" name="q" value={q} />}
-          {sp.category && <input type="hidden" name="category" value={sp.category} />}
-          {sp.sort && <input type="hidden" name="sort" value={sp.sort} />}
-          <details open>
-            <summary>Mavjudlik</summary>
-            <div className="opts">
-              <label><input type="radio" name="stock" value="" defaultChecked={!stock} /> Hammasi</label>
-              {Object.entries(stockLabels).map(([value, label]) => <label key={value}><input type="radio" name="stock" value={value} defaultChecked={stock === value} /> {label}</label>)}
+      results={<section>
+        <p className="shop-result-count" role="status"><S id="found" />: {total}</p>
+        {activeFilters.length > 0 && <div className="shop-active">{activeFilters.map((filter, index) => <Link className="shop-chip is-active removable" key={index} href={build(current, filter.patch)}>{filter.label}<span className="sr-only"> — <S id="remove" /></span></Link>)}<Link className="shop-chip" href="/products"><S id="clear" /></Link></div>}
+        {products.length > 0 ? <div className="shop-grid">{products.map(product => <article className="shop-card" key={product.id}>
+          <Link className="shop-card-media" href={`/products/${product.slug}`} aria-label={product.name}>
+            <div className="shop-badges">{product.stockStatus === "IN_STOCK" && <span className="shop-badge ok"><S id="IN_STOCK" /></span>}{product.stockStatus === "OUT_OF_STOCK" && <span className="shop-badge warn"><S id="OUT_OF_STOCK" /></span>}</div>
+            <ProductMedia assets={getMedia(product.media)} title={product.name} slug={product.slug} categorySlug={product.category?.slug} />
+          </Link>
+          <div className="shop-card-body">
+            <span className="shop-card-cat">{[product.category?.name, product.brand].filter(Boolean).join(" · ") || "Tecsecure"}</span>
+            <h2><Link href={`/products/${product.slug}`}>{product.name}</Link></h2>
+            {product.model && <span className="small muted"><S id="model" />: {product.model}</span>}
+            <p className="shop-card-desc">{detailRows(product.specifications).slice(0, 3).map(([key, value]) => `${key}: ${value}`).join(" · ") || product.description}</p>
+            <div className="shop-card-foot">
+              <div><div className="shop-price">{product.priceMinor === null ? <S id="priceRequest" /> : <CurrencyPrice amountMinor={product.priceMinor} currency={product.currency} />}</div><span className={`shop-stock ${product.stockStatus === "IN_STOCK" ? "in" : product.stockStatus === "OUT_OF_STOCK" ? "out" : "req"}`}><S id={stocks.find(stock => stock === product.stockStatus) ?? "UNKNOWN"} /></span></div>
+              <AddToCartButton product={{ productId: product.id, name: product.name, slug: product.slug, categorySlug: product.category?.slug }} disabled={product.stockStatus === "OUT_OF_STOCK"} />
+              <CompareButton product={{ id: product.id, name: product.name, category: product.category?.slug ?? "" }} />
             </div>
-          </details>
-          {brands.length > 0 && <details open>
-            <summary>Brend</summary>
-            <div className="opts">
-              <label><input type="radio" name="brand" value="" defaultChecked={!sp.brand} /> Hammasi</label>
-              {brands.map((b) => <label key={b.brand}><input type="radio" name="brand" value={b.brand ?? ""} defaultChecked={sp.brand === b.brand} /> {b.brand} <small>{b._count._all}</small></label>)}
-            </div>
-          </details>}
-        </form>
-        {activeFilters.length > 0 && <Link className="shop-filter-clear" href="/products">Hammasini tozalash</Link>}
-        <nav className="shop-filter-sort" aria-label="Saralash">
-          <strong>Saralash</strong>
-          <div className="shop-filter-sort-options">
-            {Object.entries(sorts).map(([key, item]) => <Link key={key} className={sort === key ? "is-active" : ""} aria-current={sort === key ? "page" : undefined} href={build(current, { sort: key === "name" ? undefined : key, page: undefined })}>{item.label}</Link>)}
           </div>
-        </nav>
+        </article>)}</div> : <div className="empty-state"><h2><S id="empty" /></h2><p><S id="emptyHint" /></p><div className="journey-actions"><Link className="button secondary" href="/products"><S id="clear" /></Link><Link href="/contact" className="text-link"><S id="quote" /></Link></div></div>}
+        {pages > 1 && <nav className="shop-pager" aria-label="Pagination">
+          {page > 1 && <Link className="button secondary" href={build(current, { page: String(page - 1) })}>←</Link>}<span>{page} / {pages}</span>
+          {page < pages && <Link className="button secondary" href={build(current, { page: String(page + 1) })}>→</Link>}
+        </nav>}
+      </section>}>
+      <form action="/products" method="get" key={JSON.stringify(current)}>
+        <h2><S id="filter" /></h2>
+        {sp.q && <input type="hidden" name="q" value={sp.q} />}{sp.category && <input type="hidden" name="category" value={sp.category} />}
+        <label className="field"><span><S id="stock" /></span><select name="stock" defaultValue={stock ?? ""}><option value=""><S id="all" /></option>{stocks.map(value => <option value={value} key={value}><S id={value} /></option>)}</select></label>
+        <label className="field"><span><S id="brand" /></span><select name="brand" defaultValue={sp.brand ?? ""}><option value=""><S id="all" /></option>{brands.map(({ brand }) => <option key={brand} value={brand ?? ""}>{brand}</option>)}</select></label>
+        <label className="field"><span><S id="sort" /></span><select name="sort" defaultValue={sort}>{Object.keys(sorts).map(key => <option value={key} key={key}><S id={key as ShopKey} /></option>)}</select></label>
+        <label className="field"><span><S id="currency" /></span><select name="currency" defaultValue={currency}>{[...new Set(["UZS", ...currencies.map(item => item.currency)])].map(value => <option key={value}>{value}</option>)}</select></label>
+        <label className="field"><span><S id="priceFrom" /></span><input type="number" name="min" min="0" max="20000000" step="0.01" inputMode="decimal" defaultValue={sp.min ?? ""} /></label>
+        <label className="field"><span><S id="priceTo" /></span><input type="number" name="max" min="0" max="20000000" step="0.01" inputMode="decimal" defaultValue={sp.max ?? ""} /></label>
+        {specOptions.size > 0 && <label className="field"><span><S id="specsFilter" /></span><select name="spec" defaultValue={sp.spec ?? ""}><option value=""><S id="anySpec" /></option>{[...specOptions].map(([value, text]) => <option key={value} value={value}>{text}</option>)}</select></label>}
+        <p className="small muted"><S id="priceNote" /></p>
+        <button type="submit" className="button"><S id="apply" /></button>
+        <Link className="shop-filter-clear" href="/products"><S id="clear" /></Link>
+      </form>
     </FilterPanel>
-    <CartFab />
   </div>;
 }

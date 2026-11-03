@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "./journeys.css";
 import { SiteNav } from "@/components/site-nav";
 import { PageBackLink } from "@/components/page-back-link";
 import { FontLoader } from "@/components/font-loader";
@@ -15,10 +16,11 @@ import { isPreviewMode } from "@/lib/preview-mode";
 import { ServiceWorkerRegistration } from "@/components/service-worker-registration";
 import { ToastProvider } from "@/components/toast-provider";
 import { CurrencyProvider } from "@/components/currency-context";
+import { ProductCompareProvider } from "@/components/product-compare";
 
 export const metadata: Metadata = {
   title: "Tecsecure — IT va xavfsizlik yechimlari",
-  description: "IT infratuzilma, jismoniy xavfsizlik va texnik xizmatlar.",
+  description: "IT va xavfsizlik xizmatlari, amaliy ta’lim va uskunalar do‘koni — bitta Tecsecure platformasida.",
   robots: { index: true, follow: true },
   applicationName: "Tecsecure",
   manifest: "/manifest.webmanifest",
@@ -72,11 +74,13 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
           <CurrencyProvider>
             <ToastProvider>
               <LearningCatalogProvider data={learningCatalog}>
+                <ProductCompareProvider>
                 <SiteNav />
                 <PageBackLink />
-                <main>{children}</main>
+                <main id="main-content" tabIndex={-1}>{children}</main>
                 <SiteBlocksRenderer blocks={siteBlocks} />
                 <SiteFooter />
+                </ProductCompareProvider>
               </LearningCatalogProvider>
             </ToastProvider>
           </CurrencyProvider>

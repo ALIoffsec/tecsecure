@@ -9,7 +9,7 @@ const flow: OrderStatusValue[] = ["NEW", "CONFIRMED", "PREPARING", "SHIPPED", "D
 const icons = ["1", "2", "3", "4", "✓"];
 
 export default async function PortalOrdersPage() {
-  const user = await requireUser();
+  const user = await requireUser("/portal/orders");
   const orders = await prisma.order.findMany({
     where: { customerId: user.id },
     include: { items: true, history: { orderBy: { createdAt: "asc" } } },

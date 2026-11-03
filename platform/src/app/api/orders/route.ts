@@ -4,6 +4,7 @@ import { mergeItems, orderSchema } from "@/lib/orders";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { escapeTelegramHtml, notifyTelegramAdmins } from "@/lib/telegram";
+import { pricesMatch } from "@/lib/catalog-utils";
 
 export const runtime = "nodejs";
 
@@ -41,6 +42,9 @@ export async function POST(request: Request) {
   const byId = new Map(products.map((product) => [product.id, product]));
   if (merged.some((item) => byId.get(item.productId)?.stockStatus === "OUT_OF_STOCK")) {
     return Response.json({ error: "Savatdagi ba’zi mahsulotlar omborda yo‘q." }, { status: 400 });
+  }
+  if (parsed.data.expectedProducts && !pricesMatch(parsed.data.expectedProducts, products)) {
+    return Response.json({ error: "Narx yoki mavjudlik o‘zgargan. Savatni yangilab, qayta tekshiring.", code: "CATALOG_CHANGED" }, { status: 409 });
   }
 
   // Prices always come from the database, never from the client.

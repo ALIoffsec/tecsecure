@@ -25,18 +25,37 @@ export const serviceSchema = z.object({
 });
 
 export const requestSchema = z.object({
-  name: z.string().trim().min(2).max(100),
-  phone: z.string().trim().min(7).max(30),
+  mode: z.enum(["detailed", "callback"]).default("detailed"),
+  topic: z.string().trim().max(160).optional(),
+  name: z.string().trim().max(100).optional().default(""),
+  phone: z.string().trim().min(7).max(30).refine(value =>
+    /^\+?[\d ()-]+$/.test(value) && value.replace(/\D/g, "").length >= 7 && value.replace(/\D/g, "").length <= 15,
+    "Telefon raqamini mamlakat kodi bilan kiriting."),
   email: z.string().trim().email().max(254).optional().or(z.literal("")),
   organizationName: z.string().trim().max(160).optional(),
   city: z.string().trim().max(100).optional(),
   location: z.string().trim().max(500).optional(),
   serviceId: z.string().cuid().optional().or(z.literal("")),
-  description: z.string().trim().min(5).max(5000),
+  description: z.string().trim().max(5000).optional().default(""),
   budgetRange: z.string().trim().max(100).optional(),
   preferredContactTime: z.string().trim().max(120).optional(),
   consent: z.literal(true)
-});
+}).superRefine((request, context) => {
+  if ((request.mode === "detailed" || request.name.length > 0) && request.name.length < 2) {
+    context.addIssue({ code: "custom", path: ["name"], message: "Ism kamida 2 belgidan iborat bo‘lsin." });
+  }
+  if (request.mode === "detailed" && request.description.length < 5) {
+    context.addIssue({ code: "custom", path: ["description"], message: "Vazifani kamida 5 belgi bilan yozing." });
+  }
+}).transform(request => ({
+  ...request,
+  name: request.name || "Ism ko‘rsatilmagan (qayta qo‘ng‘iroq)",
+  description: [
+    request.mode === "callback" ? "Qayta qo‘ng‘iroq so‘rovi." : "",
+    request.topic ? `Yo‘nalish: ${request.topic}` : "",
+    request.description
+  ].filter(Boolean).join("\n")
+}));
 
 export const productSchema = z.object({
   name: z.string().trim().min(2).max(160),

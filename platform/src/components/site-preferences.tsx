@@ -3,6 +3,7 @@
 import { createContext, ReactNode, useContext, useEffect, useMemo, useState } from "react";
 import { Locale, MessageKey, messages } from "@/lib/messages";
 import Link from "next/link";
+import { journeyCopy } from "@/lib/journey-copy";
 
 type ThemeMode = "light" | "dark" | "system";
 type TextOverrides = Partial<Record<Locale, Partial<Record<MessageKey, string>>>>;
@@ -127,9 +128,14 @@ export function useSitePreferences() {
 }
 
 export function SiteFooter() {
-  const { t, openCookieSettings } = useSitePreferences();
+  const { t, locale, openCookieSettings } = useSitePreferences();
+  const c = journeyCopy[locale];
   return (
     <footer className="footer">
+      <nav className="container footer-paths" aria-label={c.eyebrow}>
+        <Link href="/services">{c.services}</Link><Link href="/learning">{c.learning}</Link><Link href="/products">{c.shop}</Link>
+        <Link href="/contact">{t("contact")}</Link><Link href="/terms">{c.delivery}</Link><Link href="/search">{c.search}</Link>
+      </nav>
       <div className="container footer-inner">
         <span>© {new Date().getFullYear()} Tecsecure</span>
         <span>{t("footerTagline")}</span>

@@ -38,6 +38,12 @@ export const orderSchema = z.object({
   latitude: z.number().min(37).max(46).nullable().optional(),
   longitude: z.number().min(55).max(74).nullable().optional(),
   note: z.string().trim().max(500).optional(),
+  expectedProducts: z.array(z.object({
+    id: z.string().cuid(),
+    priceMinor: z.number().int().nonnegative().nullable(),
+    currency: z.string().length(3),
+    stockStatus: z.enum(["IN_STOCK", "ON_REQUEST", "OUT_OF_STOCK", "UNKNOWN"])
+  })).max(50).optional(),
   items: z
     .array(z.object({ productId: z.string().min(1).max(40), quantity: z.number().int().min(1).max(999) }))
     .min(1)

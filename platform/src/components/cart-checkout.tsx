@@ -1,31 +1,72 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { DeliveryMap } from "@/components/delivery-map";
 import { clearCart, setQuantity, useCart } from "@/components/cart";
-import { ProductVisual } from "@/components/product-visual";
+import { ProductMedia } from "@/components/product-media";
 import { ToastMessage } from "@/components/toast-provider";
+import { CurrencyPrice } from "./currency-context";
+import { useSitePreferences } from "./site-preferences";
+import { shopCopy } from "@/lib/shop-copy";
+import { journeyCopy } from "@/lib/journey-copy";
+import type { CatalogMedia, QuotedProduct } from "@/lib/catalog-utils";
+import { checkoutCopy } from "@/lib/checkout-copy";
+
+type PreviewProduct = QuotedProduct & { name: string; slug: string; category: { slug: string } | null; assets: CatalogMedia[] };
 
 function Steps({ current }: { current: 1 | 2 | 3 }) {
-  const items = ["Savat", "Yetkazib berish", "Tasdiqlash"];
+  const { locale } = useSitePreferences();
+  const items = checkoutCopy[locale].steps;
   return <ol className="shop-steps" aria-label="Bosqichlar">
     {items.map((label, i) => <li key={label} className={i + 1 === current ? "is-active" : i + 1 < current ? "is-done" : ""}><span>{label}</span></li>)}
   </ol>;
 }
 
-export function CartCheckout() {
+export function CartCheckout({ canOrder = false }: { canOrder?: boolean }) {
+  const { locale } = useSitePreferences();
+  const c = shopCopy[locale];
+  const d = checkoutCopy[locale];
+  const journey = journeyCopy[locale];
   const lines = useCart();
   const [form, setForm] = useState({ recipientName: "", phone: "", city: "Toshkent", address: "", note: "" });
   const [coords, setCoords] = useState<[number, number] | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [done, setDone] = useState<string | null>(null);
+  const [preview, setPreview] = useState<PreviewProduct[] | null>(null);
+  const [previewError, setPreviewError] = useState("");
+  const [version, setVersion] = useState(0);
+  const ids = lines.map(line => line.productId).join(",");
+  useEffect(() => {
+    if (!ids) { setPreview(null); return; }
+    const controller = new AbortController();
+    setPreview(null);
+    setPreviewError("");
+    fetch("/api/orders/preview", { method: "POST", headers: { "Content-Type": "application/json" }, signal: controller.signal, body: JSON.stringify({ ids: ids.split(",") }) })
+      .then(async response => {
+        const data = await response.json();
+        if (!response.ok || !Array.isArray(data.products)) throw new Error(data.error ?? journey.mediaError);
+        if (!controller.signal.aborted) setPreview(data.products);
+      }).catch((issue: unknown) => {
+        if (!controller.signal.aborted) setPreviewError(issue instanceof Error ? issue.message : journey.mediaError);
+      });
+    return () => controller.abort();
+  }, [ids, version, journey.mediaError]);
   const update = (key: keyof typeof form) => (e: { target: { value: string } }) => setForm((f) => ({ ...f, [key]: e.target.value }));
   const count = lines.reduce((s, l) => s + l.quantity, 0);
+  const byId = new Map(preview?.map(product => [product.id, product]));
+  const unavailable = preview !== null && lines.some(line => !byId.has(line.productId) || byId.get(line.productId)?.stockStatus === "OUT_OF_STOCK");
+  const subtotals = new Map<string, number>();
+  for (const line of lines) {
+    const product = byId.get(line.productId);
+    if (product && product.priceMinor !== null) subtotals.set(product.currency, (subtotals.get(product.currency) ?? 0) + product.priceMinor * line.quantity);
+  }
+  const unpriced = preview?.some(product => product.priceMinor === null);
 
   async function submit(event: { preventDefault: () => void }) {
     event.preventDefault();
+    if (!canOrder || !preview || unavailable) { setError(c.changed); return; }
     setBusy(true);
     setError("");
     try {
@@ -34,18 +75,19 @@ export function CartCheckout() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,
+          expectedProducts: preview.map(({ id, priceMinor, currency, stockStatus }) => ({ id, priceMinor, currency, stockStatus })),
           latitude: coords?.[0] ?? null,
           longitude: coords?.[1] ?? null,
           items: lines.map((l) => ({ productId: l.productId, quantity: l.quantity }))
         })
       });
       const data = await response.json();
-      if (response.status === 401) { window.location.href = "/login"; return; }
-      if (!response.ok) { setError(data.error ?? "Buyurtma yuborilmadi."); return; }
+      if (response.status === 401) { setError(c.signInOrder); return; }
+      if (!response.ok) { setError(data.code === "CATALOG_CHANGED" ? c.changed : data.error ?? d.fail); if (response.status === 409) setVersion(value => value + 1); return; }
       clearCart();
       setDone(data.order.reference);
     } catch {
-      setError("Tarmoq xatosi. Qayta urinib ko‘ring.");
+      setError(d.network);
     } finally {
       setBusy(false);
     }
@@ -56,80 +98,89 @@ export function CartCheckout() {
       <Steps current={3} />
       <div className="panel-card stack" style={{ textAlign: "center", justifyItems: "center", padding: 40 }}>
         <div className="order-status is-done" style={{ fontSize: "1.4rem", padding: "10px 18px" }}>✓</div>
-        <h2>Buyurtma qabul qilindi</h2>
-        <p>Buyurtma raqami: <strong>{done}</strong></p>
-        <p className="muted" style={{ maxWidth: 460 }}>Xodimlarimiz narx va mavjudlikni tasdiqlab, siz bilan bog‘lanadi. Holatni buyurtmalar sahifasida kuzatishingiz mumkin.</p>
+        <h2>{d.accepted}</h2>
+        <p>{d.reference}: <strong>{done}</strong></p>
+        <p className="muted" style={{ maxWidth: 460 }}>{d.nextStep}</p>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center" }}>
-          <Link className="button" href="/portal/orders">Buyurtmani kuzatish</Link>
-          <Link className="button ghost" href="/products">Xaridni davom ettirish</Link>
+          <Link className="button" href="/portal/orders">{d.track}</Link>
+          <Link className="button ghost" href="/products">{d.continue}</Link>
         </div>
       </div>
     </>;
   }
   if (lines.length === 0) {
     return <div className="empty-state" style={{ textAlign: "center", padding: 48 }}>
-      <p><strong>Savat bo‘sh</strong></p>
-      <p>Katalogdan kerakli uskunalarni tanlang.</p>
-      <Link className="button" href="/products">Katalogga o‘tish</Link>
+      <p><strong>{d.empty}</strong></p>
+      <p>{d.emptyHint}</p>
+      <Link className="button" href="/products">{c.back}</Link>
     </div>;
   }
   return <>
     <Steps current={coords || form.recipientName || form.address ? 2 : 1} />
+    {!canOrder && <div className="shop-price-notice"><p>{c.signInOrder}</p><Link className="button" href="/login?next=%2Fcart">{locale === "uz" ? "Hisobga kirish" : locale === "ru" ? "Войти" : "Sign in"}</Link></div>}
     <form onSubmit={submit} className="shop-checkout">
       <div className="stack" style={{ gap: 18 }}>
         <section className="panel-card">
-          <h2>Savatdagi mahsulotlar ({count})</h2>
+          <h2>{d.products} ({count})</h2>
           {lines.map((line) => <div className="shop-line" key={line.productId}>
-            <ProductVisual categorySlug={line.categorySlug} />
+            <ProductMedia assets={byId.get(line.productId)?.assets ?? []} title={line.name} slug={line.slug} categorySlug={line.categorySlug} />
             <div>
               <Link href={`/products/${line.slug}`}>{line.name}</Link>
-              <div className="small muted">Narx tasdiqlanganda bildiriladi</div>
-              <button type="button" className="small" style={{ background: "none", border: 0, padding: 0, color: "var(--danger)", cursor: "pointer" }} onClick={() => setQuantity(line.productId, 0)}>O‘chirish</button>
+              <div className="small muted">{byId.get(line.productId)?.priceMinor != null ? <CurrencyPrice amountMinor={byId.get(line.productId)!.priceMinor! * line.quantity} currency={byId.get(line.productId)!.currency} /> : c.priceRequest}</div>
+              {preview && (!byId.has(line.productId) || byId.get(line.productId)?.stockStatus === "OUT_OF_STOCK") && <p role="status">{c.OUT_OF_STOCK}</p>}
+              <button type="button" className="small cart-remove" onClick={() => setQuantity(line.productId, 0)}>{c.remove}</button>
             </div>
             <div className="shop-qty">
-              <button type="button" onClick={() => setQuantity(line.productId, line.quantity - 1)} aria-label="Kamaytirish">−</button>
+              <button type="button" onClick={() => setQuantity(line.productId, line.quantity - 1)} aria-label={`${d.decrease}: ${line.name}`}>−</button>
               <output>{line.quantity}</output>
-              <button type="button" onClick={() => setQuantity(line.productId, line.quantity + 1)} aria-label="Ko‘paytirish">+</button>
+              <button type="button" onClick={() => setQuantity(line.productId, line.quantity + 1)} aria-label={`${d.increase}: ${line.name}`}>+</button>
             </div>
           </div>)}
         </section>
 
         <section className="panel-card stack shop-address-card">
           <div>
-            <span className="eyebrow">1-QADAM · XARITA</span>
-            <h2>Yetkazish manzilini tanlang</h2>
-            <p className="small muted">O‘zingiz turgan joyni aniqlang yoki yetkazish kerak bo‘lgan boshqa nuqtani xaritadan belgilang.</p>
+            <span className="eyebrow">01</span>
+            <h2>{d.addressTitle}</h2>
+            <p className="small muted">{d.addressHint}</p>
           </div>
           <DeliveryMap value={coords} address={form.address} onChange={(c, address) => { setCoords(c); setForm((f) => ({ ...f, address: address ?? "" })); }} />
           <div className="shop-field-row">
-            <label className="shop-field"><span>Shahar / viloyat</span><input required value={form.city} onChange={update("city")} maxLength={80} autoComplete="address-level1" /></label>
-            <label className="shop-field"><span>Manzil nomi (ixtiyoriy)</span><input placeholder="Avtomatik topilmasa, bo‘sh qoldiring" value={form.address} onChange={update("address")} maxLength={300} autoComplete="street-address" /></label>
+            <label className="shop-field"><span>{d.city}</span><input required value={form.city} onChange={update("city")} maxLength={80} autoComplete="address-level1" /></label>
+            <label className="shop-field"><span>{d.address}</span><input placeholder={d.addressPlaceholder} value={form.address} onChange={update("address")} maxLength={300} autoComplete="street-address" /></label>
           </div>
         </section>
 
         <section className="panel-card stack shop-contact-card">
           <div>
-            <span className="eyebrow">2-QADAM · ALOQA</span>
-            <h2>Qabul qiluvchi va aloqa</h2>
-            <p className="small muted">Buyurtmani tasdiqlash va yetkazib berishni kelishish uchun.</p>
+            <span className="eyebrow">02</span>
+            <h2>{d.contactTitle}</h2>
+            <p className="small muted">{d.contactHint}</p>
           </div>
           <div className="shop-field-row">
-            <label className="shop-field"><span>Qabul qiluvchi nomi</span><input required value={form.recipientName} onChange={update("recipientName")} maxLength={120} autoComplete="name" /></label>
-            <label className="shop-field"><span>Telefon raqami</span><input required placeholder="+998 90 123 45 67" value={form.phone} onChange={update("phone")} maxLength={30} inputMode="tel" autoComplete="tel" /></label>
+            <label className="shop-field"><span>{d.name}</span><input required minLength={2} value={form.recipientName} onChange={update("recipientName")} maxLength={120} autoComplete="name" /></label>
+            <label className="shop-field"><span>{d.phone}</span><input required minLength={7} type="tel" placeholder="+998 90 123 45 67" value={form.phone} onChange={update("phone")} maxLength={30} inputMode="tel" autoComplete="tel" /></label>
           </div>
-          <label className="shop-field"><span>Izoh / qo‘shimcha manzil tafsilotlari (ixtiyoriy)</span><textarea placeholder="Manzil nomi topilmasa, ko‘cha, uy, kirish, qavat yoki mo‘ljalni shu yerda yozing." value={form.note} onChange={update("note")} maxLength={500} rows={3} /></label>
+          <label className="shop-field"><span>{d.note}</span><textarea value={form.note} onChange={update("note")} maxLength={500} rows={3} /></label>
         </section>
       </div>
 
       <aside className="shop-summary">
-        <h2>Buyurtma xulosasi</h2>
-        <div className="row"><span>Mahsulotlar</span><strong>{count} ta</strong></div>
-        <div className="row"><span>Yetkazib berish nuqtasi</span><strong>{coords ? "Tanlangan ✓" : form.address ? "Matn bilan" : "—"}</strong></div>
-        <div className="row"><span>Narx</span><strong>Tasdiqlanganda</strong></div>
-        <p className="small muted">To‘lov hozircha onlayn emas: xodim narxni tasdiqlaydi va to‘lov usulini kelishasiz.</p>
+        <h2>{d.summary}</h2>
+        <div className="row"><span>{d.count}</span><strong>{count}</strong></div>
+        <div className="row"><span>{d.location}</span><strong>{coords ? d.chosen : form.address ? d.manual : "—"}</strong></div>
+        {preview && [...subtotals].map(([currency, total]) => <div className="row" key={currency}><span>{c.subtotal} ({currency})</span><strong><CurrencyPrice amountMinor={total} currency={currency} /></strong></div>)}
+        {unpriced && <p className="small">{c.pendingPrice}</p>}
+        {!preview && !previewError && <p role="status" aria-busy="true">…</p>}
+        <p className="small muted">{c.shipping}</p>
+        <p className="small muted">{journey.deliveryNote}</p>
+        <Link className="text-link small" href="/terms">{journey.terms}</Link>
+        {previewError && <p role="alert">{previewError}</p>}
+        {unavailable && <p role="alert">{c.OUT_OF_STOCK}</p>}
+        <button className="button secondary" type="button" onClick={() => setVersion(value => value + 1)}>{c.refresh}</button>
         <ToastMessage message={error} variant="error" />
-        <button className="button" type="submit" disabled={busy}>{busy ? "Yuborilmoqda…" : "Buyurtma berish"}</button>
-        <Link className="button ghost" href="/products">← Katalogga qaytish</Link>
+        <button className="button" type="submit" disabled={busy || !preview || unavailable || !canOrder}>{busy ? d.sending : d.submit}</button>
+        <Link className="button ghost" href="/products">← {c.back}</Link>
       </aside>
     </form>
   </>;

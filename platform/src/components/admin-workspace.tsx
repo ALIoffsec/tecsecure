@@ -567,7 +567,7 @@ export function AdminWorkspace({ services, requests: initialRequests, requestSta
             <summary>{t("products")} · {products.length}</summary>
             <div className="admin-product-previews">
             {products.map((product) => <article className="shop-card admin-product-preview" key={product.id}>
-              <div className="admin-product-preview-image"><ProductVisual categorySlug={product.category?.slug} /><MediaGallery media={product.media} title={product.name} /></div>
+              <div className="admin-product-preview-image">{Array.isArray(product.media) && product.media.length ? <MediaGallery media={product.media} title={product.name} variant="product-card" firstOnly /> : <ProductVisual categorySlug={product.category?.slug} />}</div>
               <div className="shop-card-body">
                 <span className="shop-card-cat">{product.category?.name ?? "Kategoriya tanlanmagan"}</span>
                 <h3>{product.name}</h3>

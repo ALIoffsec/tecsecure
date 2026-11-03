@@ -101,9 +101,9 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
   };
 }
 
-export async function requireUser(): Promise<AuthUser> {
+export async function requireUser(returnTo?: string): Promise<AuthUser> {
   const user = await getCurrentUser();
-  if (!user) redirect("/login");
+  if (!user) redirect(returnTo ? `/login?next=${encodeURIComponent(returnTo)}` : "/login");
   return user;
 }
 

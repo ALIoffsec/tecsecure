@@ -7,7 +7,9 @@ import { isPreviewMode } from "@/lib/preview-mode";
 
 export const dynamic = "force-dynamic";
 
-export default async function ContactPage() {
+export default async function ContactPage({ searchParams }: { searchParams: Promise<{ topic?: string; mode?: string; service?: string }> }) {
+  const params = await searchParams;
+  const topic = typeof params.topic === "string" ? params.topic.trim().slice(0, 160) : "";
   const [services, settings] = isPreviewMode ? [[] as ServiceOption[], []] : await Promise.all([
     prisma.service.findMany({ where: { status: "PUBLISHED", availability: true }, select: { id: true, name: true } }),
     prisma.siteSetting.findMany({ where: { key: { in: ["phone", "email", "telegram", "instagram", "address"] } } })
@@ -30,7 +32,7 @@ export default async function ContactPage() {
         <p>Instagram: <a className="text-link" href={`https://instagram.com/${instagram}`} target="_blank" rel="noreferrer">@{instagram}</a></p>
         {address && <p className="contact-address"><LocalizedText id="address" />: {addressLabel}{addressUrl && <> <a className="text-link" href={addressUrl} target="_blank" rel="noreferrer">Yandex Maps</a></>}</p>}
       </div>
-      {isPreviewMode ? <PreviewModeNotice /> : <ServiceRequestForm services={services} />}
+      {isPreviewMode ? <PreviewModeNotice /> : <ServiceRequestForm key={`${topic}-${params.mode}-${params.service}`} services={services} topic={topic} initialMode={params.mode === "callback" ? "callback" : "detailed"} serviceId={services.some(service => service.id === params.service) ? params.service : ""} />}
     </div>
   </div>;
 }

@@ -92,7 +92,7 @@ export function StoreView({ walletBalanceMinor, moduleCount }: { walletBalanceMi
   const activePlan = subscription?.active ? subscription.planKey : null;
   return <div className="container page-shell store-page">
     <section className="store-head">
-      <div><span className="eyebrow">TEC</span><h1 className="page-title">{c.title}</h1><p className="page-intro">{c.intro}</p></div>
+      <div><span className="eyebrow">TEC</span><h1 className="page-title">{locale === "uz" ? "TEC paketlari va ta’lim obunalari" : locale === "ru" ? "Пакеты TEC и подписки на обучение" : "TEC packs and learning subscriptions"}</h1><p className="page-intro">{c.intro}</p><Link className="text-link" href="/products">{locale === "uz" ? "Uskunalar do‘koniga o‘tish →" : locale === "ru" ? "В магазин оборудования →" : "Go to the equipment shop →"}</Link></div>
       <div className="store-wallet"><span>{c.balance}</span><strong>{money(walletBalanceMinor / 100)} UZS</strong><Link href="/portal/profile" className="small">{c.topUp}</Link></div>
     </section>
     <ToastMessage message={error} variant="error" />
