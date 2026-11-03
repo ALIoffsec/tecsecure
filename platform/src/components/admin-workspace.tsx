@@ -114,6 +114,7 @@ const requestStatusLabelKeys: Record<RequestStatus, MessageKey> = {
   CANCELLED: "requestStatusCancelled"
 };
 const designOptions: { id: SiteDesign; name: string; font: string }[] = [
+  { id: "liquid", name: "Liquid Glass", font: "System UI" },
   { id: "midnight", name: "Midnight", font: "DM Sans · Manrope" },
   { id: "ocean", name: "Ocean", font: "Outfit" },
   { id: "forest", name: "Forest", font: "IBM Plex Sans" },
@@ -727,7 +728,7 @@ export function AdminWorkspace({ services, requests: initialRequests, requestSta
             <form className="site-design-grid" onSubmit={updateSettings}>
               {designOptions.map(({ id, name, font }) => (
                 <label className="site-design-option" key={id}>
-                  <input className="sr-only" type="radio" name="siteDesign" value={id} defaultChecked={(isSiteDesign(settings.siteDesign) ? settings.siteDesign : "midnight") === id} />
+                  <input className="sr-only" type="radio" name="siteDesign" value={id} defaultChecked={(isSiteDesign(settings.siteDesign) ? settings.siteDesign : "liquid") === id} />
                   <span className={`site-design-preview site-design-preview-${id}`} aria-hidden="true">
                     <span className="site-design-preview-top"><i /><i /><i /></span>
                     <span className="site-design-preview-line" />

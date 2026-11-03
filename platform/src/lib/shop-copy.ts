@@ -1,6 +1,7 @@
 import type { Locale } from "./messages";
 
 const uz = {
+  quickView: "Tezkor ko‘rish",
   title: "Uskunalar do‘koni", intro: "Kerakli uskunani toping, mosligini tekshiring va narx hamda yetkazishni kelishib buyurtma bering.",
   search: "Mahsulot yoki model qidirish", searchAction: "Qidirish", filter: "Filtrlar", categories: "Kategoriyalar", all: "Hammasi",
   stock: "Mavjudlik", IN_STOCK: "Omborda bor", ON_REQUEST: "Buyurtma asosida", OUT_OF_STOCK: "Omborda yo‘q", UNKNOWN: "Mavjudlikni aniqlashtiring",
@@ -28,6 +29,7 @@ const uz = {
 export const shopCopy: Record<Locale, { [K in keyof typeof uz]: string }> = {
   uz,
   ru: {
+    quickView: "Быстрый просмотр",
     title: "Магазин оборудования", intro: "Найдите оборудование, проверьте совместимость и согласуйте цену и доставку.",
     search: "Поиск товара или модели", searchAction: "Найти", filter: "Фильтры", categories: "Категории", all: "Все",
     stock: "Наличие", IN_STOCK: "В наличии", ON_REQUEST: "Под заказ", OUT_OF_STOCK: "Нет в наличии", UNKNOWN: "Уточните наличие",
@@ -53,6 +55,7 @@ export const shopCopy: Record<Locale, { [K in keyof typeof uz]: string }> = {
     more: "Подробнее", less: "Свернуть", missingSpecs: "Характеристики не указаны.", pros: "Плюсы", cons: "Минусы",
   },
   en: {
+    quickView: "Quick view",
     title: "Equipment shop", intro: "Find equipment, check compatibility and agree on price and delivery before ordering.",
     search: "Search products or models", searchAction: "Search", filter: "Filters", categories: "Categories", all: "All",
     stock: "Availability", IN_STOCK: "In stock", ON_REQUEST: "On request", OUT_OF_STOCK: "Out of stock", UNKNOWN: "Confirm availability",

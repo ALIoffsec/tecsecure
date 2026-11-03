@@ -15,11 +15,16 @@ export function ProductMedia({ assets, title, slug, categorySlug }: Props) {
   const { locale } = useSitePreferences();
   const c = journeyCopy[locale];
   const [failed, setFailed] = useState(false);
+  const [alternateFailed, setAlternateFailed] = useState(false);
+  const alternate = assets.find(item => item.id !== asset?.id && item.mimeType.startsWith("image/"));
   if (!asset) return <div className="product-media-fallback"><ProductVisual categorySlug={categorySlug} productSlug={slug} /><span>{c.photoMissing}</span></div>;
   if (failed) return <div className="product-media-error" role="status">{c.mediaError}</div>;
   return <div className="product-media-card">
     {asset.mimeType.startsWith("image/")
-      ? <Image src={`/api/media/${asset.id}`} alt={title} fill sizes="(max-width: 640px) 46vw, (max-width: 1024px) 33vw, 320px" onError={() => setFailed(true)} />
+      ? <><Image src={`/api/media/${asset.id}`} alt={title} fill sizes="(max-width: 640px) 46vw, (max-width: 1024px) 33vw, 320px" onError={() => setFailed(true)} />
+        {alternate && !alternateFailed && <Image className="product-media-alternate" src={`/api/media/${alternate.id}`} alt="" aria-hidden="true" fill sizes="(max-width: 640px) 46vw, (max-width: 1024px) 33vw, 320px" onError={() => setAlternateFailed(true)} />}
+        {alternateFailed && <span className="product-media-notice" role="status">{c.mediaError}</span>}
+      </>
       : <><span>{c.video}</span><video src={`/api/media/${asset.id}`} muted preload="metadata" playsInline aria-label={title} onError={() => setFailed(true)} /></>}
   </div>;
 }

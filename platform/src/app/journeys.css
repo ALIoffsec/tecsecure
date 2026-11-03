@@ -16,7 +16,6 @@
 .skip-link:focus { top: 8px; }
 :where(a, button, input, select, textarea, summary):focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; }
 #main-content { scroll-margin-top: 120px; }
-:root[data-theme="light"] .home-page { --accent: #076d83; }
 .footer-legal-links { flex-wrap: wrap; min-width: 0; max-width: 100%; }
 .brand-hero { position: relative; padding: clamp(44px, 6vw, 88px) 0 64px; overflow: clip; background: radial-gradient(ellipse at 85% 35%, color-mix(in srgb, var(--accent) 9%, transparent), transparent 60%); }
 .brand-hero-layout { display: grid; grid-template-columns: 1.1fr 1fr; align-items: center; gap: clamp(28px, 5vw, 72px); }

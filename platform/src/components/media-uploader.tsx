@@ -85,6 +85,8 @@ function MediaCarousel({ ids, title }: { ids: string[]; title: string }) {
   const [reducedMotion, setReducedMotion] = useState(true);
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
+  const [zoomOpen, setZoomOpen] = useState(false);
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
   const [inView, setInView] = useState(false);
   const [pageVisible, setPageVisible] = useState(true);
   useEffect(() => {
@@ -109,28 +111,34 @@ function MediaCarousel({ ids, title }: { ids: string[]; title: string }) {
     const left = slide.getBoundingClientRect().left - element.getBoundingClientRect().left + element.scrollLeft;
     element.scrollTo({ left, behavior: reducedMotion || index < 0 || index >= ids.length ? "instant" : "smooth" });
   }, [ids.length, reducedMotion]);
-  const running = playing && !hovered && !focused && inView && pageVisible && ids.length > 1;
+  const running = playing && !hovered && !focused && !zoomOpen && inView && pageVisible && ids.length > 1;
   useEffect(() => {
     if (!running) return;
-    const timer = window.setTimeout(() => goTo(active + 1), 5000);
+    const timer = window.setTimeout(() => goTo(active + 1), 3600);
     return () => window.clearTimeout(timer);
   }, [running, active, goTo]);
   function move(index: number) { setPlaying(false); goTo(index); }
-  return <div className="portfolio-carousel" role="region" aria-label={`${c.galleryLabel}: ${title}`}
+  return <div className="portfolio-carousel" role="region" aria-label={`${c.galleryLabel}: ${title}`} data-autoplay={running ? "running" : "paused"}
     onPointerEnter={event => { if (event.pointerType === "mouse") setHovered(true); }} onPointerLeave={() => setHovered(false)}
-    onFocusCapture={() => setFocused(true)} onBlurCapture={event => { if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false); }}
+    onFocusCapture={event => setFocused(event.target.matches(":focus-visible"))} onBlurCapture={event => { if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false); }}
     onPlayCapture={() => setPlaying(false)}>
-    <div className="gallery-toolbar">
-      <p>{c.galleryHint}</p>
-      {ids.length > 1 && <div className="gallery-controls">
-        <button type="button" className="gallery-play" aria-controls={trackId} onClick={() => { setPlaying(value => !value); setFocused(false); }}><span aria-hidden="true">{playing ? "Ⅱ" : "▷"}</span>{playing ? c.galleryPause : c.galleryPlay}</button>
-        <span className="gallery-count" aria-live={running ? "off" : "polite"} aria-atomic="true">{String(active + 1).padStart(2, "0")} / {String(ids.length).padStart(2, "0")}</span>
-        <button type="button" className="gallery-arrow" aria-label={c.previous} aria-controls={trackId} onClick={() => move(active - 1)}>←</button>
-        <button type="button" className="gallery-arrow" aria-label={c.next} aria-controls={trackId} onClick={() => move(active + 1)}>→</button>
-      </div>}
-    </div>
+    {ids.length > 1 && <button type="button" className="sr-only gallery-accessible-control" aria-controls={trackId}
+      onClick={() => { setPlaying(value => !value); setFocused(false); }}>{playing ? c.galleryPause : c.galleryPlay}</button>}
     <div className="gallery-scroll" id={trackId} ref={track} tabIndex={0} role="group" aria-label={c.galleryLabel}
-      onPointerDown={() => setPlaying(false)}
+      onTouchStart={event => {
+        const touch = event.touches[0];
+        touchStart.current = touch ? { x: touch.clientX, y: touch.clientY } : null;
+      }}
+      onTouchMove={event => {
+        const touch = event.touches[0];
+        if (!touch || !touchStart.current) return;
+        const dx = Math.abs(touch.clientX - touchStart.current.x);
+        const dy = Math.abs(touch.clientY - touchStart.current.y);
+        if (dx > 8 && dx > dy) { setPlaying(false); touchStart.current = null; }
+      }}
+      onTouchEnd={() => { touchStart.current = null; }}
+      onTouchCancel={() => { touchStart.current = null; }}
+      onWheel={() => setPlaying(false)}
       onKeyDown={event => {
         if (event.target !== event.currentTarget) return;
         const index = event.key === "ArrowRight" ? active + 1 : event.key === "ArrowLeft" ? active - 1 : event.key === "Home" ? 0 : event.key === "End" ? ids.length - 1 : null;
@@ -149,18 +157,18 @@ function MediaCarousel({ ids, title }: { ids: string[]; title: string }) {
         setActive(nearest);
       }}>
       {ids.map((id, index) => <div className="gallery-slide" key={id} role="group" aria-label={`${index + 1} / ${ids.length}`}>
-        <MediaPreview id={id} title={`${title} — ${index + 1}`} carousel />
-        <span className="gallery-slide-number" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
+        <MediaPreview id={id} title={`${title} — ${index + 1}`} carousel onZoomChange={setZoomOpen} />
       </div>)}
     </div>
   </div>;
 }
 
-function MediaPreview({ id, title, carousel = false, preserveAspectRatio = false }: {
+function MediaPreview({ id, title, carousel = false, preserveAspectRatio = false, onZoomChange }: {
   id: string;
   title: string;
   carousel?: boolean;
   preserveAspectRatio?: boolean;
+  onZoomChange?: (open: boolean) => void;
 }) {
   const [mime, setMime] = useState("");
   const [failed, setFailed] = useState(false);
@@ -199,7 +207,7 @@ function MediaPreview({ id, title, carousel = false, preserveAspectRatio = false
   );
   if (mime.startsWith("image/")) return (
     <div className="media-preview-frame" style={itemStyle}>
-      <button className="media-zoom-trigger" type="button" aria-label={`${copy.zoom}: ${title}`} onClick={() => setZoom(true)}>
+      <button className="media-zoom-trigger" type="button" aria-label={`${copy.zoom}: ${title}`} onClick={() => { setZoom(true); onZoomChange?.(true); }}>
       <Image
         className="media-preview"
         src={source}
@@ -214,7 +222,7 @@ function MediaPreview({ id, title, carousel = false, preserveAspectRatio = false
         }}
       />
       </button>
-      {zoom && <MediaLightbox source={source} title={title} onClose={() => setZoom(false)} />}
+      {zoom && <MediaLightbox source={source} title={title} onClose={() => { setZoom(false); onZoomChange?.(false); }} />}
     </div>
   );
   return null;

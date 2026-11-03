@@ -1,4 +1,5 @@
 export const siteDesigns = [
+  "liquid",
   "midnight",
   "ocean",
   "forest",

@@ -5,11 +5,19 @@ import { journeyCopy, inquiryHref } from "./journey-copy";
 import { serviceJourneys, serviceGuideCopy } from "./service-journeys";
 import { shopCopy } from "./shop-copy";
 import { requestSchema } from "./validation";
+import { isSiteDesign, siteDesigns } from "./site-designs";
 
 const imageId = "cmvlh53hj0004ah44ymdya5v6";
 const videoId = "cmvlh53hn0006ah44cfksofgx";
 const thirdId = "cmvlh53ho0008ah44xr9ihwqw";
 const fourthId = "cmvlh53hq000aah4483y8isn9";
+
+test("liquid glass is a valid design without dropping existing appearance profiles", () => {
+  assert.equal(isSiteDesign("liquid"), true);
+  assert.equal(new Set(siteDesigns).size, siteDesigns.length);
+  for (const design of ["midnight", "ocean", "forest", "ember", "violet", "editorial", "terminal"]) assert.equal(isSiteDesign(design), true);
+  for (const value of [undefined, null, "", "LIQUID", "../liquid"]) assert.equal(isSiteDesign(value), false);
+});
 
 test("product covers prefer actual images over video without changing gallery order", () => {
   const image = { id: imageId, mimeType: "image/png" };

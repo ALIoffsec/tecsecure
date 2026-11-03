@@ -7,6 +7,7 @@ import { detailRows, priceBound, specificationFilter } from "@/lib/catalog-utils
 import { AddToCartButton } from "@/components/cart";
 import { FilterPanel } from "@/components/filter-panel";
 import { ProductMedia } from "@/components/product-media";
+import { ProductQuickView } from "@/components/product-quick-view";
 import { CompareButton, CompareTray } from "@/components/product-compare";
 import { ShopText as S, ShopSearchInput } from "@/components/shop-text";
 import { CurrencyPrice, CurrencySelector } from "@/components/currency-context";
@@ -111,7 +112,10 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
             <div className="shop-card-foot">
               <div><div className="shop-price">{product.priceMinor === null ? <S id="priceRequest" /> : <CurrencyPrice amountMinor={product.priceMinor} currency={product.currency} />}</div><span className={`shop-stock ${product.stockStatus === "IN_STOCK" ? "in" : product.stockStatus === "OUT_OF_STOCK" ? "out" : "req"}`}><S id={stocks.find(stock => stock === product.stockStatus) ?? "UNKNOWN"} /></span></div>
               <AddToCartButton product={{ productId: product.id, name: product.name, slug: product.slug, categorySlug: product.category?.slug }} disabled={product.stockStatus === "OUT_OF_STOCK"} />
-              <CompareButton product={{ id: product.id, name: product.name, category: product.category?.slug ?? "" }} />
+              <div className="shop-card-tools">
+                <ProductQuickView product={{ id: product.id, slug: product.slug, name: product.name, description: product.description, priceMinor: product.priceMinor, currency: product.currency, stockStatus: stocks.find(stock => stock === product.stockStatus) ?? "UNKNOWN", categorySlug: product.category?.slug, assets: getMedia(product.media), specs: detailRows(product.specifications).slice(0, 4) }} />
+                <CompareButton product={{ id: product.id, name: product.name, category: product.category?.slug ?? "" }} />
+              </div>
             </div>
           </div>
         </article>)}</div> : <div className="empty-state"><h2><S id="empty" /></h2><p><S id="emptyHint" /></p><div className="journey-actions"><Link className="button secondary" href="/products"><S id="clear" /></Link><Link href="/contact" className="text-link"><S id="quote" /></Link></div></div>}

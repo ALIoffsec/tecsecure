@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import "./journeys.css";
+import "./liquid-glass.css";
 import { SiteNav } from "@/components/site-nav";
 import { PageBackLink } from "@/components/page-back-link";
 import { FontLoader } from "@/components/font-loader";
@@ -17,6 +18,7 @@ import { ServiceWorkerRegistration } from "@/components/service-worker-registrat
 import { ToastProvider } from "@/components/toast-provider";
 import { CurrencyProvider } from "@/components/currency-context";
 import { ProductCompareProvider } from "@/components/product-compare";
+import { SiteMotion } from "@/components/site-motion";
 
 export const metadata: Metadata = {
   title: "Tecsecure — IT va xavfsizlik yechimlari",
@@ -46,7 +48,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
       prisma.siteBlock.findMany({ where: { enabled: true }, orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] }),
       prisma.siteSetting.findUnique({ where: { key: "siteDesign" }, select: { value: true } })
     ]);
-  const design = isSiteDesign(designSetting?.value) ? designSetting.value : "midnight";
+  const design = isSiteDesign(designSetting?.value) ? designSetting.value : "liquid";
   const [modules, paths] = await Promise.all([
     getPublishedLearningDocuments("module"),
     getPublishedLearningDocuments("path")
@@ -60,16 +62,17 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
     }
   }
   return (
-    <html lang="uz" data-design={design} suppressHydrationWarning>
+    <html lang="uz" data-design={design} data-material="liquid" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <script dangerouslySetInnerHTML={{ __html: preferenceBootstrapScript }} />
         <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&family=Playfair+Display:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" /></noscript>
       </head>
-      <body>
+      <body id="app-shell">
         <ServiceWorkerRegistration />
         <FontLoader />
+        <SiteMotion />
         <SitePreferencesProvider overrides={overrides}>
           <CurrencyProvider>
             <ToastProvider>
