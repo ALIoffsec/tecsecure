@@ -6,12 +6,14 @@ import { FormEvent, useState } from "react";
 import { useSitePreferences } from "@/components/site-preferences";
 import { ToastMessage } from "@/components/toast-provider";
 import { OAuthSignIn } from "@/components/oauth-sign-in";
+import { featureCopy } from "@/lib/feature-copy";
 
 type Props = { mode: "login" | "register"; audience?: "customer" | "staff"; redirectTo?: string };
 
 export function AuthForm({ mode, audience = "customer", redirectTo }: Props) {
   const router = useRouter();
-  const { t } = useSitePreferences();
+  const { t, locale } = useSitePreferences();
+  const c = featureCopy[locale];
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const nextQuery = redirectTo ? `?next=${encodeURIComponent(redirectTo)}` : "";
@@ -42,7 +44,17 @@ export function AuthForm({ mode, audience = "customer", redirectTo }: Props) {
   }
 
   return (
-    <section className="auth-card">
+    <section className="auth-card feature-auth" data-mode={mode}>
+      <aside className="feature-auth-aside">
+        <span className="eyebrow">Tecsecure</span>
+        <strong>{audience === "staff" ? t("staffLogin") : mode === "login" ? c.welcome : c.join}</strong>
+        <p>{audience === "staff" ? c.staffNote : c.accountNote}</p>
+      </aside>
+      <div className="feature-auth-body">
+      {audience === "customer" && <nav className="feature-auth-tabs" aria-label={t("account")}>
+        <Link href={`/login${nextQuery}`} aria-current={mode === "login" ? "page" : undefined}>{t("signIn")}</Link>
+        <Link href={`/register${nextQuery}`} aria-current={mode === "register" ? "page" : undefined}>{t("registerLink")}</Link>
+      </nav>}
       <span className="eyebrow">{audience === "staff" ? t("staffLogin") : mode === "login" ? t("loginEyebrow") : t("registerEyebrow")}</span>
       <h1>{audience === "staff" ? t("staffLoginTitle") : mode === "login" ? t("loginTitle") : t("registerTitle")}</h1>
       <p className="muted">
@@ -63,6 +75,7 @@ export function AuthForm({ mode, audience = "customer", redirectTo }: Props) {
       {audience === "customer" && <p className="small muted" style={{ marginTop: 18 }}>
         {mode === "login" ? <>{t("noAccount")} <Link className="text-link" href={`/register${nextQuery}`}>{t("registerLink")}</Link></> : <>{t("alreadyHaveAccount")} <Link className="text-link" href={`/login${nextQuery}`}>{t("signIn")}</Link></>}
       </p>}
+      </div>
     </section>
   );
 }

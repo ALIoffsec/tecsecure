@@ -4,6 +4,7 @@ import { createContext, ReactNode, useContext, useEffect, useMemo, useState } fr
 import { Locale, MessageKey, messages } from "@/lib/messages";
 import Link from "next/link";
 import { journeyCopy } from "@/lib/journey-copy";
+import { FooterGlow } from "./feature-visuals";
 
 type ThemeMode = "light" | "dark" | "system";
 type TextOverrides = Partial<Record<Locale, Partial<Record<MessageKey, string>>>>;
@@ -131,7 +132,8 @@ export function SiteFooter() {
   const { t, locale, openCookieSettings } = useSitePreferences();
   const c = journeyCopy[locale];
   return (
-    <footer className="footer">
+    <footer className="footer feature-footer">
+      <FooterGlow />
       <nav className="container footer-paths" aria-label={c.eyebrow}>
         <Link href="/services">{c.services}</Link><Link href="/learning">{c.learning}</Link><Link href="/products">{c.shop}</Link>
         <Link href="/contact">{t("contact")}</Link><Link href="/terms">{c.delivery}</Link><Link href="/search">{c.search}</Link>

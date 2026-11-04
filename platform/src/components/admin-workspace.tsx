@@ -3,6 +3,7 @@
 import { FormEvent, useMemo, useRef, useState } from "react";
 import type { RequestStatus } from "@prisma/client";
 import { useRouter } from "next/navigation";
+import { AccountSessionActions } from "./account-session-actions";
 import { useSitePreferences } from "@/components/site-preferences";
 import { ToastMessage } from "@/components/toast-provider";
 import { UiIcon, type IconName } from "@/components/ui-icon";
@@ -478,17 +479,11 @@ export function AdminWorkspace({ services, requests: initialRequests, requestSta
     } catch (issue) { setError(issue instanceof Error ? issue.message : t("requestFailed")); }
   }
 
-  async function logout() {
-    await fetch("/api/auth/logout", { method: "POST" });
-    router.replace("/login");
-    router.refresh();
-  }
-
   return (
     <div className="container page-shell">
       <div className="section-head">
         <div><span className="eyebrow">{role === "FOUNDER" ? t("founderRole") : role === "ADMIN" ? t("adminRole") : t("staffRole")}</span><h1 className="page-title">{t("adminPanel")}</h1><p className="muted">{t("changesStored")}</p></div>
-        <button className="button ghost" onClick={logout}>{t("logout")}</button>
+        <AccountSessionActions />
       </div>
       <ToastMessage message={error || notice} variant={error ? "error" : "success"} />
       <div className="admin-workspace-layout">

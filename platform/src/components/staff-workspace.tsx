@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { AccountSessionActions } from "./account-session-actions";
 import { FormEvent, useState } from "react";
 import { useSitePreferences } from "@/components/site-preferences";
 import { ToastMessage } from "@/components/toast-provider";
@@ -66,17 +67,11 @@ export function StaffWorkspace({ requests, projects }: { requests: RequestRecord
     }
   }
 
-  async function logout() {
-    await fetch("/api/auth/logout", { method: "POST" });
-    router.replace("/staff/login");
-    router.refresh();
-  }
-
   return (
     <div className="container page-shell">
       <div className="section-head">
         <div><span className="eyebrow">{t("staffRole")}</span><h1 className="page-title">{t("dashboard")}</h1><p className="muted">{t("staffScopeDescription")}</p></div>
-        <button className="button ghost" onClick={logout}>{t("logout")}</button>
+        <AccountSessionActions redirectTo="/staff/login" />
       </div>
       <div className="dashboard-grid">
         <div className="metric"><strong>{requests.filter((request) => request.status === "NEW").length}</strong><span>{t("newRequests")}</span></div>

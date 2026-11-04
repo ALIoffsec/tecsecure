@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { MediaUploader } from "@/components/media-uploader";
 import { useSitePreferences } from "@/components/site-preferences";
 import { ToastMessage } from "@/components/toast-provider";
+import { WalletCard } from "./wallet-card";
 
 type WalletRecord = {
   id: string;
@@ -64,11 +65,7 @@ export function WalletPanel({ initialBalance, initialPoints, transactions }: {
 
   return <section className="panel-card">
     <h2>{t("wallet")}</h2>
-    <div className="dashboard-grid">
-      <div className="metric"><strong>{(initialBalance / 100).toLocaleString(numberLocale)} UZS</strong><span>{t("walletBalance")}</span></div>
-      <div className="metric"><strong>{initialPoints.toLocaleString(numberLocale)}</strong><span>{t("rewardPoints")}</span></div>
-      <div className="metric"><strong>{rank}</strong><span>{t("rewardRank")}</span></div>
-    </div>
+    <WalletCard balance={initialBalance} points={initialPoints} rank={rank} />
     <p className="small muted">{t("tecEarnRate")}</p>
     <p className="small muted">{t("rankPerks")}</p>
     <div className="panel-card wallet-tec-purchase">

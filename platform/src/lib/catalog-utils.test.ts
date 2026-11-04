@@ -6,11 +6,48 @@ import { serviceJourneys, serviceGuideCopy } from "./service-journeys";
 import { shopCopy } from "./shop-copy";
 import { requestSchema } from "./validation";
 import { isSiteDesign, siteDesigns } from "./site-designs";
+import { featureCopy } from "./feature-copy";
+import { runInNewContext } from "node:vm";
+import { introBootstrapScript, introStorageKey } from "./burning-intro";
 
 const imageId = "cmvlh53hj0004ah44ymdya5v6";
 const videoId = "cmvlh53hn0006ah44cfksofgx";
 const thirdId = "cmvlh53ho0008ah44xr9ihwqw";
 const fourthId = "cmvlh53hq000aah4483y8isn9";
+
+test("adapted interface effects have complete Uzbek, Russian and English copy", () => {
+  for (const locale of ["uz", "ru", "en"] as const) {
+    assert.deepEqual(Object.keys(featureCopy[locale]).sort(), Object.keys(featureCopy.uz).sort());
+    for (const value of Object.values(featureCopy[locale])) assert.ok(value.trim().length > 0);
+  }
+});
+
+test("cinematic opening is once per tab, honors reduced motion and cannot trap an unhydrated page", () => {
+  for (const [reduced, seen, expected] of [[false, false, "pending"], [true, false, undefined], [false, true, undefined]] as const) {
+    const dataset: Record<string, string> = {};
+    let safety: (() => void) | undefined;
+    runInNewContext(introBootstrapScript, {
+      document: { documentElement: { dataset }, querySelector: () => null },
+      matchMedia: () => ({ matches: reduced }),
+      sessionStorage: { getItem: (key: string) => { assert.equal(key, introStorageKey); return seen ? "1" : null; } },
+      setTimeout: (callback: () => void, delay: number) => { assert.equal(delay, 6000); safety = callback; },
+      console
+    });
+    assert.equal(dataset.tecIntro, expected);
+    safety?.();
+    assert.equal(dataset.tecIntro, undefined);
+  }
+  let warned = false;
+  const dataset: Record<string, string> = {};
+  runInNewContext(introBootstrapScript, {
+    document: { documentElement: { dataset } },
+    matchMedia: () => ({ matches: false }),
+    sessionStorage: { getItem: () => { throw new Error("storage disabled"); } },
+    console: { warn: () => { warned = true; } }
+  });
+  assert.equal(warned, true);
+  assert.equal(dataset.tecIntro, undefined);
+});
 
 test("liquid glass is a valid design without dropping existing appearance profiles", () => {
   assert.equal(isSiteDesign("liquid"), true);

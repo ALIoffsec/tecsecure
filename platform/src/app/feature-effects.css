@@ -1,0 +1,116 @@
+/* Scoped adaptations of the supplied UI demos; no global demo resets or remote assets. */
+#app-shell .feature-auth { width: min(940px, 100%); display: grid; grid-template-columns: 1fr 1.15fr; padding: 0; overflow: hidden; }
+#app-shell .feature-auth-aside { position: relative; display: flex; flex-direction: column; justify-content: center; gap: 20px; padding: 40px; isolation: isolate; overflow: hidden; background: color-mix(in srgb, var(--accent) 10%, transparent); }
+#app-shell .feature-auth-aside::before { content: ""; position: absolute; z-index: -1; width: 140%; height: 130%; top: -20%; left: -60%; border: 1px solid var(--glass-edge); border-radius: 40%; background: linear-gradient(140deg, var(--glass-glow-one), var(--glass-glow-two)); transform: rotate(-25deg); }
+#app-shell .feature-auth[data-mode="register"] .feature-auth-aside::before { transform: rotate(25deg); left: -20%; }
+#app-shell .feature-auth-aside strong { font-size: clamp(1.7rem, 3vw, 2.7rem); line-height: 1.14; letter-spacing: -.04em; }
+#app-shell .feature-auth-aside p { color: var(--muted); line-height: 1.7; margin: 0; }
+#app-shell .feature-auth-body { min-width: 0; padding: 32px; }
+#app-shell .feature-auth-tabs { display: flex; flex-wrap: wrap; gap: 8px; padding-bottom: 20px; }
+#app-shell .feature-auth-tabs a { padding: 8px 14px; border-radius: 999px; border: 1px solid transparent; }
+#app-shell .feature-auth-tabs a[aria-current] { border-color: var(--glass-edge); background: var(--glass-fill); box-shadow: var(--glass-shadow); }
+#app-shell .feature-auth .field:focus-within > label { color: var(--accent); }
+#app-shell .feature-logout { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+#app-shell .feature-logout-figure { width: 34px; height: 28px; flex-shrink: 0; overflow: visible; }
+#app-shell .feature-person { transition: transform 350ms var(--glass-ease); }
+#app-shell .feature-logout:is(:hover, :focus-visible) .feature-person { transform: translateX(6px); }
+#app-shell .feature-logout[aria-busy="true"] .feature-person { transform: translateX(12px); }
+#app-shell .feature-order-button { display: flex; align-items: center; justify-content: center; gap: 10px; }
+#app-shell .feature-order-motion { display: inline-block; width: 64px; flex-shrink: 0; overflow: hidden; }
+#app-shell .feature-order-motion svg { display: block; width: 100%; }
+#app-shell .feature-order-motion[data-state="success"] { width: 100px; color: var(--success); }
+#app-shell .feature-order-check { opacity: 0; }
+#app-shell .feature-order-motion[data-state="success"] .feature-order-check { opacity: 1; }
+#app-shell .feature-order-motion[data-state="success"] :is(.feature-order-truck, .feature-order-road) { opacity: 0; }
+#app-shell .feature-wallet { display: grid; justify-items: start; gap: 16px; margin-block: 20px; }
+#app-shell .feature-wallet-stage { perspective: 1200px; width: min(100%, 460px); }
+#app-shell .feature-wallet-rotor { display: grid; transform-style: preserve-3d; transition: transform 650ms var(--glass-ease); }
+#app-shell .feature-wallet-stage[data-flipped="true"] .feature-wallet-rotor { transform: rotateY(180deg); }
+#app-shell .feature-wallet-face { grid-area: 1 / 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 12px; padding: clamp(20px, 4vw, 30px); border: 1px solid var(--glass-edge); border-radius: 24px; background: linear-gradient(130deg, var(--glass-glow-one), transparent 55%, var(--glass-glow-two)), var(--surface); box-shadow: var(--glass-shadow); backface-visibility: hidden; -webkit-backface-visibility: hidden; overflow-wrap: anywhere; }
+#app-shell .feature-wallet-back { transform: rotateY(180deg); }
+#app-shell .feature-wallet-heading { display: flex; justify-content: space-between; gap: 16px; width: 100%; }
+#app-shell .feature-wallet-amount { font-size: clamp(1.3rem, 3vw, 2rem); font-variant-numeric: tabular-nums; }
+#app-shell .feature-wallet-face small { color: var(--muted); margin-top: auto; }
+#app-shell .feature-wallet-chip { width: 40px; height: 28px; border: 1px solid var(--glass-shine); border-radius: 7px; background: linear-gradient(90deg, transparent 30%, var(--glass-edge) 30% 34%, transparent 34% 65%, var(--glass-edge) 65% 69%, transparent 69%), linear-gradient(transparent 46%, var(--glass-shine) 46% 52%, transparent 52%), var(--glass-fill); }
+#app-shell .feature-loading { width: min(100%, 340px); display: grid; justify-items: center; gap: 16px; margin: 28px auto; text-align: center; color: var(--muted); }
+#app-shell .feature-loading svg { width: 160px; color: var(--accent); }
+#app-shell .feature-loading-track { width: 100%; height: 4px; background: var(--line); border-radius: 4px; overflow: hidden; }
+#app-shell .feature-loading-track i { display: block; width: 35%; height: 100%; border-radius: inherit; background: var(--accent); }
+#app-shell .feature-footer { position: relative; isolation: isolate; margin-top: 40px; }
+#app-shell .feature-footer-glow { height: 70px; position: absolute; inset: -50px 0 auto; overflow: hidden; pointer-events: none; z-index: -1; filter: blur(12px); opacity: .6; background: radial-gradient(ellipse at 50% 100%, var(--glass-glow-one), transparent 65%); }
+#app-shell .feature-footer-glow i { position: absolute; bottom: -40px; width: 85px; height: 85px; border-radius: 50%; background: var(--glass-glow-two); }
+#app-shell .feature-footer-glow i:nth-child(even) { background: var(--glass-glow-three); }
+#app-shell .feature-not-found { text-align: center; max-width: 780px; padding-block: 20px 70px; }
+#app-shell .feature-not-found .hero-actions { justify-content: center; }
+#app-shell .feature-lamp-scene { position: relative; height: 310px; overflow: hidden; isolation: isolate; }
+#app-shell .feature-lamp-scene > span { position: absolute; inset: auto 0 5px; font-size: clamp(6rem, 24vw, 9rem); font-weight: 800; letter-spacing: .04em; color: var(--text); text-shadow: 0 0 55px var(--glass-glow-one); }
+#app-shell .feature-lamp { position: absolute; top: 0; left: calc(50% - 60px); width: 120px; transform-origin: 50% 0; display: flex; flex-direction: column; align-items: center; }
+#app-shell .feature-lamp-cord { width: 3px; height: 72px; background: var(--muted); }
+#app-shell .feature-lamp-shade { width: 100px; height: 42px; border-radius: 60px 60px 10px 10px; background: linear-gradient(120deg, var(--accent), var(--surface-2)); border: 1px solid var(--glass-edge); }
+#app-shell .feature-lamp-beam { width: 260px; height: 210px; clip-path: polygon(34% 0, 66% 0, 100% 100%, 0 100%); background: linear-gradient(var(--glass-glow-one), transparent); }
+#app-shell .feature-hero-showcase { min-width: 0; }
+#app-shell .feature-hero-showcase .brand-glass-scene { transition: filter 700ms; }
+#app-shell .feature-hero-showcase[data-direction="1"] .brand-glass-scene { filter: hue-rotate(35deg); }
+#app-shell .feature-hero-showcase[data-direction="2"] .brand-glass-scene { filter: hue-rotate(-35deg); }
+#app-shell .feature-hero-selector { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; margin-top: 30px; }
+#app-shell .feature-hero-selector button { display: flex; align-items: center; gap: 6px; min-height: 44px; padding: 9px 13px; font: inherit; font-size: .8rem; color: var(--muted); border: 1px solid var(--glass-edge); border-radius: 999px; background: var(--glass-fill); cursor: pointer; }
+#app-shell .feature-hero-selector button[aria-pressed="true"] { color: var(--text); border-color: var(--accent); box-shadow: inset 0 1px 0 var(--glass-shine); }
+#app-shell .feature-hero-detail { text-align: center; margin: 14px 0 0; min-height: 2.8em; font-size: .85rem; }
+#app-shell .feature-hero-detail a { color: var(--accent); }
+#app-shell .gallery-slide { opacity: .65; transition: opacity 450ms; }
+#app-shell .gallery-slide .media-preview-frame { transform: scale(.96); transition: transform 450ms; }
+#app-shell .gallery-slide[data-active="true"], #app-shell .gallery-slide:focus-within { opacity: 1; }
+#app-shell .gallery-slide[data-active="true"] .media-preview-frame, #app-shell .gallery-slide:focus-within .media-preview-frame { transform: scale(1); }
+#app-shell .feature-gallery-progress { height: 2px; margin-top: 5px; background: var(--line); overflow: hidden; }
+#app-shell .feature-gallery-progress i { display: block; height: 100%; background: var(--accent); transition: width 450ms var(--glass-ease); }
+@media (prefers-reduced-motion: no-preference) {
+  #app-shell .feature-auth-aside::before { animation: feature-auth-sweep 700ms var(--glass-ease) both; }
+  #app-shell .feature-auth-body { animation: glass-arrive 450ms var(--glass-ease) both; }
+  #app-shell .feature-order-motion[data-state="pending"] .feature-order-truck { animation: feature-truck 900ms ease-in-out infinite alternate; }
+  #app-shell .feature-order-motion[data-state="success"] .feature-order-check { stroke-dasharray: 45; animation: feature-check 500ms ease-out both; }
+  #app-shell .feature-loading-arm { transform-origin: 76px 49px; animation: feature-typing 500ms ease-in-out infinite alternate; }
+  #app-shell .feature-loading-track i { animation: feature-loading 1400ms ease-in-out infinite; }
+  #app-shell .feature-footer-glow[data-visible="true"] i { animation: feature-footer-rise 4s ease-out both; }
+  #app-shell .feature-lamp { animation: feature-lamp-swing 4s ease-in-out both; }
+  #app-shell .feature-hero-detail { animation: glass-arrive 350ms ease-out; }
+  #app-shell .feature-hero-showcase .brand-glass-pane-front { animation: feature-pane-turn 550ms var(--glass-ease); }
+}
+@keyframes feature-auth-sweep { from { opacity: .3; translate: -30px 0; } to { opacity: 1; translate: 0 0; } }
+@keyframes feature-truck { from { transform: translateX(-6px); } to { transform: translateX(6px); } }
+@keyframes feature-check { from { stroke-dashoffset: 45; } to { stroke-dashoffset: 0; } }
+@keyframes feature-typing { from { transform: rotate(-8deg); } to { transform: rotate(5deg); } }
+@keyframes feature-loading { from { transform: translateX(-100%); } to { transform: translateX(300%); } }
+@keyframes feature-footer-rise { 0% { transform: translateY(0) scale(.8); } 50% { transform: translateY(-45px) scale(1.1); } 100% { transform: translateY(0) scale(.8); } }
+@keyframes feature-lamp-swing { 0% { transform: rotate(18deg); } 25% { transform: rotate(-14deg); } 50% { transform: rotate(9deg); } 75% { transform: rotate(-4deg); } 100% { transform: rotate(0); } }
+@keyframes feature-pane-turn { from { transform: rotate(-20deg) translateY(12px); opacity: .6; } to { transform: rotate(-9deg) translateY(0); opacity: 1; } }
+@media (max-width: 640px) {
+  #app-shell .feature-auth { grid-template-columns: 1fr; }
+  #app-shell .feature-auth-aside { padding: 24px; gap: 12px; }
+  #app-shell .feature-auth-aside strong { font-size: 1.6rem; }
+  #app-shell .feature-auth-body { padding: 24px; }
+  #app-shell .feature-hero-showcase .brand-glass-scene { margin-inline: auto; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #app-shell .feature-person, #app-shell .feature-logout:is(:hover, :focus-visible, [aria-busy="true"]) .feature-person { transform: none; }
+  #app-shell .gallery-slide .media-preview-frame { transform: none; }
+}
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more), (forced-colors: active) {
+  #app-shell .feature-footer-glow { display: none; }
+}
+
+#app-shell .site-intro {
+  position: fixed; inset: 0; width: 100%; max-width: none; height: 100dvh; max-height: none;
+  margin: 0; padding: 0; border: 0; border-radius: 0; overflow: hidden;
+  color: #f5f7fc; background: transparent; box-shadow: none; animation: none;
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+}
+#app-shell .site-intro::backdrop { background: transparent; backdrop-filter: none; }
+:root[data-tec-intro="pending"] #app-shell .site-intro:not([open]) { display: block; z-index: 10000; background: #070a10; }
+#app-shell .site-intro canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+#app-shell .site-intro-static { display: none; position: absolute; inset: 0; place-items: center; background: #070a10; font-size: clamp(2.5rem, 12vw, 8rem); font-weight: 700; }
+#app-shell .site-intro:not([open]) .site-intro-static, #app-shell .site-intro[data-fallback="true"] .site-intro-static { display: grid; }
+#app-shell .site-intro-skip { position: absolute; bottom: max(28px, env(safe-area-inset-bottom)); right: max(24px, env(safe-area-inset-right)); padding: 12px 20px; min-height: 44px; border: 1px solid #ffffff66; border-radius: 999px; background: #101725e6; color: #fff; font: inherit; cursor: pointer; }
+:root[data-tec-intro="pending"] #app-shell { overflow: hidden; }
+@media (prefers-reduced-motion: reduce) {
+  #app-shell .site-intro { display: none !important; }
+}

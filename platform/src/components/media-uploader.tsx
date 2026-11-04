@@ -156,10 +156,11 @@ function MediaCarousel({ ids, title }: { ids: string[]; title: string }) {
         });
         setActive(nearest);
       }}>
-      {ids.map((id, index) => <div className="gallery-slide" key={id} role="group" aria-label={`${index + 1} / ${ids.length}`}>
+      {ids.map((id, index) => <div className="gallery-slide" key={id} role="group" data-active={index === active} aria-label={`${index + 1} / ${ids.length}`}>
         <MediaPreview id={id} title={`${title} — ${index + 1}`} carousel onZoomChange={setZoomOpen} />
       </div>)}
     </div>
+    {ids.length > 1 && <div className="feature-gallery-progress" aria-hidden="true"><i style={{ width: `${(active + 1) / ids.length * 100}%` }} /></div>}
   </div>;
 }
 

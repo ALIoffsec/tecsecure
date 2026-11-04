@@ -12,6 +12,7 @@ import { shopCopy } from "@/lib/shop-copy";
 import { journeyCopy } from "@/lib/journey-copy";
 import type { CatalogMedia, QuotedProduct } from "@/lib/catalog-utils";
 import { checkoutCopy } from "@/lib/checkout-copy";
+import { LoadingVisual, OrderMotion } from "./feature-visuals";
 
 type PreviewProduct = QuotedProduct & { name: string; slug: string; category: { slug: string } | null; assets: CatalogMedia[] };
 
@@ -66,6 +67,7 @@ export function CartCheckout({ canOrder = false }: { canOrder?: boolean }) {
 
   async function submit(event: { preventDefault: () => void }) {
     event.preventDefault();
+    if (busy) return;
     if (!canOrder || !preview || unavailable) { setError(c.changed); return; }
     setBusy(true);
     setError("");
@@ -97,7 +99,7 @@ export function CartCheckout({ canOrder = false }: { canOrder?: boolean }) {
     return <>
       <Steps current={3} />
       <div className="panel-card stack" style={{ textAlign: "center", justifyItems: "center", padding: 40 }}>
-        <div className="order-status is-done" style={{ fontSize: "1.4rem", padding: "10px 18px" }}>✓</div>
+        <OrderMotion state="success" />
         <h2>{d.accepted}</h2>
         <p>{d.reference}: <strong>{done}</strong></p>
         <p className="muted" style={{ maxWidth: 460 }}>{d.nextStep}</p>
@@ -171,7 +173,7 @@ export function CartCheckout({ canOrder = false }: { canOrder?: boolean }) {
         <div className="row"><span>{d.location}</span><strong>{coords ? d.chosen : form.address ? d.manual : "—"}</strong></div>
         {preview && [...subtotals].map(([currency, total]) => <div className="row" key={currency}><span>{c.subtotal} ({currency})</span><strong><CurrencyPrice amountMinor={total} currency={currency} /></strong></div>)}
         {unpriced && <p className="small">{c.pendingPrice}</p>}
-        {!preview && !previewError && <p role="status" aria-busy="true">…</p>}
+        {!preview && !previewError && <LoadingVisual />}
         <p className="small muted">{c.shipping}</p>
         <p className="small muted">{journey.deliveryNote}</p>
         <Link className="text-link small" href="/terms">{journey.terms}</Link>
@@ -179,7 +181,7 @@ export function CartCheckout({ canOrder = false }: { canOrder?: boolean }) {
         {unavailable && <p role="alert">{c.OUT_OF_STOCK}</p>}
         <button className="button secondary" type="button" onClick={() => setVersion(value => value + 1)}>{c.refresh}</button>
         <ToastMessage message={error} variant="error" />
-        <button className="button" type="submit" disabled={busy || !preview || unavailable || !canOrder}>{busy ? d.sending : d.submit}</button>
+        <button className="button feature-order-button" type="submit" aria-busy={busy} disabled={busy || !preview || unavailable || !canOrder}><OrderMotion state={busy ? "pending" : "idle"} /><span>{busy ? d.sending : d.submit}</span></button>
         <Link className="button ghost" href="/products">← {c.back}</Link>
       </aside>
     </form>
