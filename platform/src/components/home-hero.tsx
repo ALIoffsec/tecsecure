@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { useSitePreferences } from "./site-preferences";
 import { UiIcon, type IconName } from "./ui-icon";
 import { journeyCopy } from "@/lib/journey-copy";
@@ -22,10 +21,16 @@ export function HomeHero() {
           <h1 id="home-hero-title">{c.brandTitle}<span>{c.brandHighlight}</span></h1>
           <p className="lead">{c.brandIntro}</p>
         </div>
-        <div className="brand-visual">
-          <Image src="/hero/infrastructure.webp" alt="" fill sizes="(max-width: 900px) 100vw, 50vw" preload className="brand-visual-image" />
-          <div className="brand-visual-grid" aria-hidden="true" />
-          <div className="brand-visual-orbit" aria-hidden="true"><UiIcon name="network" size={76} /><span /><span /></div>
+        <div className="brand-glass-scene" aria-hidden="true">
+          <div className="brand-glass-color brand-glass-color-cyan" />
+          <div className="brand-glass-color brand-glass-color-violet" />
+          <div className="brand-glass-pane brand-glass-pane-back"><UiIcon name="book" size={40} /></div>
+          <div className="brand-glass-pane brand-glass-pane-front">
+            <span className="brand-glass-mark">Tecsecure</span>
+            <UiIcon name="network" size={88} />
+            <div className="brand-glass-lines"><span /><span /><span /></div>
+          </div>
+          <div className="brand-glass-pane brand-glass-pane-small"><UiIcon name="box" size={36} /></div>
         </div>
       </div>
     </section>

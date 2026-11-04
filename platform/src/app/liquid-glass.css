@@ -1,43 +1,45 @@
 :root[data-design="liquid"] {
-  --design-bg-dark: #080e1c;
+  --design-bg-dark: #080d20;
   --design-surface-dark: #182235;
   --design-surface-2-dark: #222f45;
   --design-line-dark: #ffffff26;
   --design-text-dark: #f5f7fc;
-  --design-muted-dark: #b3bfd1;
+  --design-muted-dark: #c3cee2;
   --design-accent: #89c8ff;
   --design-accent-soft: #22436c;
-  --design-bg-light: #edf2f9;
+  --design-bg-light: #e5ecfa;
   --design-surface-light: #fafdff;
   --design-surface-2-light: #e5ecf6;
   --design-line-light: #26436326;
   --design-text-light: #172438;
-  --design-muted-light: #52627a;
+  --design-muted-light: #3e506c;
   --design-font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --design-font-heading: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 :root[data-material="liquid"] {
   --radius: 24px;
-  --glass-fill: linear-gradient(145deg, #ffffff12, #ffffff03 55%), color-mix(in srgb, var(--surface) 72%, transparent);
-  --glass-overlay: color-mix(in srgb, var(--surface) 94%, transparent);
-  --glass-edge: #d7e9ff30;
-  --glass-shine: #ffffff26;
-  --glass-shadow: 0 16px 44px #02081330, inset 0 1px 0 var(--glass-shine), inset 0 -1px 0 #ffffff05;
-  --glass-filter: blur(20px) saturate(150%);
+  --glass-fill: linear-gradient(135deg, #ffffff16, #ffffff03 48%, #c3d5ff0a), color-mix(in srgb, var(--surface) 24%, transparent);
+  --glass-overlay: color-mix(in srgb, var(--surface) 78%, transparent);
+  --glass-control: color-mix(in srgb, var(--surface) 42%, transparent);
+  --glass-edge: #d7e9ff38;
+  --glass-shine: #ffffff55;
+  --glass-shadow: 0 20px 50px #02061930, inset 0 1px 0 var(--glass-shine), inset 1px 0 0 #ffffff12, inset 0 -1px 0 #ffffff09;
+  --glass-filter: blur(28px) saturate(155%);
   --glass-ease: cubic-bezier(.22, 1, .36, 1);
-  --glass-glow-one: #336fe238;
-  --glass-glow-two: #795ac733;
-  --glass-glow-three: #42b7c126;
+  --glass-glow-one: #167bc15c;
+  --glass-glow-two: #7548c65c;
+  --glass-glow-three: #079b9c40;
 }
 :root[data-material="liquid"][data-theme="light"] {
-  --glass-fill: linear-gradient(145deg, #ffffffb0, #ffffff20 70%), color-mix(in srgb, var(--surface) 58%, transparent);
-  --glass-overlay: #f8fbfff2;
-  --glass-edge: #ffffffba;
-  --glass-shine: #ffffffed;
-  --glass-shadow: 0 16px 44px #304d7012, 0 1px 3px #304d7014, inset 0 1px 0 var(--glass-shine);
-  --glass-glow-one: #86b2fb55;
-  --glass-glow-two: #ba9fe744;
-  --glass-glow-three: #8bdfdc44;
+  --glass-fill: linear-gradient(135deg, #ffffff66, #ffffff08 48%, #ffffff24), #ffffff24;
+  --glass-overlay: #eef4ffd6;
+  --glass-control: #ffffff50;
+  --glass-edge: #ffffffa6;
+  --glass-shine: #ffffffee;
+  --glass-shadow: 0 20px 50px #354a7a1a, inset 0 1px 0 var(--glass-shine), inset 1px 0 0 #ffffff80, inset 0 -1px 0 #ffffff33;
+  --glass-glow-one: #649cfa70;
+  --glass-glow-two: #a77ae670;
+  --glass-glow-three: #51cccd60;
 }
 :root[data-design="liquid"][data-theme="light"] { --accent: #095db9; --success: #187345; --danger: #b42e40; }
 :root[data-design="liquid"][data-theme="dark"] { --accent: #89c8ff; }
@@ -53,9 +55,10 @@
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  background: radial-gradient(ellipse at 8% 5%, var(--glass-glow-one), transparent 48%),
-    radial-gradient(ellipse at 95% 35%, var(--glass-glow-two), transparent 50%),
-    radial-gradient(ellipse at 40% 100%, var(--glass-glow-three), transparent 48%);
+  background:
+    radial-gradient(ellipse 42% 45% at 12% 18%, var(--glass-glow-one), transparent 100%),
+    radial-gradient(ellipse 38% 52% at 90% 44%, var(--glass-glow-two), transparent 100%),
+    radial-gradient(ellipse 45% 36% at 38% 94%, var(--glass-glow-three), transparent 100%);
 }
 #app-shell :is(h1, h2, h3) { text-wrap: balance; }
 #app-shell :is(.page-title, .learn-page-title) { letter-spacing: -.045em; }
@@ -67,7 +70,8 @@
   .customer-sidebar, .admin-sidebar, .learning-catalog-sidebar, .learning-sidebar,
   .learn-sidebar, .learn-toc, .learn-path-item, .learn-section-card, .learn-home-stat,
   .learn-profile-hero, .learn-profile-stat, .learn-practice-card, .learn-question-card,
-  .request-confirmation, .search-results > section, .site-design-option, .empty-state
+  .request-confirmation, .search-results > section, .site-design-option, .empty-state,
+  .learn-hero, .learn-module-card, .learn-path-card, .learning-cms-list, .learning-cms-editor
 ) {
   border: 1px solid var(--glass-edge);
   border-radius: var(--radius);
@@ -86,11 +90,11 @@
   box-shadow: inset 0 1px 0 var(--glass-shine);
 }
 #app-shell :is(.portal-nav, .site-nav) {
-  background: color-mix(in srgb, var(--surface) 78%, transparent);
+  background: var(--glass-fill);
   border-bottom: 1px solid var(--glass-edge);
-  box-shadow: 0 6px 26px #0208130c;
-  -webkit-backdrop-filter: blur(24px) saturate(160%);
-  backdrop-filter: blur(24px) saturate(160%);
+  box-shadow: 0 8px 32px #02081312, inset 0 -1px 0 #ffffff0a;
+  -webkit-backdrop-filter: var(--glass-filter);
+  backdrop-filter: var(--glass-filter);
 }
 #app-shell .portal-primary { padding: 4px; border: 1px solid var(--glass-edge); border-radius: 999px; background: #ffffff05; }
 #app-shell .portal-primary a { border-radius: 999px; font-weight: 600; }
@@ -120,7 +124,7 @@
 #app-shell :is(.button, button):disabled { cursor: not-allowed; opacity: .55; transform: none; }
 #app-shell :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]), select, textarea) {
   color: var(--text); border: 1px solid var(--line); border-radius: 14px;
-  background: color-mix(in srgb, var(--surface) 82%, transparent);
+  background: var(--glass-control);
   box-shadow: inset 0 1px 3px #00000009;
   transition: border-color 180ms, box-shadow 180ms;
 }
@@ -137,7 +141,7 @@
 #app-shell :is(.table, .compare-table) th { background: color-mix(in srgb, var(--surface-2) 82%, transparent); }
 #app-shell :is(.table, .compare-table) :is(th, td) { border-color: var(--line); }
 #app-shell :is(pre, .learn-terminal, .virtual-terminal, .code-block) { background: var(--surface); border-color: var(--line); border-radius: 16px; }
-#app-shell :is(.learn-article, .learn-lesson-content) { color: var(--text); }
+#app-shell :is(.learn-content, .learn-lab) { color: var(--text); background: var(--glass-overlay); }
 #app-shell .site-design-preview-liquid { background: radial-gradient(ellipse at 15% 20%, #adcfff99, transparent 60%), linear-gradient(140deg, #d7e8ff66, #637baf22); --preview-accent: #a8d8ff; border-color: #ffffff77; }
 
 #app-shell .brand-hero { padding-block: clamp(60px, 8vw, 120px) 80px; overflow: clip; }
@@ -146,25 +150,24 @@
 #app-shell .brand-hero h1 { font-size: clamp(3rem, 5.6vw, 5.4rem); font-weight: 650; line-height: 1.07; letter-spacing: -.065em; }
 #app-shell .brand-hero h1 > span { color: var(--accent); }
 #app-shell .brand-hero .lead { font-size: 1.08rem; line-height: 1.85; margin-bottom: 0; }
-#app-shell .brand-visual {
-  width: 100%; height: auto; aspect-ratio: 1; border-radius: 50%; isolation: isolate;
-  border: 1px solid #ffffff55; background: var(--glass-fill);
-  box-shadow: inset 14px 14px 30px #ffffff26, inset -12px -16px 28px #0003, 0 30px 80px var(--glass-glow-one);
-  transform: rotate(-12deg);
+#app-shell .brand-glass-scene { position: relative; width: 100%; aspect-ratio: 1; min-width: 0; }
+#app-shell .brand-glass-color { position: absolute; border-radius: 50%; }
+#app-shell .brand-glass-color-cyan { width: 58%; height: 58%; top: 2%; right: 0; background: radial-gradient(circle at 30% 25%, #91f3f5, #278dbb 55%, #365fa0); box-shadow: 0 0 80px #32c5dc38; }
+#app-shell .brand-glass-color-violet { width: 44%; height: 44%; bottom: 4%; left: 0; background: radial-gradient(circle at 30% 25%, #b8a0fa, #7951cb 55%, #423e94); box-shadow: 0 0 80px #9363df33; }
+#app-shell .brand-glass-pane {
+  position: absolute; border: 1px solid var(--glass-edge); border-top-color: var(--glass-shine);
+  border-radius: 30px; background: var(--glass-fill); color: var(--text);
+  box-shadow: var(--glass-shadow); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter);
 }
-#app-shell .brand-visual::after { z-index: 0; background: linear-gradient(135deg, #d7ebff66, #ffffff08 40%, #8b72dc22 68%, #ffffff33); pointer-events: none; }
-#app-shell .brand-visual .brand-visual-image { opacity: .38; filter: blur(3px) saturate(.6); transform: scale(1.12); }
-#app-shell .brand-visual-grid { display: none; }
-#app-shell .brand-visual-orbit {
-  z-index: 1; left: 50%; top: 50%; width: 58%; height: auto; aspect-ratio: 1;
-  border: 1px solid #ffffff55; border-radius: 50%; color: #f1f8ff;
-  background: linear-gradient(135deg, #ffffff33, #b5d9ff0a);
-  box-shadow: inset 0 2px 3px #ffffff66, 0 12px 32px #0002;
-  backdrop-filter: blur(10px);
-}
-#app-shell .brand-visual-orbit::before { border-style: solid; border-color: #ffffff22; inset: 14px; }
-#app-shell .brand-visual-orbit > svg { width: 42%; height: 42%; filter: drop-shadow(0 2px 8px #0003); transform: rotate(12deg); }
-#app-shell .brand-visual-orbit > span { display: none; }
+#app-shell .brand-glass-pane-back { width: 65%; height: 68%; top: 3%; left: 26%; transform: rotate(14deg); padding: 26px; display: flex; justify-content: flex-end; color: var(--text); }
+#app-shell .brand-glass-pane-front { width: 76%; height: 72%; top: 20%; left: 5%; transform: rotate(-9deg); display: flex; flex-direction: column; justify-content: space-between; padding: 28px; }
+#app-shell .brand-glass-mark { font-weight: 650; font-size: clamp(.85rem, 1.3vw, 1.15rem); letter-spacing: -.03em; }
+#app-shell .brand-glass-pane-front > svg { align-self: center; width: 31%; height: auto; filter: drop-shadow(0 3px 8px #0002); }
+#app-shell .brand-glass-lines { display: grid; gap: 8px; }
+#app-shell .brand-glass-lines span { height: 5px; border-radius: 10px; background: currentColor; opacity: .18; }
+#app-shell .brand-glass-lines span:nth-child(2) { width: 75%; }
+#app-shell .brand-glass-lines span:nth-child(3) { width: 45%; }
+#app-shell .brand-glass-pane-small { right: 0; bottom: 0; width: 24%; aspect-ratio: 1; display: grid; place-items: center; border-radius: 24px; transform: rotate(8deg); }
 #app-shell .hub-hero { border: 0; padding-top: 24px; }
 #app-shell .hub-heading { margin-bottom: 28px; }
 #app-shell .hub-path { padding: 28px; transition: transform 400ms var(--glass-ease), box-shadow 400ms; }
@@ -185,6 +188,8 @@
 
 #app-shell .shop-heading { margin-block: 16px 28px; }
 #app-shell .shop-heading h1 { font-weight: 650; }
+#app-shell .shop-search { background: var(--glass-control); border-color: var(--glass-edge); box-shadow: inset 0 1px 0 var(--glass-shine); }
+#app-shell .shop-search input { background: transparent; box-shadow: none; }
 #app-shell .shop-grid { gap: 24px; }
 #app-shell .shop-card { border-radius: 26px; transition: transform 420ms var(--glass-ease), box-shadow 420ms; }
 #app-shell .shop-card-media { margin: 10px 10px 0; border-radius: 20px; isolation: isolate; overflow: hidden; }
@@ -200,7 +205,7 @@
 #app-shell :is(.shop-quick-view, .shop-card-tools .shop-compare-button) { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 8px; min-height: 44px; font-size: .72rem; cursor: pointer; }
 #app-shell .shop-card .shop-add-to-cart { width: 100%; min-height: 44px; }
 #app-shell .shop-badge { border-radius: 999px; background: var(--glass-overlay); color: var(--text); border: 1px solid var(--glass-edge); backdrop-filter: blur(12px); }
-#app-shell .product-media-card { background: color-mix(in srgb, var(--surface-2) 65%, transparent); }
+#app-shell .product-media-card { background: linear-gradient(140deg, #ffffff0c, transparent); }
 #app-shell .product-media-card img { transition: transform 650ms var(--glass-ease), opacity 450ms; }
 #app-shell .product-media-fallback { background: transparent; }
 #app-shell .product-media-fallback > span { font-size: .68rem; background: var(--glass-overlay); color: var(--muted); }
@@ -232,14 +237,13 @@
   #app-shell .brand-hero-copy > * { animation: glass-arrive 850ms var(--glass-ease) both; }
   #app-shell .brand-hero-copy h1 { animation-delay: 80ms; }
   #app-shell .brand-hero-copy .lead { animation-delay: 160ms; }
-  #app-shell .brand-visual { animation: glass-lens-arrive 1100ms var(--glass-ease) both; }
+  #app-shell .brand-glass-scene { animation: glass-arrive 1100ms var(--glass-ease) both; }
   #app-shell :is(.hub-path, .shop-card, .learn-module-card, .need-card) { animation: glass-arrive 600ms var(--glass-ease) backwards; }
   #app-shell :is(.hub-path, .shop-card, .learn-module-card, .need-card):nth-child(3n + 2) { animation-delay: 65ms; }
   #app-shell :is(.hub-path, .shop-card, .learn-module-card, .need-card):nth-child(3n + 3) { animation-delay: 130ms; }
   #app-shell dialog[open] { animation: glass-arrive 260ms var(--glass-ease); }
 }
 @keyframes glass-arrive { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes glass-lens-arrive { from { opacity: 0; transform: translateY(30px) rotate(-18deg) scale(.94); } to { opacity: 1; transform: translateY(0) rotate(-12deg) scale(1); } }
 @media (max-width: 900px) {
   #app-shell .brand-hero-layout { gap: 28px; grid-template-columns: 1.2fr .8fr; }
   #app-shell .brand-hero h1 { font-size: clamp(2.6rem, 5.8vw, 4.4rem); }
@@ -247,14 +251,15 @@
   #app-shell .shop-card-body { padding: 16px; }
 }
 @media (max-width: 640px) {
-  :root[data-material="liquid"] { --glass-filter: blur(12px) saturate(140%); --radius: 20px; }
+  :root[data-material="liquid"] { --glass-filter: blur(18px) saturate(145%); --radius: 20px; }
   #app-shell .portal-primary { margin-block: 4px; }
   #app-shell .portal-nav-inner { gap: 4px 10px; }
   #app-shell .brand-hero { padding-block: 42px 36px; }
   #app-shell .brand-hero-layout { grid-template-columns: 1fr; gap: 26px; }
   #app-shell .brand-hero h1 { font-size: clamp(2.5rem, 9.5vw, 3.8rem); }
   #app-shell .brand-hero .lead { font-size: .96rem; line-height: 1.75; }
-  #app-shell .brand-visual { width: min(72%, 270px); justify-self: center; }
+  #app-shell .brand-glass-scene { width: min(90%, 320px); justify-self: center; margin-block: 8px 20px; }
+  #app-shell .brand-glass-pane-front { padding: 22px; }
   #app-shell .hub-path { padding: 20px; }
   #app-shell .hub-path h3 { margin-top: 0; }
   #app-shell .hub-path-action { margin-top: 8px; }
@@ -275,10 +280,10 @@
   #app-shell .home-contact-section .hub-contact { border-radius: 24px; }
 }
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  :root[data-material="liquid"][data-theme] { --glass-fill: var(--surface); --glass-overlay: var(--surface); }
+  :root[data-material="liquid"][data-theme] { --glass-fill: var(--surface); --glass-overlay: var(--surface); --glass-control: var(--surface); }
 }
 @media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
-  :root[data-material="liquid"][data-theme] { --glass-fill: var(--surface); --glass-overlay: var(--surface); --glass-filter: none; --glass-edge: var(--muted); }
+  :root[data-material="liquid"][data-theme] { --glass-fill: var(--surface); --glass-overlay: var(--surface); --glass-control: var(--surface); --glass-filter: none; --glass-edge: var(--muted); }
   #app-shell *, #app-shell *::before, #app-shell *::after, #app-shell dialog::backdrop { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
   #app-shell :is(.portal-nav, .site-nav) { background: var(--surface); backdrop-filter: none; }
   #app-shell::before { display: none; }
