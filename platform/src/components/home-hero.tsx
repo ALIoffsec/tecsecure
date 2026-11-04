@@ -26,21 +26,21 @@ export function HomeHero() {
           <p className="lead">{c.brandIntro}</p>
         </div>
         <div className="feature-hero-showcase" data-direction={selected}>
-        <div className="brand-glass-scene" aria-hidden="true">
-          <div className="brand-glass-color brand-glass-color-cyan" />
-          <div className="brand-glass-color brand-glass-color-violet" />
-          <div className="brand-glass-pane brand-glass-pane-back"><UiIcon name="book" size={40} /></div>
-          <div className="brand-glass-pane brand-glass-pane-front" key={current.href}>
-            <span className="brand-glass-mark">Tecsecure</span>
-            <UiIcon name={current.icon} size={88} />
-            <div className="brand-glass-lines"><span /><span /><span /></div>
+          <div className="brand-glass-scene" aria-hidden="true">
+            <div className="brand-glass-color brand-glass-color-cyan" />
+            <div className="brand-glass-color brand-glass-color-violet" />
+            <div className="brand-glass-pane brand-glass-pane-back"><UiIcon name="book" size={40} /></div>
+            <div className="brand-glass-pane brand-glass-pane-front" key={current.href}>
+              <span className="brand-glass-mark">Tecsecure</span>
+              <UiIcon name={current.icon} size={88} />
+              <div className="brand-glass-lines"><span /><span /><span /></div>
+            </div>
+            <div className="brand-glass-pane brand-glass-pane-small"><UiIcon name="box" size={36} /></div>
           </div>
           <div className="feature-hero-selector" role="group" aria-label={c.eyebrow}>
             {entries.map((entry, index) => <button key={entry.href} type="button" aria-pressed={selected === index} aria-controls={detailId} onClick={() => setSelected(index)}><UiIcon name={entry.icon} size={16} />{entry.title}</button>)}
           </div>
           <p className="feature-hero-detail" id={detailId} aria-live="polite"><Link href={current.href}>{current.line} <span aria-hidden="true">→</span></Link></p>
-          </div>
-          <div className="brand-glass-pane brand-glass-pane-small"><UiIcon name="box" size={36} /></div>
         </div>
       </div>
     </section>
