@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ToastMessage } from "@/components/toast-provider";
+import { SiteDialog } from "./site-dialog";
 
 type Coords = [number, number];
 type GeoResult = { geoObjects: { get: (i: number) => { getAddressLine?: () => string } | undefined } };
@@ -90,6 +90,7 @@ export function DeliveryMap({ value, address, onChange }: {
       mapRef.current = map;
       let mark: YPlacemark | null = null;
       const place = async (coords: Coords, reverse: boolean) => {
+        setError("");
         if (mark) mark.geometry.setCoordinates(coords);
         else {
           mark = new ymaps.Placemark(coords, {}, { preset: "islands#redDotIcon" });
@@ -99,9 +100,9 @@ export function DeliveryMap({ value, address, onChange }: {
         let selectedAddress: string | undefined;
         if (reverse) {
           try { selectedAddress = (await ymaps.geocode(coords)).geoObjects.get(0)?.getAddressLine?.(); }
-          catch { /* The selected coordinates remain usable without a resolved street name. */ }
+          catch { if (!cancelled) setError("Nuqta tanlandi, lekin ko‘cha nomini aniqlab bo‘lmadi. Manzilni qo‘lda to‘ldiring."); }
         }
-        if (reverse) onChangeRef.current(coords, selectedAddress);
+        if (reverse && !cancelled) onChangeRef.current(coords, selectedAddress);
       };
       placeRef.current = place;
       if (value) void place(value, false);
@@ -162,28 +163,23 @@ export function DeliveryMap({ value, address, onChange }: {
         {value ? "Manzilni o‘zgartirish" : "Xaritada manzil tanlash"}
       </button>
     </div>
-    {open && <div className="shop-map-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setOpen(false); }}>
-      <section className="shop-map-dialog" role="dialog" aria-modal="true" aria-labelledby="delivery-map-title">
-        <header className="shop-map-dialog-head">
-          <div><span className="eyebrow">YETKAZIB BERISH</span><h2 id="delivery-map-title">Yetkazish manzilini tanlang</h2></div>
-          <button className="button ghost" type="button" aria-label="Yopish" onClick={() => setOpen(false)}>✕</button>
-        </header>
+    {open && <SiteDialog className="shop-map-dialog" title="Yetkazish manzilini tanlang" onClose={() => setOpen(false)}>
         <div className="shop-map-toolbar">
           <p className="small muted">Xaritada nuqtani bosing yoki qidiruvdan foydalaning.</p>
         </div>
-        <ToastMessage message={state === "error" ? "Xarita yuklanmadi. Sahifani yangilang yoki manzilni izohda yozing." : ""} variant="error" />
+        {state === "error" && <p className="shop-map-error" role="alert">Xarita yuklanmadi. Sahifani yangilang yoki manzilni qo‘lda yozing.</p>}
         <div className="shop-map-canvas-wrap">
           <div ref={container} className="shop-map-canvas" aria-label="Yetkazish manzilini tanlash xaritasi" />
           <button className="shop-map-locate" type="button" onClick={useMyLocation} disabled={locating || state !== "ready"} aria-label="Mening joylashuvim" title="Mening joylashuvim">
             {locating ? <span className="shop-map-spinner" aria-hidden="true" /> : <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v3m0 14v3M2 12h3m14 0h3M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10Zm0 3v4m-2-2h4" /></svg>}
           </button>
-          <ToastMessage message={error} variant="error" />
+          {state === "loading" && <p className="shop-map-status" role="status">Xarita yuklanmoqda…</p>}
+          {error && <p className="shop-map-status" role="alert">{error}</p>}
         </div>
         <footer className="shop-map-dialog-foot">
           <span className="small muted">{value ? "Tanlangan nuqtani tekshirib tasdiqlang." : "Nuqta tanlanmaguncha tasdiqlash mumkin emas."}</span>
           <button className="button" type="button" disabled={!value} onClick={() => setOpen(false)}>Manzilni tasdiqlash</button>
         </footer>
-      </section>
-    </div>}
+    </SiteDialog>}
   </>;
 }

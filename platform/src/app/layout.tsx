@@ -3,6 +3,8 @@ import "./globals.css";
 import "./journeys.css";
 import "./liquid-glass.css";
 import "./feature-effects.css";
+import "./original-buttons.css";
+import "./original-effects.css";
 import { SiteNav } from "@/components/site-nav";
 import { PageBackLink } from "@/components/page-back-link";
 import { FontLoader } from "@/components/font-loader";

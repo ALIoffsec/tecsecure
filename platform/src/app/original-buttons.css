@@ -1,0 +1,419 @@
+/* Supplied truck and logout artwork, scoped to the component buttons. */
+#app-shell .original-order {
+  --color: #fff;
+  --background: #2B3044;
+  --tick: #16BF78;
+  --base: #0D0F18;
+  --wheel: #2B3044;
+  --wheel-inner: #646B8C;
+  --wheel-dot: #fff;
+  --back: #6D58FF;
+  --back-inner: #362A89;
+  --back-inner-shadow: #2D246B;
+  --front: #A6ACCD;
+  --front-shadow: #535A79;
+  --front-light: #FFF8B1;
+  --window: #2B3044;
+  --window-shadow: #404660;
+  --street: #646B8C;
+  --street-fill: #404660;
+  --box: #DCB97A;
+  --box-shadow: #B89B66;
+  padding: 12px 0;
+  width: 172px;
+  cursor: pointer;
+  text-align: center;
+  position: relative;
+  border: none;
+  outline: none;
+  color: var(--color);
+  background: var(--background);
+  border-radius: var(--br, 15px);
+  -webkit-appearance: none;
+  -webkit-tap-highlight-color: transparent;
+  transform-style: preserve-3d;
+  transform: rotateX(var(--rx, 0deg)) translateZ(0);
+  transition: transform 0.5s, border-radius 0.3s linear var(--br-d, 0s);
+}
+#app-shell .original-order:before, #app-shell .original-order:after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 6px;
+  display: block;
+  background: var(--b, var(--street));
+  transform-origin: 0 100%;
+  transform: rotateX(90deg) scaleX(var(--sy, 1));
+}
+#app-shell .original-order:after {
+  --sy: var(--progress, 0);
+  --b: var(--street-fill);
+}
+#app-shell .original-order .default,
+#app-shell .original-order .success {
+  display: block;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 24px;
+  opacity: var(--o, 1);
+  transition: opacity 0.3s;
+}
+#app-shell .original-order .success {
+  --o: 0;
+  position: absolute;
+  top: 12px;
+  left: 0;
+  right: 0;
+}
+#app-shell .original-order .success svg {
+  width: 12px;
+  height: 10px;
+  display: inline-block;
+  vertical-align: top;
+  fill: none;
+  margin: 7px 0 0 12px;
+  stroke: var(--tick);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 16px;
+  stroke-dashoffset: var(--offset, 16px);
+  transition: stroke-dashoffset 0.4s ease 0.45s;
+}
+#app-shell .original-order .truck {
+  position: absolute;
+  width: 72px;
+  height: 28px;
+  transform: rotateX(90deg) translate3d(var(--truck-x, 4px), calc(var(--truck-y-n, -26) * 1px), 12px);
+}
+#app-shell .original-order .truck:before, #app-shell .original-order .truck:after {
+  content: "";
+  position: absolute;
+  bottom: -6px;
+  left: var(--l, 18px);
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  z-index: 2;
+  box-shadow: inset 0 0 0 2px var(--wheel), inset 0 0 0 4px var(--wheel-inner);
+  background: var(--wheel-dot);
+  transform: translateY(calc(var(--truck-y) * -1px)) translateZ(0);
+}
+#app-shell .original-order .truck:after {
+  --l: 54px;
+}
+#app-shell .original-order .truck .wheel,
+#app-shell .original-order .truck .wheel:before {
+  position: absolute;
+  bottom: var(--b, -6px);
+  left: var(--l, 6px);
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--wheel);
+  transform: translateZ(0);
+}
+#app-shell .original-order .truck .wheel {
+  transform: translateY(calc(var(--truck-y) * -1px)) translateZ(0);
+}
+#app-shell .original-order .truck .wheel:before {
+  --l: 35px;
+  --b: 0;
+  content: "";
+}
+#app-shell .original-order .truck .front,
+#app-shell .original-order .truck .back,
+#app-shell .original-order .truck .box {
+  position: absolute;
+}
+#app-shell .original-order .truck .back {
+  left: 0;
+  bottom: 0;
+  z-index: 1;
+  width: 47px;
+  height: 28px;
+  border-radius: 1px 1px 0 0;
+  background: linear-gradient(68deg, var(--back-inner) 0%, var(--back-inner) 22%, var(--back-inner-shadow) 22.1%, var(--back-inner-shadow) 100%);
+}
+#app-shell .original-order .truck .back:before, #app-shell .original-order .truck .back:after {
+  content: "";
+  position: absolute;
+}
+#app-shell .original-order .truck .back:before {
+  left: 11px;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  border-radius: 0 1px 0 0;
+  background: var(--back);
+}
+#app-shell .original-order .truck .back:after {
+  border-radius: 1px;
+  width: 73px;
+  height: 2px;
+  left: -1px;
+  bottom: -2px;
+  background: var(--base);
+}
+#app-shell .original-order .truck .front {
+  left: 47px;
+  bottom: -1px;
+  height: 22px;
+  width: 24px;
+  -webkit-clip-path: polygon(55% 0, 72% 44%, 100% 58%, 100% 100%, 0 100%, 0 0);
+  clip-path: polygon(55% 0, 72% 44%, 100% 58%, 100% 100%, 0 100%, 0 0);
+  background: linear-gradient(84deg, var(--front-shadow) 0%, var(--front-shadow) 10%, var(--front) 12%, var(--front) 100%);
+}
+#app-shell .original-order .truck .front:before, #app-shell .original-order .truck .front:after {
+  content: "";
+  position: absolute;
+}
+#app-shell .original-order .truck .front:before {
+  width: 7px;
+  height: 8px;
+  background: #fff;
+  left: 7px;
+  top: 2px;
+  -webkit-clip-path: polygon(0 0, 60% 0%, 100% 100%, 0% 100%);
+  clip-path: polygon(0 0, 60% 0%, 100% 100%, 0% 100%);
+  background: linear-gradient(59deg, var(--window) 0%, var(--window) 57%, var(--window-shadow) 55%, var(--window-shadow) 100%);
+}
+#app-shell .original-order .truck .front:after {
+  width: 3px;
+  height: 2px;
+  right: 0;
+  bottom: 3px;
+  background: var(--front-light);
+}
+#app-shell .original-order .truck .box {
+  width: 13px;
+  height: 13px;
+  right: 56px;
+  bottom: 0;
+  z-index: 1;
+  border-radius: 1px;
+  overflow: hidden;
+  transform: translate(calc(var(--box-x, -24) * 1px), calc(var(--box-y, -6) * 1px)) scale(var(--box-s, 0.5));
+  opacity: var(--box-o, 0);
+  background: linear-gradient(68deg, var(--box) 0%, var(--box) 50%, var(--box-shadow) 50.2%, var(--box-shadow) 100%);
+  background-size: 250% 100%;
+  background-position-x: calc(var(--bx, 0) * 1%);
+}
+#app-shell .original-order .truck .box:before, #app-shell .original-order .truck .box:after {
+  content: "";
+  position: absolute;
+}
+#app-shell .original-order .truck .box:before {
+  content: "";
+  background: rgba(255, 255, 255, 0.2);
+  left: 0;
+  right: 0;
+  top: 6px;
+  height: 1px;
+}
+#app-shell .original-order .truck .box:after {
+  width: 6px;
+  left: 100%;
+  top: 0;
+  bottom: 0;
+  background: var(--back);
+  transform: translateX(calc(var(--hx, 0) * 1px));
+}
+#app-shell .original-order.animation {
+  --rx: -90deg;
+  --br: 0;
+}
+#app-shell .original-order.animation .default {
+  --o: 0;
+}
+#app-shell .original-order.animation.done {
+  --rx: 0deg;
+  --br: 15px;
+  --br-d: .2s;
+}
+#app-shell .original-order.animation.done .success {
+  --o: 1;
+  --offset: 0;
+}
+#app-shell .original-logout {
+  --figure-duration: 100ms;
+  --transform-figure: none;
+  --walking-duration: 100ms;
+  --transform-arm1: none;
+  --transform-wrist1: none;
+  --transform-arm2: none;
+  --transform-wrist2: none;
+  --transform-leg1: none;
+  --transform-calf1: none;
+  --transform-leg2: none;
+  --transform-calf2: none;
+
+  background: none;
+  border: 0;
+  color: #f4f7ff;
+  cursor: pointer;
+  display: block;
+  font-family: 'Quicksand', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  height: 40px;
+  outline: none;
+  padding: 0 0 0 20px;
+  perspective: 100px;
+  position: relative;
+  text-align: left;
+  width: 130px;
+  -webkit-tap-highlight-color: transparent;
+}
+#app-shell .original-logout::before {
+  background-color: #ffffff17;
+  border-radius: 5px;
+  content: '';
+  display: block;
+  height: 100%;
+  left: 0;
+  position: absolute;
+  top: 0;
+  transform: none;
+  transition: transform 50ms ease;
+  width: 100%;
+  z-index: 2;
+}
+#app-shell .original-logout:hover .door {
+  transform: rotateY(20deg);
+}
+#app-shell .original-logout:active::before {
+  transform: scale(.96);
+}
+#app-shell .original-logout:active .door {
+  transform: rotateY(28deg);
+}
+#app-shell .original-logout.clicked::before {
+  transform: none;
+}
+#app-shell .original-logout.clicked .door {
+  transform: rotateY(35deg);
+}
+#app-shell .original-logout.door-slammed .door {
+  transform: none;
+  transition: transform 100ms ease-in 250ms;
+}
+#app-shell .original-logout.falling {
+  animation: original-logout-shake 200ms linear;
+}
+#app-shell .original-logout.falling .bang {
+  animation: original-logout-flash 300ms linear;
+}
+#app-shell .original-logout.falling .figure {
+  animation: original-logout-spin 1000ms infinite linear;
+  bottom: -100px;
+  opacity: 0;
+  right: 1px;
+  transition: transform calc(var(--figure-duration) * 1ms) linear,
+    bottom calc(var(--figure-duration) * 1ms) cubic-bezier(0.7, 0.1, 1, 1) 100ms,
+    opacity calc(var(--figure-duration) * 0.25ms) linear calc(var(--figure-duration) * 0.75ms);
+  z-index: 1;
+}
+#app-shell .original-logout--light::before {
+  background-color: #f4f7ff;
+}
+#app-shell .original-logout--light .button-text {
+  color: #1f2335;
+}
+#app-shell .original-logout--light .door, #app-shell .original-logout--light .doorway {
+  fill: #1f2335;
+}
+#app-shell .original-logout .button-text {
+  color: #f4f7ff;
+  font-weight: 500;
+  position: relative;
+  z-index: 10;
+}
+#app-shell .original-logout svg {
+  display: block;
+  position: absolute;
+}
+#app-shell .original-logout .figure {
+  bottom: 5px;
+  fill: #4371f7;
+  right: 18px;
+  transform: var(--transform-figure);
+  transition: transform calc(var(--figure-duration) * 1ms) cubic-bezier(0.2, 0.1, 0.80, 0.9);
+  width: 30px;
+  z-index: 4;
+}
+#app-shell .original-logout .door, #app-shell .original-logout .doorway {
+  bottom: 4px;
+  fill: #f4f7ff;
+  right: 12px;
+  width: 32px;
+}
+#app-shell .original-logout .door {
+  transform: rotateY(20deg);
+  transform-origin: 100% 50%;
+  transform-style: preserve-3d;
+  transition: transform 200ms ease;
+  z-index: 5;
+}
+#app-shell .original-logout .door path {
+  fill: #4371f7;
+  stroke: #4371f7;
+  stroke-width: 4;
+}
+#app-shell .original-logout .doorway {
+  z-index: 3;
+}
+#app-shell .original-logout .bang {
+  opacity: 0;
+}
+#app-shell .original-logout .arm1, #app-shell .original-logout .wrist1, #app-shell .original-logout .arm2, #app-shell .original-logout .wrist2, #app-shell .original-logout .leg1, #app-shell .original-logout .calf1, #app-shell .original-logout .leg2, #app-shell .original-logout .calf2 {
+  transition: transform calc(var(--walking-duration) * 1ms) ease-in-out;
+}
+#app-shell .original-logout .arm1 {
+  transform: var(--transform-arm1);
+  transform-origin: 52% 45%;
+}
+#app-shell .original-logout .wrist1 {
+  transform: var(--transform-wrist1);
+  transform-origin: 59% 55%;
+}
+#app-shell .original-logout .arm2 {
+  transform: var(--transform-arm2);
+  transform-origin: 47% 43%;
+}
+#app-shell .original-logout .wrist2 {
+  transform: var(--transform-wrist2);
+  transform-origin: 35% 47%;
+}
+#app-shell .original-logout .leg1 {
+  transform: var(--transform-leg1);
+  transform-origin: 47% 64.5%;
+}
+#app-shell .original-logout .calf1 {
+  transform: var(--transform-calf1);
+  transform-origin: 55.5% 71.5%;
+}
+#app-shell .original-logout .leg2 {
+  transform: var(--transform-leg2);
+  transform-origin: 43% 63%;
+}
+#app-shell .original-logout .calf2 {
+  transform: var(--transform-calf2);
+  transform-origin: 41.5% 73%;
+}
+@keyframes original-logout-spin {
+  from { transform: rotate(0deg) scale(0.94); }
+  to { transform: rotate(359deg) scale(0.94); }
+}
+@keyframes original-logout-shake {
+  0% { transform: rotate(-1deg); }
+  50% { transform: rotate(2deg); }
+  100% { transform: rotate(-1deg); }
+}
+@keyframes original-logout-flash {
+  0% { opacity: 0.4; }
+  100% { opacity: 0; }
+}

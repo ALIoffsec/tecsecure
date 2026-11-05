@@ -121,8 +121,8 @@
   background: var(--glass-fill); box-shadow: inset 0 1px 0 var(--glass-shine);
 }
 #app-shell .button.danger { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 40%, transparent); background: var(--glass-fill); }
-#app-shell :is(.button, button):disabled { cursor: not-allowed; opacity: .55; transform: none; }
-#app-shell :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]), select, textarea) {
+#app-shell :is(.button, button):disabled:not(.original-order):not(.original-logout) { cursor: not-allowed; opacity: .55; transform: none; }
+#app-shell :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]), select, textarea):not(.original-auth input) {
   color: var(--text); border: 1px solid var(--line); border-radius: 14px;
   background: var(--glass-control);
   box-shadow: inset 0 1px 3px #00000009;

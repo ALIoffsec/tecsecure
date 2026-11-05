@@ -1,81 +1,82 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
-import { useSitePreferences } from "@/components/site-preferences";
-import { ToastMessage } from "@/components/toast-provider";
-import { OAuthSignIn } from "@/components/oauth-sign-in";
+import { type FormEvent, useEffect, useRef, useState } from "react";
+import { useSitePreferences } from "./site-preferences";
+import { ToastMessage } from "./toast-provider";
+import { OAuthSignIn } from "./oauth-sign-in";
 import { featureCopy } from "@/lib/feature-copy";
 
-type Props = { mode: "login" | "register"; audience?: "customer" | "staff"; redirectTo?: string };
+type Mode = "login" | "register";
+type Props = { mode: Mode; audience?: "customer" | "staff"; redirectTo?: string };
 
 export function AuthForm({ mode, audience = "customer", redirectTo }: Props) {
   const router = useRouter();
   const { t, locale } = useSitePreferences();
   const c = featureCopy[locale];
+  const [active, setActive] = useState<Mode>(mode);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-  const nextQuery = redirectTo ? `?next=${encodeURIComponent(redirectTo)}` : "";
+  const root = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const sync = () => { if (audience === "customer") { setActive(location.pathname === "/register" ? "register" : "login"); setError(""); } };
+    window.addEventListener("popstate", sync);
+    return () => window.removeEventListener("popstate", sync);
+  }, [audience]);
 
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  function switchMode(next: Mode) {
+    if (busy || next === active || audience === "staff") return;
     setError("");
-    setBusy(true);
-    const data = { ...Object.fromEntries(new FormData(event.currentTarget)), audience };
-    try {
-      const response = await fetch(`/api/auth/${mode}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data)
-      });
-      const result = await response.json();
-      if (!response.ok) {
-        setError(result.error ?? t("requestFailed"));
-        return;
-      }
-      router.replace(audience === "staff" ? "/admin" : redirectTo ?? "/portal");
-      router.refresh();
-    } catch {
-      setError(t("serverUnavailable"));
-    } finally {
-      setBusy(false);
-    }
+    setActive(next);
+    window.history.pushState(null, "", `/${next}${redirectTo ? `?next=${encodeURIComponent(redirectTo)}` : ""}`);
+    requestAnimationFrame(() => root.current?.querySelector<HTMLInputElement>(`[data-kind="${next}"] input`)?.focus({ preventScroll: true }));
   }
 
-  return (
-    <section className="auth-card feature-auth" data-mode={mode}>
-      <aside className="feature-auth-aside">
-        <span className="eyebrow">Tecsecure</span>
-        <strong>{audience === "staff" ? t("staffLogin") : mode === "login" ? c.welcome : c.join}</strong>
+  async function submit(event: FormEvent<HTMLFormElement>, kind: Mode) {
+    event.preventDefault();
+    if (busy || kind !== active) return;
+    setError(""); setBusy(true);
+    const data = { ...Object.fromEntries(new FormData(event.currentTarget)), audience };
+    try {
+      const response = await fetch(`/api/auth/${kind}`, {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data)
+      });
+      const result = await response.json();
+      if (!response.ok) { setError(result.error ?? t("requestFailed")); return; }
+      router.replace(audience === "staff" ? "/admin" : redirectTo ?? "/portal");
+      router.refresh();
+    } catch { setError(t("serverUnavailable")); }
+    finally { setBusy(false); }
+  }
+
+  return <section ref={root} className="original-auth" data-mode={active} data-audience={audience}>
+    <div className="curved-shape" aria-hidden="true" /><div className="curved-shape2" aria-hidden="true" />
+    <div className="original-auth-forms">
+      {(["login", "register"] as const).filter(kind => audience === "customer" || kind === "login").map(kind => {
+        const selected = kind === active;
+        return <div className="original-auth-panel" data-kind={kind} key={kind} inert={!selected} aria-hidden={!selected}>
+          <span className="eyebrow animation">{audience === "staff" ? t("staffLogin") : kind === "login" ? t("loginEyebrow") : t("registerEyebrow")}</span>
+          <h1 className="animation">{audience === "staff" ? t("staffLoginTitle") : kind === "login" ? t("loginTitle") : t("registerTitle")}</h1>
+          <form onSubmit={event => void submit(event, kind)}>
+            <fieldset disabled={busy || !selected}>
+              {kind === "register" && <div className="input-box animation"><input id={`${kind}-name`} name="name" autoComplete="name" minLength={2} maxLength={100} placeholder=" " required /><label htmlFor={`${kind}-name`}>{t("name")}</label></div>}
+              <div className="input-box animation"><input id={`${kind}-email`} name="email" type="email" autoComplete="email" maxLength={254} placeholder=" " required /><label htmlFor={`${kind}-email`}>{t("email")}</label></div>
+              <div className="input-box animation"><input id={`${kind}-password`} name="password" type="password" autoComplete={kind === "login" ? "current-password" : "new-password"} minLength={kind === "register" ? 8 : 1} maxLength={128} placeholder=" " required /><label htmlFor={`${kind}-password`}>{t("password")}</label></div>
+              {kind === "register" && <p className="small animation">{t("minimum8Characters")}</p>}
+              <button className="auth-submit animation" type="submit">{busy ? t("waiting") : kind === "login" ? t("signIn") : t("createAccountButton")}</button>
+            </fieldset>
+          </form>
+          {audience === "customer" && <>
+            <p className="regi-link animation">{kind === "login" ? t("noAccount") : t("alreadyHaveAccount")} <button type="button" disabled={busy} onClick={() => switchMode(kind === "login" ? "register" : "login")}>{kind === "login" ? t("registerLink") : t("signIn")}</button></p>
+            {selected && <OAuthSignIn mode={kind} redirectTo={redirectTo} />}
+          </>}
+        </div>;
+      })}
+      <aside className="original-auth-info" aria-hidden="true">
+        <strong>{audience === "staff" ? t("staffLogin") : active === "login" ? c.welcome : c.join}</strong>
         <p>{audience === "staff" ? c.staffNote : c.accountNote}</p>
       </aside>
-      <div className="feature-auth-body">
-      {audience === "customer" && <nav className="feature-auth-tabs" aria-label={t("account")}>
-        <Link href={`/login${nextQuery}`} aria-current={mode === "login" ? "page" : undefined}>{t("signIn")}</Link>
-        <Link href={`/register${nextQuery}`} aria-current={mode === "register" ? "page" : undefined}>{t("registerLink")}</Link>
-      </nav>}
-      <span className="eyebrow">{audience === "staff" ? t("staffLogin") : mode === "login" ? t("loginEyebrow") : t("registerEyebrow")}</span>
-      <h1>{audience === "staff" ? t("staffLoginTitle") : mode === "login" ? t("loginTitle") : t("registerTitle")}</h1>
-      <p className="muted">
-        {audience === "staff" ? t("staffLoginDescription") : mode === "login" ? t("loginDescription") : t("registerDescription")}
-      </p>
-      <form className="form" onSubmit={submit}>
-        {mode === "register" && <div className="field"><label htmlFor="name">{t("name")}</label><input id="name" name="name" autoComplete="name" minLength={2} maxLength={100} required /></div>}
-        <div className="field"><label htmlFor="email">{t("email")}</label><input id="email" name="email" type="email" autoComplete="email" maxLength={254} required /></div>
-        <div className="field">
-          <label htmlFor="password">{t("password")}</label>
-          <input id="password" name="password" type="password" autoComplete={mode === "login" ? "current-password" : "new-password"} minLength={mode === "register" ? 8 : 1} maxLength={128} required />
-          {mode === "register" && <span className="small muted">{t("minimum8Characters")}</span>}
-        </div>
-        <ToastMessage message={error} variant="error" />
-        <button className="button" type="submit" disabled={busy}>{busy ? t("waiting") : mode === "login" ? t("signIn") : t("createAccountButton")}</button>
-      </form>
-      {audience === "customer" && <OAuthSignIn mode={mode} redirectTo={redirectTo} />}
-      {audience === "customer" && <p className="small muted" style={{ marginTop: 18 }}>
-        {mode === "login" ? <>{t("noAccount")} <Link className="text-link" href={`/register${nextQuery}`}>{t("registerLink")}</Link></> : <>{t("alreadyHaveAccount")} <Link className="text-link" href={`/login${nextQuery}`}>{t("signIn")}</Link></>}
-      </p>}
-      </div>
-    </section>
-  );
+    </div>
+    <ToastMessage message={error} variant="error" />
+  </section>;
 }

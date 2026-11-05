@@ -1,16 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSitePreferences } from "@/components/site-preferences";
 import { ToastMessage } from "@/components/toast-provider";
-import { LogoutFigure } from "./feature-visuals";
+import { OriginalLogoutArt } from "./original-logout-art";
+import { setLogoutPose, startLogoutMotion, type ButtonMotion } from "@/lib/button-motion";
 
 export function AccountSessionActions({ compact = false, redirectTo = "/login" }: { compact?: boolean; redirectTo?: "/login" | "/staff/login" }) {
   const router = useRouter();
   const { t } = useSitePreferences();
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const button = useRef<HTMLButtonElement>(null);
+  const animation = useRef<ButtonMotion | null>(null);
+  useEffect(() => () => animation.current?.cancel(), []);
 
   async function signOut() {
     if (busy) return;
@@ -22,11 +26,17 @@ export function AccountSessionActions({ compact = false, redirectTo = "/login" }
         setError(t("signOutFailed"));
         return;
       }
+      if (button.current) {
+        animation.current = startLogoutMotion(button.current);
+        await animation.current.ready;
+      }
       router.replace(redirectTo);
       router.refresh();
     } catch {
       setError(t("signOutFailed"));
     } finally {
+      animation.current?.cancel();
+      animation.current = null;
       setBusy(false);
     }
   }
@@ -34,9 +44,9 @@ export function AccountSessionActions({ compact = false, redirectTo = "/login" }
   return (
     <>
       <ToastMessage message={error} variant="error" />
-      <button className={`${compact ? "icon-button" : "button secondary"} feature-logout`} type="button" disabled={busy} aria-busy={busy} onClick={signOut} title={t("logoutAccount")} aria-label={compact ? t("logoutAccount") : undefined}>
-        <LogoutFigure />
-        {!compact && <span>{busy ? t("loggingOut") : t("logoutAccount")}</span>}
+      <button ref={button} className="original-logout" data-compact={compact} type="button" disabled={busy} aria-busy={busy} onClick={signOut} onMouseEnter={() => { if (!busy && button.current) setLogoutPose(button.current, "hover"); }} onMouseLeave={() => { if (!busy && button.current) setLogoutPose(button.current, "default"); }} title={t("logoutAccount")} aria-label={busy ? t("loggingOut") : t("logoutAccount")}>
+        <OriginalLogoutArt />
+        <span className="button-text">{busy ? t("loggingOut") : t("logoutAccount")}</span>
       </button>
     </>
   );

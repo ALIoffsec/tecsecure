@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { DeliveryMap } from "@/components/delivery-map";
 import { clearCart, setQuantity, useCart } from "@/components/cart";
 import { ProductMedia } from "@/components/product-media";
@@ -12,7 +12,8 @@ import { shopCopy } from "@/lib/shop-copy";
 import { journeyCopy } from "@/lib/journey-copy";
 import type { CatalogMedia, QuotedProduct } from "@/lib/catalog-utils";
 import { checkoutCopy } from "@/lib/checkout-copy";
-import { LoadingVisual, OrderMotion } from "./feature-visuals";
+import { OriginalOrderButton } from "./original-order-button";
+import { startOrderMotion, type ButtonMotion } from "@/lib/button-motion";
 
 type PreviewProduct = QuotedProduct & { name: string; slug: string; category: { slug: string } | null; assets: CatalogMedia[] };
 
@@ -38,6 +39,9 @@ export function CartCheckout({ canOrder = false }: { canOrder?: boolean }) {
   const [preview, setPreview] = useState<PreviewProduct[] | null>(null);
   const [previewError, setPreviewError] = useState("");
   const [version, setVersion] = useState(0);
+  const orderButton = useRef<HTMLButtonElement>(null);
+  const animation = useRef<ButtonMotion | null>(null);
+  useEffect(() => () => animation.current?.cancel(), []);
   const ids = lines.map(line => line.productId).join(",");
   useEffect(() => {
     if (!ids) { setPreview(null); return; }
@@ -72,6 +76,7 @@ export function CartCheckout({ canOrder = false }: { canOrder?: boolean }) {
     setBusy(true);
     setError("");
     try {
+      if (orderButton.current) animation.current = startOrderMotion(orderButton.current);
       const response = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -86,11 +91,15 @@ export function CartCheckout({ canOrder = false }: { canOrder?: boolean }) {
       const data = await response.json();
       if (response.status === 401) { setError(c.signInOrder); return; }
       if (!response.ok) { setError(data.code === "CATALOG_CHANGED" ? c.changed : data.error ?? d.fail); if (response.status === 409) setVersion(value => value + 1); return; }
+      if (typeof data.order?.reference !== "string" || !data.order.reference.trim()) { setError(d.fail); return; }
+      await animation.current?.complete();
       clearCart();
       setDone(data.order.reference);
     } catch {
       setError(d.network);
     } finally {
+      animation.current?.cancel();
+      animation.current = null;
       setBusy(false);
     }
   }
@@ -99,7 +108,7 @@ export function CartCheckout({ canOrder = false }: { canOrder?: boolean }) {
     return <>
       <Steps current={3} />
       <div className="panel-card stack" style={{ textAlign: "center", justifyItems: "center", padding: 40 }}>
-        <OrderMotion state="success" />
+        <svg className="order-accepted-mark" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="18" /><path d="m11 20 6 6 12-13" /></svg>
         <h2>{d.accepted}</h2>
         <p>{d.reference}: <strong>{done}</strong></p>
         <p className="muted" style={{ maxWidth: 460 }}>{d.nextStep}</p>
@@ -121,7 +130,7 @@ export function CartCheckout({ canOrder = false }: { canOrder?: boolean }) {
     <Steps current={coords || form.recipientName || form.address ? 2 : 1} />
     {!canOrder && <div className="shop-price-notice"><p>{c.signInOrder}</p><Link className="button" href="/login?next=%2Fcart">{locale === "uz" ? "Hisobga kirish" : locale === "ru" ? "Войти" : "Sign in"}</Link></div>}
     <form onSubmit={submit} className="shop-checkout">
-      <div className="stack" style={{ gap: 18 }}>
+      <fieldset disabled={busy} className="stack" style={{ gap: 18, padding: 0, border: 0, margin: 0, minWidth: 0 }}>
         <section className="panel-card">
           <h2>{d.products} ({count})</h2>
           {lines.map((line) => <div className="shop-line" key={line.productId}>
@@ -165,7 +174,7 @@ export function CartCheckout({ canOrder = false }: { canOrder?: boolean }) {
           </div>
           <label className="shop-field"><span>{d.note}</span><textarea value={form.note} onChange={update("note")} maxLength={500} rows={3} /></label>
         </section>
-      </div>
+      </fieldset>
 
       <aside className="shop-summary">
         <h2>{d.summary}</h2>
@@ -173,15 +182,15 @@ export function CartCheckout({ canOrder = false }: { canOrder?: boolean }) {
         <div className="row"><span>{d.location}</span><strong>{coords ? d.chosen : form.address ? d.manual : "—"}</strong></div>
         {preview && [...subtotals].map(([currency, total]) => <div className="row" key={currency}><span>{c.subtotal} ({currency})</span><strong><CurrencyPrice amountMinor={total} currency={currency} /></strong></div>)}
         {unpriced && <p className="small">{c.pendingPrice}</p>}
-        {!preview && !previewError && <LoadingVisual />}
+        {!preview && !previewError && <p role="status">{d.sending}</p>}
         <p className="small muted">{c.shipping}</p>
         <p className="small muted">{journey.deliveryNote}</p>
         <Link className="text-link small" href="/terms">{journey.terms}</Link>
         {previewError && <p role="alert">{previewError}</p>}
         {unavailable && <p role="alert">{c.OUT_OF_STOCK}</p>}
-        <button className="button secondary" type="button" onClick={() => setVersion(value => value + 1)}>{c.refresh}</button>
+        <button className="button secondary" type="button" disabled={busy} onClick={() => setVersion(value => value + 1)}>{c.refresh}</button>
         <ToastMessage message={error} variant="error" />
-        <button className="button feature-order-button" type="submit" aria-busy={busy} disabled={busy || !preview || unavailable || !canOrder}><OrderMotion state={busy ? "pending" : "idle"} /><span>{busy ? d.sending : d.submit}</span></button>
+        <OriginalOrderButton ref={orderButton} busy={busy} disabled={busy || !preview || unavailable || !canOrder} label={d.submit} pending={d.sending} success={d.accepted} />
         <Link className="button ghost" href="/products">← {c.back}</Link>
       </aside>
     </form>

@@ -1,56 +1,35 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
 import { useSitePreferences } from "./site-preferences";
 import { featureCopy } from "@/lib/feature-copy";
 
-export function LogoutFigure() {
-  return <svg className="feature-logout-figure" viewBox="0 0 48 36" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-    <path className="feature-door" d="M29 32V4h14v28M32 18h2" />
-    <g className="feature-person"><circle cx="15" cy="8" r="3" /><path d="m15 12-3 10 8 8m-8-8-6 8m9-17 6 7h6M14 14l-7 6" /></g>
-  </svg>;
-}
-
-export function OrderMotion({ state }: { state: "idle" | "pending" | "success" }) {
-  return <span className="feature-order-motion" data-state={state} aria-hidden="true">
-    <svg viewBox="0 0 90 40" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round">
-      <path className="feature-order-road" d="M2 34h86" />
-      <g className="feature-order-truck"><path d="M18 10h34v20H18zM52 17h12l9 9v4H52M58 18v8h14" /><circle cx="29" cy="31" r="4" /><circle cx="61" cy="31" r="4" /><path className="feature-order-box" d="M28 15h13v11H28zM34 15v5" /></g>
-      <path className="feature-order-check" d="m32 20 9 9 18-20" />
-    </svg>
-  </span>;
-}
-
-export function LoadingVisual({ label }: { label?: string }) {
-  const { locale } = useSitePreferences();
-  const c = featureCopy[locale];
-  return <div className="feature-loading" role="status">
-    <svg viewBox="0 0 180 90" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
-      <path d="M22 70h136M105 35h42v29h-42zM117 70v-6" />
-      <circle cx="62" cy="22" r="10" />
-      <path d="M58 35 48 60v10M58 36l18 13" />
-      <path className="feature-loading-arm" d="m76 49 17 10h16" />
-      <path className="feature-loading-signal" d="m117 45 5 5-5 5m12 0h8" />
-    </svg>
-    <strong>{label ?? c.loading}</strong>
-    <span className="feature-loading-track" aria-hidden="true"><i /></span>
-  </div>;
-}
-
 export function FooterGlow() {
   const ref = useRef<HTMLDivElement>(null);
+  const id = useId();
+  const { locale } = useSitePreferences();
+  const c = featureCopy[locale];
   const [visible, setVisible] = useState(false);
+  const [paused, setPaused] = useState(false);
+  const [pageVisible, setPageVisible] = useState(true);
   useEffect(() => {
-    const observer = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting) { setVisible(true); observer.disconnect(); }
-    });
+    const observer = new IntersectionObserver(([entry]) => setVisible(entry.isIntersecting));
+    const onVisibility = () => setPageVisible(!document.hidden);
+    document.addEventListener("visibilitychange", onVisibility);
+    onVisibility();
     if (ref.current) observer.observe(ref.current);
-    return () => observer.disconnect();
+    return () => { observer.disconnect(); document.removeEventListener("visibilitychange", onVisibility); };
   }, []);
-  return <div ref={ref} className="feature-footer-glow" data-visible={visible} aria-hidden="true">
-    {Array.from({ length: 8 }, (_, i) => <i key={i} style={{ left: `${6 + i * 12}%`, animationDelay: `${i % 3 * 150}ms` }} />)}
-  </div>;
+  return <>
+    <div ref={ref} className="feature-footer-glow" data-running={visible && pageVisible && !paused} aria-hidden="true">
+      <div className="feature-footer-liquid" style={{ filter: `url("#${id}")` }}>
+        {Array.from({ length: 40 }, (_, i) => <i key={i} style={{ left: `${(i * 37) % 101}%`, width: `${48 + i % 7 * 10}px`, height: `${48 + i % 7 * 10}px`, animationDuration: `${3 + i % 4}s`, animationDelay: `${-(i % 11)}s` }} />)}
+      </div>
+      <svg width="0" height="0"><defs><filter id={id}><feGaussianBlur in="SourceGraphic" stdDeviation="12" result="blur" /><feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 19 -9" /></filter></defs></svg>
+    </div>
+    <button className="feature-footer-pause" type="button" aria-pressed={paused} onClick={() => setPaused(value => !value)}>{paused ? c.resumeMotion : c.pauseMotion}</button>
+  </>;
 }
 
 export function NotFoundView() {

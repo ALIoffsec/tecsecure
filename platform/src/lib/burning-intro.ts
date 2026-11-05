@@ -2,11 +2,11 @@ const vertexSource = `
 attribute vec2 a_position;
 varying vec2 v_uv;
 void main() {
-  v_uv = a_position * .5 + .5;
+  v_uv = a_position;
   gl_Position = vec4(a_position, 0., 1.);
 }`;
 
-// Noise-driven dissolve adapted from the supplied burning_reveal demo.
+// Original burning_reveal noise and fire-edge equations; only the title texture is branded.
 const fragmentSource = `
 precision mediump float;
 varying vec2 v_uv;
@@ -14,37 +14,43 @@ uniform sampler2D u_text;
 uniform vec2 u_resolution;
 uniform float u_progress;
 uniform float u_time;
-float random(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
-float noise(vec2 p) {
-  vec2 i = floor(p), f = fract(p);
-  f = f * f * (3. - 2. * f);
-  return mix(mix(random(i), random(i + vec2(1., 0.)), f.x),
-    mix(random(i + vec2(0., 1.)), random(i + vec2(1., 1.)), f.x), f.y);
+float rand(vec2 n) {
+  return fract(cos(dot(n, vec2(12.9898, 4.1414))) * 43758.5453);
 }
-float fbm(vec2 p) {
-  float value = 0., amplitude = .5;
+float noise(vec2 n) {
+  const vec2 d = vec2(0., 1.);
+  vec2 b = floor(n), f = smoothstep(vec2(0.), vec2(1.), fract(n));
+  return mix(mix(rand(b), rand(b + d.yx), f.x), mix(rand(b + d.xy), rand(b + d.yy), f.x), f.y);
+}
+float fbm(vec2 n) {
+  float total = 0., amplitude = .4;
   for (int i = 0; i < 4; i++) {
-    value += amplitude * noise(p);
-    p = p * 2.1 + 3.7;
-    amplitude *= .5;
+    total += noise(n) * amplitude;
+    n += n;
+    amplitude *= .6;
   }
-  return value;
+  return total;
 }
 void main() {
-  vec2 screen = vec2(v_uv.x, 1. - v_uv.y);
-  vec2 uv = screen * vec2(u_resolution.x / max(u_resolution.y, 1.), 1.);
-  float field = .43 * screen.x + .28 * (1. - screen.y) + .32 * fbm(uv * 5.);
-  float remaining = smoothstep(u_progress - .012, u_progress + .012, field);
-  float edge = 1. - smoothstep(.008, .055, abs(field - u_progress));
-  float grain = fbm(uv * 11. + vec2(0., -u_time * .7));
-  vec3 title = texture2D(u_text, screen).rgb;
-  vec3 paper = vec3(.018, .025, .045) + grain * .018;
-  vec3 color = mix(paper, vec3(.94, .96, 1.), title.r);
-  float scorch = 1. - smoothstep(.025, .1, field - u_progress);
-  color *= 1. - .82 * scorch;
-  vec3 fire = mix(vec3(1., .16, .015), vec3(1., .82, .3), grain);
-  color += fire * edge * (1.4 + grain);
-  gl_FragColor = vec4(color, max(remaining, edge * .92));
+  vec2 uv = v_uv;
+  uv.x *= min(1., u_resolution.x / u_resolution.y);
+  uv.y *= min(1., u_resolution.y / u_resolution.x);
+  vec2 screenUv = v_uv * .5 + .5;
+  screenUv.y = 1. - screenUv.y;
+  float t = u_progress;
+  vec3 color = texture2D(u_text, screenUv).rgb;
+  float main_noise = 1. - fbm(.75 * uv + 10. - vec2(.3, .9 * t));
+  float paper_darkness = smoothstep(main_noise - .1, main_noise, t);
+  color -= vec3(.99, .95, .99) * paper_darkness;
+  vec3 fire_color = fbm(6. * uv - vec2(0., .005 * u_time)) * vec3(6., 1.4, 0.);
+  float show_fire = smoothstep(.4, .9, fbm(10. * uv + 2. - vec2(0., .005 * u_time)));
+  show_fire += smoothstep(.7, .8, fbm(.5 * uv + 5. - vec2(0., .001 * u_time)));
+  float fire_border = .02 * show_fire;
+  float fire_edge = smoothstep(main_noise - fire_border, main_noise - .5 * fire_border, t);
+  fire_edge *= 1. - smoothstep(main_noise - .5 * fire_border, main_noise, t);
+  color += fire_color * fire_edge;
+  float opacity = 1. - smoothstep(main_noise - .0005, main_noise, t);
+  gl_FragColor = vec4(color, opacity);
 }`;
 
 export function createBurningIntro(canvas: HTMLCanvasElement) {
@@ -103,11 +109,11 @@ export function createBurningIntro(canvas: HTMLCanvasElement) {
       const scale = Math.min(window.devicePixelRatio || 1, 1.5, 1600 / window.innerWidth, 1000 / window.innerHeight);
       canvas.width = text.width = Math.max(1, Math.round(window.innerWidth * scale));
       canvas.height = text.height = Math.max(1, Math.round(window.innerHeight * scale));
-      ctx.fillStyle = "#000";
+      ctx.fillStyle = "#fff";
       ctx.fillRect(0, 0, text.width, text.height);
       const fontSize = Math.min(text.width * .15, text.height * .18);
-      ctx.font = `700 ${fontSize}px system-ui, sans-serif`;
-      ctx.fillStyle = "#fff";
+      ctx.font = `bold ${fontSize}px Arial`;
+      ctx.fillStyle = "#000";
       ctx.textAlign = "center"; ctx.textBaseline = "middle";
       ctx.fillText("Tecsecure", text.width / 2, text.height / 2, text.width * .82);
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, text);
@@ -127,7 +133,5 @@ export function createBurningIntro(canvas: HTMLCanvasElement) {
   }
 }
 
-export const introStorageKey = "tecsecure-intro-seen-v1";
-
 // Decide before first paint so the site does not flash ahead of the opening.
-export const introBootstrapScript = `(()=>{try{if(!matchMedia("(prefers-reduced-motion: reduce)").matches&&!sessionStorage.getItem("${introStorageKey}")){document.documentElement.dataset.tecIntro="pending";setTimeout(()=>{if(document.documentElement.dataset.tecIntro==="pending"){document.querySelector("dialog.site-intro[open]")?.close();delete document.documentElement.dataset.tecIntro}},6000)}}catch(e){console.warn("Tecsecure intro preference unavailable",e)}})()`;
+export const introBootstrapScript = `(()=>{if(!matchMedia("(prefers-reduced-motion: reduce)").matches){document.documentElement.dataset.tecIntro="pending";const timer=setTimeout(()=>{if(document.documentElement.dataset.tecIntro==="pending"){document.querySelector("dialog.site-intro[open]")?.close();delete document.documentElement.dataset.tecIntro}},10000);document.addEventListener("tecsecure:intro-ready",()=>clearTimeout(timer),{once:true})}})()`;

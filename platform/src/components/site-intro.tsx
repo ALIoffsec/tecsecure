@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { createBurningIntro, introStorageKey } from "@/lib/burning-intro";
+import { createBurningIntro } from "@/lib/burning-intro";
+import { usePathname } from "next/navigation";
 import { featureCopy } from "@/lib/feature-copy";
 import { useSitePreferences } from "./site-preferences";
 
@@ -12,19 +13,34 @@ export function SiteIntro() {
   const [fallback, setFallback] = useState(false);
   const { locale } = useSitePreferences();
   const c = featureCopy[locale];
+  const pathname = usePathname();
+  const previousPath = useRef(pathname);
   const close = useCallback(() => {
     dialog.current?.close();
     delete document.documentElement.dataset.tecIntro;
-    try { sessionStorage.setItem(introStorageKey, "1"); }
-    catch (error) { console.warn("Tecsecure intro completion could not be remembered", error); }
     setFinished(true);
   }, []);
+
+  useEffect(() => {
+    const restart = () => {
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      document.documentElement.dataset.tecIntro = "pending";
+      setFallback(false);
+      setFinished(false);
+    };
+    if (previousPath.current !== pathname && pathname === "/") restart();
+    previousPath.current = pathname;
+    const onShow = (event: PageTransitionEvent) => { if (event.persisted) restart(); };
+    window.addEventListener("pageshow", onShow);
+    return () => window.removeEventListener("pageshow", onShow);
+  }, [pathname]);
 
   useEffect(() => {
     const element = dialog.current;
     const surface = canvas.current;
     const preference = window.matchMedia("(prefers-reduced-motion: reduce)");
     if (finished || !element || !surface) return;
+    document.dispatchEvent(new Event("tecsecure:intro-ready"));
     if (document.documentElement.dataset.tecIntro !== "pending" || preference.matches) {
       close();
       return;
@@ -51,18 +67,19 @@ export function SiteIntro() {
     const draw = (now: number) => {
       if (stopped) return;
       const elapsed = now - start;
-      if (elapsed >= 4200) { close(); return; }
+      if (elapsed >= 8000) { close(); return; }
       try {
-        const progress = Math.max(0, Math.min(1, (elapsed - 800) / 3200));
-        renderer?.render(-.08 + progress * 1.24, elapsed / 1000);
+        const progress = Math.max(0, Math.min(1, elapsed / 8000));
+        const eased = progress < .5 ? 2 * progress * progress : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+        renderer?.render(.3 + .7 * eased, now);
         frame = requestAnimationFrame(draw);
       } catch (error) { fail(error); }
     };
-    timer = window.setTimeout(close, 4800);
+    timer = window.setTimeout(close, 9000);
     try {
       element.showModal();
       renderer = createBurningIntro(surface);
-      renderer.render(-.08, 0);
+      renderer.render(.3, performance.now());
       frame = requestAnimationFrame(draw);
     } catch (error) { fail(error); }
     preference.addEventListener("change", onPreference);
