@@ -15,6 +15,12 @@ services:
           property: connectionString
       - key: NEXT_PUBLIC_APP_URL
         sync: false
+      - key: NEXTAUTH_URL
+        sync: false
+      - key: NEXTAUTH_SECRET
+        generateValue: true
+      - key: INTEGRATION_CREDENTIALS_KEY
+        generateValue: true
       - key: ADMIN_EMAIL
         sync: false
       - key: ADMIN_PASSWORD

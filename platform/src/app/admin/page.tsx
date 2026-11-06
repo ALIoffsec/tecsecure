@@ -1,7 +1,6 @@
 import { AdminWorkspace } from "@/components/admin-workspace";
 import { AdminSecurityBoundary } from "@/components/admin-security-boundary";
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import { requireAdminPage } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
@@ -12,7 +11,7 @@ export default async function AdminPage() {
   if (actor.role === "CUSTOMER") redirect("/portal");
   const privileged = actor.role === "FOUNDER" || actor.role === "ADMIN";
   const can = (module: string) => privileged || actor.permissions.includes(module as typeof actor.permissions[number]);
-  const [services, requests, requestStatusGroups, products, productCategories, articles, settings, notifications, users, projects, projectCount, invoices, quotations, pendingPayments, plans, siteBlocks, portfolioPosts, walletRequests] = await Promise.all([
+  const [services, requests, requestStatusGroups, products, productCategories, newOrderCount, articles, settings, notifications, users, projects, projectCount, invoices, quotations, pendingPayments, plans, siteBlocks, portfolioPosts, walletRequests] = await Promise.all([
     can("SERVICES") ? prisma.service.findMany({ orderBy: { createdAt: "desc" }, take: 100 }) : [],
     can("REQUESTS") ? prisma.serviceRequest.findMany({
       include: {
@@ -24,8 +23,9 @@ export default async function AdminPage() {
       take: 100
     }) : [],
     can("REQUESTS") ? prisma.serviceRequest.groupBy({ by: ["status"], _count: { _all: true } }) : [],
-    can("PRODUCTS") ? prisma.product.findMany({ include: { category: { select: { name: true, slug: true } } }, orderBy: { createdAt: "desc" }, take: 100 }) : [],
-    can("PRODUCTS") ? prisma.productCategory.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }) : [],
+    can("PRODUCTS") ? prisma.product.findMany({ include: { category: { select: { name: true, slug: true } } }, orderBy: { createdAt: "desc" }, take: 500 }) : [],
+    can("PRODUCTS") ? prisma.productCategory.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, _count: { select: { products: true } } } }) : [],
+    can("PRODUCTS") ? prisma.order.count({ where: { status: "NEW" } }) : 0,
     can("NEWS") ? prisma.newsArticle.findMany({ orderBy: { updatedAt: "desc" }, take: 100 }) : [],
     can("COMPANY") ? prisma.siteSetting.findMany({ where: { key: { in: ["companyName", "phone", "email", "telegram", "instagram", "address", "siteDesign"] } } }) : [],
     can("COMPANY") ? prisma.notification.findMany({ where: { userId: actor.id }, orderBy: { createdAt: "desc" }, take: 20 }) : [],
@@ -67,5 +67,5 @@ export default async function AdminPage() {
   }));
   const requestStats = Object.fromEntries(requestStatusGroups.map((item) => [item.status, item._count._all]));
   const requestTotal = requestStatusGroups.reduce((total, item) => total + item._count._all, 0);
-  return <><AdminSecurityBoundary /><div className="container" style={{ paddingTop: 12 }}><Link className="button secondary" href="/admin/orders">Buyurtmalar</Link></div><AdminWorkspace services={services} requests={requests} requestStats={requestStats} requestTotal={requestTotal} products={products} productCategories={productCategories} articles={articles} settings={Object.fromEntries(settings.map((item) => [item.key, item.value]))} notifications={notifications} projects={projects} quotations={quotations} pendingPayments={pendingPayments} plans={managedPlans} users={managedUsers} siteBlocks={siteBlocks} portfolioPosts={portfolioPosts} walletRequests={walletRequests} metrics={{ users: managedUsers.length, projects: projectCount, invoices }} role={actor.role} permissions={actor.permissions} actorId={actor.id} /></>;
+  return <><AdminSecurityBoundary /><AdminWorkspace newOrderCount={newOrderCount} services={services} requests={requests} requestStats={requestStats} requestTotal={requestTotal} products={products} productCategories={productCategories} articles={articles} settings={Object.fromEntries(settings.map((item) => [item.key, item.value]))} notifications={notifications} projects={projects} quotations={quotations} pendingPayments={pendingPayments} plans={managedPlans} users={managedUsers} siteBlocks={siteBlocks} portfolioPosts={portfolioPosts} walletRequests={walletRequests} metrics={{ users: managedUsers.length, projects: projectCount, invoices }} role={actor.role} permissions={actor.permissions} actorId={actor.id} /></>;
 }

@@ -58,6 +58,10 @@ export async function POST(request: Request) {
     ? lines.reduce((sum, line) => sum + (line.unitPriceMinor as number) * line.quantity, 0)
     : null;
 
+  if (totalMinor !== null && !Number.isSafeInteger(totalMinor)) {
+    return Response.json({ error: "Buyurtma summasi juda katta. Biz bilan bog‘laning." }, { status: 400 });
+  }
+
   try {
     const reference = `ORD-${new Date().getUTCFullYear()}-${randomBytes(5).toString("hex").toUpperCase()}`;
     const order = await prisma.$transaction(async (tx) => {

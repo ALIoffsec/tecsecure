@@ -1,6 +1,7 @@
 import type { Locale } from "./messages";
 
 const uz = {
+  verifiedBuyer: "Xarid qilgan", questions: "Savol-javob", noQuestions: "Hozircha savollar yo‘q. Birinchi bo‘lib so‘rang.", signInQuestion: "Savol berish uchun hisobga kiring.", awaitingAnswer: "Javob kutilmoqda", leaveReview: "Sharh qoldirish", rating: "Baho", yourComment: "Fikringiz (kamida 10 belgi)", askQuestion: "Savol berish", yourQuestion: "Mahsulot haqida savolingiz", send: "Yuborish", sending: "Yuborilmoqda…", answerPlaceholder: "Javob matni", answerAction: "Javob berish", ratingRequired: "Bahoni tanlang.", genericError: "Xatolik yuz berdi.",
   quickView: "Tezkor ko‘rish",
   title: "Uskunalar do‘koni", intro: "Kerakli uskunani toping, mosligini tekshiring va narx hamda yetkazishni kelishib buyurtma bering.",
   search: "Mahsulot yoki model qidirish", searchAction: "Qidirish", filter: "Filtrlar", categories: "Kategoriyalar", all: "Hammasi",
@@ -29,6 +30,7 @@ const uz = {
 export const shopCopy: Record<Locale, { [K in keyof typeof uz]: string }> = {
   uz,
   ru: {
+    verifiedBuyer: "Покупатель", questions: "Вопросы и ответы", noQuestions: "Вопросов пока нет. Спросите первым.", signInQuestion: "Войдите, чтобы задать вопрос.", awaitingAnswer: "Ожидает ответа", leaveReview: "Оставить отзыв", rating: "Оценка", yourComment: "Ваш отзыв (минимум 10 символов)", askQuestion: "Задать вопрос", yourQuestion: "Ваш вопрос о товаре", send: "Отправить", sending: "Отправка…", answerPlaceholder: "Текст ответа", answerAction: "Ответить", ratingRequired: "Выберите оценку.", genericError: "Произошла ошибка.",
     quickView: "Быстрый просмотр",
     title: "Магазин оборудования", intro: "Найдите оборудование, проверьте совместимость и согласуйте цену и доставку.",
     search: "Поиск товара или модели", searchAction: "Найти", filter: "Фильтры", categories: "Категории", all: "Все",
@@ -55,6 +57,7 @@ export const shopCopy: Record<Locale, { [K in keyof typeof uz]: string }> = {
     more: "Подробнее", less: "Свернуть", missingSpecs: "Характеристики не указаны.", pros: "Плюсы", cons: "Минусы",
   },
   en: {
+    verifiedBuyer: "Verified buyer", questions: "Questions", noQuestions: "No questions yet. Be the first to ask.", signInQuestion: "Sign in to ask a question.", awaitingAnswer: "Awaiting answer", leaveReview: "Leave a review", rating: "Rating", yourComment: "Your review (at least 10 characters)", askQuestion: "Ask a question", yourQuestion: "Your question about this product", send: "Send", sending: "Sending…", answerPlaceholder: "Answer text", answerAction: "Answer", ratingRequired: "Choose a rating.", genericError: "Something went wrong.",
     quickView: "Quick view",
     title: "Equipment shop", intro: "Find equipment, check compatibility and agree on price and delivery before ordering.",
     search: "Search products or models", searchAction: "Search", filter: "Filters", categories: "Categories", all: "All",

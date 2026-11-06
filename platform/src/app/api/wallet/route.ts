@@ -43,8 +43,8 @@ export async function POST(request: Request) {
   const parsed = transactionSchema.safeParse(input);
   if (!parsed.success) return Response.json({ error: "Hamyon so‘rovi ma’lumotlarini tekshiring.", details: parsed.error.flatten() }, { status: 400 });
   if (parsed.data.kind === "DEPOSIT") {
-    const proof = await prisma.mediaAsset.findUnique({ where: { id: parsed.data.proofMediaId }, select: { id: true, mimeType: true } });
-    if (!proof || !proof.mimeType.startsWith("image/")) return Response.json({ error: "To‘lov tasdig‘i uchun rasm yuklang." }, { status: 400 });
+    const proof = await prisma.mediaAsset.findUnique({ where: { id: parsed.data.proofMediaId }, select: { id: true, mimeType: true, ownerId: true } });
+    if (!proof || proof.ownerId !== user.id || !proof.mimeType.startsWith("image/")) return Response.json({ error: "To‘lov tasdig‘i uchun rasm yuklang." }, { status: 400 });
   }
   const transaction = await prisma.$transaction(async (tx) => {
     const created = await tx.walletTransaction.create({

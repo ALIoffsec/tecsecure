@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { LocalizedText } from "@/components/site-preferences";
 import { MediaGallery } from "@/components/media-uploader";
 import { isPreviewMode } from "@/lib/preview-mode";
+import { formatNumber } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +20,7 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
     <MediaGallery media={service.media} title={service.name} />
     <div className="panel-card" style={{ maxWidth: 760 }}>
       <p><LocalizedText id="pricingModel" />: {service.pricingType === "QUOTE" ? <LocalizedText id="technicalProposal" /> : service.pricingType}</p>
-      {service.startingPriceMinor !== null && <p><LocalizedText id="startingPrice" />: {(service.startingPriceMinor / 100).toLocaleString("uz-UZ")} {service.currency}</p>}
+      {service.startingPriceMinor !== null && <p><LocalizedText id="startingPrice" />: {formatNumber(service.startingPriceMinor / 100)} {service.currency}</p>}
       <p className="muted"><LocalizedText id="finalScopePrice" /></p>
       <Link className="button" href="/request-service"><LocalizedText id="requestThisService" /></Link>
     </div>

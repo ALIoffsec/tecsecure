@@ -113,7 +113,7 @@ To enable Google and GitHub buttons, create OAuth apps in Google Cloud Console a
 
 Customer Telegram notifications currently use Telegram only; SMS is not configured. The “Ilovani yuklab olish” navigation button installs the HTTPS PWA when the browser offers installation, and otherwise opens browser-specific install instructions. No native Android/iOS package is included.
 
-TEC packs use a 4,990 UZS base value per TEC and server-calculated volume discounts. Course subscriptions are prepaid for 30 days and do not renew automatically. UZS wallet deposits still require proof submission and administrator approval; no card/bank gateway is connected. The public product market lists published real records only and offers no online checkout. Do not publish placeholder inventory or imply that a deposit, product order, or recurring payment is automatic.
+TEC packs use a 4,990 UZS base value per TEC and server-calculated volume discounts. Course subscriptions are prepaid for 30 days and do not renew automatically. UZS wallet deposits still require proof submission and administrator approval; no card/bank gateway is connected. Prices are entered in staff forms as plain amounts and stored as whole minor units (up to 100 billion UZS). The public product market lists published real records only and offers no online checkout. Do not publish placeholder inventory or imply that a deposit, product order, or recurring payment is automatic.
 
 ## Appearance and languages
 
@@ -140,6 +140,8 @@ The web start command applies reviewed Prisma migrations before serving. Back up
 
 ## Security and operational limitations
 
+- `npm run db:seed-catalog` creates estimated catalog entries as drafts for staff to review; deployment no longer runs it, so production never publishes estimated prices automatically.
+- Wallet payment proofs are private: only their uploader and staff with the WALLET permission can open them.
 - No sample customers, live inventory, pricing, telemetry, payment results, client logos, or success metrics are seeded.
 - New customer registration is enabled; admin/staff roles can only be granted server-side by an authorized operator.
 - Organization membership filters are enforced for organization and device records; do not expose database credentials to the browser.

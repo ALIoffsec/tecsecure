@@ -4,6 +4,7 @@ import { PrintButton } from "@/components/print-button";
 import { getLearningExam } from "@/lib/learning-content";
 import { prisma } from "@/lib/prisma";
 import { isPreviewMode } from "@/lib/preview-mode";
+import { formatDate } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Sertifikatni tekshirish", robots: { index: false } };
@@ -27,7 +28,7 @@ export default async function VerifyPage({ params }: { params: Promise<{ code: s
         <h2 className="cert-title">{exam?.credential ?? certificate.examSlug}</h2>
         <dl className="cert-meta">
           <div><dt>Natija</dt><dd>{certificate.scorePercent}%</dd></div>
-          <div><dt>Berilgan sana</dt><dd>{certificate.issuedAt.toLocaleDateString("uz-UZ")}</dd></div>
+          <div><dt>Berilgan sana</dt><dd>{formatDate(certificate.issuedAt)}</dd></div>
           <div><dt>Sertifikat ID</dt><dd><code>{certificate.code}</code></dd></div>
         </dl>
         <p className="cert-note">Bu sertifikat Tecsecure o‘quv dasturi doirasidagi imtihon natijasini tasdiqlaydi. U ishga kirish yoki xalqaro sertifikatsiya kafolati emas.</p>

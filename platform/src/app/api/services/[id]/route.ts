@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { isResponse, requireModuleApi } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { serviceSchema } from "@/lib/validation";
+import { onlyProvided, serviceSchema } from "@/lib/validation";
 
 export const runtime = "nodejs";
 
@@ -23,7 +23,7 @@ export async function PATCH(request: Request, context: Context) {
   }
   try {
     const service = await prisma.$transaction(async (tx) => {
-      const updated = await tx.service.update({ where: { id }, data: parsed.data });
+      const updated = await tx.service.update({ where: { id }, data: onlyProvided(parsed.data, body) });
       await tx.auditLog.create({
         data: { actorId: actor.id, action: "SERVICE_UPDATED", entity: "Service", entityId: id }
       });

@@ -7,6 +7,7 @@ import { MediaUploader } from "@/components/media-uploader";
 import { useSitePreferences } from "@/components/site-preferences";
 import { ToastMessage } from "@/components/toast-provider";
 import { WalletCard } from "./wallet-card";
+import { formatDate, formatNumber } from "@/lib/format";
 
 type WalletRecord = {
   id: string;
@@ -32,7 +33,6 @@ export function WalletPanel({ initialBalance, initialPoints, transactions }: {
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
   const rank = initialPoints >= 2000 ? t("rankGold") : initialPoints >= 500 ? t("rankSilver") : t("rankStarter");
-  const numberLocale = locale === "uz" ? "uz-UZ" : locale === "ru" ? "ru-RU" : "en-US";
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -89,7 +89,7 @@ export function WalletPanel({ initialBalance, initialPoints, transactions }: {
     </form>
     <h3 style={{ marginTop: 26 }}>{t("wallet")}</h3>
     {transactions.length ? <div className="list">{transactions.map((item) => <div className="list-row" key={item.id}>
-      <div><strong>{item.kind === "DEPOSIT" ? t("walletDeposit") : item.kind === "TEC_PURCHASE" ? t("tecPurchaseHistory") : t("walletWithdrawal")} · {(item.amountMinor / 100).toLocaleString(numberLocale)} UZS</strong><p className="small muted">{item.reference ?? item.details} · {new Date(item.createdAt).toLocaleDateString(numberLocale)}</p></div>
+      <div><strong>{item.kind === "DEPOSIT" ? t("walletDeposit") : item.kind === "TEC_PURCHASE" ? t("tecPurchaseHistory") : t("walletWithdrawal")} · {formatNumber(item.amountMinor / 100)} UZS</strong><p className="small muted">{item.reference ?? item.details} · {formatDate(item.createdAt)}</p></div>
       <span className={`status ${item.status}`}>{item.status === "PENDING" ? t("walletPending") : item.status === "APPROVED" ? t("walletApproved") : t("walletRejected")}</span>
     </div>)}</div> : <p className="muted">{t("walletNoRequests")}</p>}
   </section>;
@@ -133,7 +133,7 @@ export function WalletReviewManager({ transactions }: { transactions: ReviewReco
     <h2>{t("walletReview")}</h2>
     <ToastMessage message={error} variant="error" />
     {rows.length ? <div className="list">{rows.map((item) => <article className="list-row" key={item.id}>
-      <div><strong>{item.user.name} · {item.user.email}</strong><p>{item.kind === "DEPOSIT" ? t("walletDeposit") : t("walletWithdrawal")} · {(item.amountMinor / 100).toLocaleString(locale === "uz" ? "uz-UZ" : locale === "ru" ? "ru-RU" : "en-US")} UZS</p><p className="small muted">{item.reference ?? item.details}</p>{item.proofMediaId && <a href={`/api/media/${item.proofMediaId}`} target="_blank" rel="noreferrer">{t("walletProof")}</a>}</div>
+      <div><strong>{item.user.name} · {item.user.email}</strong><p>{item.kind === "DEPOSIT" ? t("walletDeposit") : t("walletWithdrawal")} · {formatNumber(item.amountMinor / 100)} UZS</p><p className="small muted">{item.reference ?? item.details}</p>{item.proofMediaId && <a href={`/api/media/${item.proofMediaId}`} target="_blank" rel="noreferrer">{t("walletProof")}</a>}</div>
       <div className="hero-actions"><button className="button" disabled={busy === item.id} onClick={() => void review(item.id, "APPROVED")}>{t("walletApproved")}</button><button className="button danger" disabled={busy === item.id} onClick={() => void review(item.id, "REJECTED")}>{t("walletRejected")}</button></div>
     </article>)}</div> : <p className="muted">{t("walletNoRequests")}</p>}
   </section>;

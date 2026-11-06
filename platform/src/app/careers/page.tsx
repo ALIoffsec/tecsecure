@@ -5,6 +5,7 @@ import { LocalizedText } from "@/components/site-preferences";
 import { UiIcon } from "@/components/ui-icon";
 import { isPreviewMode } from "@/lib/preview-mode";
 import { prisma } from "@/lib/prisma";
+import { defaultContact } from "@/lib/site-contact";
 
 export const metadata: Metadata = {
   title: "Karyera va vakansiyalar | Tecsecure",
@@ -17,7 +18,7 @@ export default async function CareersPage() {
   const emailSetting = isPreviewMode
     ? null
     : await prisma.siteSetting.findUnique({ where: { key: "email" }, select: { value: true } });
-  const email = emailSetting?.value || "itstars134567890@gmail.com";
+  const email = emailSetting?.value || defaultContact.email;
 
   return (
     <div className="container page-shell careers-page">

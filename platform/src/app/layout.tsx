@@ -5,6 +5,8 @@ import "./liquid-glass.css";
 import "./feature-effects.css";
 import "./original-buttons.css";
 import "./original-effects.css";
+import "./store.css";
+import "./admin.css";
 import { SiteNav } from "@/components/site-nav";
 import { PageBackLink } from "@/components/page-back-link";
 import { FontLoader } from "@/components/font-loader";
@@ -24,8 +26,10 @@ import { ProductCompareProvider } from "@/components/product-compare";
 import { SiteMotion } from "@/components/site-motion";
 import { SiteIntro } from "@/components/site-intro";
 import { introBootstrapScript } from "@/lib/burning-intro";
+import { siteOrigin } from "@/lib/site-origin";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(siteOrigin()),
   title: "Tecsecure — IT va xavfsizlik yechimlari",
   description: "IT va xavfsizlik xizmatlari, amaliy ta’lim va uskunalar do‘koni — bitta Tecsecure platformasida.",
   robots: { index: true, follow: true },

@@ -17,6 +17,7 @@ import { PortalMessageForm } from "@/components/portal-message-form";
 import { ToastMessage } from "@/components/toast-provider";
 import type { ProfilePractice } from "@/lib/learning-profile-types";
 import type { Locale } from "@/lib/messages";
+import { formatDate, formatDateTime, formatNumber } from "@/lib/format";
 
 type RequestRecord = {
   id: string; reference: string; name: string; serviceId: string | null; service: { name: string } | null;
@@ -140,7 +141,6 @@ export function CustomerDashboard({ user, requests, orders, conversations, organ
   const router = useRouter();
   const { locale, t } = useSitePreferences();
   const copy = portalCopy[locale];
-  const numberLocale = locale === "uz" ? "uz-UZ" : locale === "ru" ? "ru-RU" : "en-US";
   const [error, setError] = useState("");
   const searchParams = useSearchParams();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -199,7 +199,7 @@ export function CustomerDashboard({ user, requests, orders, conversations, organ
     const data = Object.fromEntries(new FormData(form));
     const response = await fetch(`/api/invoices/${invoiceId}/payments`, {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
-        amountMinor: Number(data.amountMinor), method: data.method, reference: data.reference
+        amountMinor: Math.round(Number(String(data.amount).replace(",", ".")) * 100), method: data.method, reference: data.reference
       })
     });
     const result = await response.json();
@@ -251,7 +251,7 @@ export function CustomerDashboard({ user, requests, orders, conversations, organ
             <div className="metric"><strong>{orders.length}</strong><span>{copy.orders}</span></div>
             <div className="metric"><strong>{projects.length}</strong><span>{copy.projects}</span></div>
             <div className="metric"><strong>{organizations.reduce((sum, item) => sum + item.devices.length, 0)}</strong><span>{t("registeredDevices")}</span></div>
-            <div className="metric"><strong>{wallet.rewardPoints.toLocaleString(numberLocale)}</strong><span>{t("rewardPoints")}</span></div>
+            <div className="metric"><strong>{formatNumber(wallet.rewardPoints)}</strong><span>{t("rewardPoints")}</span></div>
           </div>
           <TecGiftNotifications />
           <div className="hero-actions portal-shortcuts">
@@ -279,8 +279,8 @@ export function CustomerDashboard({ user, requests, orders, conversations, organ
             <article className="list-row" key={item.id}>
               <div>
                 <strong>{item.reference} · {item.service?.name ?? t("technicalAdvice")}</strong>
-                <p>{new Date(item.createdAt).toLocaleDateString(numberLocale)} · {item.description}</p>
-                <div className="small muted">{t("history")}: {item.history.map((event) => `${event.toStatus} (${new Date(event.createdAt).toLocaleDateString(numberLocale)})`).join(" → ")}</div>
+                <p>{formatDate(item.createdAt)} · {item.description}</p>
+                <div className="small muted">{t("history")}: {item.history.map((event) => `${event.toStatus} (${formatDate(event.createdAt)})`).join(" → ")}</div>
               </div>
               <div className="stack" style={{ justifyItems: "end" }}>
                 <span className={`status ${item.status}`}>{item.status}</span>
@@ -293,7 +293,7 @@ export function CustomerDashboard({ user, requests, orders, conversations, organ
           <div className="portal-section-heading"><div><span className="eyebrow">{t("customerPortal")}</span><h2>{copy.orders}</h2></div><Link className="button ghost" href="/products">{t("allProducts")}</Link></div>
           {orders.length ? <div className="list">{orders.map((order) => <article className="portal-order-card" key={order.id}>
             <div className="portal-order-heading">
-              <div><strong>{order.reference}</strong><p>{new Date(order.createdAt).toLocaleDateString(numberLocale)} · {order.items.map((item) => `${item.name} × ${item.quantity}`).join(", ")}</p></div>
+              <div><strong>{order.reference}</strong><p>{formatDate(order.createdAt)} · {order.items.map((item) => `${item.name} × ${item.quantity}`).join(", ")}</p></div>
               <span className={`status ${order.status}`}>{order.status}</span>
             </div>
             <p className="small muted">{copy.orderStatus}: {order.history.map((item) => `${item.toStatus}${item.note ? ` — ${item.note}` : ""}`).join(" → ")}</p>
@@ -325,7 +325,7 @@ export function CustomerDashboard({ user, requests, orders, conversations, organ
                 {project.quotations.map((quote) => {
                   const totalMinor = quote.items.reduce((sum, item) => sum + item.quantity * item.unitPriceMinor - item.discountMinor, 0);
                   return <div key={quote.number}>
-                    <p>{t("quote")} {quote.number} · {quote.status} · {(totalMinor / 100).toLocaleString(numberLocale)} {quote.currency}</p>
+                    <p>{t("quote")} {quote.number} · {quote.status} · {formatNumber(totalMinor / 100)} {quote.currency}</p>
                     {quote.status === "ISSUED" && <div className="hero-actions">
                       <button className="button" onClick={() => respondToQuote(quote.id, "ACCEPTED")}>{t("acceptQuote")}</button>
                       <button className="button danger" onClick={() => respondToQuote(quote.id, "REJECTED")}>{t("reject")}</button>
@@ -349,11 +349,11 @@ export function CustomerDashboard({ user, requests, orders, conversations, organ
             failed: copy.messageFailed
           }} />
           {conversations.length ? <div className="portal-conversations">{conversations.map((conversation) => <article className="portal-conversation" key={conversation.id}>
-            <header><div><span className="tag">{conversation.category}</span><h3>{conversation.subject}</h3><small className="muted">{conversation.reference} · {new Date(conversation.createdAt).toLocaleDateString(numberLocale)}</small></div></header>
+            <header><div><span className="tag">{conversation.category}</span><h3>{conversation.subject}</h3><small className="muted">{conversation.reference} · {formatDate(conversation.createdAt)}</small></div></header>
             <div className="portal-message-list">{conversation.messages.map((message) => <div className={`portal-message ${message.sender === "ADMIN" ? "from-admin" : ""}`} key={message.id}>
               <strong>{message.sender === "ADMIN" ? "Tecsecure" : user.name}</strong>
               <p>{message.body}</p>
-              <small className="muted">{new Date(message.createdAt).toLocaleString(numberLocale)}</small>
+              <small className="muted">{formatDateTime(message.createdAt)}</small>
             </div>)}</div>
           </article>)}</div> : <div className="empty-state">{copy.emptyMessages}</div>}
         </section>}
@@ -364,12 +364,12 @@ export function CustomerDashboard({ user, requests, orders, conversations, organ
           <article className="list-row" key={invoice.id}>
             <div>
               <strong>{invoice.number} · {invoice.quotation?.project.name ?? t("projectName")}</strong>
-              <p>{invoice.status} · {t("total")} {(invoice.totalMinor / 100).toLocaleString(numberLocale)} {invoice.currency} · {t("approved")} {(invoice.paidMinor / 100).toLocaleString(numberLocale)} {invoice.currency}</p>
-              <p className="small muted">{t("dueDate")}: {invoice.dueAt?.toLocaleDateString(numberLocale) ?? t("notSet")}</p>
+              <p>{invoice.status} · {t("total")} {formatNumber(invoice.totalMinor / 100)} {invoice.currency} · {t("approved")} {formatNumber(invoice.paidMinor / 100)} {invoice.currency}</p>
+              <p className="small muted">{t("dueDate")}: {(invoice.dueAt ? formatDate(invoice.dueAt) : "") ?? t("notSet")}</p>
               {invoice.payments.map((payment) => <p className="small muted" key={payment.id}>{t("paymentReference")} {payment.reference}: {payment.status}</p>)}
             </div>
             {["ISSUED", "PARTIALLY_PAID", "OVERDUE"].includes(invoice.status) && <form className="form" onSubmit={(event) => submitPayment(event, invoice.id)}>
-              <div className="field"><label>{t("amountMinor")}</label><input name="amountMinor" type="number" min="1" max={invoice.totalMinor - invoice.paidMinor} required /></div>
+              <div className="field"><label>{t("amountMinor")}</label><input name="amount" type="number" min="0.01" step="0.01" max={(invoice.totalMinor - invoice.paidMinor) / 100} required /></div>
               <div className="field"><label>{t("paymentMethod")}</label><select name="method"><option value="BANK_TRANSFER">{t("bankTransfer")}</option><option value="CASH">{t("cash")}</option><option value="OTHER">{t("other")}</option></select></div>
               <div className="field"><label>{t("paymentReferenceReceipt")}</label><input name="reference" minLength={2} maxLength={160} required /></div>
               <button className="button secondary">{t("sendForReview")}</button>

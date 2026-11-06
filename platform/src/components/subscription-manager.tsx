@@ -4,6 +4,7 @@ import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSitePreferences } from "@/components/site-preferences";
 import { ToastMessage } from "@/components/toast-provider";
+import { formatDate, formatNumber } from "@/lib/format";
 
 type OrganizationOption = { id: string; name: string };
 type PlanOption = { id: string; name: string; interval: string; priceMinor: number | null; currency: string; trialDays: number; features: unknown };
@@ -20,7 +21,6 @@ export function SubscriptionManager({ organizations, plans, subscriptions }: {
 }) {
   const router = useRouter();
   const { locale, t } = useSitePreferences();
-  const dateLocale = locale === "uz" ? "uz-UZ" : locale === "ru" ? "ru-RU" : "en-US";
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
@@ -37,7 +37,7 @@ export function SubscriptionManager({ organizations, plans, subscriptions }: {
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error ?? t("requestFailed"));
-      setNotice(t("trialStarted").replace("{date}", new Date(result.subscription.trialEndsAt).toLocaleDateString(dateLocale)));
+      setNotice(t("trialStarted").replace("{date}", formatDate(result.subscription.trialEndsAt)));
       router.refresh();
     } catch (issue) { setError(issue instanceof Error ? issue.message : t("requestFailed")); }
     finally { setBusy(false); }
@@ -60,7 +60,7 @@ export function SubscriptionManager({ organizations, plans, subscriptions }: {
     <ToastMessage message={error} variant="error" />
     <ToastMessage message={notice} variant="success" />
     {subscriptions.length ? <div className="list">{subscriptions.map((item) => <div className="list-row" key={item.id}>
-      <div><strong>{item.organization.name} · {item.plan.name}</strong><p>{item.status} · {item.plan.priceMinor === null ? t("negotiatedPrice") : `${(item.plan.priceMinor / 100).toLocaleString(dateLocale)} ${item.plan.currency}/${item.plan.interval}`}</p><p className="small muted">{item.trialEndsAt ? `${t("trialEnds")}: ${new Date(item.trialEndsAt).toLocaleDateString(dateLocale)}` : t("noTrialPeriod")}</p></div>
+      <div><strong>{item.organization.name} · {item.plan.name}</strong><p>{item.status} · {item.plan.priceMinor === null ? t("negotiatedPrice") : `${formatNumber(item.plan.priceMinor / 100)} ${item.plan.currency}/${item.plan.interval}`}</p><p className="small muted">{item.trialEndsAt ? `${t("trialEnds")}: ${formatDate(item.trialEndsAt)}` : t("noTrialPeriod")}</p></div>
       {!["CANCELLED"].includes(item.status) && <button className="button danger small" onClick={() => cancel(item.id)}>{t("cancel")}</button>}
     </div>)}</div> : <div className="empty-state">{t("noSubscriptionYet")}</div>}
     {!hasCurrent && organizations.length > 0 && plans.some((plan) => plan.trialDays > 0) && <form className="form" onSubmit={enroll} style={{ marginTop: 20 }}>

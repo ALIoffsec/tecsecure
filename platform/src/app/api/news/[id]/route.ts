@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { isResponse, requireModuleApi } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { newsSchema } from "@/lib/validation";
+import { newsSchema, onlyProvided } from "@/lib/validation";
 
 export const runtime = "nodejs";
 type Context = { params: Promise<{ id: string }> };
@@ -18,9 +18,12 @@ export async function PATCH(request: Request, context: Context) {
   if (!parsed.success) return Response.json({ error: "Yangilik ma’lumotlari noto‘g‘ri.", details: parsed.error.flatten() }, { status: 400 });
   try {
     const article = await prisma.$transaction(async (tx) => {
-      const data = {
-        ...parsed.data,
-        ...(parsed.data.status === "PUBLISHED" ? { publishedAt: new Date() } : {})
+      const current = await tx.newsArticle.findUnique({ where: { id }, select: { publishedAt: true } });
+        // Editing a live article must not move its publication date.
+        const firstPublish = parsed.data.status === "PUBLISHED" && body && Object.hasOwn(body as object, "status") && !current?.publishedAt;
+        const data = {
+          ...onlyProvided(parsed.data, body),
+          ...(firstPublish ? { publishedAt: new Date() } : {})
       };
       const updated = await tx.newsArticle.update({ where: { id }, data });
       await tx.auditLog.create({ data: { actorId: actor.id, action: "NEWS_UPDATED", entity: "NewsArticle", entityId: id } });

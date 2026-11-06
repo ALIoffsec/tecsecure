@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useLearningText } from "@/components/learning-shared";
 import { examPriceFor, labPriceFor } from "@/lib/practice-perks";
+import { formatDate } from "@/lib/format";
 
 type HubLab = { slug: string; title: string; summary: string; level: string; minutes: number; priceTec: number; taskCount: number; solved: number; unlocked: boolean; completed: boolean };
 type Req = { slug: string; title: string; done: boolean };
@@ -88,7 +89,7 @@ export function PracticeHub({ view, tecBalance, planKey, labs, exams, certificat
     {certificates.length === 0 ? <p className="muted">Hali sertifikat yo‘q. Imtihondan {exams[0]?.passPercent ?? 70}% va undan yuqori ball olsangiz, tekshiriladigan sertifikat beriladi.</p> :
       <div className="practice-grid">{certificates.map((cert) => <article key={cert.code} className="practice-card is-done">
         <h3>{cert.title}</h3>
-        <p>Ball: {cert.scorePercent}% · {new Date(cert.issuedAt).toLocaleDateString("uz-UZ")}</p>
+        <p>Ball: {cert.scorePercent}% · {formatDate(cert.issuedAt)}</p>
         <div className="practice-foot"><code>{cert.code}</code><Link href={`/verify/${cert.code}`} className="button secondary">Ochish</Link></div>
       </article>)}</div>}
     </>}

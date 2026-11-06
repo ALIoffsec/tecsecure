@@ -94,17 +94,3 @@ export function AddToCartButton({ product, disabled }: { product: Omit<CartLine,
   </button>;
 }
 
-export function CartFab() {
-  const lines = useCart();
-  const count = lines.reduce((s, l) => s + l.quantity, 0);
-  if (count === 0) return null;
-  return <Link className="shop-fab" href="/cart" aria-label={`Savat: ${count} ta mahsulot`}>
-    <svg aria-hidden="true" viewBox="0 0 24 24">
-      <path d="M3 4h2l2.2 11.1a2 2 0 0 0 2 1.6h8.1a2 2 0 0 0 1.9-1.5L21 8H6" />
-      <circle cx="10" cy="20" r="1" />
-      <circle cx="18" cy="20" r="1" />
-    </svg>
-    <span>Savat</span>
-    <b>{count}</b>
-  </Link>;
-}

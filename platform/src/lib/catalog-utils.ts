@@ -30,7 +30,7 @@ export function comparisonIds(value: string | undefined) {
 export function priceBound(value: string | undefined): number | undefined {
   if (!value?.trim() || !/^\d+(\.\d{1,2})?$/.test(value.trim())) return undefined;
   const minor = Math.round(Number(value) * 100);
-  return Number.isSafeInteger(minor) && minor >= 0 && minor <= 2_000_000_000 ? minor : undefined;
+  return Number.isSafeInteger(minor) && minor >= 0 && minor <= 10_000_000_000_000 ? minor : undefined;
 }
 
 export function specificationFilter(raw: string | undefined): { key: string; value: string | number | boolean } | null {

@@ -1,5 +1,8 @@
 import { z } from "zod";
 
+// 100 billion UZS in tiyin; keeps cart totals inside Number.MAX_SAFE_INTEGER.
+export const MAX_PRICE_MINOR = 10_000_000_000_000;
+
 export const registerSchema = z.object({
   name: z.string().trim().min(2).max(100),
   email: z.string().trim().email().max(254).transform((value) => value.toLowerCase()),
@@ -66,7 +69,7 @@ export const productSchema = z.object({
   categoryId: z.string().cuid().nullable().optional(),
   specifications: z.record(z.string(), z.union([z.string().trim().max(1000), z.number(), z.boolean()])).nullable().optional(),
   compatibility: z.union([z.array(z.string().trim().max(160)).max(50), z.record(z.string(), z.union([z.string().trim().max(1000), z.number(), z.boolean()]))]).nullable().optional(),
-  priceMinor: z.number().int().nonnegative().nullable().optional(),
+  priceMinor: z.number().int().nonnegative().max(MAX_PRICE_MINOR).nullable().optional(),
   currency: z.string().length(3).default("UZS"),
   stockStatus: z.enum(["UNKNOWN", "IN_STOCK", "OUT_OF_STOCK", "ON_REQUEST"]).default("UNKNOWN"),
   warrantyDescription: z.string().trim().max(500).optional(),
@@ -159,3 +162,12 @@ export const subscriptionSchema = z.object({
   planId: z.string().cuid(),
   consent: z.literal(true)
 });
+
+/**
+ * Zod applies .default() even inside .partial(), so a PATCH that omits a field would silently reset it
+ * (for example archiving a plan would wipe its currency). Keeps only the fields the request actually sent.
+ */
+export function onlyProvided<T extends object>(data: T, body: unknown): Partial<T> {
+  if (typeof body !== "object" || body === null) return {};
+  return Object.fromEntries(Object.entries(data).filter(([key]) => Object.hasOwn(body, key))) as Partial<T>;
+}

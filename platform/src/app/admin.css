@@ -1,0 +1,109 @@
+/* Admin workspace on the shared liquid-glass material. */
+
+/* ---------- Glass for surfaces the base stylesheet painted opaque ---------- */
+#app-shell :is(.admin-editor-accordion, .admin-records-accordion, .admin-request-card, .request-status-tile, .order-card, .metric, .list-row, .customer-section-card, .shop-steps li) {
+  border: 1px solid var(--glass-edge);
+  background: var(--glass-control);
+  box-shadow: inset 0 1px 0 var(--glass-shine);
+}
+#app-shell :is(.admin-editor-accordion, .admin-records-accordion) { border-radius: 16px; overflow: hidden; }
+#app-shell :is(.admin-editor-accordion, .admin-records-accordion) > summary { background: transparent; color: var(--text); }
+#app-shell :is(.admin-request-card, .request-status-tile, .order-card, .metric) { border-radius: 16px; }
+#app-shell .list-row { border-radius: 14px; }
+#app-shell .admin-management-category { color: var(--muted); border: 1px solid var(--glass-edge); border-radius: 14px; background: var(--glass-control); box-shadow: inset 0 1px 0 var(--glass-shine); }
+#app-shell .admin-management-category.active { color: var(--text); border-color: color-mix(in srgb, var(--accent) 50%, var(--glass-edge)); background: color-mix(in srgb, var(--accent) 18%, transparent); }
+#app-shell .admin-sidebar-item { color: var(--text); opacity: .86; }
+#app-shell .admin-sidebar-item:hover, #app-shell .admin-sidebar-item.active { opacity: 1; }
+#app-shell a.admin-sidebar-item { text-decoration: none; }
+#app-shell .status { background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--text); }
+#app-shell .form-error { margin: 0; padding: 10px 12px; color: var(--danger); border: 1px solid color-mix(in srgb, var(--danger) 45%, transparent); border-radius: 12px; background: color-mix(in srgb, var(--danger) 10%, transparent); font-size: .88rem; }
+
+/* ---------- Products ---------- */
+#app-shell .admin-products { display: grid; gap: 14px; }
+#app-shell .admin-products-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+#app-shell .admin-products-head h2 { margin: 0; }
+#app-shell .admin-products-head .muted { font-weight: 500; }
+#app-shell .admin-products-filters { display: grid; grid-template-columns: minmax(180px, 2fr) repeat(2, minmax(130px, 1fr)) auto; align-items: center; gap: 8px; }
+#app-shell .admin-products-filters :is(input[type="search"], select) { width: 100%; min-height: 40px; padding: 7px 12px; font-size: .88rem; }
+#app-shell .admin-products-toggle { display: inline-flex; align-items: center; gap: 7px; color: var(--muted); font-size: .84rem; white-space: nowrap; cursor: pointer; }
+#app-shell .admin-product-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+#app-shell .admin-product-row {
+  display: grid; grid-template-columns: 64px minmax(0, 1fr) minmax(110px, auto) auto minmax(150px, auto); align-items: center; gap: 12px;
+  padding: 8px 12px 8px 8px; border: 1px solid var(--glass-edge); border-radius: 16px; background: var(--glass-control); box-shadow: inset 0 1px 0 var(--glass-shine);
+}
+#app-shell .admin-product-thumb { width: 64px; height: 64px; overflow: hidden; border-radius: 12px; background: linear-gradient(160deg, #fbfdff, #e4ebf6); }
+#app-shell .admin-product-thumb:has(.shop-visual) { background: color-mix(in srgb, var(--surface-2) 45%, transparent); }
+#app-shell .admin-product-thumb img { display: block; width: 100%; height: 100%; object-fit: contain; padding: 4px; mix-blend-mode: multiply; }
+#app-shell .admin-product-thumb .shop-visual svg { width: 92%; max-height: 92%; }
+#app-shell .admin-product-main { display: grid; gap: 2px; min-width: 0; }
+#app-shell .admin-product-main > strong { overflow: hidden; font-size: .94rem; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+#app-shell .admin-product-main > .small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#app-shell .admin-product-gaps { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px; }
+#app-shell .admin-product-gaps i { padding: 0 7px; border-radius: 999px; color: var(--warning-text, #a86f00); background: color-mix(in srgb, #e0a030 16%, transparent); font-size: .68rem; font-style: normal; font-weight: 600; }
+:root[data-theme="dark"] #app-shell .admin-product-gaps i { color: #f2c66d; }
+#app-shell .admin-product-facts { display: grid; gap: 1px; text-align: right; }
+#app-shell .admin-product-facts strong { font-size: .9rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+#app-shell .admin-status-pill { padding: 3px 10px; border: 1px solid var(--glass-edge); border-radius: 999px; font-size: .72rem; font-weight: 650; white-space: nowrap; }
+#app-shell .admin-status-pill.is-published { color: var(--success); border-color: color-mix(in srgb, var(--success) 45%, transparent); background: color-mix(in srgb, var(--success) 12%, transparent); }
+#app-shell .admin-status-pill.is-draft { color: var(--muted); }
+#app-shell .admin-status-pill.is-archived { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 40%, transparent); }
+#app-shell .admin-product-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 5px; margin: 0; }
+#app-shell .admin-product-actions .button { width: auto; min-height: 32px; padding: 4px 11px; font-size: .74rem; }
+
+#app-shell dialog.admin-product-dialog {
+  width: min(860px, calc(100vw - 24px)); max-height: 92dvh; padding: 22px; overflow-y: auto; color: var(--text);
+  background: var(--glass-overlay); border: 1px solid var(--glass-edge); border-radius: 24px;
+  box-shadow: var(--glass-shadow), 0 24px 80px #0000004d; -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter);
+}
+#app-shell .admin-product-form { gap: 12px; }
+#app-shell .admin-form-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+#app-shell .admin-form-price { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
+
+#app-shell .media-thumb-grid { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 0; padding: 0; list-style: none; }
+#app-shell .media-thumb { position: relative; width: 104px; height: 104px; overflow: hidden; border: 1px solid var(--glass-edge); border-radius: 14px; background: linear-gradient(160deg, #fbfdff, #e4ebf6); }
+#app-shell .media-thumb a { display: block; width: 100%; height: 100%; }
+#app-shell .media-thumb :is(img, video) { display: block; width: 100%; height: 100%; object-fit: contain; }
+#app-shell .media-thumb-cover { position: absolute; top: 5px; left: 5px; display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; color: #fff; background: #2a6fc4; font-size: .7rem; }
+#app-shell .media-thumb-actions { position: absolute; inset: auto 4px 4px; display: flex; justify-content: flex-end; gap: 3px; }
+#app-shell .media-thumb-actions button { display: grid; place-items: center; width: 26px; height: 26px; padding: 0; color: #fff; border: 0; border-radius: 8px; background: #0a1425c4; font-size: .82rem; cursor: pointer; }
+#app-shell .media-thumb-actions button.is-danger { background: #a3283cdd; }
+
+#app-shell .admin-category-body { display: grid; gap: 10px; padding: 12px 14px 14px; }
+#app-shell .admin-category-add { display: flex; gap: 8px; }
+#app-shell .admin-category-add input { flex: 1; min-width: 0; min-height: 40px; }
+#app-shell .admin-category-list { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+#app-shell .admin-category-list form { display: flex; align-items: center; gap: 8px; }
+#app-shell .admin-category-list input { flex: 1; min-width: 0; min-height: 36px; padding: 5px 10px; font-size: .86rem; }
+#app-shell .admin-category-list .button { width: auto; min-height: 32px; padding: 4px 11px; font-size: .74rem; }
+
+/* ---------- Orders ---------- */
+#app-shell .admin-orders .shop-cats { flex-wrap: wrap; margin-block: 8px 16px; overflow: visible; }
+#app-shell .admin-orders .stack { display: grid; gap: 12px; }
+#app-shell .admin-orders .order-card { padding: 16px 18px; }
+#app-shell .admin-orders .order-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 0 0 10px; border-bottom: 1px solid var(--line); background: none; }
+#app-shell .admin-orders .order-head h2 { margin: 0; font-size: 1rem; font-variant-numeric: tabular-nums; }
+#app-shell .admin-orders .order-body { display: grid; gap: 10px; padding: 12px 0 0; }
+#app-shell .order-customer { margin: 0; line-height: 1.55; }
+#app-shell .order-customer a { color: var(--accent); }
+#app-shell .order-items { display: grid; gap: 5px; margin: 0; padding: 0; list-style: none; }
+#app-shell .order-items li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 12px; padding: 7px 10px; border-radius: 10px; background: color-mix(in srgb, var(--text) 5%, transparent); font-size: .9rem; }
+#app-shell .order-items li strong { font-weight: 600; font-variant-numeric: tabular-nums; }
+#app-shell .order-total { margin: 0; text-align: right; }
+
+@media (max-width: 900px) {
+  #app-shell .admin-products-filters { grid-template-columns: 1fr 1fr; }
+  #app-shell .admin-products-filters input[type="search"] { grid-column: 1 / -1; }
+  #app-shell .admin-product-row { grid-template-columns: 56px minmax(0, 1fr) auto; }
+  #app-shell .admin-product-thumb { width: 56px; height: 56px; }
+  #app-shell .admin-product-facts { grid-column: 2; text-align: left; }
+  #app-shell .admin-status-pill { grid-column: 3; grid-row: 1; align-self: start; }
+  #app-shell .admin-product-actions { grid-column: 1 / -1; justify-content: flex-start; }
+}
+@media (max-width: 640px) {
+  #app-shell .admin-form-3, #app-shell .admin-form-price { grid-template-columns: 1fr; }
+  #app-shell dialog.admin-product-dialog { width: 100%; max-height: 100dvh; padding: 16px; border-radius: 0; }
+  #app-shell .admin-category-list form { flex-wrap: wrap; }
+}
+
+#app-shell :is(.admin-integration-form, .staff-create-panel, .staff-user-item) { border: 1px solid var(--glass-edge); border-radius: 16px; background: var(--glass-control); box-shadow: inset 0 1px 0 var(--glass-shine); }
+#app-shell .admin-product-facts span { padding: 0; border: 0; border-radius: 0; background: none; }

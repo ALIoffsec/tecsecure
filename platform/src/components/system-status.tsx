@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useSitePreferences } from "@/components/site-preferences";
 import { ToastMessage } from "@/components/toast-provider";
+import { formatNumber, formatTime } from "@/lib/format";
 
 type Status = {
   status: "ok" | "degraded";
@@ -40,7 +41,7 @@ export function SystemStatus() {
     return () => window.clearInterval(timer);
   }, [refresh]);
 
-  const formatBytes = (bytes: number) => `${(bytes / (1024 * 1024)).toLocaleString(numberLocale, { maximumFractionDigits: 1 })} MB`;
+  const formatBytes = (bytes: number) => `${formatNumber(bytes / (1024 * 1024), 1)} MB`;
   const formatUptime = (seconds: number) => {
     const days = Math.floor(seconds / 86400);
     const hours = Math.floor((seconds % 86400) / 3600);
@@ -57,7 +58,7 @@ export function SystemStatus() {
       <div className="metric"><strong>{formatUptime(status.uptimeSeconds)}</strong><span>{t("serverUptime")}</span></div>
       <div className="metric"><strong>{formatBytes(status.memory.rssBytes)}</strong><span>{t("memoryUsage")}</span></div>
       <div className="metric"><strong>{formatBytes(status.memory.heapUsedBytes)}</strong><span>{t("heapUsage")}</span></div>
-      <div className="metric"><strong>{new Date(status.checkedAt).toLocaleTimeString(numberLocale)}</strong><span>{t("lastChecked")}</span></div>
+      <div className="metric"><strong>{formatTime(status.checkedAt)}</strong><span>{t("lastChecked")}</span></div>
     </div>}
   </section>;
 }

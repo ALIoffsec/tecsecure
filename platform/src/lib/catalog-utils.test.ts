@@ -80,8 +80,8 @@ test("comparison ids are unique, bounded and reject arbitrary paths", () => {
 test("price bounds preserve cents and do not accept negatives, exponents or overflow", () => {
   assert.equal(priceBound("0"), 0);
   assert.equal(priceBound("12.34"), 1234);
-  assert.equal(priceBound("20000000"), 2_000_000_000);
-  for (const raw of ["", "-1", "NaN", "1e4", "12.345", "20000001", "Infinity"]) assert.equal(priceBound(raw), undefined);
+  assert.equal(priceBound("100000000000"), 10_000_000_000_000);
+  for (const raw of ["", "-1", "NaN", "1e4", "12.345", "100000000001", "Infinity"]) assert.equal(priceBound(raw), undefined);
 });
 
 test("specification filters preserve boolean and numeric types", () => {

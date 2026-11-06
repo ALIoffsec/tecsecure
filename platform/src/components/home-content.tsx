@@ -6,13 +6,14 @@ import { HomeHero } from "./home-hero";
 import { MediaGallery } from "./media-uploader";
 import { UiIcon } from "./ui-icon";
 import { journeyCopy } from "@/lib/journey-copy";
+import { defaultContact } from "@/lib/site-contact";
 
 const brands = ["Cisco", "MikroTik", "TP-Link", "Ubiquiti", "Hikvision", "Huawei"];
 
 export function HomeContent({ contact, work }: { contact: Record<string, string>; work: { id: string; title: string; description: string; media: unknown }[] }) {
   const { locale, t } = useSitePreferences();
   const c = journeyCopy[locale];
-  const phone = (contact.phone || "+998200141455").split(/[\n,;|]+/)[0].trim();
+  const phone = (contact.phone || defaultContact.phone).split(/[\n,;|]+/)[0].trim();
   return <div className="home-page">
     <HomeHero />
     {work.length > 0 && <section className="section home-portfolio"><div className="container">

@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { isResponse, requireModuleApi } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { subscriptionPlanSchema } from "@/lib/validation";
+import { onlyProvided, subscriptionPlanSchema } from "@/lib/validation";
 import { z } from "zod";
 
 export const runtime = "nodejs";
@@ -24,7 +24,7 @@ export async function PATCH(request: Request, context: Context) {
 
   try {
     const plan = await prisma.$transaction(async (tx) => {
-      const updated = await tx.subscriptionPlan.update({ where: { id }, data: parsed.data });
+      const updated = await tx.subscriptionPlan.update({ where: { id }, data: onlyProvided(parsed.data, body) });
       await tx.auditLog.create({
         data: {
           actorId: actor.id,

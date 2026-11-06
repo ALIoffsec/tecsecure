@@ -2,6 +2,7 @@
 
 import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { convertMinorAmount, CurrencyRates, SupportedCurrency, supportedCurrencies } from "@/lib/currency";
+import { formatMoney } from "@/lib/format";
 import { useSitePreferences } from "@/components/site-preferences";
 
 type CurrencyContextValue = {
@@ -96,14 +97,12 @@ export function CurrencySelector() {
 
 export function CurrencyPrice({ amountMinor, currency: sourceCurrency }: { amountMinor: number; currency: string }) {
   const { currency, rates } = useCurrency();
-  const { t } = useSitePreferences();
+  const { t, locale } = useSitePreferences();
   const source = sourceCurrency.toUpperCase();
   const amount = rates ? convertMinorAmount(amountMinor, source, currency, rates.rates) : null;
   const displayCurrency = amount === null ? source : currency;
   const majorAmount = amount ?? amountMinor / 100;
-  const formatted = `${new Intl.NumberFormat("en-US", {
-    maximumFractionDigits: displayCurrency === "UZS" ? 0 : 2
-  }).format(majorAmount)} ${displayCurrency}`;
+  const formatted = formatMoney(majorAmount, displayCurrency, locale);
 
   return <span className="currency-price">
     <span>{formatted}</span>

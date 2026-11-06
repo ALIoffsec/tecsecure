@@ -18,12 +18,14 @@ type Product = {
   assets: CatalogMedia[]; specs: [string, string][];
 };
 
-export function ProductQuickView({ product }: { product: Product }) {
+export function ProductQuickView({ product, iconOnly = false }: { product: Product; iconOnly?: boolean }) {
   const [open, setOpen] = useState(false);
   const { locale } = useSitePreferences();
   const c = shopCopy[locale];
   return <>
-    <button className="shop-quick-view" type="button" aria-haspopup="dialog" onClick={() => setOpen(true)}><UiIcon name="layout" size={16} />{c.quickView}</button>
+    {iconOnly
+      ? <button className="shop-icon-tool" type="button" aria-haspopup="dialog" aria-label={c.quickView} title={c.quickView} onClick={() => setOpen(true)}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" /><circle cx="12" cy="12" r="3" /></svg></button>
+      : <button className="shop-quick-view" type="button" aria-haspopup="dialog" onClick={() => setOpen(true)}><UiIcon name="layout" size={16} />{c.quickView}</button>}
     {open && <SiteDialog className="product-quick-dialog" title={product.name} onClose={() => setOpen(false)}>
       <div className="product-quick-layout">
         <ProductGallery assets={product.assets} title={product.name} slug={product.slug} categorySlug={product.categorySlug} />

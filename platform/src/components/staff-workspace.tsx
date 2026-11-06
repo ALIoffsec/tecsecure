@@ -5,6 +5,7 @@ import { AccountSessionActions } from "./account-session-actions";
 import { FormEvent, useState } from "react";
 import { useSitePreferences } from "@/components/site-preferences";
 import { ToastMessage } from "@/components/toast-provider";
+import { parseMajorPrice } from "@/lib/format";
 
 type RequestRecord = { id: string; reference: string; name: string; phone: string; email: string | null; description: string; status: string; service: { name: string } | null };
 type Project = { id: string; name: string; status: string; city: string | null; items: { id: string; quantity: number; product: { name: string } | null; service: { name: string } | null }[] };
@@ -49,7 +50,7 @@ export function StaffWorkspace({ requests, projects }: { requests: RequestRecord
           items: [{
             description: data.description,
             quantity: Number(data.quantity),
-            unitPriceMinor: Number(data.unitPriceMinor),
+            unitPriceMinor: parseMajorPrice(String(data.unitPrice ?? "")) ?? 0,
             discountMinor: 0
           }],
           assumptions: data.assumptions
@@ -95,7 +96,7 @@ export function StaffWorkspace({ requests, projects }: { requests: RequestRecord
               <div><strong>{project.name}</strong><p>{project.city ?? t("cityNotProvided")} · {project.status}</p><p>{project.items.map((item) => `${item.product?.name ?? item.service?.name ?? t("unknownItem")} × ${item.quantity}`).join(", ") || t("itemsNotProvided")}</p>
                 <form className="form" style={{ marginTop: 12 }} onSubmit={(event) => createQuote(event, project.id)}>
                   <div className="field"><label>{t("quoteLine")}</label><input name="description" placeholder={t("quoteItemPlaceholder")} required minLength={2} maxLength={500} /></div>
-                  <div className="form-row"><div className="field"><label>{t("quantity")}</label><input name="quantity" type="number" min="1" defaultValue="1" required /></div><div className="field"><label>{t("unitPriceMinor")}</label><input name="unitPriceMinor" type="number" min="0" required /></div></div>
+                  <div className="form-row"><div className="field"><label>{t("quantity")}</label><input name="quantity" type="number" min="1" defaultValue="1" required /></div><div className="field"><label>{t("unitPriceMinor")}</label><input name="unitPrice" inputMode="decimal" autoComplete="off" required /></div></div>
                   <div className="field"><label>{t("assumptions")}</label><textarea name="assumptions" maxLength={5000} /></div>
                   <button className="button secondary" disabled={busy}>{t("issueQuote")}</button>
                 </form>

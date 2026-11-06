@@ -46,11 +46,13 @@ function useComparison() {
   return value;
 }
 
-export function CompareButton({ product }: { product: Selection }) {
+export function CompareButton({ product, iconOnly = false }: { product: Selection; iconOnly?: boolean }) {
   const { items, toggle } = useComparison();
   const { locale } = useSitePreferences();
   const selected = items.some(item => item.id === product.id);
-  return <button type="button" className="shop-compare-button" aria-pressed={selected} onClick={() => toggle(product)}>{selected ? "✓ " : "+ "}{shopCopy[locale].compare}</button>;
+  const label = shopCopy[locale].compare;
+  if (iconOnly) return <button type="button" className="shop-icon-tool" aria-pressed={selected} aria-label={label} title={label} onClick={() => toggle(product)}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v13M7 4 3.5 7.5M7 4l3.5 3.5M17 20V7M17 20l-3.5-3.5M17 20l3.5-3.5" /></svg></button>;
+  return <button type="button" className="shop-compare-button" aria-pressed={selected} onClick={() => toggle(product)}>{selected ? "✓ " : "+ "}{label}</button>;
 }
 
 export function CompareTray() {

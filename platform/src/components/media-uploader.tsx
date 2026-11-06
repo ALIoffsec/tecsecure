@@ -7,14 +7,22 @@ import { ToastMessage } from "@/components/toast-provider";
 import { MediaLightbox } from "./media-lightbox";
 import { journeyCopy } from "@/lib/journey-copy";
 
-export function MediaUploader({ scope, value, onChange }: {
+export function MediaUploader({ scope, value, onChange, reorderable = false, hideLabel = false }: {
   scope: "CONTENT" | "PORTFOLIO" | "SERVICES" | "PRODUCTS" | "NEWS" | "WALLET";
   value: string[];
   onChange: (ids: string[]) => void;
+  reorderable?: boolean;
+  hideLabel?: boolean;
 }) {
   const { t } = useSitePreferences();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const move = (index: number, delta: number) => {
+    const next = [...value];
+    const [item] = next.splice(index, 1);
+    next.splice(index + delta, 0, item);
+    onChange(next);
+  };
 
   async function upload(files: FileList | null) {
     if (!files?.length) return;
@@ -41,19 +49,32 @@ export function MediaUploader({ scope, value, onChange }: {
 
   return (
     <div className="field">
-      <label>{t("mediaAttachments")}</label>
+      {!hideLabel && <label>{t("mediaAttachments")}</label>}
       <input type="file" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm" multiple disabled={busy} onChange={(event) => { void upload(event.currentTarget.files); event.currentTarget.value = ""; }} />
       <p className="small muted">{t("mediaUploadLimits")}</p>
       <ToastMessage message={error} variant="error" />
       {busy && <span className="small muted">{t("uploadingMedia")}</span>}
-      {!!value.length && <div className="media-preview-grid">{value.map((id) => (
-        <div className="media-preview-item" key={id}>
-          <a href={`/api/media/${id}`} target="_blank" rel="noreferrer">{t("viewMedia")}</a>
-          <button className="button danger small" type="button" onClick={() => onChange(value.filter((item) => item !== id))}>{t("remove")}</button>
-        </div>
-      ))}</div>}
+      {!!value.length && <ul className="media-thumb-grid">{value.map((id, index) => (
+        <li className="media-thumb" key={id}>
+          <a href={`/api/media/${id}`} target="_blank" rel="noreferrer" title={t("viewMedia")}>
+            <MediaThumb id={id} />
+          </a>
+          {reorderable && index === 0 && <span className="media-thumb-cover">★</span>}
+          <div className="media-thumb-actions">
+            {reorderable && index > 0 && <button type="button" aria-label="←" title="←" onClick={() => move(index, -1)}>←</button>}
+            {reorderable && index < value.length - 1 && <button type="button" aria-label="→" title="→" onClick={() => move(index, 1)}>→</button>}
+            <button type="button" className="is-danger" aria-label={t("remove")} title={t("remove")} onClick={() => onChange(value.filter((item) => item !== id))}>×</button>
+          </div>
+        </li>
+      ))}</ul>}
     </div>
   );
+}
+
+function MediaThumb({ id }: { id: string }) {
+  const [isVideo, setIsVideo] = useState(false);
+  if (isVideo) return <video src={`/api/media/${id}`} muted preload="metadata" />;
+  return <img src={`/api/media/${id}`} alt="" loading="lazy" onError={() => setIsVideo(true)} />;
 }
 
 export function MediaGallery({ media, title, marquee = false, firstOnly = false, preserveAspectRatio = false, variant = "default" }: {

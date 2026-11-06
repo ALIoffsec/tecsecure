@@ -201,8 +201,7 @@
 #app-shell .shop-price { font-weight: 700; letter-spacing: -.035em; font-variant-numeric: tabular-nums; }
 #app-shell .shop-card .shop-price { font-size: 1.2rem; }
 #app-shell .shop-stock { display: inline-block; margin-top: 5px; font-size: .74rem; }
-#app-shell .shop-card-tools { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-#app-shell :is(.shop-quick-view, .shop-card-tools .shop-compare-button) { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 8px; min-height: 44px; font-size: .72rem; cursor: pointer; }
+#app-shell .shop-quick-view { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 8px; min-height: 44px; font-size: .72rem; cursor: pointer; }
 #app-shell .shop-card .shop-add-to-cart { width: 100%; min-height: 44px; }
 #app-shell .shop-badge { border-radius: 999px; background: var(--glass-overlay); color: var(--text); border: 1px solid var(--glass-edge); backdrop-filter: blur(12px); }
 #app-shell .product-media-card { background: linear-gradient(140deg, #ffffff0c, transparent); }
@@ -269,8 +268,6 @@
   #app-shell .shop-card-body { padding: 12px; }
   #app-shell .shop-card h2 { font-size: .91rem; }
   #app-shell .shop-card .shop-price { font-size: 1.02rem; }
-  #app-shell .shop-card-tools { grid-template-columns: 1fr; }
-  #app-shell .shop-card-tools button { width: 100%; font-size: .72rem; }
   #app-shell .product-quick-layout { grid-template-columns: 1fr; gap: 18px; }
   #app-shell .product-quick-dialog { padding: 18px; border-radius: 22px; }
   #app-shell .site-dialog-heading { gap: 12px; margin-bottom: 18px; }

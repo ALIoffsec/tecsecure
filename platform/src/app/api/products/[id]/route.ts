@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { isResponse, requireModuleApi } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { productSchema } from "@/lib/validation";
+import { onlyProvided, productSchema } from "@/lib/validation";
 
 export const runtime = "nodejs";
 type Context = { params: Promise<{ id: string }> };
@@ -23,7 +23,7 @@ export async function PATCH(request: Request, context: Context) {
   }
   try {
     const product = await prisma.$transaction(async (tx) => {
-      const { categoryId, specifications, compatibility, ...productData } = parsed.data;
+      const { categoryId, specifications, compatibility, ...productData } = onlyProvided(parsed.data, body);
       const updated = await tx.product.update({
         where: { id },
         data: {

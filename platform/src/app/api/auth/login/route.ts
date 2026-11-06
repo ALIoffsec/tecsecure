@@ -22,7 +22,8 @@ export async function POST(request: Request) {
   }
   const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
   const identity = createHash("sha256").update(`${parsed.data.email}:${ip}`).digest("hex");
-  if (!(await checkRateLimit("login", identity, 10, 15 * 60 * 1000))) {
+  const accountIdentity = createHash("sha256").update(parsed.data.email).digest("hex");
+  if (!(await checkRateLimit("login", identity, 10, 15 * 60 * 1000)) || !(await checkRateLimit("login-account", accountIdentity, 50, 15 * 60 * 1000))) {
     return Response.json({ error: "Kirish urinishlari limiti oshdi. 15 daqiqadan so‘ng qayta urinib ko‘ring." }, { status: 429 });
   }
 

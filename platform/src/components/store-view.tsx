@@ -8,6 +8,7 @@ import { useSitePreferences } from "@/components/site-preferences";
 import { ToastMessage } from "@/components/toast-provider";
 import { learningSubscriptionPlans } from "@/lib/learning-subscriptions";
 import { tecPacks, tecPurchaseCostMinor, TEC_PRICE_UZS } from "@/lib/tec-pricing";
+import { formatDate } from "@/lib/format";
 
 type Subscription = { planKey: string; endsAt: string; active: boolean } | null;
 type Celebration = { kind: "tec" | "plan"; title: string };
@@ -63,7 +64,6 @@ export function StoreView({ walletBalanceMinor, moduleCount }: { walletBalanceMi
   const router = useRouter();
   const { locale } = useSitePreferences();
   const c = copy[locale];
-  const nf = locale === "uz" ? "uz-UZ" : locale === "ru" ? "ru-RU" : "en-US";
   const [subscription, setSubscription] = useState<Subscription>(null);
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
@@ -125,7 +125,7 @@ export function StoreView({ walletBalanceMinor, moduleCount }: { walletBalanceMi
 
     <h2>{c.subTitle}</h2>
     <p className="small muted">{c.subNote}</p>
-    {activePlan && subscription && <p className="notice success">{c.active}: <strong>{learningSubscriptionPlans.find((p) => p.key === activePlan)?.name}</strong> · {c.until} {new Date(subscription.endsAt).toLocaleDateString(nf)}</p>}
+    {activePlan && subscription && <p className="notice success">{c.active}: <strong>{learningSubscriptionPlans.find((p) => p.key === activePlan)?.name}</strong> · {c.until} {formatDate(subscription.endsAt)}</p>}
     <div className="store-grid store-plans">
       {learningSubscriptionPlans.map((plan, index) => {
         const count = plan.modules === "all" ? moduleCount : plan.modules.length;

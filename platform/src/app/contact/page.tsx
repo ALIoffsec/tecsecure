@@ -4,6 +4,7 @@ import { LocalizedText } from "@/components/site-preferences";
 import { PreviewModeNotice } from "@/components/preview-mode-notice";
 import type { ServiceOption } from "@/components/service-request-form";
 import { isPreviewMode } from "@/lib/preview-mode";
+import { defaultContact } from "@/lib/site-contact";
 
 export const dynamic = "force-dynamic";
 
@@ -16,9 +17,9 @@ export default async function ContactPage({ searchParams }: { searchParams: Prom
   ]);
   const info = Object.fromEntries(settings.map((item) => [item.key, item.value]));
   const phones = (info.phone || "+998200141455\n+998990782102\n+998931970006").split(/[\n,;|]+/).map((phone) => phone.trim()).filter(Boolean);
-  const email = info.email || "itstars134567890@gmail.com";
-  const telegram = (info.telegram || "@abdiazizov_m_ali").replace(/^@/, "");
-  const instagram = (info.instagram || "@abdiazizov_m_ali").replace(/^@/, "");
+  const email = info.email || defaultContact.email;
+  const telegram = (info.telegram || defaultContact.telegram).replace(/^@/, "");
+  const instagram = (info.instagram || defaultContact.instagram).replace(/^@/, "");
   const address = info.address?.trim();
   const addressUrl = address?.match(/https?:\/\/\S+/i)?.[0];
   const addressLabel = addressUrl ? address?.replace(addressUrl, "").trim() : address;

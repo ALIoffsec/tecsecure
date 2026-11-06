@@ -43,7 +43,7 @@ for (const [categorySlug, slug, name, description, priceMinor] of items) {
       priceMinor,
       stockStatus: "ON_REQUEST",
       warrantyDescription: "Kafolat muddati tanlangan uskuna va taklifda alohida ko‘rsatiladi.",
-      status: "PUBLISHED"
+      status: "DRAFT" // Prices here are estimates: staff review and publish them from the admin panel.
     }
   });
 }

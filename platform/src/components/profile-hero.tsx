@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useSitePreferences } from "@/components/site-preferences";
 import type { ProfilePractice } from "@/lib/learning-profile-types";
+import { formatDate } from "@/lib/format";
 
 const copy = {
   uz: {
@@ -141,7 +142,7 @@ export function ProfileHero({ name, email, rewardPoints, practice, children }: {
           <h3>{c.history}</h3>
           {stats.history.length ? <ul className="htb-timeline">{stats.history.map((item) => <li key={item.moduleSlug + item.completedAt}>
             <strong>{item.title[locale]}</strong>
-            <small>{new Date(item.completedAt).toLocaleDateString(locale === "uz" ? "uz-UZ" : locale === "ru" ? "ru-RU" : "en-US")} · +{item.rewardTec} TEC</small>
+            <small>{formatDate(item.completedAt)} · +{item.rewardTec} TEC</small>
           </li>)}</ul> : <p>{c.empty}</p>}
           <p className="htb-note">{c.honest}</p>
         </div>
@@ -161,7 +162,7 @@ export function ProfileHero({ name, email, rewardPoints, practice, children }: {
           {practice.certificates.length === 0 ? <p>{c.noCertificates} <Link href="/learning/practice">{c.examsLink}</Link></p> :
             <div className="htb-certs">{practice.certificates.slice(0, 6).map((cert) => {
               return <Link key={cert.code} className="htb-cert" href={`/verify/${cert.code}`}>
-                <i style={{ background: cert.accent }} /><span><b style={{ color: cert.accent }}>{cert.acronym}</b><strong>{cert.title}</strong><small>{cert.scorePercent}% · {new Date(cert.issuedAt).toLocaleDateString("uz-UZ")}</small></span>
+                <i style={{ background: cert.accent }} /><span><b style={{ color: cert.accent }}>{cert.acronym}</b><strong>{cert.title}</strong><small>{cert.scorePercent}% · {formatDate(cert.issuedAt)}</small></span>
               </Link>;
             })}</div>}
         </div>

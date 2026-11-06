@@ -270,7 +270,7 @@ model Product {
   description         String
   specifications      Json?
   compatibility       Json?
-  priceMinor          Int?
+  priceMinor          Float?
   currency            String            @default("UZS")
   stockStatus         String            @default("UNKNOWN")
   warrantyDescription String?
@@ -309,7 +309,7 @@ model Order {
   latitude        Float?
   longitude       Float?
   note            String?
-  totalMinor      Int?
+  totalMinor      Float?
   currency        String               @default("UZS")
   createdAt       DateTime             @default(now())
   updatedAt       DateTime             @updatedAt
@@ -329,7 +329,7 @@ model OrderItem {
   name           String
   sku            String?
   quantity       Int
-  unitPriceMinor Int?
+  unitPriceMinor Float?
 
   @@index([orderId])
 }
@@ -524,6 +524,8 @@ model MediaAsset {
   mimeType  String
   sizeBytes Int
   data      Bytes
+  ownerId   String?
+  private   Boolean  @default(false)
   createdAt DateTime @default(now())
 
   @@index([createdAt])

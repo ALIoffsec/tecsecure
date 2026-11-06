@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { orderStatusLabels, type OrderStatusValue } from "@/lib/orders";
+import { formatDateTime, formatNumber } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
@@ -33,7 +34,7 @@ export default async function PortalOrdersPage() {
           <div className="order-head">
             <div>
               <h2>{order.reference}</h2>
-              <span className="small muted">{order.createdAt.toLocaleString("uz-UZ")}</span>
+              <span className="small muted">{formatDateTime(order.createdAt)}</span>
             </div>
             <span className={`order-status${status === "DELIVERED" ? " is-done" : cancelled ? " is-cancelled" : ""}`}>{orderStatusLabels[status] ?? status}</span>
           </div>
@@ -50,12 +51,12 @@ export default async function PortalOrdersPage() {
               <div><h3>Yetkazib berish</h3><p>{order.recipientName} · {order.phone}<br />{order.city}, {order.address}</p>
                 {order.latitude !== null && order.longitude !== null && <a className="small" style={{ color: "var(--accent)" }} href={`https://yandex.uz/maps/?pt=${order.longitude},${order.latitude}&z=16&l=map`} target="_blank" rel="noopener noreferrer">Xaritada ko‘rish →</a>}
               </div>
-              <div><h3>Jami</h3><p><strong>{order.totalMinor === null ? "Narx tasdiqlanganda bildiriladi" : `${(order.totalMinor / 100).toLocaleString("uz-UZ")} ${order.currency}`}</strong></p></div>
+              <div><h3>Jami</h3><p><strong>{order.totalMinor === null ? "Narx tasdiqlanganda bildiriladi" : `${formatNumber(order.totalMinor / 100)} ${order.currency}`}</strong></p></div>
             </div>
             <ul className="order-items">{order.items.map((item) => <li key={item.id}><span>{item.name}</span><strong>× {item.quantity}</strong></li>)}</ul>
             <details>
               <summary className="small">Holatlar tarixi</summary>
-              <ul className="stack small" style={{ marginTop: 8 }}>{order.history.map((h) => <li key={h.id}>{h.createdAt.toLocaleString("uz-UZ")} — <strong>{orderStatusLabels[h.toStatus as OrderStatusValue] ?? h.toStatus}</strong>{h.note ? `: ${h.note}` : ""}</li>)}</ul>
+              <ul className="stack small" style={{ marginTop: 8 }}>{order.history.map((h) => <li key={h.id}>{formatDateTime(h.createdAt)} — <strong>{orderStatusLabels[h.toStatus as OrderStatusValue] ?? h.toStatus}</strong>{h.note ? `: ${h.note}` : ""}</li>)}</ul>
             </details>
           </div>
         </article>;

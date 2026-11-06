@@ -17,12 +17,12 @@ export function ProductMedia({ assets, title, slug, categorySlug }: Props) {
   const [failed, setFailed] = useState(false);
   const [alternateFailed, setAlternateFailed] = useState(false);
   const alternate = assets.find(item => item.id !== asset?.id && item.mimeType.startsWith("image/"));
-  if (!asset) return <div className="product-media-fallback"><ProductVisual categorySlug={categorySlug} productSlug={slug} /><span>{c.photoMissing}</span></div>;
+  if (!asset) return <div className="product-media-fallback"><ProductVisual categorySlug={categorySlug} productSlug={slug} name={title} /><span>{c.photoMissing}</span></div>;
   if (failed) return <div className="product-media-error" role="status">{c.mediaError}</div>;
   return <div className="product-media-card">
     {asset.mimeType.startsWith("image/")
-      ? <><Image src={`/api/media/${asset.id}`} alt={title} fill sizes="(max-width: 640px) 46vw, (max-width: 1024px) 33vw, 320px" onError={() => setFailed(true)} />
-        {alternate && !alternateFailed && <Image className="product-media-alternate" src={`/api/media/${alternate.id}`} alt="" aria-hidden="true" fill sizes="(max-width: 640px) 46vw, (max-width: 1024px) 33vw, 320px" onError={() => setAlternateFailed(true)} />}
+      ? <><Image src={`/api/media/${asset.id}`} alt={title} fill sizes="(max-width: 640px) 46vw, (max-width: 1100px) 33vw, 300px" onError={() => setFailed(true)} />
+        {alternate && !alternateFailed && <Image className="product-media-alternate" src={`/api/media/${alternate.id}`} alt="" aria-hidden="true" fill sizes="(max-width: 640px) 46vw, (max-width: 1100px) 33vw, 300px" onError={() => setAlternateFailed(true)} />}
         {alternateFailed && <span className="product-media-notice" role="status">{c.mediaError}</span>}
       </>
       : <><span>{c.video}</span><video src={`/api/media/${asset.id}`} muted preload="metadata" playsInline aria-label={title} onError={() => setFailed(true)} /></>}
@@ -43,7 +43,7 @@ export function ProductGallery({ assets, title, slug, categorySlug }: Props) {
     <div className="product-gallery-stage">
       {failed ? <div className="product-media-error" role="status"><p>{c.mediaError}</p><button className="button secondary" type="button" onClick={() => { setFailed(false); setAttempt(value => value + 1); }}>{c.retry}</button></div>
         : asset.mimeType.startsWith("image/") ? <button type="button" aria-label={c.zoom} onClick={() => setZoom(true)}>
-          <Image key={`${asset.id}-${attempt}`} src={source} alt={title} fill sizes="(max-width: 900px) 90vw, 480px" onError={() => setFailed(true)} />
+          <Image key={`${asset.id}-${attempt}`} src={source} alt={title} fill sizes="(max-width: 900px) 92vw, 560px" onError={() => setFailed(true)} />
         </button> : <video key={`${asset.id}-${attempt}`} src={source} controls preload="metadata" aria-label={title} onError={() => setFailed(true)} />}
     </div>
     <div className="product-thumbnails" role="group" aria-label={title}>

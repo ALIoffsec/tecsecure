@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSitePreferences } from "@/components/site-preferences";
 import { ToastMessage } from "@/components/toast-provider";
+import { formatDateTime, formatNumber } from "@/lib/format";
 
 type GiftNotice = {
   id: string;
@@ -72,7 +73,6 @@ export function TecGiftNotifications() {
 
   if (loading || (!notices.length && !error)) return null;
 
-  const numberLocale = locale === "uz" ? "uz-UZ" : locale === "ru" ? "ru-RU" : "en-US";
   return (
     <section className="panel-card tec-gift-notifications" aria-live="polite">
       <h2>{t("tecGiftNotifications")}</h2>
@@ -81,8 +81,8 @@ export function TecGiftNotifications() {
         {notices.map((item) => (
           <article className={`list-row tec-gift-notice${item.status === "UNREAD" ? " unread" : ""}`} key={item.id}>
             <div>
-              <strong>{t("tecGiftCongratulations").replace("{sender}", item.senderName).replace("{amount}", item.amountTec.toLocaleString(numberLocale))}</strong>
-              <p className="small muted">{new Date(item.createdAt).toLocaleString(numberLocale)}</p>
+              <strong>{t("tecGiftCongratulations").replace("{sender}", item.senderName).replace("{amount}", formatNumber(item.amountTec))}</strong>
+              <p className="small muted">{formatDateTime(item.createdAt)}</p>
             </div>
             {item.status === "UNREAD"
               ? <button className="button secondary small" onClick={() => void markRead(item.id)} type="button">{t("tecGiftMarkRead")}</button>

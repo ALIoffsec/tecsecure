@@ -1,7 +1,8 @@
 /* The supplied sliding auth window, with responsive forms and live account actions. */
-#app-shell .original-auth { --auth-accent: #e46033; position: relative; isolation: isolate; width: min(940px, 100%); margin-inline: auto; overflow: hidden; color: #fff; background: #25252bf2; border: 2px solid var(--auth-accent); border-radius: 20px; box-shadow: 0 0 25px #e460334d; }
-#app-shell .original-auth .curved-shape { position: absolute; z-index: -1; right: 0; top: -5px; height: 900px; width: 1050px; background: linear-gradient(45deg, #25252b, #e46033); transform: rotate(10deg) skewY(40deg); transform-origin: bottom right; transition: transform 1.5s ease; }
-#app-shell .original-auth .curved-shape2 { position: absolute; z-index: -1; left: 250px; top: 100%; height: 1000px; width: 1050px; background: #25252b; border-top: 3px solid var(--auth-accent); transform: rotate(0deg) skewY(0deg); transform-origin: bottom left; transition: transform 1.5s ease; }
+#app-shell .original-auth { --auth-accent: var(--accent); --auth-panel: #111a2e; --auth-sweep: linear-gradient(45deg, #1d3768, #2a6fc4 55%, #6a55d0); position: relative; isolation: isolate; width: min(940px, 100%); margin-inline: auto; overflow: hidden; color: var(--text); background: var(--auth-panel); border: 1px solid var(--glass-edge); border-radius: 28px; box-shadow: var(--glass-shadow), 0 24px 70px #02061940; }
+:root[data-theme="light"] #app-shell .original-auth { --auth-panel: #f3f7fe; }
+#app-shell .original-auth .curved-shape { position: absolute; z-index: -1; right: 0; top: -5px; height: 900px; width: 1050px; background: var(--auth-sweep); transform: rotate(10deg) skewY(40deg); transform-origin: bottom right; transition: transform 1.5s ease; }
+#app-shell .original-auth .curved-shape2 { position: absolute; z-index: -1; left: 250px; top: 100%; height: 1000px; width: 1050px; background: var(--auth-panel); border-top: 1px solid var(--glass-edge); transform: rotate(0deg) skewY(0deg); transform-origin: bottom left; transition: transform 1.5s ease; }
 #app-shell .original-auth[data-mode="register"] .curved-shape { transform: rotate(0deg) skewY(0deg); }
 #app-shell .original-auth[data-mode="register"] .curved-shape2 { transform: rotate(-11deg) skewY(-41deg); }
 #app-shell .original-auth-forms { display: grid; grid-template-columns: 1fr 1fr; min-height: 650px; }
@@ -10,33 +11,34 @@
 #app-shell .original-auth-panel[data-kind="register"] { grid-area: 1 / 2; opacity: 0; filter: blur(10px); transform: translateX(120%); pointer-events: none; }
 #app-shell .original-auth[data-mode="register"] [data-kind="login"] { opacity: 0; filter: blur(10px); transform: translateX(-120%); pointer-events: none; }
 #app-shell .original-auth[data-mode="register"] [data-kind="register"] { opacity: 1; filter: blur(0); transform: translateX(0); pointer-events: auto; }
-#app-shell .original-auth h1 { font-size: clamp(1.6rem, 3vw, 2.15rem); line-height: 1.18; letter-spacing: -.035em; margin: 12px 0 22px; color: #fff; }
-#app-shell .original-auth .eyebrow { color: #ffb08f; }
+#app-shell .original-auth h1 { font-size: clamp(1.6rem, 3vw, 2.15rem); line-height: 1.18; letter-spacing: -.035em; margin: 12px 0 22px; color: var(--text); }
+#app-shell .original-auth .eyebrow { color: var(--accent); }
 #app-shell .original-auth fieldset { display: grid; gap: 18px; border: 0; padding: 0; margin: 0; min-width: 0; }
 #app-shell .original-auth .input-box { position: relative; padding-top: 14px; }
-#app-shell .original-auth .input-box input { width: 100%; height: 48px; padding: 8px 2px; background: transparent; color: #fff; border: 0; border-bottom: 2px solid #ffffffb3; border-radius: 0; box-shadow: none; font: inherit; outline: none; }
-#app-shell .original-auth .input-box label { position: absolute; top: 26px; left: 2px; color: #fff; pointer-events: none; transition: transform .25s ease, color .25s ease; transform-origin: left center; }
-#app-shell .original-auth .input-box input:is(:focus, :not(:placeholder-shown)) + label { transform: translateY(-26px) scale(.82); color: #ffb08f; }
+#app-shell .original-auth .input-box input { width: 100%; height: 48px; padding: 8px 2px; background: transparent; color: var(--text); border: 0; border-bottom: 1px solid var(--muted); border-radius: 0; box-shadow: none; font: inherit; outline: none; }
+#app-shell .original-auth .input-box label { position: absolute; top: 26px; left: 2px; color: var(--muted); pointer-events: none; transition: transform .25s ease, color .25s ease; transform-origin: left center; }
+#app-shell .original-auth .input-box input:is(:focus, :not(:placeholder-shown)) + label { transform: translateY(-26px) scale(.82); color: var(--accent); }
 #app-shell .original-auth .input-box input:focus { border-color: var(--auth-accent); }
-#app-shell .original-auth .auth-submit { width: 100%; min-height: 46px; margin-top: 6px; border-radius: 40px; border: 2px solid var(--auth-accent); background: linear-gradient(#25252b, #e46033, #25252b, #e46033); background-size: 100% 300%; background-position: 0 0; color: #fff; font: inherit; font-weight: 600; cursor: pointer; transition: background-position .5s ease; }
-#app-shell .original-auth .auth-submit:hover { background-position: 0 100%; }
+#app-shell .original-auth .auth-submit { width: 100%; min-height: 46px; margin-top: 6px; border-radius: 40px; border: 1px solid color-mix(in srgb, #fff 22%, transparent); background: linear-gradient(120deg, #2a6fc4, #6a55d0, #2a6fc4); background-size: 220% 100%; background-position: 0 0; color: #fff; font: inherit; font-weight: 650; cursor: pointer; box-shadow: inset 0 1px 0 #ffffff50, 0 8px 22px #2a6fc440; transition: background-position .5s ease; }
+#app-shell .original-auth .auth-submit:hover { background-position: 100% 0; }
 #app-shell .original-auth .regi-link { font-size: .9rem; line-height: 1.65; margin: 20px 0; text-align: center; }
-#app-shell .original-auth .regi-link button { border: 0; padding: 4px 2px; background: none; color: #ffb08f; font: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 4px; cursor: pointer; }
-#app-shell .original-auth button:focus-visible { outline: 2px solid #ffcfb9; outline-offset: 4px; }
+#app-shell .original-auth .regi-link button { border: 0; padding: 4px 2px; background: none; color: var(--accent); font: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 4px; cursor: pointer; }
+#app-shell .original-auth button:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
 #app-shell .original-auth button:disabled { cursor: wait; opacity: .65; }
-#app-shell .original-auth .small, #app-shell .original-auth .muted { color: #e0d9d7; }
-#app-shell .original-auth-info { grid-area: 1 / 2; align-self: center; padding: 50px; text-align: right; transition: transform 1.5s ease; pointer-events: none; }
+#app-shell .original-auth .small, #app-shell .original-auth .muted { color: var(--muted); }
+#app-shell .original-auth-info { grid-area: 1 / 2; align-self: center; padding: 50px; color: #fff; text-align: right; transition: transform 1.5s ease; pointer-events: none; }
 #app-shell .original-auth-info strong { display: block; font-size: clamp(2rem, 4vw, 3rem); line-height: 1.1; text-transform: uppercase; }
 #app-shell .original-auth-info p { line-height: 1.7; }
 #app-shell .original-auth[data-mode="register"] .original-auth-info { transform: translateX(-100%); text-align: left; }
-#app-shell .original-auth .oauth-button { color: #fff; background-color: #25252b; }
+#app-shell .original-auth .oauth-button { color: var(--text); background: var(--glass-control); border: 1px solid var(--glass-edge); }
 
 /* The original gooey filter and rising particles remain above the glass footer. */
-#app-shell .feature-footer { position: relative; isolation: isolate; margin-top: 160px; border-top: 2px solid #4cd9b0; }
+#app-shell .feature-footer { position: relative; isolation: isolate; margin-top: 160px; --footer-liquid: #1f4679; border-top: 1px solid var(--footer-liquid); }
+:root[data-theme="light"] #app-shell .feature-footer { --footer-liquid: #bcd5f6; }
 #app-shell .feature-footer-glow { height: 156px; position: absolute; inset: -150px 0 auto; pointer-events: none; overflow: hidden; z-index: -1; }
 #app-shell .feature-footer-liquid { position: absolute; inset: 0; }
-#app-shell .feature-footer-liquid::after { content: ""; position: absolute; inset: auto -30px -20px; height: 45px; background: #4cd9b0; }
-#app-shell .feature-footer-liquid i { position: absolute; bottom: -16px; border-radius: 50%; background: #4cd9b0; transform: translateX(-50%); animation: original-footer-bubble 4s ease-in infinite; animation-play-state: paused; }
+#app-shell .feature-footer-liquid::after { content: ""; position: absolute; inset: auto -30px -20px; height: 45px; background: var(--footer-liquid); }
+#app-shell .feature-footer-liquid i { position: absolute; bottom: -16px; border-radius: 50%; background: var(--footer-liquid); transform: translateX(-50%); animation: original-footer-bubble 4s ease-in infinite; animation-play-state: paused; }
 #app-shell .feature-footer-glow[data-running="true"] i { animation-play-state: running; }
 #app-shell .feature-footer-pause { display: block; position: relative; margin: 0 24px 16px auto; padding: 8px 12px; border: 1px solid var(--glass-edge); border-radius: 20px; background: var(--glass-overlay); color: var(--text); font: inherit; font-size: .75rem; cursor: pointer; }
 @keyframes original-footer-bubble { 0% { transform: translate(-50%, 0) scale(1); } 65% { transform: translate(-50%, -75px) scale(.85); } 100% { transform: translate(-50%, -140px) scale(0); } }
