@@ -28,12 +28,16 @@ export function SiteIntro() {
       setFallback(false);
       setFinished(false);
     };
-    if (previousPath.current !== pathname && pathname === "/") restart();
+    // The opening belongs to the home page: every arrival plays it, leaving ends it.
+    if (previousPath.current !== pathname) {
+      if (pathname === "/") restart();
+      else if (document.documentElement.dataset.tecIntro) close();
+    }
     previousPath.current = pathname;
-    const onShow = (event: PageTransitionEvent) => { if (event.persisted) restart(); };
+    const onShow = (event: PageTransitionEvent) => { if (event.persisted && pathname === "/") restart(); };
     window.addEventListener("pageshow", onShow);
     return () => window.removeEventListener("pageshow", onShow);
-  }, [pathname]);
+  }, [close, pathname]);
 
   useEffect(() => {
     const element = dialog.current;

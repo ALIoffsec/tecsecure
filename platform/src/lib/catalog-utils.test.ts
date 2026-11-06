@@ -22,11 +22,12 @@ test("adapted interface effects have complete Uzbek, Russian and English copy", 
   }
 });
 
-test("cinematic opening replays every document entry, honors reduced motion and cannot trap an unhydrated page", () => {
+test("cinematic opening replays every home page entry, honors reduced motion and cannot trap an unhydrated page", () => {
   for (const [reduced, expected] of [[false, "pending"], [true, undefined], [false, "pending"]] as const) {
     const dataset: Record<string, string> = {};
     let safety: (() => void) | undefined;
     runInNewContext(introBootstrapScript, {
+      location: { pathname: "/" },
       document: { documentElement: { dataset }, querySelector: () => null, addEventListener: () => {} },
       matchMedia: () => ({ matches: reduced }),
       sessionStorage: { getItem: () => { throw new Error("Intro must not depend on session storage"); } },
@@ -39,10 +40,25 @@ test("cinematic opening replays every document entry, honors reduced motion and 
   }
 });
 
+test("cinematic opening stays off every page except home", () => {
+  for (const pathname of ["/products", "/cart", "/staff/login", "/admin"]) {
+    const dataset: Record<string, string> = {};
+    runInNewContext(introBootstrapScript, {
+      location: { pathname },
+      document: { documentElement: { dataset }, querySelector: () => null, addEventListener: () => {} },
+      matchMedia: () => ({ matches: false }),
+      setTimeout: () => assert.fail("No safety timer is needed when the intro does not run"),
+      console
+    });
+    assert.equal(dataset.tecIntro, undefined);
+  }
+});
+
 test("hydrated intro owns its timeout so the bootstrap timer cannot close a later replay", () => {
   let ready: (() => void) | undefined;
   let cleared = false;
   runInNewContext(introBootstrapScript, {
+      location: { pathname: "/" },
     document: { documentElement: { dataset: {} }, addEventListener: (name: string, callback: () => void) => { assert.equal(name, "tecsecure:intro-ready"); ready = callback; } },
     matchMedia: () => ({ matches: false }),
     setTimeout: () => 42,

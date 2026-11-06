@@ -1,17 +1,32 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { createContext, useContext, useEffect, useId, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useSitePreferences } from "./site-preferences";
 import { featureCopy } from "@/lib/feature-copy";
 
+const FooterMotion = createContext<{ paused: boolean; toggle: () => void }>({ paused: false, toggle: () => {} });
+
+export function FooterMotionProvider({ children }: { children: React.ReactNode }) {
+  const [paused, setPaused] = useState(false);
+  const value = useMemo(() => ({ paused, toggle: () => setPaused(current => !current) }), [paused]);
+  return <FooterMotion.Provider value={value}>{children}</FooterMotion.Provider>;
+}
+
+/** Deterministic stand-in for the original Math.random() particles, so server and client markup agree. */
+const footerParticles = Array.from({ length: 56 }, (_, i) => ({
+  left: (i * 37.3) % 100,
+  size: 48 + (i * 13) % 96,
+  uplift: 96 + (i * 29) % 128,
+  duration: 4 + (i * 7) % 30 / 10,
+  delay: -((i * 11) % 90) / 10
+}));
+
 export function FooterGlow() {
   const ref = useRef<HTMLDivElement>(null);
-  const id = useId();
-  const { locale } = useSitePreferences();
-  const c = featureCopy[locale];
+  const filterId = `footer-water-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
+  const { paused } = useContext(FooterMotion);
   const [visible, setVisible] = useState(false);
-  const [paused, setPaused] = useState(false);
   const [pageVisible, setPageVisible] = useState(true);
   useEffect(() => {
     const observer = new IntersectionObserver(([entry]) => setVisible(entry.isIntersecting));
@@ -21,26 +36,46 @@ export function FooterGlow() {
     if (ref.current) observer.observe(ref.current);
     return () => { observer.disconnect(); document.removeEventListener("visibilitychange", onVisibility); };
   }, []);
-  return <>
-    <div ref={ref} className="feature-footer-glow" data-running={visible && pageVisible && !paused} aria-hidden="true">
-      <div className="feature-footer-liquid" style={{ filter: `url("#${id}")` }}>
-        {Array.from({ length: 40 }, (_, i) => <i key={i} style={{ left: `${(i * 37) % 101}%`, width: `${48 + i % 7 * 10}px`, height: `${48 + i % 7 * 10}px`, animationDuration: `${3 + i % 4}s`, animationDelay: `${-(i % 11)}s` }} />)}
-      </div>
-      <svg width="0" height="0"><defs><filter id={id}><feGaussianBlur in="SourceGraphic" stdDeviation="12" result="blur" /><feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 19 -9" /></filter></defs></svg>
+  return <div ref={ref} className="feature-footer-glow" data-running={visible && pageVisible && !paused} aria-hidden="true">
+    <div className="feature-footer-liquid" style={{ filter: `url("#${filterId}")` }}>
+      {footerParticles.map((p, i) => <i key={i} style={{ left: `${p.left}%`, width: p.size, height: p.size, "--uplift": `${p.uplift}px`, animationDuration: `${p.duration}s`, animationDelay: `${p.delay}s` } as React.CSSProperties} />)}
     </div>
-    <button className="feature-footer-pause" type="button" aria-pressed={paused} onClick={() => setPaused(value => !value)}>{paused ? c.resumeMotion : c.pauseMotion}</button>
-  </>;
+    {/* The supplied goo filter, followed by a specular pass that makes the surface read as water. */}
+    <svg width="0" height="0"><defs><filter id={filterId} x="0" y="0" width="100%" height="100%" colorInterpolationFilters="sRGB">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="12" result="blur" />
+      <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 19 -9" result="goo" />
+      <feGaussianBlur in="goo" stdDeviation="5" result="height" />
+      <feSpecularLighting in="height" surfaceScale="7" specularConstant=".85" specularExponent="26" lightingColor="#ffffff" result="shine"><feDistantLight azimuth="245" elevation="52" /></feSpecularLighting>
+      <feComposite in="shine" in2="goo" operator="in" result="shineInside" />
+      <feComposite in="goo" in2="shineInside" operator="arithmetic" k1="0" k2="1" k3=".55" k4="-.13" />
+    </filter></defs></svg>
+  </div>;
+}
+
+/** Sits in the footer's bottom row, away from the band it controls. */
+export function FooterMotionToggle() {
+  const { locale } = useSitePreferences();
+  const c = featureCopy[locale];
+  const { paused, toggle } = useContext(FooterMotion);
+  return <button className="feature-footer-pause" type="button" aria-pressed={paused} onClick={toggle}>{paused ? c.resumeMotion : c.pauseMotion}</button>;
 }
 
 export function NotFoundView() {
   const { locale } = useSitePreferences();
   const c = featureCopy[locale];
-  return <section className="container page-shell feature-not-found">
-    <div className="feature-lamp-scene" aria-hidden="true">
-      <div className="feature-lamp"><i className="feature-lamp-cord" /><i className="feature-lamp-shade" /><i className="feature-lamp-beam" /></div>
-      <span>404</span>
+  return <section className="feature-not-found">
+    <div className="feature-lamp-stars" aria-hidden="true"><i /><i /><i /></div>
+    <div className="feature-lamp" aria-hidden="true">
+      <i className="feature-lamp-cable" />
+      <i className="feature-lamp-cover" />
+      <i className="feature-lamp-in-cover"><i className="feature-lamp-bulb" /></i>
+      <i className="feature-lamp-light" />
     </div>
-    <h1>{c.notFound}</h1><p className="muted">{c.notFoundHint}</p>
-    <div className="hero-actions"><Link href="/" className="button">{c.home}</Link><Link href="/search" className="button secondary">{c.search}</Link></div>
+    <div className="feature-not-found-card">
+      <strong className="feature-not-found-code" aria-hidden="true">404</strong>
+      <h1>{c.notFound}</h1>
+      <p className="muted">{c.notFoundHint}</p>
+      <div className="hero-actions"><Link href="/" className="button">{c.home}</Link><Link href="/search" className="button secondary">{c.search}</Link></div>
+    </div>
   </section>;
 }

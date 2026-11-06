@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useSitePreferences } from "./site-preferences";
 import { HomeHero } from "./home-hero";
-import { MediaGallery } from "./media-uploader";
+import { WorkCarousel } from "./work-carousel";
 import { UiIcon } from "./ui-icon";
 import { journeyCopy } from "@/lib/journey-copy";
 import { defaultContact } from "@/lib/site-contact";
@@ -18,9 +18,7 @@ export function HomeContent({ contact, work }: { contact: Record<string, string>
     <HomeHero />
     {work.length > 0 && <section className="section home-portfolio"><div className="container">
       <div className="section-head"><div><span className="eyebrow">{c.portfolioEyebrow}</span><h2>{t("sitePortfolioTitle")}</h2></div><p>{c.portfolioNote}</p></div>
-      <div className="portfolio-grid">{work.map(item => <article className="panel-card portfolio-public-card" key={item.id}>
-        <div className="portfolio-story"><h3>{item.title}</h3><p>{item.description}</p></div><MediaGallery media={item.media} title={item.title} marquee />
-      </article>)}</div>
+      <WorkCarousel posts={work} />
     </div></section>}
     <section className="section hub-brands"><div className="container">
       <h2>{c.equipmentBrands}</h2><p className="small muted">{c.brandNote}</p>

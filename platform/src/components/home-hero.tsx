@@ -10,6 +10,7 @@ export function HomeHero() {
   const { locale } = useSitePreferences();
   const c = journeyCopy[locale];
   const [selected, setSelected] = useState(0);
+  const [turn, setTurn] = useState(0);
   const detailId = useId();
   const entries: { href: string; title: string; line: string; description: string; action: string; icon: IconName; tone: string }[] = [
     { href: "/services", title: c.services, line: c.serviceLine, description: c.serviceDesc, action: c.serviceAction, icon: "toolbox", tone: "services" },
@@ -17,8 +18,14 @@ export function HomeHero() {
     { href: "/products", title: c.shop, line: c.shopLine, description: c.shopDesc, action: c.shopAction, icon: "box", tone: "shop" },
   ];
   const current = entries[selected];
+  // The wheel only ever turns one way, like the supplied landing page, whichever entry is chosen.
+  const choose = (index: number) => {
+    if (index === selected) return;
+    setTurn(value => value - ((index - selected + entries.length) % entries.length) * 120);
+    setSelected(index);
+  };
   return <>
-    <section className="brand-hero" aria-labelledby="home-hero-title">
+    <section className="brand-hero" data-direction={selected} aria-labelledby="home-hero-title">
       <div className="container brand-hero-layout">
         <div className="brand-hero-copy">
           <span className="eyebrow">{c.brandEyebrow}</span>
@@ -26,21 +33,22 @@ export function HomeHero() {
           <p className="lead">{c.brandIntro}</p>
         </div>
         <div className="feature-hero-showcase" data-direction={selected}>
-          <div className="brand-glass-scene" aria-hidden="true">
-            <div className="brand-glass-color brand-glass-color-cyan" />
-            <div className="brand-glass-color brand-glass-color-violet" />
-            <div className="brand-glass-pane brand-glass-pane-back"><UiIcon name="book" size={40} /></div>
-            <div className="brand-glass-pane brand-glass-pane-front" key={current.href}>
-              <span className="brand-glass-mark">Tecsecure</span>
-              <UiIcon name={current.icon} size={88} />
-              <div className="brand-glass-lines"><span /><span /><span /></div>
+          <div className="hero-wheel-scene" aria-hidden="true">
+            <div className="hero-wheel-back" style={{ transform: `rotate(${turn * -.5}deg)` }}><i /><i /><i /></div>
+            <div className="hero-wheel" style={{ transform: `rotate(${turn}deg)` }}>
+              {entries.map((entry, index) => <div className="hero-wheel-item" key={entry.href} style={{ "--spoke": `${index * 120}deg` } as React.CSSProperties}>
+                <div className="brand-glass-pane hero-wheel-pane" data-current={selected === index}>
+                  <span className="brand-glass-mark">Tecsecure</span>
+                  <UiIcon name={entry.icon} size={84} />
+                  <div className="brand-glass-lines"><span /><span /><span /></div>
+                </div>
+              </div>)}
             </div>
-            <div className="brand-glass-pane brand-glass-pane-small"><UiIcon name="box" size={36} /></div>
           </div>
           <div className="feature-hero-selector" role="group" aria-label={c.eyebrow}>
-            {entries.map((entry, index) => <button key={entry.href} type="button" aria-pressed={selected === index} aria-controls={detailId} onClick={() => setSelected(index)}><UiIcon name={entry.icon} size={16} />{entry.title}</button>)}
+            {entries.map((entry, index) => <button key={entry.href} type="button" aria-pressed={selected === index} aria-controls={detailId} onClick={() => choose(index)}><UiIcon name={entry.icon} size={16} />{entry.title}</button>)}
           </div>
-          <p className="feature-hero-detail" id={detailId} aria-live="polite"><Link href={current.href}>{current.line} <span aria-hidden="true">→</span></Link></p>
+          <p className="feature-hero-detail" key={current.href} id={detailId} aria-live="polite"><Link href={current.href}>{current.line} <span aria-hidden="true">→</span></Link></p>
         </div>
       </div>
     </section>

@@ -4,7 +4,8 @@ import { createContext, ReactNode, useContext, useEffect, useMemo, useState } fr
 import { Locale, MessageKey, messages } from "@/lib/messages";
 import Link from "next/link";
 import { journeyCopy } from "@/lib/journey-copy";
-import { FooterGlow } from "./feature-visuals";
+import { FooterGlow, FooterMotionProvider, FooterMotionToggle } from "./feature-visuals";
+import { featureCopy } from "@/lib/feature-copy";
 
 type ThemeMode = "light" | "dark" | "system";
 type TextOverrides = Partial<Record<Locale, Partial<Record<MessageKey, string>>>>;
@@ -131,25 +132,33 @@ export function useSitePreferences() {
 export function SiteFooter() {
   const { t, locale, openCookieSettings } = useSitePreferences();
   const c = journeyCopy[locale];
+  const f = featureCopy[locale];
   return (
-    <footer className="footer feature-footer">
+    <FooterMotionProvider><footer className="footer feature-footer">
       <FooterGlow />
-      <nav className="container footer-paths" aria-label={c.eyebrow}>
-        <Link href="/services">{c.services}</Link><Link href="/learning">{c.learning}</Link><Link href="/products">{c.shop}</Link>
-        <Link href="/contact">{t("contact")}</Link><Link href="/terms">{c.delivery}</Link><Link href="/search">{c.search}</Link>
-      </nav>
-      <div className="container footer-inner">
-        <span>© {new Date().getFullYear()} Tecsecure</span>
-        <span>{t("footerTagline")}</span>
-        <div className="footer-legal-links">
-          <Link href="/careers">{t("navCareers")}</Link>
-          <Link href="/privacy">{t("privacyPolicy")}</Link>
-          <Link href="/terms">{t("termsOfUse")}</Link>
-          <button className="footer-cookie-settings" onClick={openCookieSettings} type="button">{t("cookieSettings")}</button>
+      <div className="feature-footer-body">
+        <div className="container footer-columns">
+          <div className="footer-brand"><strong>Tecsecure</strong><span>{t("footerTagline")}</span></div>
+          <nav aria-label={f.footerExplore}>
+            <h2>{f.footerExplore}</h2>
+            <Link href="/services">{c.services}</Link><Link href="/learning">{c.learning}</Link><Link href="/products">{c.shop}</Link><Link href="/work">{t("sitePortfolioTitle")}</Link>
+          </nav>
+          <nav aria-label={f.footerHelp}>
+            <h2>{f.footerHelp}</h2>
+            <Link href="/contact">{t("contact")}</Link><Link href="/terms">{c.delivery}</Link><Link href="/search">{c.search}</Link>
+            <button className="footer-cookie-settings" onClick={openCookieSettings} type="button">{t("cookieSettings")}</button>
+          </nav>
+          <nav aria-label={f.footerCompany}>
+            <h2>{f.footerCompany}</h2>
+            <Link href="/careers">{t("navCareers")}</Link><Link href="/privacy">{t("privacyPolicy")}</Link><Link href="/terms">{t("termsOfUse")}</Link><Link href="/staff/login">{t("staffLogin")}</Link>
+          </nav>
         </div>
-        <Link className="footer-staff-link" href="/staff/login">{t("staffLogin")}</Link>
+        <div className="container footer-inner">
+          <span>© {new Date().getFullYear()} Tecsecure</span>
+          <FooterMotionToggle />
+        </div>
       </div>
-    </footer>
+    </footer></FooterMotionProvider>
   );
 }
 

@@ -97,6 +97,8 @@
 #app-shell .product-media-fallback .shop-visual { position: absolute; inset: 0; height: 100%; min-height: 0; }
 #app-shell .product-media-fallback .shop-visual svg { max-height: 86%; }
 #app-shell .product-media-fallback > span { position: absolute; left: 8px; bottom: 8px; padding: 1px 8px; border-radius: 999px; color: var(--muted); background: var(--glass-overlay); font-size: .64rem; letter-spacing: .01em; }
+/* The cart thumbnail is too small for the label; it spilled over the remove link. */
+#app-shell .shop-line .product-media-fallback > span { display: none; }
 
 #app-shell .shop-card-tools { position: absolute; top: 8px; right: 8px; z-index: 2; display: flex; flex-direction: column; gap: 6px; }
 #app-shell .shop-icon-tool {

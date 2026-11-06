@@ -18,6 +18,8 @@ export function AccountSessionActions({ compact = false, redirectTo = "/login" }
 
   async function signOut() {
     if (busy) return;
+    // The shorter "signing out" label must not pull the door out from under the walking figure.
+    if (button.current) button.current.style.minWidth = `${button.current.offsetWidth}px`;
     setBusy(true);
     setError("");
     try {
@@ -37,6 +39,7 @@ export function AccountSessionActions({ compact = false, redirectTo = "/login" }
     } finally {
       animation.current?.cancel();
       animation.current = null;
+      button.current?.style.removeProperty("min-width");
       setBusy(false);
     }
   }

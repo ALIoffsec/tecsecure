@@ -6,6 +6,8 @@ type FeatureCopy = {
   notFound: string; notFoundHint: string; pauseMotion: string; resumeMotion: string;
   home: string; search: string;
   introTitle: string; skipIntro: string;
+  workNext: string; workPrev: string; workOpen: string;
+  footerExplore: string; footerHelp: string; footerCompany: string;
 };
 
 export const featureCopy: Record<Locale, FeatureCopy> = {
@@ -18,7 +20,9 @@ export const featureCopy: Record<Locale, FeatureCopy> = {
     pauseMotion: "Animatsiyani to'xtatish", resumeMotion: "Animatsiyani davom ettirish",
     notFound: "Bu sahifani topa olmadik", notFoundHint: "Havola eskirgan yoki manzil noto'g'ri bo'lishi mumkin.",
     home: "Bosh sahifaga", search: "Saytdan qidirish",
-    introTitle: "Tecsecure — saytga kirish animatsiyasi", skipIntro: "Saytga o'tish"
+    introTitle: "Tecsecure — saytga kirish animatsiyasi", skipIntro: "Saytga o'tish",
+    workNext: "Keyingi ish", workPrev: "Oldingi ish", workOpen: "Kattalashtirish",
+    footerExplore: "Yo'nalishlar", footerHelp: "Yordam", footerCompany: "Kompaniya"
   },
   ru: {
     welcome: "С возвращением.", join: "Возможности начинаются здесь.",
@@ -29,7 +33,9 @@ export const featureCopy: Record<Locale, FeatureCopy> = {
     pauseMotion: "Остановить анимацию", resumeMotion: "Продолжить анимацию",
     notFound: "Страница не найдена", notFoundHint: "Возможно, ссылка устарела или адрес указан неверно.",
     home: "На главную", search: "Поиск по сайту",
-    introTitle: "Tecsecure — вступительная анимация", skipIntro: "Перейти на сайт"
+    introTitle: "Tecsecure — вступительная анимация", skipIntro: "Перейти на сайт",
+    workNext: "Следующая работа", workPrev: "Предыдущая работа", workOpen: "Увеличить",
+    footerExplore: "Направления", footerHelp: "Помощь", footerCompany: "Компания"
   },
   en: {
     welcome: "Welcome back.", join: "Your next step starts here.",
@@ -40,6 +46,8 @@ export const featureCopy: Record<Locale, FeatureCopy> = {
     pauseMotion: "Pause animation", resumeMotion: "Resume animation",
     notFound: "We couldn't find this page", notFoundHint: "The link may have expired or the address may be incorrect.",
     home: "Back to home", search: "Search the site",
-    introTitle: "Tecsecure — opening animation", skipIntro: "Enter the site"
+    introTitle: "Tecsecure — opening animation", skipIntro: "Enter the site",
+    workNext: "Next project", workPrev: "Previous project", workOpen: "View larger",
+    footerExplore: "Explore", footerHelp: "Help", footerCompany: "Company"
   }
 };
