@@ -4,7 +4,8 @@ import { createContext, ReactNode, useContext, useEffect, useMemo, useState } fr
 import { Locale, MessageKey, messages } from "@/lib/messages";
 import Link from "next/link";
 import { journeyCopy } from "@/lib/journey-copy";
-import { FooterGlow, FooterMotionProvider, FooterMotionToggle } from "./feature-visuals";
+import { FooterGlow } from "./feature-visuals";
+import { siteCopy } from "@/lib/site-copy";
 import { featureCopy } from "@/lib/feature-copy";
 
 type ThemeMode = "light" | "dark" | "system";
@@ -38,6 +39,8 @@ export function SitePreferencesProvider({ children, overrides = {} }: { children
   const [ready, setReady] = useState(false);
   const [cookieConsent, setCookieConsent] = useState<CookieConsent | null>(null);
   const [cookieSettingsOpen, setCookieSettingsOpen] = useState(false);
+  const [cookieDetails, setCookieDetails] = useState(false);
+  const [rememberChoice, setRememberChoice] = useState(true);
 
   useEffect(() => {
     const storedConsent = readCookie(consentCookie);
@@ -64,7 +67,6 @@ export function SitePreferencesProvider({ children, overrides = {} }: { children
   useEffect(() => {
     if (!ready) return;
     document.documentElement.lang = locale;
-    document.title = messages[locale].siteTitle;
     if (cookieConsent === "all") {
       writeCookie(preferenceCookie, encodeURIComponent(JSON.stringify({ locale, theme })));
     }
@@ -91,7 +93,7 @@ export function SitePreferencesProvider({ children, overrides = {} }: { children
     theme,
     setLocale: setLocaleState,
     setTheme: setThemeState,
-    openCookieSettings: () => setCookieSettingsOpen(true),
+    openCookieSettings: () => { setCookieDetails(true); setRememberChoice(readCookie(consentCookie) !== "essential"); setCookieSettingsOpen(true); },
     t: (key) => overrides[locale]?.[key] ?? messages[locale][key]
   }), [locale, theme, overrides]);
 
@@ -104,19 +106,38 @@ export function SitePreferencesProvider({ children, overrides = {} }: { children
       writeCookie(preferenceCookie, "", 0);
     }
     setCookieSettingsOpen(false);
+    setCookieDetails(false);
   }
 
+  const cookie = siteCopy[locale].cookie;
   return <PreferencesContext.Provider value={value}>
     {children}
     {(cookieConsent === null || cookieSettingsOpen) && (
-      <aside className="cookie-consent" role="dialog" aria-modal="false" aria-labelledby="cookie-consent-title">
-        <div>
-          <strong id="cookie-consent-title">{messages[locale].cookieConsentTitle}</strong>
-          <p>{messages[locale].cookieConsentDescription}</p>
+      <aside className="cookie-consent" role="dialog" aria-modal="false" aria-labelledby="cookie-consent-title" data-details={cookieDetails}>
+        <div className="cookie-consent-head">
+          <strong id="cookie-consent-title">{cookie.title}</strong>
+          {cookieSettingsOpen && <button className="cookie-consent-close" type="button" aria-label={cookie.close} onClick={() => { setCookieSettingsOpen(false); setCookieDetails(false); }}>×</button>}
         </div>
+        <p>{cookie.text}</p>
+        {cookieDetails && <div className="cookie-options">
+          <div className="cookie-option">
+            <div><strong>{cookie.necessary}</strong><span>{cookie.necessaryHint}</span></div>
+            <span className="cookie-always">{cookie.always}</span>
+          </div>
+          <label className="cookie-option">
+            <div><strong>{cookie.preferences}</strong><span>{cookie.preferencesHint}</span></div>
+            <input className="switch" type="checkbox" role="switch" checked={rememberChoice} onChange={event => setRememberChoice(event.target.checked)} />
+          </label>
+          <p className="cookie-note">{cookie.none} <Link href="/privacy">{cookie.privacy}</Link></p>
+        </div>}
         <div className="cookie-consent-actions">
-          <button className="button ghost" type="button" onClick={() => chooseCookieConsent("essential")}>{messages[locale].cookieEssentialOnly}</button>
-          <button className="button" type="button" onClick={() => chooseCookieConsent("all")}>{messages[locale].cookieAcceptPreferences}</button>
+          {cookieDetails
+            ? <button className="button" type="button" onClick={() => chooseCookieConsent(rememberChoice ? "all" : "essential")}>{cookie.save}</button>
+            : <>
+              <button className="button" type="button" onClick={() => chooseCookieConsent("all")}>{cookie.acceptAll}</button>
+              <button className="button ghost" type="button" onClick={() => chooseCookieConsent("essential")}>{cookie.essential}</button>
+              <button className="cookie-customize" type="button" onClick={() => setCookieDetails(true)}>{cookie.customize}</button>
+            </>}
         </div>
       </aside>
     )}
@@ -134,7 +155,7 @@ export function SiteFooter() {
   const c = journeyCopy[locale];
   const f = featureCopy[locale];
   return (
-    <FooterMotionProvider><footer className="footer feature-footer">
+    <footer className="footer feature-footer">
       <FooterGlow />
       <div className="feature-footer-body">
         <div className="container footer-columns">
@@ -155,10 +176,9 @@ export function SiteFooter() {
         </div>
         <div className="container footer-inner">
           <span>© {new Date().getFullYear()} Tecsecure</span>
-          <FooterMotionToggle />
         </div>
       </div>
-    </footer></FooterMotionProvider>
+    </footer>
   );
 }
 

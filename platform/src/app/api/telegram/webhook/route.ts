@@ -1,3 +1,4 @@
+import { reviewWalletTransaction, WalletReviewError, walletReviewMessages } from "@/lib/wallet-review";
 import { timingSafeEqual } from "node:crypto";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
@@ -8,6 +9,9 @@ import {
   escapeTelegramHtml,
   getTelegramAdminPanelUrl,
   parseTelegramAdminCallbackData,
+  parseTelegramWalletCallbackData,
+  walletDecisionText,
+  notifyTelegramUser,
   sendTelegramMessage
 } from "@/lib/telegram";
 import { getTelegramCredentials } from "@/lib/integration-credentials";
@@ -125,6 +129,24 @@ async function handleAdminReply(update: TelegramUpdateBody, reference: string, b
   );
 }
 
+async function buildAdminReport(): Promise<string> {
+  const dayStart = new Date();
+  dayStart.setHours(0, 0, 0, 0);
+  const [newOrders, todayOrders, pendingWallet, openRequests] = await Promise.all([
+    prisma.order.count({ where: { status: "NEW" } }),
+    prisma.order.count({ where: { createdAt: { gte: dayStart } } }),
+    prisma.walletTransaction.count({ where: { status: "PENDING" } }),
+    prisma.serviceRequest.count({ where: { status: { in: ["NEW", "CONTACTED"] } } })
+  ]);
+  return [
+    "<b>📊 Tecsecure hisoboti</b>",
+    `Yangi buyurtmalar: <b>${newOrders}</b>`,
+    `Bugungi buyurtmalar: <b>${todayOrders}</b>`,
+    `Kutilayotgan hamyon arizalari: <b>${pendingWallet}</b>`,
+    `Ochiq xizmat arizalari: <b>${openRequests}</b>`
+  ].join("\n");
+}
+
 async function handleAdminCallback(update: TelegramUpdateBody, adminChatId: string): Promise<void> {
   const callback = update.callback_query;
   if (!callback) return;
@@ -140,6 +162,22 @@ async function handleAdminCallback(update: TelegramUpdateBody, adminChatId: stri
     return;
   }
 
+  const walletAction = parseTelegramWalletCallbackData(callback.data);
+  if (walletAction) {
+    try {
+      const transaction = await reviewWalletTransaction(walletAction.id, walletAction.decision, { id: null, via: "telegram" });
+      await notifyTelegramUser(transaction.userId, walletDecisionText(transaction));
+      await answerTelegramCallbackQuery(callback.id, walletAction.decision === "APPROVED" ? "Tasdiqlandi. Balans yangilandi." : "Rad etildi.");
+      await sendTelegramMessage(adminChatId, `Ariza ${walletAction.decision === "APPROVED" ? "tasdiqlandi ✅" : "rad etildi ❌"}: ${Math.round(transaction.amountMinor / 100)} so‘m`, { replyToMessageId: message.message_id });
+    } catch (error) {
+      if (error instanceof WalletReviewError) {
+        await answerTelegramCallbackQuery(callback.id, walletReviewMessages[error.code].error);
+        return;
+      }
+      throw error;
+    }
+    return;
+  }
   const action = parseTelegramAdminCallbackData(callback.data);
   if (!action) {
     await answerTelegramCallbackQuery(callback.id, "Tugma ma’lumoti noto‘g‘ri.");
@@ -237,6 +275,10 @@ export async function POST(request: Request) {
   }
 
   if (!adminChatId || String(message.chat.id) !== adminChatId) {
+    return Response.json({ ok: true });
+  }
+  if (/^\/(hisobot|report)(?:@\w+)?$/i.test(text)) {
+    await sendTelegramMessage(adminChatId, await buildAdminReport());
     return Response.json({ ok: true });
   }
   const reply = text.match(/^\/reply(?:@\w+)?\s+([A-Z0-9-]{4,80})\s+([\s\S]{1,3000})$/i);

@@ -89,7 +89,7 @@ export function ProfileDetails({ user }: { user: { name: string; email: string; 
           <p>{t("name")}: {user.name}</p>
           <p>{t("email")}: {user.email}</p>
           <p>{t("phone")}: {user.phone || t("notProvided")}</p>
-          <p>{t("role")}: {user.role}</p>
+          {user.role !== "CUSTOMER" && <p>{t("role")}: {user.role}</p>}
           <button className="button secondary" type="button" onClick={() => setEditing(true)}>{t("editProfile")}</button>
         </>}
         <p className="muted">{t("passwordResetNotice")}</p>

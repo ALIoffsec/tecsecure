@@ -1,17 +1,9 @@
 "use client";
 
-import { createContext, useContext, useEffect, useId, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
 import { useSitePreferences } from "./site-preferences";
 import { featureCopy } from "@/lib/feature-copy";
-
-const FooterMotion = createContext<{ paused: boolean; toggle: () => void }>({ paused: false, toggle: () => {} });
-
-export function FooterMotionProvider({ children }: { children: React.ReactNode }) {
-  const [paused, setPaused] = useState(false);
-  const value = useMemo(() => ({ paused, toggle: () => setPaused(current => !current) }), [paused]);
-  return <FooterMotion.Provider value={value}>{children}</FooterMotion.Provider>;
-}
 
 /** Deterministic stand-in for the original Math.random() particles, so server and client markup agree. */
 const footerParticles = Array.from({ length: 56 }, (_, i) => ({
@@ -25,7 +17,6 @@ const footerParticles = Array.from({ length: 56 }, (_, i) => ({
 export function FooterGlow() {
   const ref = useRef<HTMLDivElement>(null);
   const filterId = `footer-water-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
-  const { paused } = useContext(FooterMotion);
   const [visible, setVisible] = useState(false);
   const [pageVisible, setPageVisible] = useState(true);
   useEffect(() => {
@@ -36,7 +27,7 @@ export function FooterGlow() {
     if (ref.current) observer.observe(ref.current);
     return () => { observer.disconnect(); document.removeEventListener("visibilitychange", onVisibility); };
   }, []);
-  return <div ref={ref} className="feature-footer-glow" data-running={visible && pageVisible && !paused} aria-hidden="true">
+  return <div ref={ref} className="feature-footer-glow" data-running={visible && pageVisible} aria-hidden="true">
     <div className="feature-footer-liquid" style={{ filter: `url("#${filterId}")` }}>
       {footerParticles.map((p, i) => <i key={i} style={{ left: `${p.left}%`, width: p.size, height: p.size, "--uplift": `${p.uplift}px`, animationDuration: `${p.duration}s`, animationDelay: `${p.delay}s` } as React.CSSProperties} />)}
     </div>
@@ -50,14 +41,6 @@ export function FooterGlow() {
       <feComposite in="goo" in2="shineInside" operator="arithmetic" k1="0" k2="1" k3=".55" k4="-.13" />
     </filter></defs></svg>
   </div>;
-}
-
-/** Sits in the footer's bottom row, away from the band it controls. */
-export function FooterMotionToggle() {
-  const { locale } = useSitePreferences();
-  const c = featureCopy[locale];
-  const { paused, toggle } = useContext(FooterMotion);
-  return <button className="feature-footer-pause" type="button" aria-pressed={paused} onClick={toggle}>{paused ? c.resumeMotion : c.pauseMotion}</button>;
 }
 
 export function NotFoundView() {

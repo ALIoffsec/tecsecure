@@ -309,6 +309,10 @@ model Order {
   latitude        Float?
   longitude       Float?
   note            String?
+  paymentMethod   String               @default("UNSPECIFIED")
+  paymentStatus   String               @default("PENDING")
+  paymentReference String?
+  paymentProofMediaId String?
   totalMinor      Float?
   currency        String               @default("UZS")
   createdAt       DateTime             @default(now())

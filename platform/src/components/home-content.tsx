@@ -18,7 +18,7 @@ export function HomeContent({ contact, work }: { contact: Record<string, string>
     <HomeHero />
     {work.length > 0 && <section className="section home-portfolio"><div className="container">
       <div className="section-head"><div><span className="eyebrow">{c.portfolioEyebrow}</span><h2>{t("sitePortfolioTitle")}</h2></div><p>{c.portfolioNote}</p></div>
-      <WorkCarousel posts={work} />
+      <WorkCarousel posts={work} showLink />
     </div></section>}
     <section className="section hub-brands"><div className="container">
       <h2>{c.equipmentBrands}</h2><p className="small muted">{c.brandNote}</p>

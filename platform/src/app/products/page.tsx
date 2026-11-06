@@ -1,3 +1,4 @@
+import { RecentlyViewed } from "@/components/shop-extras";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
@@ -140,5 +141,6 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
         <Link className="shop-filter-clear" href="/products"><S id="clear" /></Link>
       </form>
     </FilterPanel>
+    <RecentlyViewed />
   </div>;
 }

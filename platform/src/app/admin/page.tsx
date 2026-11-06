@@ -3,6 +3,7 @@ import { AdminSecurityBoundary } from "@/components/admin-security-boundary";
 import { redirect } from "next/navigation";
 import { requireAdminPage } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getTelegramCredentials } from "@/lib/integration-credentials";
 
 export const dynamic = "force-dynamic";
 
@@ -27,7 +28,7 @@ export default async function AdminPage() {
     can("PRODUCTS") ? prisma.productCategory.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, _count: { select: { products: true } } } }) : [],
     can("PRODUCTS") ? prisma.order.count({ where: { status: "NEW" } }) : 0,
     can("NEWS") ? prisma.newsArticle.findMany({ orderBy: { updatedAt: "desc" }, take: 100 }) : [],
-    can("COMPANY") ? prisma.siteSetting.findMany({ where: { key: { in: ["companyName", "phone", "email", "telegram", "instagram", "address", "siteDesign"] } } }) : [],
+    can("COMPANY") ? prisma.siteSetting.findMany({ where: { key: { in: ["companyName", "phone", "email", "telegram", "instagram", "address", "siteDesign", "paymentCardNumber", "paymentCardHolder", "paymentCardBank"] } } }) : [],
     can("COMPANY") ? prisma.notification.findMany({ where: { userId: actor.id }, orderBy: { createdAt: "desc" }, take: 20 }) : [],
     privileged ? prisma.user.findMany({ where: { deletedAt: null }, select: { id: true, name: true, email: true, role: true, active: true, permissions: true }, orderBy: [{ role: "asc" }, { name: "asc" }] }) : [],
     can("PROJECTS") ? prisma.project.findMany({
@@ -57,6 +58,23 @@ export default async function AdminPage() {
       orderBy: { createdAt: "asc" }, take: 200
     }) : []
   ]);
+  const monthStart = new Date();
+  monthStart.setDate(1);
+  monthStart.setHours(0, 0, 0, 0);
+  const [customerCount, monthRevenue, botConfigured] = await Promise.all([
+    privileged ? prisma.user.count({ where: { role: "CUSTOMER", deletedAt: null } }) : null,
+    can("PRODUCTS") ? prisma.order.aggregate({ where: { status: "DELIVERED", currency: "UZS", updatedAt: { gte: monthStart } }, _sum: { totalMinor: true } }) : null,
+    privileged ? getTelegramCredentials().then(({ botToken, adminChatId }) => Boolean(botToken && adminChatId)).catch(() => false) : null
+  ]);
+  const overview = {
+    newOrders: can("PRODUCTS") ? newOrderCount : null,
+    pendingWallet: can("WALLET") ? walletRequests.length : null,
+    newRequests: can("REQUESTS") ? requestStatusGroups.find((item) => item.status === "NEW")?._count._all ?? 0 : null,
+    pendingPayments: can("PAYMENTS") ? pendingPayments.length : null,
+    customers: customerCount,
+    monthRevenueMinor: monthRevenue ? monthRevenue._sum.totalMinor ?? 0 : null,
+    botConfigured
+  };
   const managedUsers = users.map((user) => ({
     ...user,
     permissions: Array.isArray(user.permissions) ? user.permissions.filter((value): value is string => typeof value === "string") : []
@@ -67,5 +85,5 @@ export default async function AdminPage() {
   }));
   const requestStats = Object.fromEntries(requestStatusGroups.map((item) => [item.status, item._count._all]));
   const requestTotal = requestStatusGroups.reduce((total, item) => total + item._count._all, 0);
-  return <><AdminSecurityBoundary /><AdminWorkspace newOrderCount={newOrderCount} services={services} requests={requests} requestStats={requestStats} requestTotal={requestTotal} products={products} productCategories={productCategories} articles={articles} settings={Object.fromEntries(settings.map((item) => [item.key, item.value]))} notifications={notifications} projects={projects} quotations={quotations} pendingPayments={pendingPayments} plans={managedPlans} users={managedUsers} siteBlocks={siteBlocks} portfolioPosts={portfolioPosts} walletRequests={walletRequests} metrics={{ users: managedUsers.length, projects: projectCount, invoices }} role={actor.role} permissions={actor.permissions} actorId={actor.id} /></>;
+  return <><AdminSecurityBoundary /><AdminWorkspace overview={overview} newOrderCount={newOrderCount} services={services} requests={requests} requestStats={requestStats} requestTotal={requestTotal} products={products} productCategories={productCategories} articles={articles} settings={Object.fromEntries(settings.map((item) => [item.key, item.value]))} notifications={notifications} projects={projects} quotations={quotations} pendingPayments={pendingPayments} plans={managedPlans} users={managedUsers} siteBlocks={siteBlocks} portfolioPosts={portfolioPosts} walletRequests={walletRequests} metrics={{ users: managedUsers.length, projects: projectCount, invoices }} role={actor.role} permissions={actor.permissions} actorId={actor.id} /></>;
 }

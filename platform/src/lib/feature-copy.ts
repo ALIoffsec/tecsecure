@@ -3,9 +3,9 @@ import type { Locale } from "./messages";
 type FeatureCopy = {
   welcome: string; join: string; accountNote: string; staffNote: string;
   walletDetails: string; walletFront: string; walletNote: string;
-  notFound: string; notFoundHint: string; pauseMotion: string; resumeMotion: string;
+  notFound: string; notFoundHint: string;
   home: string; search: string;
-  introTitle: string; skipIntro: string;
+  introTitle: string;
   workNext: string; workPrev: string; workOpen: string;
   footerExplore: string; footerHelp: string; footerCompany: string;
 };
@@ -17,10 +17,9 @@ export const featureCopy: Record<Locale, FeatureCopy> = {
     staffNote: "Jamoa uchun xizmatlar, loyihalar va boshqaruv vositalari.",
     walletDetails: "Mukofotlarni ko'rish", walletFront: "Balansga qaytish",
     walletNote: "Tecsecure ichki hamyoni. Bank kartasi emas.",
-    pauseMotion: "Animatsiyani to'xtatish", resumeMotion: "Animatsiyani davom ettirish",
     notFound: "Bu sahifani topa olmadik", notFoundHint: "Havola eskirgan yoki manzil noto'g'ri bo'lishi mumkin.",
     home: "Bosh sahifaga", search: "Saytdan qidirish",
-    introTitle: "Tecsecure — saytga kirish animatsiyasi", skipIntro: "Saytga o'tish",
+    introTitle: "Tecsecure — saytga kirish animatsiyasi",
     workNext: "Keyingi ish", workPrev: "Oldingi ish", workOpen: "Kattalashtirish",
     footerExplore: "Yo'nalishlar", footerHelp: "Yordam", footerCompany: "Kompaniya"
   },
@@ -30,10 +29,9 @@ export const featureCopy: Record<Locale, FeatureCopy> = {
     staffNote: "Услуги, проекты и инструменты управления для команды.",
     walletDetails: "Посмотреть награды", walletFront: "Вернуться к балансу",
     walletNote: "Внутренний кошелёк Tecsecure. Не банковская карта.",
-    pauseMotion: "Остановить анимацию", resumeMotion: "Продолжить анимацию",
     notFound: "Страница не найдена", notFoundHint: "Возможно, ссылка устарела или адрес указан неверно.",
     home: "На главную", search: "Поиск по сайту",
-    introTitle: "Tecsecure — вступительная анимация", skipIntro: "Перейти на сайт",
+    introTitle: "Tecsecure — вступительная анимация",
     workNext: "Следующая работа", workPrev: "Предыдущая работа", workOpen: "Увеличить",
     footerExplore: "Направления", footerHelp: "Помощь", footerCompany: "Компания"
   },
@@ -43,10 +41,9 @@ export const featureCopy: Record<Locale, FeatureCopy> = {
     staffNote: "Services, projects and management tools for the team.",
     walletDetails: "View rewards", walletFront: "Back to balance",
     walletNote: "Tecsecure internal wallet. Not a bank card.",
-    pauseMotion: "Pause animation", resumeMotion: "Resume animation",
     notFound: "We couldn't find this page", notFoundHint: "The link may have expired or the address may be incorrect.",
     home: "Back to home", search: "Search the site",
-    introTitle: "Tecsecure — opening animation", skipIntro: "Enter the site",
+    introTitle: "Tecsecure — opening animation",
     workNext: "Next project", workPrev: "Previous project", workOpen: "View larger",
     footerExplore: "Explore", footerHelp: "Help", footerCompany: "Company"
   }

@@ -13,7 +13,8 @@ async function canRead(asset: { private: boolean; ownerId: string | null }) {
   const user = await getCurrentUser();
   if (user && asset.ownerId === user.id) return true;
   if (!user || user.role === "CUSTOMER") return false;
-  return !isResponse(await requireModuleApi("WALLET"));
+  // Payment proofs reach staff through wallet requests and through orders.
+  return !isResponse(await requireModuleApi("WALLET")) || !isResponse(await requireModuleApi("PRODUCTS"));
 }
 
 export async function HEAD(_request: Request, context: Context) {

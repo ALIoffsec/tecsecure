@@ -8,6 +8,8 @@ import { useSitePreferences } from "@/components/site-preferences";
 import { ToastMessage } from "@/components/toast-provider";
 import { WalletCard } from "./wallet-card";
 import { formatDate, formatNumber } from "@/lib/format";
+import type { PaymentCard } from "./cart-checkout";
+import { siteCopy } from "@/lib/site-copy";
 
 type WalletRecord = {
   id: string;
@@ -20,7 +22,8 @@ type WalletRecord = {
   createdAt: Date;
 };
 
-export function WalletPanel({ initialBalance, initialPoints, transactions }: {
+export function WalletPanel({ initialBalance, initialPoints, transactions, paymentCard = null }: {
+  paymentCard?: PaymentCard | null;
   initialBalance: number;
   initialPoints: number;
   transactions: WalletRecord[];
@@ -80,6 +83,11 @@ export function WalletPanel({ initialBalance, initialPoints, transactions }: {
     <form className="form" onSubmit={submit}>
       <div className="field"><label htmlFor="wallet-amount">{t("walletAmount")}</label><input id="wallet-amount" name="amount" type="number" min="1" max="20000000" step="0.01" required /></div>
       {kind === "DEPOSIT" ? <>
+        {paymentCard && <div className="pay-card">
+          <span className="pay-card-bank">{paymentCard.bank || "Tecsecure"}</span>
+          <strong className="pay-card-number">{paymentCard.number}</strong>
+          <div className="pay-card-foot"><span>{paymentCard.holder}</span></div>
+        </div>}
         <div className="field"><label htmlFor="wallet-reference">{t("walletReference")}</label><input id="wallet-reference" name="reference" minLength={2} maxLength={160} required /></div>
         <MediaUploader scope="WALLET" value={proof} onChange={setProof} />
       </> : <div className="field"><label htmlFor="wallet-details">{t("walletPayoutDetails")}</label><textarea id="wallet-details" name="details" minLength={10} maxLength={2000} required /></div>}
@@ -89,7 +97,7 @@ export function WalletPanel({ initialBalance, initialPoints, transactions }: {
     </form>
     <h3 style={{ marginTop: 26 }}>{t("wallet")}</h3>
     {transactions.length ? <div className="list">{transactions.map((item) => <div className="list-row" key={item.id}>
-      <div><strong>{item.kind === "DEPOSIT" ? t("walletDeposit") : item.kind === "TEC_PURCHASE" ? t("tecPurchaseHistory") : t("walletWithdrawal")} · {formatNumber(item.amountMinor / 100)} UZS</strong><p className="small muted">{item.reference ?? item.details} · {formatDate(item.createdAt)}</p></div>
+      <div><strong>{item.kind === "DEPOSIT" ? t("walletDeposit") : item.kind === "TEC_PURCHASE" ? t("tecPurchaseHistory") : item.kind === "ORDER_PAYMENT" ? `${siteCopy[locale].orders.payment} · ${item.reference ?? ""}` : item.kind === "ORDER_REFUND" ? `${siteCopy[locale].orders.paymentStatus.REFUNDED} · ${item.reference ?? ""}` : t("walletWithdrawal")} · {formatNumber(item.amountMinor / 100)} UZS</strong><p className="small muted">{item.reference ?? item.details} · {formatDate(item.createdAt)}</p></div>
       <span className={`status ${item.status}`}>{item.status === "PENDING" ? t("walletPending") : item.status === "APPROVED" ? t("walletApproved") : t("walletRejected")}</span>
     </div>)}</div> : <p className="muted">{t("walletNoRequests")}</p>}
   </section>;

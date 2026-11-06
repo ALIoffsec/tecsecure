@@ -2,6 +2,7 @@ import { requireUser } from "@/lib/auth";
 import { CustomerDashboard } from "@/components/customer-dashboard";
 import { getProfilePractice } from "@/lib/learning-profile-server";
 import { prisma } from "@/lib/prisma";
+import { getPaymentCard } from "@/lib/payment-card";
 import { PreviewModeNotice } from "@/components/preview-mode-notice";
 import { isPreviewMode } from "@/lib/preview-mode";
 
@@ -75,5 +76,5 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
     totalMinor: invoice.items.reduce((sum, item) => sum + item.quantity * item.unitPriceMinor + item.taxMinor - item.discountMinor, 0),
     paidMinor: invoice.payments.filter((payment) => payment.status === "VERIFIED").reduce((sum, payment) => sum + payment.amountMinor, 0)
   }));
-  return <CustomerDashboard user={profileUser} requests={requests} orders={orders} conversations={conversations} organizations={organizations} projects={projects} catalog={catalog} invoices={invoiceRows} plans={plans} subscriptions={subscriptions} wallet={wallet ?? { walletBalanceMinor: 0, rewardPoints: 0, walletTransactions: [] }} practice={practice} />;
+  return <CustomerDashboard paymentCard={await getPaymentCard()} user={profileUser} requests={requests} orders={orders} conversations={conversations} organizations={organizations} projects={projects} catalog={catalog} invoices={invoiceRows} plans={plans} subscriptions={subscriptions} wallet={wallet ?? { walletBalanceMinor: 0, rewardPoints: 0, walletTransactions: [] }} practice={practice} />;
 }

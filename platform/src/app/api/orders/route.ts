@@ -1,10 +1,11 @@
 import { randomBytes } from "node:crypto";
 import { getCurrentUser, isResponse, requireModuleApi } from "@/lib/auth";
-import { mergeItems, orderSchema } from "@/lib/orders";
+import { mergeItems, orderSchema, paymentMethodLabels, prepaidMethods } from "@/lib/orders";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { escapeTelegramHtml, notifyTelegramAdmins } from "@/lib/telegram";
 import { pricesMatch } from "@/lib/catalog-utils";
+import { formatMinor } from "@/lib/format";
 
 export const runtime = "nodejs";
 
@@ -62,9 +63,34 @@ export async function POST(request: Request) {
     return Response.json({ error: "Buyurtma summasi juda katta. Biz bilan bog‘laning." }, { status: 400 });
   }
 
+  const { paymentMethod } = parsed.data;
+  if (prepaidMethods.includes(paymentMethod) && totalMinor === null) {
+    return Response.json({ error: "Narxi kelishiladigan mahsulot uchun to‘lovni qabul qilganda amalga oshiring.", code: "PREPAID_NEEDS_PRICE" }, { status: 400 });
+  }
+  if (paymentMethod === "WALLET" && [...currencies][0] !== "UZS") {
+    return Response.json({ error: "Hamyondan faqat so‘mdagi buyurtmani to‘lash mumkin.", code: "WALLET_CURRENCY" }, { status: 400 });
+  }
+  if (parsed.data.paymentProofMediaId) {
+    const proof = await prisma.mediaAsset.findUnique({ where: { id: parsed.data.paymentProofMediaId }, select: { ownerId: true, mimeType: true } });
+    if (!proof || proof.ownerId !== user.id || !proof.mimeType.startsWith("image/")) {
+      return Response.json({ error: "To‘lov chekini rasm ko‘rinishida yuklang." }, { status: 400 });
+    }
+  }
+
   try {
     const reference = `ORD-${new Date().getUTCFullYear()}-${randomBytes(5).toString("hex").toUpperCase()}`;
     const order = await prisma.$transaction(async (tx) => {
+      if (paymentMethod === "WALLET") {
+        // The conditional update is the balance check: two parallel orders cannot both spend the same money.
+        const charged = await tx.user.updateMany({
+          where: { id: user.id, walletBalanceMinor: { gte: totalMinor as number } },
+          data: { walletBalanceMinor: { decrement: totalMinor as number } }
+        });
+        if (charged.count === 0) throw new Error("WALLET_BALANCE_TOO_LOW");
+        await tx.walletTransaction.create({
+          data: { userId: user.id, kind: "ORDER_PAYMENT", status: "APPROVED", amountMinor: totalMinor as number, reference, reviewedAt: new Date() }
+        });
+      }
       const created = await tx.order.create({
         data: {
           reference,
@@ -76,6 +102,10 @@ export async function POST(request: Request) {
           latitude: latitude ?? null,
           longitude: longitude ?? null,
           note: parsed.data.note || null,
+          paymentMethod,
+          paymentStatus: paymentMethod === "WALLET" ? "PAID" : paymentMethod === "CARD_TRANSFER" ? "AWAITING_CONFIRMATION" : "PENDING",
+          paymentReference: parsed.data.paymentReference || null,
+          paymentProofMediaId: parsed.data.paymentProofMediaId ?? null,
           totalMinor,
           currency: totalMinor === null ? "UZS" : [...currencies][0],
           items: {
@@ -107,6 +137,7 @@ export async function POST(request: Request) {
               body: [
                 `Mahsulotlar: ${lines.map((line) => `${line.product.name} × ${line.quantity}`).join(", ")}`,
                 `Yetkazish: ${parsed.data.city}${parsed.data.address ? `, ${parsed.data.address}` : ""}`,
+                `To‘lov: ${paymentMethodLabels[paymentMethod]}`,
                 parsed.data.note ? `Izoh: ${parsed.data.note}` : ""
               ].filter(Boolean).join("\n")
             }
@@ -137,12 +168,17 @@ export async function POST(request: Request) {
       `Telefon: ${escapeTelegramHtml(parsed.data.phone)}`,
       `Manzil: ${escapeTelegramHtml(`${parsed.data.city}, ${parsed.data.address}`)}`,
       `Mahsulotlar: ${escapeTelegramHtml(lines.map((line) => `${line.product.name} × ${line.quantity}`).join(", "))}`,
+      totalMinor !== null ? `Jami: <b>${formatMinor(totalMinor, [...currencies][0])}</b>` : "Jami: kelishiladi",
+      `To‘lov: ${escapeTelegramHtml(paymentMethodLabels[paymentMethod])}${paymentMethod === "CARD_TRANSFER" ? " — chekni admin panelda tekshiring" : ""}`,
       "",
       `Javob: <code>/reply ${escapeTelegramHtml(order.reference)} matn</code>`
     ].join("\n");
     await notifyTelegramAdmins(telegramBody, order.reference);
     return Response.json({ order }, { status: 201 });
   } catch (error) {
+    if (error instanceof Error && error.message === "WALLET_BALANCE_TOO_LOW") {
+      return Response.json({ error: "Hamyonda mablag‘ yetarli emas. Boshqa to‘lov usulini tanlang yoki hisobni to‘ldiring.", code: "WALLET_BALANCE_TOO_LOW" }, { status: 409 });
+    }
     console.error("Order creation failed", error);
     return Response.json({ error: "Buyurtmani saqlab bo‘lmadi. Qayta urinib ko‘ring." }, { status: 500 });
   }

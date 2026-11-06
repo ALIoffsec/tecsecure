@@ -3,7 +3,10 @@ import test from "node:test";
 import {
   createTelegramAdminKeyboard,
   escapeTelegramHtml,
-  parseTelegramAdminCallbackData
+  createTelegramWalletKeyboard,
+  parseTelegramAdminCallbackData,
+  parseTelegramWalletCallbackData,
+  walletDecisionText
 } from "./telegram";
 
 test("Telegram HTML escaping keeps customer text from becoming bot markup", () => {
@@ -47,4 +50,21 @@ test("Telegram admin callback data rejects malformed references and actions", ()
   });
   assert.equal(parseTelegramAdminCallbackData("tc:delete:MSG-2026-AB12"), null);
   assert.equal(parseTelegramAdminCallbackData("tc:done:bad reference"), null);
+});
+
+test("wallet buttons carry the request and a decision, and nothing else parses as one", () => {
+  const id = "cmw4xvhl4000bahlc1h7vdu4u";
+  const keyboard = createTelegramWalletKeyboard(id, "https://tecsecure.uz/admin") as { inline_keyboard: { callback_data?: string; url?: string }[][] };
+  const [approve, reject] = keyboard.inline_keyboard[0];
+  assert.deepEqual(parseTelegramWalletCallbackData(approve.callback_data), { decision: "APPROVED", id });
+  assert.deepEqual(parseTelegramWalletCallbackData(reject.callback_data), { decision: "REJECTED", id });
+  assert.ok(Buffer.byteLength(approve.callback_data ?? "", "utf8") <= 64);
+  assert.equal(parseTelegramWalletCallbackData("tw:approve:../../x"), null);
+  assert.equal(parseTelegramWalletCallbackData("tc:done:ORD-1"), null);
+  assert.equal(parseTelegramWalletCallbackData(undefined), null);
+});
+
+test("the customer's wallet message states the outcome and the amount", () => {
+  assert.match(walletDecisionText({ kind: "DEPOSIT", status: "APPROVED", amountMinor: 150000000 }), /1 500 000 so‘m.*tasdiqlandi/);
+  assert.match(walletDecisionText({ kind: "WITHDRAWAL", status: "REJECTED", amountMinor: 100 }), /Pul yechish.*rad etildi/);
 });

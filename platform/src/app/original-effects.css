@@ -40,7 +40,6 @@
 #app-shell .feature-footer-liquid::after { content: ""; position: absolute; inset: auto -30px -20px; height: 45px; background: var(--footer-liquid); }
 #app-shell .feature-footer-liquid i { position: absolute; bottom: -16px; border-radius: 50%; background: var(--footer-liquid); transform: translateX(-50%); animation: original-footer-bubble 4s ease-in infinite; animation-play-state: paused; }
 #app-shell .feature-footer-glow[data-running="true"] i { animation-play-state: running; }
-#app-shell .feature-footer-pause { display: block; position: relative; margin: 0 24px 16px auto; padding: 8px 12px; border: 1px solid var(--glass-edge); border-radius: 20px; background: var(--glass-overlay); color: var(--text); font: inherit; font-size: .75rem; cursor: pointer; }
 @keyframes original-footer-bubble { 0% { transform: translate(-50%, 0) scale(1); } 65% { transform: translate(-50%, -75px) scale(.85); } 100% { transform: translate(-50%, -140px) scale(0); } }
 
 /* Native top-layer dialog escapes the address card's isolation and clipping. */
@@ -76,9 +75,8 @@
 }
 @media (prefers-reduced-motion: reduce) {
   #app-shell .feature-footer-liquid i { animation: none; }
-  #app-shell .feature-footer-pause { display: none; }
-  #app-shell .original-order.animation { transform: none; }
+    #app-shell .original-order.animation { transform: none; }
 }
 @media (prefers-reduced-transparency: reduce), (prefers-contrast: more), (forced-colors: active) {
-  #app-shell .feature-footer-glow, #app-shell .feature-footer-pause { display: none; }
+  #app-shell .feature-footer-glow { display: none; }
 }

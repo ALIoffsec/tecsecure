@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { createBurningIntro } from "@/lib/burning-intro";
+import { burnProgress, createBurningIntro, INTRO_MS } from "@/lib/burning-intro";
 import { usePathname } from "next/navigation";
 import { featureCopy } from "@/lib/feature-copy";
 import { useSitePreferences } from "./site-preferences";
@@ -71,19 +71,17 @@ export function SiteIntro() {
     const draw = (now: number) => {
       if (stopped) return;
       const elapsed = now - start;
-      if (elapsed >= 8000) { close(); return; }
+      if (elapsed >= INTRO_MS) { close(); return; }
       try {
-        const progress = Math.max(0, Math.min(1, elapsed / 8000));
-        const eased = progress < .5 ? 2 * progress * progress : 1 - Math.pow(-2 * progress + 2, 2) / 2;
-        renderer?.render(.3 + .7 * eased, now);
+        renderer?.render(burnProgress(elapsed / INTRO_MS), elapsed / 1000);
         frame = requestAnimationFrame(draw);
       } catch (error) { fail(error); }
     };
-    timer = window.setTimeout(close, 9000);
+    timer = window.setTimeout(close, INTRO_MS + 1000);
     try {
       element.showModal();
       renderer = createBurningIntro(surface);
-      renderer.render(.3, performance.now());
+      renderer.render(0, 0);
       frame = requestAnimationFrame(draw);
     } catch (error) { fail(error); }
     preference.addEventListener("change", onPreference);
@@ -105,6 +103,5 @@ export function SiteIntro() {
     <canvas ref={canvas} aria-hidden="true" />
     <div className="site-intro-static" aria-hidden="true">Tecsecure</div>
     <span className="sr-only">{c.introTitle}</span>
-    <button className="site-intro-skip" type="button" onClick={close} autoFocus>{c.skipIntro}<span aria-hidden="true"> →</span></button>
   </dialog>;
 }

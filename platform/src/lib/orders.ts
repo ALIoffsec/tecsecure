@@ -12,6 +12,21 @@ export const orderStatusLabels: Record<OrderStatusValue, string> = {
   CANCELLED: "Bekor qilindi"
 };
 
+export const paymentMethods = ["CASH", "CARD_ON_DELIVERY", "CARD_TRANSFER", "WALLET"] as const;
+export type PaymentMethodValue = (typeof paymentMethods)[number];
+export const paymentStatuses = ["PENDING", "AWAITING_CONFIRMATION", "PAID", "REFUNDED"] as const;
+export type PaymentStatusValue = (typeof paymentStatuses)[number];
+/** Methods that take the money before delivery, so the order total must be known. */
+export const prepaidMethods: readonly PaymentMethodValue[] = ["CARD_TRANSFER", "WALLET"];
+
+export const paymentMethodLabels: Record<string, string> = {
+  CASH: "Naqd pul (qabul qilganda)",
+  CARD_ON_DELIVERY: "Karta (kuryerga, terminal orqali)",
+  CARD_TRANSFER: "Kartaga o‘tkazma",
+  WALLET: "Tecsecure hamyoni",
+  UNSPECIFIED: "Kelishiladi"
+};
+
 const transitions: Record<OrderStatusValue, OrderStatusValue[]> = {
   NEW: ["CONFIRMED", "CANCELLED"],
   CONFIRMED: ["PREPARING", "CANCELLED"],
@@ -38,6 +53,9 @@ export const orderSchema = z.object({
   latitude: z.number().min(37).max(46).nullable().optional(),
   longitude: z.number().min(55).max(74).nullable().optional(),
   note: z.string().trim().max(500).optional(),
+  paymentMethod: z.enum(paymentMethods),
+  paymentReference: z.string().trim().max(160).optional(),
+  paymentProofMediaId: z.string().cuid().optional(),
   expectedProducts: z.array(z.object({
     id: z.string().cuid(),
     priceMinor: z.number().int().nonnegative().nullable(),
@@ -49,6 +67,9 @@ export const orderSchema = z.object({
     .min(1)
     .max(50)
 }).superRefine((order, context) => {
+  if (order.paymentMethod === "CARD_TRANSFER" && !order.paymentProofMediaId) {
+    context.addIssue({ code: "custom", path: ["paymentProofMediaId"], message: "To‘lov chekini yuklang." });
+  }
   const hasCoordinates = order.latitude != null && order.longitude != null;
   const hasManualLocation = order.address.length >= 5 || (order.note?.trim().length ?? 0) >= 5;
   if (!hasCoordinates && !hasManualLocation) {

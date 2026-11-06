@@ -8,6 +8,7 @@ import "./original-effects.css";
 import "./store.css";
 import "./admin.css";
 import "./liquid-water.css";
+import "./liquid-ui.css";
 import { SiteNav } from "@/components/site-nav";
 import { PageBackLink } from "@/components/page-back-link";
 import { FontLoader } from "@/components/font-loader";
@@ -25,6 +26,7 @@ import { ToastProvider } from "@/components/toast-provider";
 import { CurrencyProvider } from "@/components/currency-context";
 import { ProductCompareProvider } from "@/components/product-compare";
 import { SiteMotion } from "@/components/site-motion";
+import { ContactDock } from "@/components/shop-extras";
 import { SiteIntro } from "@/components/site-intro";
 import { introBootstrapScript } from "@/lib/burning-intro";
 import { siteOrigin } from "@/lib/site-origin";
@@ -95,6 +97,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
                 <main id="main-content" tabIndex={-1}>{children}</main>
                 <SiteBlocksRenderer blocks={siteBlocks} />
                 <SiteFooter />
+                <ContactDock />
                 </ProductCompareProvider>
               </LearningCatalogProvider>
             </ToastProvider>

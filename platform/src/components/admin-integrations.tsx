@@ -1,5 +1,6 @@
 "use client";
 
+import { siteCopy } from "@/lib/site-copy";
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { ToastMessage } from "@/components/toast-provider";
 import { useSitePreferences } from "@/components/site-preferences";
@@ -37,7 +38,8 @@ function checked(data: FormData, name: string): boolean {
 }
 
 export function AdminIntegrations() {
-  const { t } = useSitePreferences();
+  const { t, locale } = useSitePreferences();
+  const bot = siteCopy[locale].admin;
   const [status, setStatus] = useState<IntegrationStatus | null>(null);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -83,6 +85,22 @@ export function AdminIntegrations() {
 
   const statusLabel = (configured: boolean) => configured ? t("integrationConfigured") : t("integrationNotConfigured");
   const secretPlaceholder = (saved: boolean) => saved ? t("secretAlreadySet") : t("secretNotSet");
+
+  async function testBot() {
+    setBusy(true);
+    setError("");
+    setNotice("");
+    try {
+      const response = await fetch("/api/admin/integrations/test", { method: "POST" });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error ?? bot.botTestFailed);
+      setNotice(`${bot.botTestSent} ${result.webhook === "connected" ? bot.botWebhookOn : result.webhook === "needs-secret" ? bot.botWebhookSecret : bot.botWebhookLocal}`);
+    } catch (issue) {
+      setError(issue instanceof Error ? issue.message : bot.botTestFailed);
+    } finally {
+      setBusy(false);
+    }
+  }
 
   return <section className="panel-card admin-integrations">
     <div className="section-head">
@@ -133,7 +151,10 @@ export function AdminIntegrations() {
             <input name="webhookSecret" type="password" autoComplete="new-password" placeholder={secretPlaceholder(status.telegram.hasWebhookSecret)} />
             {status.telegram.hasWebhookSecret && <label className="admin-integration-clear"><input type="checkbox" name="clearWebhookSecret" /> {t("clearCurrentValue")}</label>}
           </div>
-          <button className="button" disabled={busy}>{busy ? t("saving") : t("saveIntegration")}</button>
+          <div className="admin-integration-actions">
+            <button className="button" disabled={busy}>{busy ? t("saving") : t("saveIntegration")}</button>
+            <button className="button secondary" type="button" disabled={busy} onClick={() => void testBot()}>{bot.botTest}</button>
+          </div>
         </form>
       </details>
 

@@ -3,7 +3,9 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   experimental: {
     agentUpgrade: "security",
-    cpus: 2
+    cpus: 2,
+    // The dev disk cache left pages reloading in an endless loop after a server restart.
+    turbopackFileSystemCacheForDev: false
   },
   poweredByHeader: false,
   output: "standalone",

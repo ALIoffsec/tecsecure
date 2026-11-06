@@ -31,7 +31,7 @@ test("cinematic opening replays every home page entry, honors reduced motion and
       document: { documentElement: { dataset }, querySelector: () => null, addEventListener: () => {} },
       matchMedia: () => ({ matches: reduced }),
       sessionStorage: { getItem: () => { throw new Error("Intro must not depend on session storage"); } },
-      setTimeout: (callback: () => void, delay: number) => { assert.equal(delay, 10000); safety = callback; },
+      setTimeout: (callback: () => void, delay: number) => { assert.equal(delay, 6000); safety = callback; },
       console
     });
     assert.equal(dataset.tecIntro, expected);

@@ -6,6 +6,7 @@ import { useSitePreferences } from "@/components/site-preferences";
 import { ToastMessage } from "@/components/toast-provider";
 import { MediaLightbox } from "./media-lightbox";
 import { journeyCopy } from "@/lib/journey-copy";
+import { siteCopy } from "@/lib/site-copy";
 
 export function MediaUploader({ scope, value, onChange, reorderable = false, hideLabel = false }: {
   scope: "CONTENT" | "PORTFOLIO" | "SERVICES" | "PRODUCTS" | "NEWS" | "WALLET";
@@ -14,7 +15,9 @@ export function MediaUploader({ scope, value, onChange, reorderable = false, hid
   reorderable?: boolean;
   hideLabel?: boolean;
 }) {
-  const { t } = useSitePreferences();
+  const { t, locale } = useSitePreferences();
+  const common = siteCopy[locale].common;
+  const proofOnly = scope === "WALLET";
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const move = (index: number, delta: number) => {
@@ -49,9 +52,12 @@ export function MediaUploader({ scope, value, onChange, reorderable = false, hid
 
   return (
     <div className="field">
-      {!hideLabel && <label>{t("mediaAttachments")}</label>}
-      <input type="file" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm" multiple disabled={busy} onChange={(event) => { void upload(event.currentTarget.files); event.currentTarget.value = ""; }} />
-      <p className="small muted">{t("mediaUploadLimits")}</p>
+      {!hideLabel && <label>{proofOnly ? common.proofLabel : t("mediaAttachments")}</label>}
+      <div className="file-pick">
+        <span className="button secondary">{proofOnly ? common.chooseImage : common.chooseFiles}</span>
+        <input type="file" aria-label={proofOnly ? common.proofLabel : t("mediaAttachments")} accept={proofOnly ? "image/jpeg,image/png,image/webp" : "image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm"} multiple={!proofOnly} disabled={busy} onChange={(event) => { void upload(event.currentTarget.files); event.currentTarget.value = ""; }} />
+      </div>
+      <p className="small muted">{proofOnly ? common.proofHint : t("mediaUploadLimits")}</p>
       <ToastMessage message={error} variant="error" />
       {busy && <span className="small muted">{t("uploadingMedia")}</span>}
       {!!value.length && <ul className="media-thumb-grid">{value.map((id, index) => (

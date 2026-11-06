@@ -11,6 +11,7 @@ import { SubscriptionManager } from "@/components/subscription-manager";
 import { AccountSessionActions } from "@/components/account-session-actions";
 import { ProfileDetails } from "@/components/profile-details";
 import { WalletPanel } from "@/components/wallet-panel";
+import type { PaymentCard } from "@/components/cart-checkout";
 import { TecGiftNotifications } from "@/components/tec-gift-notifications";
 import { ProfileHero } from "@/components/profile-hero";
 import { PortalMessageForm } from "@/components/portal-message-form";
@@ -124,7 +125,8 @@ function CustomerSidebarIcon({ sectionId }: { sectionId: string }) {
   </span>;
 }
 
-export function CustomerDashboard({ user, requests, orders, conversations, organizations, projects, catalog, invoices, plans, subscriptions, wallet, practice }: {
+export function CustomerDashboard({ paymentCard = null, user, requests, orders, conversations, organizations, projects, catalog, invoices, plans, subscriptions, wallet, practice }: {
+  paymentCard?: PaymentCard | null;
   user: { id: string; name: string; email: string; phone: string | null; role: string };
   requests: RequestRecord[];
   orders: OrderRecord[];
@@ -265,7 +267,7 @@ export function CustomerDashboard({ user, requests, orders, conversations, organ
           <h2>{t("profile")}</h2><p className="muted">{copy.profileIntro}</p>
           <ProfileDetails user={{ name: user.name, email: user.email, phone: user.phone, role: user.role }} />
         </section>}
-        {activeSection === "wallet" && <WalletPanel initialBalance={wallet.walletBalanceMinor} initialPoints={wallet.rewardPoints} transactions={wallet.walletTransactions} />}
+        {activeSection === "wallet" && <WalletPanel paymentCard={paymentCard} initialBalance={wallet.walletBalanceMinor} initialPoints={wallet.rewardPoints} transactions={wallet.walletTransactions} />}
         {activeSection === "learning" && <ProfileHero name={user.name} email={user.email} rewardPoints={wallet.rewardPoints} practice={practice} />}
         {activeSection === "store" && <section className="panel-card">
           <h2>{t("learningStore")}</h2>

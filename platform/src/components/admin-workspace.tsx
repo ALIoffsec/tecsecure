@@ -8,6 +8,8 @@ import { AccountSessionActions } from "./account-session-actions";
 import { useSitePreferences } from "@/components/site-preferences";
 import { ToastMessage } from "@/components/toast-provider";
 import { UiIcon, type IconName } from "@/components/ui-icon";
+import { AdminOverview, type AdminOverviewData } from "@/components/admin-overview";
+import { siteCopy } from "@/lib/site-copy";
 import { StaffManagement } from "@/components/staff-management";
 import { SiteBlockManager, type SiteBlockRecord } from "@/components/site-block-manager";
 import { PortfolioManager } from "@/components/portfolio-manager";
@@ -135,7 +137,8 @@ function priceFromForm(data: FormData, field: string) {
   return value;
 }
 
-export function AdminWorkspace({ newOrderCount, services, requests: initialRequests, requestStats, requestTotal, products, productCategories, articles, settings, notifications, projects, quotations, pendingPayments, plans, users, siteBlocks, portfolioPosts, walletRequests, metrics, role, permissions, actorId }: {
+export function AdminWorkspace({ overview, newOrderCount, services, requests: initialRequests, requestStats, requestTotal, products, productCategories, articles, settings, notifications, projects, quotations, pendingPayments, plans, users, siteBlocks, portfolioPosts, walletRequests, metrics, role, permissions, actorId }: {
+  overview: AdminOverviewData;
   newOrderCount: number;
   services: Service[];
   requests: RequestRecord[];
@@ -160,7 +163,7 @@ export function AdminWorkspace({ newOrderCount, services, requests: initialReque
   actorId: string;
 }) {
   const router = useRouter();
-  const { t } = useSitePreferences();
+  const { t, locale } = useSitePreferences();
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
@@ -187,6 +190,8 @@ export function AdminWorkspace({ newOrderCount, services, requests: initialReque
     return [...unique.values()];
   }, [initialRequests, additionalRequests]);
   const isPrivileged = role === "FOUNDER" || role === "ADMIN";
+  const [showOverview, setShowOverview] = useState(true);
+  const overviewLabel = siteCopy[locale].admin.overview;
   const availableSections = useMemo(() => (Object.keys(sectionModules) as AdminSection[]).filter((section) =>
     isPrivileged ? true : section !== "users" && permissions.includes(sectionModules[section])
   ), [isPrivileged, permissions]);
@@ -463,22 +468,28 @@ export function AdminWorkspace({ newOrderCount, services, requests: initialReque
         <aside className={`admin-sidebar ${sidebarOpen ? "" : "collapsed"}`} aria-label={t("adminSections")}>
           <button className="admin-sidebar-toggle button ghost" type="button" aria-expanded={sidebarOpen} onClick={() => setSidebarOpen(!sidebarOpen)} title={t("toggleSidebar")}>☰</button>
           <nav className="admin-sidebar-nav">
+            <button className={`admin-sidebar-item ${showOverview ? "active" : ""}`} type="button" aria-label={overviewLabel} title={overviewLabel} onClick={() => setShowOverview(true)}>
+              <span className="admin-sidebar-marker"><UiIcon name="home" size={17} /></span>
+              {sidebarOpen && <span>{overviewLabel}</span>}
+            </button>
             {visibleSections.map((section) => (
-              <button key={section} className={`admin-sidebar-item ${selectedNavigation === section ? "active" : ""}`} type="button" aria-label={section === "management" ? t("managementSection") : t(sectionLabelKeys[section])} title={section === "management" ? t("managementSection") : t(sectionLabelKeys[section])} onClick={() => { if (section === "management" && selectedManagementGroup) selectManagementGroup(selectedManagementGroup); else if (section !== "management") setActiveSection(section); setRequestFilter(""); }}>
+              <button key={section} className={`admin-sidebar-item ${!showOverview && selectedNavigation === section ? "active" : ""}`} type="button" aria-label={section === "management" ? t("managementSection") : t(sectionLabelKeys[section])} title={section === "management" ? t("managementSection") : t(sectionLabelKeys[section])} onClick={() => { setShowOverview(false); { if (section === "management" && selectedManagementGroup) selectManagementGroup(selectedManagementGroup); else if (section !== "management") setActiveSection(section); setRequestFilter(""); }; }}>
                 <span className="admin-sidebar-marker"><UiIcon name={section === "management" ? "layout" : sectionIcons[section]} size={17} /></span>
                 {sidebarOpen && <span>{section === "management" ? t("managementSection") : t(sectionLabelKeys[section])}</span>}
                 {sidebarOpen && section === "requests" && <span className="admin-sidebar-count">{requestTotal}</span>}
                 {sidebarOpen && section === "users" && <span className="admin-sidebar-count">{metrics.users}</span>}
               </button>
             ))}
-            {(isPrivileged || permissions.includes("PRODUCTS")) && <Link className="admin-sidebar-item" href="/admin/orders" aria-label="Buyurtmalar" title="Buyurtmalar">
+            {(isPrivileged || permissions.includes("PRODUCTS")) && <Link className="admin-sidebar-item" href="/admin/orders" aria-label={siteCopy[locale].admin.ordersTitle} title={siteCopy[locale].admin.ordersTitle}>
               <span className="admin-sidebar-marker"><UiIcon name="box" size={17} /></span>
-              {sidebarOpen && <span>Buyurtmalar</span>}
+              {sidebarOpen && <span>{siteCopy[locale].admin.ordersTitle}</span>}
               {sidebarOpen && newOrderCount > 0 && <span className="admin-sidebar-count">{newOrderCount}</span>}
             </Link>}
           </nav>
         </aside>
         <div className="admin-section-content">
+        {showOverview && <AdminOverview data={overview} onOpen={section => { setShowOverview(false); setActiveSection(section); }} />}
+        <div className="admin-section-stack" hidden={showOverview}>
         {selectedNavigation === "management" && <>
           <nav className="admin-management-categories" aria-label={t("managementSection")}>
             {availableManagementGroups.map((group) => <button key={group} className={`admin-management-category ${selectedManagementGroup === group ? "active" : ""}`} type="button" aria-pressed={selectedManagementGroup === group} onClick={() => selectManagementGroup(group)}>{t(managementGroupLabelKeys[group])}</button>)}
@@ -609,6 +620,13 @@ export function AdminWorkspace({ newOrderCount, services, requests: initialReque
               <div className="form-row"><div className="field"><label>{t("phone")}</label><input name="phone" defaultValue={settings.phone ?? ""} maxLength={120} placeholder="+998...; +998..." /></div><div className="field"><label>{t("email")}</label><input name="email" type="email" defaultValue={settings.email ?? ""} maxLength={254} /></div></div>
               <div className="form-row"><div className="field"><label>{t("telegramHandle")}</label><input name="telegram" defaultValue={settings.telegram ?? ""} placeholder="@username" maxLength={80} /></div><div className="field"><label>{t("instagramHandle")}</label><input name="instagram" defaultValue={settings.instagram ?? ""} placeholder="@username" maxLength={80} /></div></div>
               <div className="field"><label>{t("address")}</label><input name="address" defaultValue={settings.address ?? ""} maxLength={300} /></div>
+              <h3>{siteCopy[locale].admin.card}</h3>
+              <p className="small muted">{siteCopy[locale].admin.cardHint}</p>
+              <div className="form-row">
+                <div className="field"><label>{siteCopy[locale].admin.cardNumber}</label><input name="paymentCardNumber" inputMode="numeric" defaultValue={settings.paymentCardNumber ?? ""} maxLength={23} pattern="[0-9 ]*" placeholder="8600 0000 0000 0000" /></div>
+                <div className="field"><label>{siteCopy[locale].admin.cardHolder}</label><input name="paymentCardHolder" defaultValue={settings.paymentCardHolder ?? ""} maxLength={80} /></div>
+              </div>
+              <div className="field"><label>{siteCopy[locale].admin.cardBank}</label><input name="paymentCardBank" defaultValue={settings.paymentCardBank ?? ""} maxLength={60} /></div>
               <p className="small muted">{t("providerNotice")}</p>
               <button className="button" disabled={busy}>{t("saveSettings")}</button>
             </form>
@@ -704,6 +722,7 @@ export function AdminWorkspace({ newOrderCount, services, requests: initialReque
         </div>}
         {availableSections.includes("system") && <div className={`admin-panel-section ${selectedSection === "system" ? "active" : ""}`}>{isPrivileged && <AdminIntegrations />}<SystemStatus /></div>}
         {availableSections.includes("users") && <div className={`admin-panel-section ${selectedSection === "users" ? "active" : ""}`}><StaffManagement users={users} founder={role === "FOUNDER"} /></div>}
+        </div>
         </div>
       </div>
     </div>

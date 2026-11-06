@@ -3,7 +3,7 @@ import type { Locale } from "./messages";
 const uz = {
   verifiedBuyer: "Xarid qilgan", questions: "Savol-javob", noQuestions: "Hozircha savollar yo‘q. Birinchi bo‘lib so‘rang.", signInQuestion: "Savol berish uchun hisobga kiring.", awaitingAnswer: "Javob kutilmoqda", leaveReview: "Sharh qoldirish", rating: "Baho", yourComment: "Fikringiz (kamida 10 belgi)", askQuestion: "Savol berish", yourQuestion: "Mahsulot haqida savolingiz", send: "Yuborish", sending: "Yuborilmoqda…", answerPlaceholder: "Javob matni", answerAction: "Javob berish", ratingRequired: "Bahoni tanlang.", genericError: "Xatolik yuz berdi.",
   quickView: "Tezkor ko‘rish",
-  title: "Uskunalar do‘koni", intro: "Kerakli uskunani toping, mosligini tekshiring va narx hamda yetkazishni kelishib buyurtma bering.",
+  title: "Uskunalar do‘koni", intro: "Kerakli uskunani toping, modellarni solishtiring va o‘zingizga qulay usulda to‘lab buyurtma bering.",
   search: "Mahsulot yoki model qidirish", searchAction: "Qidirish", filter: "Filtrlar", categories: "Kategoriyalar", all: "Hammasi",
   stock: "Mavjudlik", IN_STOCK: "Omborda bor", ON_REQUEST: "Buyurtma asosida", OUT_OF_STOCK: "Omborda yo‘q", UNKNOWN: "Mavjudlikni aniqlashtiring",
   brand: "Brend", model: "Model", sort: "Saralash", name: "Nomi bo‘yicha", new: "Yangilari", priceAsc: "Narx: arzondan", priceDesc: "Narx: qimmatdan",

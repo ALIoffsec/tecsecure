@@ -1,5 +1,6 @@
 import { isResponse, requireModuleApi } from "@/lib/auth";
 import { canTransition, orderStatusSchema } from "@/lib/orders";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { escapeTelegramHtml, notifyTelegramUser } from "@/lib/telegram";
 
@@ -15,10 +16,20 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   } catch {
     return Response.json({ error: "So‘rov JSON formatida bo‘lishi kerak." }, { status: 400 });
   }
+  if (z.object({ paymentStatus: z.literal("PAID") }).safeParse(body).success) {
+    const confirmed = await prisma.$transaction(async (tx) => {
+      const result = await tx.order.updateMany({ where: { id, paymentStatus: "AWAITING_CONFIRMATION" }, data: { paymentStatus: "PAID" } });
+      if (result.count === 0) return false;
+      await tx.auditLog.create({ data: { actorId: actor.id, action: "ORDER_PAYMENT_CONFIRMED", entity: "Order", entityId: id } });
+      return true;
+    });
+    if (!confirmed) return Response.json({ error: "Bu buyurtmada tasdiqlanadigan to‘lov yo‘q." }, { status: 409 });
+    return Response.json({ ok: true });
+  }
   const parsed = orderStatusSchema.safeParse(body);
   if (!parsed.success) return Response.json({ error: "Holat noto‘g‘ri." }, { status: 400 });
 
-  const order = await prisma.order.findUnique({ where: { id }, select: { id: true, status: true, customerId: true, reference: true } });
+  const order = await prisma.order.findUnique({ where: { id }, select: { id: true, status: true, customerId: true, reference: true, paymentMethod: true, paymentStatus: true, totalMinor: true } });
   if (!order) return Response.json({ error: "Buyurtma topilmadi." }, { status: 404 });
   if (!canTransition(order.status, parsed.data.status)) {
     return Response.json({ error: "Bu holatga o‘tish mumkin emas." }, { status: 409 });
@@ -28,6 +39,16 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const updated = await prisma.$transaction(async (tx) => {
     const result = await tx.order.updateMany({ where: { id, status: order.status }, data: { status: parsed.data.status } });
     if (result.count === 0) return false;
+    if (parsed.data.status === "DELIVERED" && order.paymentStatus === "PENDING") {
+      await tx.order.update({ where: { id }, data: { paymentStatus: "PAID" } });
+    }
+    if (parsed.data.status === "CANCELLED" && order.paymentMethod === "WALLET" && order.paymentStatus === "PAID" && order.totalMinor !== null) {
+      await tx.user.update({ where: { id: order.customerId }, data: { walletBalanceMinor: { increment: order.totalMinor } } });
+      await tx.walletTransaction.create({
+        data: { userId: order.customerId, kind: "ORDER_REFUND", status: "APPROVED", amountMinor: order.totalMinor, reference: order.reference, reviewedById: actor.id, reviewedAt: new Date() }
+      });
+      await tx.order.update({ where: { id }, data: { paymentStatus: "REFUNDED" } });
+    }
     await tx.orderStatusHistory.create({
       data: { orderId: id, fromStatus: order.status, toStatus: parsed.data.status, note: parsed.data.note || null, actorId: actor.id }
     });

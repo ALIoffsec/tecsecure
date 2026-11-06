@@ -17,6 +17,7 @@ export type TelegramReplyMarkup =
 export type TelegramAdminAction = "reply" | "progress" | "done";
 export type TelegramAdminMessageStatus = "new" | "in_progress" | "done";
 export type TelegramAdminCallback = { action: TelegramAdminAction; reference: string };
+export type TelegramWalletCallback = { decision: "APPROVED" | "REJECTED"; id: string };
 
 type TelegramSendOptions = {
   replyMarkup?: TelegramReplyMarkup;
@@ -59,6 +60,21 @@ export function parseTelegramAdminCallbackData(data: string | undefined): Telegr
   const match = data?.match(/^tc:(reply|progress|done):([A-Z0-9-]{4,80})$/i);
   if (!match) return null;
   return { action: match[1].toLowerCase() as TelegramAdminAction, reference: match[2].toUpperCase() };
+}
+
+export function parseTelegramWalletCallbackData(data: string | undefined): TelegramWalletCallback | null {
+  const match = data?.match(/^tw:(approve|reject):([a-z0-9]{10,40})$/);
+  if (!match) return null;
+  return { decision: match[1] === "approve" ? "APPROVED" : "REJECTED", id: match[2] };
+}
+
+export function createTelegramWalletKeyboard(id: string, adminUrl: string | undefined): TelegramReplyMarkup {
+  return {
+    inline_keyboard: [
+      [{ text: "✅ Tasdiqlash", callback_data: `tw:approve:${id}` }, { text: "❌ Rad etish", callback_data: `tw:reject:${id}` }],
+      ...(adminUrl ? [[{ text: "🌐 Admin panel", url: adminUrl }]] : [])
+    ]
+  };
 }
 
 export function createTelegramAdminKeyboard(
@@ -106,6 +122,12 @@ export function createTelegramAdminKeyboard(
       ]
     ]
   };
+}
+
+export function walletDecisionText(transaction: { kind: string; status: string; amountMinor: number }): string {
+  const amount = `${Math.round(transaction.amountMinor / 100).toLocaleString("en-US").replaceAll(",", " ")} so‘m`;
+  const subject = transaction.kind === "DEPOSIT" ? "Hisobni to‘ldirish arizangiz" : "Pul yechish arizangiz";
+  return `<b>Tecsecure hamyoni</b>\n${subject} (${amount}) ${transaction.status === "APPROVED" ? "tasdiqlandi ✅" : "rad etildi ❌"}.`;
 }
 
 export function escapeTelegramHtml(value: string): string {
@@ -172,6 +194,42 @@ export async function notifyTelegramAdmins(text: string, reference: string): Pro
   }
 }
 
+/** Sends a payment proof image with the request details as its caption, falling back to plain text. */
+export async function notifyTelegramAdminsWithProof(
+  text: string,
+  proof: { data: Uint8Array; mimeType: string; name: string } | null,
+  replyMarkup: TelegramReplyMarkup
+): Promise<boolean> {
+  try {
+    const { botToken, adminChatId } = await getTelegramCredentials();
+    if (!botToken || !adminChatId) {
+      console.warn("Telegram admin notification skipped: bot token or admin chat ID is not configured.");
+      return false;
+    }
+    if (proof) {
+      try {
+        const form = new FormData();
+        form.set("chat_id", adminChatId);
+        form.set("caption", text.slice(0, 1024));
+        form.set("parse_mode", "HTML");
+        form.set("reply_markup", JSON.stringify(replyMarkup));
+        form.set("photo", new Blob([Buffer.from(proof.data)], { type: proof.mimeType }), proof.name || "proof.jpg");
+        const response = await fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, { method: "POST", body: form });
+        const result = await response.json() as TelegramResponse<unknown>;
+        if (response.ok && result.ok) return true;
+        console.error("Telegram proof photo was refused", result.description ?? response.statusText);
+      } catch (error) {
+        console.error("Telegram proof photo failed", error);
+      }
+    }
+    await sendWithToken(botToken, adminChatId, text, { replyMarkup });
+    return true;
+  } catch (error) {
+    console.error("Telegram admin notification failed", error);
+    return false;
+  }
+}
+
 export async function notifyTelegramUser(userId: string, text: string): Promise<boolean> {
   try {
     const user = await prisma.user.findUnique({ where: { id: userId }, select: { telegramChatId: true } });
@@ -182,4 +240,25 @@ export async function notifyTelegramUser(userId: string, text: string): Promise<
     console.error("Telegram customer notification failed", error);
     return false;
   }
+}
+
+export type TelegramConnection = { botName: string; messageSent: true; webhook: "connected" | "needs-https" | "needs-secret" };
+
+/** Proves the saved credentials work end to end and points Telegram's button presses at this site. */
+export async function connectTelegramBot(): Promise<TelegramConnection> {
+  const { botToken, adminChatId, webhookSecret } = await getTelegramCredentials();
+  if (!botToken || !adminChatId) throw new Error("Bot token va admin chat ID kiritilmagan.");
+  const me = await callTelegramApi<{ username?: string }>(botToken, "getMe", {});
+  await sendWithToken(botToken, adminChatId, "✅ <b>Tecsecure boti ulandi.</b>\nYangi buyurtma va arizalar shu chatga keladi. Hisobot uchun: /hisobot");
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "";
+  let webhook: TelegramConnection["webhook"] = "needs-https";
+  if (appUrl.startsWith("https://")) {
+    if (webhookSecret) {
+      await callTelegramApi(botToken, "setWebhook", { url: new URL("/api/telegram/webhook", appUrl).toString(), secret_token: webhookSecret, allowed_updates: ["message", "callback_query"] });
+      webhook = "connected";
+    } else {
+      webhook = "needs-secret";
+    }
+  }
+  return { botName: me?.username ?? "", messageSent: true, webhook };
 }

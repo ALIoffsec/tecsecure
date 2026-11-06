@@ -1,5 +1,6 @@
 "use client";
 
+import { translateMessage } from "@/lib/server-messages";
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useSitePreferences } from "@/components/site-preferences";
@@ -54,12 +55,13 @@ function ToastItem({ toast, closeLabel, onDismiss }: { toast: Toast; closeLabel:
 
 export function ToastMessage({ message, variant, action }: { message?: string | null; variant: ToastVariant; action?: ToastAction }) {
   const showToast = useContext(ToastContext);
+  const { locale } = useSitePreferences();
   const lastMessage = useRef("");
 
   if (!showToast) throw new Error("ToastMessage must be used within ToastProvider");
 
   useEffect(() => {
-    const text = message?.trim() ?? "";
+    const text = translateMessage(message?.trim() ?? "", locale);
     if (!text) {
       lastMessage.current = "";
       return;
@@ -68,7 +70,7 @@ export function ToastMessage({ message, variant, action }: { message?: string | 
     if (lastMessage.current === fingerprint) return;
     lastMessage.current = fingerprint;
     showToast(text, variant, action);
-  }, [action?.href, action?.label, message, showToast, variant]);
+  }, [action?.href, action?.label, locale, message, showToast, variant]);
 
   return null;
 }

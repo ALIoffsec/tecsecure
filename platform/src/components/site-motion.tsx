@@ -3,8 +3,8 @@
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 
-const CONTROLS = ".button, .shop-add-to-cart, .auth-submit, .shop-chip, .shop-quick-view, .shop-compare-button, .portal-icon-link, .portal-account, .preference-button, .account-button, .service-category-tab, .admin-management-category, .feature-hero-selector button, .work-arrow, .feature-wallet-flip, .feature-footer-pause";
-const SURFACES = ".panel-card, .card, .shop-card, .hub-path, .feature-tile, .shop-summary, .product-buybox, .admin-sidebar, .customer-sidebar, .metric, .order-card, .need-card, .managed-service-card, .learn-module-card, .learn-path-card, .work-details, .original-auth";
+const CONTROLS = ".button, .shop-add-to-cart, .auth-submit, .shop-chip, .shop-quick-view, .shop-compare-button, .portal-icon-link, .portal-account, .preference-button, .account-button, .service-category-tab, .admin-management-category, .feature-hero-selector button, .work-arrow, .feature-wallet-flip";
+const SURFACES = ".panel-card, .card, .shop-card, .hub-path, .feature-tile, .shop-summary, .product-buybox, .admin-sidebar, .customer-sidebar, .metric, .order-card, .need-card, .managed-service-card, .learn-module-card, .learn-path-card, .original-auth";
 const REVEAL = "main :is(.section-head, .hub-path, .shop-card, .need-card, .managed-service-card, .learn-module-card, .learn-path-card, .work-carousel, .feature-tile, .home-contact-section .hub-contact)";
 
 /** Backdrop refraction only renders in Chromium, and only desktops can afford it. */

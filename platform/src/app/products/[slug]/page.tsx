@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import { AddToCartButton } from "@/components/cart";
+import { MobileBuyBar, ProductTrust, RecentlyViewed, TrackProductView } from "@/components/shop-extras";
 import { ProductGallery } from "@/components/product-media";
 import { ProductCard } from "@/components/product-card";
 import { ProductGuidance } from "@/components/product-guidance";
@@ -142,6 +143,7 @@ export default async function ProductDetailPage({ params }: Props) {
         </div>
         <span className={`shop-stock ${stockKey === "IN_STOCK" ? "in" : stockKey === "OUT_OF_STOCK" ? "out" : stockKey === "ON_REQUEST" ? "req" : ""}`}><S id={stockKey} /></span>
         <AddToCartButton product={{ productId: product.id, name: product.name, slug: product.slug, categorySlug: product.category?.slug ?? null }} disabled={stockKey === "OUT_OF_STOCK"} />
+        <ProductTrust />
         <Link className="button secondary" href={inquiryHref(product.name)}><S id="quote" /></Link>
         <CompareButton product={{ id: product.id, name: product.name, category: product.category?.slug ?? "" }} />
         <CurrencySelector />
@@ -216,5 +218,8 @@ export default async function ProductDetailPage({ params }: Props) {
         {related.map((item) => <ProductCard key={item.id} product={item} assets={getMedia(item.media)} />)}
       </div>
     </section>}
+    <RecentlyViewed exclude={product.slug} />
+    <TrackProductView product={{ slug: product.slug, name: product.name, imageId: cover?.mimeType.startsWith("image/") ? cover.id : null, priceMinor: product.priceMinor, currency: product.currency }} />
+    <MobileBuyBar anchor=".shop-add-to-cart" line={{ productId: product.id, name: product.name, slug: product.slug, categorySlug: product.category?.slug ?? null }} priceMinor={product.priceMinor} currency={product.currency} available={stockKey !== "OUT_OF_STOCK"} />
   </div>;
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { translateMessage } from "@/lib/server-messages";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useSitePreferences } from "@/components/site-preferences";
@@ -111,10 +112,10 @@ export function ProfileHero({ name, email, rewardPoints, practice, children }: {
         <div className="htb-identity">
           <h2>{name}</h2>
           <p>{email}</p>
-          <div className="htb-rank"><span className="htb-rank-badge">{c.rank} {profile.level}: {profile.levelName}</span>
+          <div className="htb-rank"><span className="htb-rank-badge">{c.rank} {profile.level}: {translateMessage(profile.levelName, locale)}</span>
             <div className="htb-bar" role="progressbar" aria-valuenow={xpPercent} aria-valuemin={0} aria-valuemax={100}><span style={{ width: `${xpPercent}%` }} /></div>
           </div>
-          <div className="htb-xp"><small>{profile.xp} XP{profile.levelCeil ? ` · keyingi daraja: ${profile.levelCeil} XP` : " · eng yuqori daraja"}</small></div>
+          <div className="htb-xp"><small>{profile.xp} XP{profile.levelCeil ? ` · ${translateMessage("keyingi daraja", locale)}: ${profile.levelCeil} XP` : ` · ${translateMessage("eng yuqori daraja", locale)}`}</small></div>
         </div>
         <div className="htb-links">
           <Link className="button primary" href="/learning">{c.start}</Link>
@@ -151,9 +152,9 @@ export function ProfileHero({ name, email, rewardPoints, practice, children }: {
         <div className="htb-card">
           <h3>{c.skills}</h3>
           {profile.skills.map((skill) => <div className="htb-skill" key={skill.key}>
-            <span>{skill.title}</span>
+            <span>{translateMessage(skill.title, locale)}</span>
             <div className="htb-bar" role="progressbar" aria-valuenow={skill.score} aria-valuemin={0} aria-valuemax={100}><span style={{ width: `${skill.score}%` }} /></div>
-            <small>{skill.score}% · {skill.label}</small>
+            <small>{skill.score}% · {translateMessage(skill.label, locale)}</small>
           </div>)}
           <p className="htb-note">{c.scoreSource}</p>
         </div>
@@ -170,7 +171,7 @@ export function ProfileHero({ name, email, rewardPoints, practice, children }: {
       <div className="htb-card">
         <h3>{c.achievements}</h3>
         <div className="htb-ach">{profile.achievements.map((item) => <div key={item.id} className={`htb-ach-item ${item.tone}${item.earned ? "" : " off"}`}>
-          <strong>{item.title}</strong><small>{item.hint}</small>
+          <strong>{translateMessage(item.title, locale)}</strong><small>{translateMessage(item.hint, locale)}</small>
         </div>)}</div>
       </div>
     </section>

@@ -6,9 +6,14 @@ void main() {
   gl_Position = vec4(a_position, 0., 1.);
 }`;
 
-// Original burning_reveal noise and fire-edge equations; only the title texture is branded.
+// The supplied burning_reveal idea, reworked so the sheet ignites all over at once:
+// many small fires open across the page, scorch ahead of the flame, and leave real holes.
 const fragmentSource = `
+#ifdef GL_FRAGMENT_PRECISION_HIGH
+precision highp float;
+#else
 precision mediump float;
+#endif
 varying vec2 v_uv;
 uniform sampler2D u_text;
 uniform vec2 u_resolution;
@@ -32,26 +37,69 @@ float fbm(vec2 n) {
   return total;
 }
 void main() {
-  vec2 uv = v_uv;
-  uv.x *= min(1., u_resolution.x / u_resolution.y);
-  uv.y *= min(1., u_resolution.y / u_resolution.x);
+  float aspect = u_resolution.x / u_resolution.y;
+  vec2 uv = v_uv * vec2(max(1., aspect), max(1., 1. / aspect));
   vec2 screenUv = v_uv * .5 + .5;
   screenUv.y = 1. - screenUv.y;
   float t = u_progress;
-  vec3 color = texture2D(u_text, screenUv).rgb;
-  float main_noise = 1. - fbm(.75 * uv + 10. - vec2(.3, .9 * t));
-  float paper_darkness = smoothstep(main_noise - .1, main_noise, t);
-  color -= vec3(.99, .95, .99) * paper_darkness;
-  vec3 fire_color = fbm(6. * uv - vec2(0., .005 * u_time)) * vec3(6., 1.4, 0.);
-  float show_fire = smoothstep(.4, .9, fbm(10. * uv + 2. - vec2(0., .005 * u_time)));
-  show_fire += smoothstep(.7, .8, fbm(.5 * uv + 5. - vec2(0., .001 * u_time)));
-  float fire_border = .02 * show_fire;
-  float fire_edge = smoothstep(main_noise - fire_border, main_noise - .5 * fire_border, t);
-  fire_edge *= 1. - smoothstep(main_noise - .5 * fire_border, main_noise, t);
-  color += fire_color * fire_edge;
-  float opacity = 1. - smoothstep(main_noise - .0005, main_noise, t);
+
+  // Burn order. Warping the noise by itself gives torn, organic fronts, and its scale
+  // puts many separate ignition points across the whole sheet.
+  vec2 warp = vec2(fbm(3.1 * uv + 1.7), fbm(3.1 * uv + 9.2));
+  float field = fbm(2.1 * uv + 2.4 * warp + 7.3) + .05 * fbm(24. * uv);
+  float burn = clamp((field - .24) / .34, 0., 1.);
+  float d = burn - t;
+
+  // Paper: warm white with faint fibres, printed with the wordmark.
+  float fibre = fbm(vec2(90., 26.) * uv);
+  vec3 color = texture2D(u_text, screenUv).rgb * vec3(.975, .955, .915) * (.94 + .1 * fibre);
+
+  // Heat travels ahead of the flame: a long soft browning, then char, then the hole.
+  float scorch = 1. - smoothstep(.03, .3, d);
+  color = mix(color, color * vec3(.74, .55, .33), scorch * scorch);
+  float toast = 1. - smoothstep(.02, .13, d);
+  color = mix(color, vec3(.2, .095, .035), toast * toast);
+  float char = 1. - smoothstep(.006, .06, d);
+  color = mix(color, vec3(.022, .016, .014), char);
+
+  // Embers: a thin hot line right at the hole, cooling to deep red, with sparks of glow in the char.
+  float flicker = fbm(11. * uv + vec2(0., -1.5 * u_time));
+  float line = 1. - smoothstep(.0, .011 + .016 * flicker, d);
+  float halo = 1. - smoothstep(.0, .05, d);
+  color += vec3(.85, .16, .01) * halo * halo * (.5 + flicker);
+  color = mix(color, mix(vec3(1., .36, .04), vec3(1., .86, .5), flicker * flicker * 2.2), line);
+  float cinders = smoothstep(.56, .68, fbm(38. * uv + vec2(0., -.5 * u_time))) * char;
+  color += vec3(.9, .25, .02) * cinders * (.4 + flicker);
+
+  float opacity = smoothstep(-.004, .004, d);
+
+  // Firelight falling on what is revealed behind the burning edge.
+  float light = (1. - smoothstep(.0, .06, -d)) * (1. - opacity);
+  color = mix(color, vec3(1., .42, .06), 1. - opacity);
+  opacity = max(opacity, light * .34 * (.6 + flicker));
+
+  // Sparks rising off the sheet while it burns.
+  vec2 sparkUv = vec2(uv.x * 30., uv.y * 30. - u_time * 4.6);
+  vec2 cell = floor(sparkUv);
+  float seed = rand(cell);
+  vec2 point = vec2(rand(cell + 1.3), rand(cell + 2.7));
+  float life = smoothstep(.04, .16, t) * (1. - smoothstep(.84, 1., t));
+  float spark = step(.94, seed) * smoothstep(.07, .012, length(fract(sparkUv) - point)) * life;
+  color = mix(color, vec3(1., .66, .2), spark);
+  opacity = max(opacity, spark);
+
   gl_FragColor = vec4(color, opacity);
 }`;
+
+/** How long the opening runs. */
+export const INTRO_MS = 3600;
+
+/** A beat of clean paper, then an even burn that clears the sheet before the end. */
+export function burnProgress(fraction: number): number {
+  const clamped = Math.max(0, Math.min(1, fraction));
+  const eased = clamped * clamped * (3 - 2 * clamped);
+  return -.04 + 1.1 * (clamped * .55 + eased * .45);
+}
 
 export function createBurningIntro(canvas: HTMLCanvasElement) {
   const gl = canvas.getContext("webgl", { alpha: true, premultipliedAlpha: false, antialias: false, powerPreference: "low-power" });
@@ -112,8 +160,8 @@ export function createBurningIntro(canvas: HTMLCanvasElement) {
       ctx.fillStyle = "#fff";
       ctx.fillRect(0, 0, text.width, text.height);
       const fontSize = Math.min(text.width * .15, text.height * .18);
-      ctx.font = `bold ${fontSize}px Arial`;
-      ctx.fillStyle = "#000";
+      ctx.font = `800 ${fontSize}px -apple-system, "Segoe UI", Arial, sans-serif`;
+      ctx.fillStyle = "#0d1b33";
       ctx.textAlign = "center"; ctx.textBaseline = "middle";
       ctx.fillText("Tecsecure", text.width / 2, text.height / 2, text.width * .82);
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, text);
@@ -134,4 +182,4 @@ export function createBurningIntro(canvas: HTMLCanvasElement) {
 }
 
 // Decide before first paint so the site does not flash ahead of the opening.
-export const introBootstrapScript = `(()=>{if(location.pathname==="/"&&!matchMedia("(prefers-reduced-motion: reduce)").matches){document.documentElement.dataset.tecIntro="pending";const timer=setTimeout(()=>{if(document.documentElement.dataset.tecIntro==="pending"){document.querySelector("dialog.site-intro[open]")?.close();delete document.documentElement.dataset.tecIntro}},10000);document.addEventListener("tecsecure:intro-ready",()=>clearTimeout(timer),{once:true})}})()`;
+export const introBootstrapScript = `(()=>{if(location.pathname==="/"&&!matchMedia("(prefers-reduced-motion: reduce)").matches){document.documentElement.dataset.tecIntro="pending";const timer=setTimeout(()=>{if(document.documentElement.dataset.tecIntro==="pending"){document.querySelector("dialog.site-intro[open]")?.close();delete document.documentElement.dataset.tecIntro}},6000);document.addEventListener("tecsecure:intro-ready",()=>clearTimeout(timer),{once:true})}})()`;
