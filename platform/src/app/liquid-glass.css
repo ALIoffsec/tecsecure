@@ -232,7 +232,7 @@
   #app-shell .shop-card:is(:hover, :focus-within) .product-media-alternate { opacity: 1; }
   #app-shell .shop-card:hover .product-media-fallback .product-visual { transform: scale(1.04); }
 }
-@media (prefers-reduced-motion: no-preference) {
+:where(:root:not([data-motion="off"])) {
   #app-shell .brand-hero-copy > * { animation: glass-arrive 850ms var(--glass-ease) both; }
   #app-shell .brand-hero-copy h1 { animation-delay: 80ms; }
   #app-shell .brand-hero-copy .lead { animation-delay: 160ms; }
@@ -285,8 +285,8 @@
   #app-shell :is(.portal-nav, .site-nav) { background: var(--surface); backdrop-filter: none; }
   #app-shell::before { display: none; }
 }
-@media (prefers-reduced-motion: reduce) {
-  html { scroll-behavior: auto; }
+:root[data-motion="off"] {
+  & { scroll-behavior: auto; }
   #app-shell *, #app-shell *::before, #app-shell *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
   #app-shell :is(.hub-path, .shop-card, .learn-module-card, .learn-path-card):hover { transform: none; }
 }

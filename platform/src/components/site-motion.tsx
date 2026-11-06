@@ -1,5 +1,6 @@
 "use client";
 
+import { motionPreference } from "@/lib/motion";
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 
@@ -19,7 +20,7 @@ export function SiteMotion() {
 
   // Page arrival: a short settle, never a wait.
   useEffect(() => {
-    const preference = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const preference = motionPreference();
     const main = document.getElementById("main-content");
     if (!main || preference.matches) return;
     const animation = main.animate([{ opacity: .35, transform: "translateY(10px)" }, { opacity: 1, transform: "none" }], {
@@ -32,7 +33,7 @@ export function SiteMotion() {
 
   // Blocks below the fold surface as they scroll in. Marked from script, so nothing hides without it.
   useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (motionPreference().matches) return;
     const observer = new IntersectionObserver(entries => {
       for (const entry of entries) {
         if (!entry.isIntersecting) continue;
@@ -75,7 +76,7 @@ export function SiteMotion() {
       if (!frame) frame = requestAnimationFrame(paint);
     };
     const onDown = (event: PointerEvent) => {
-      if (!(event.target instanceof Element) || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      if (!(event.target instanceof Element) || motionPreference().matches) return;
       const control = event.target.closest<HTMLElement>(CONTROLS);
       if (!control || control.matches(":disabled")) return;
       const box = control.getBoundingClientRect();

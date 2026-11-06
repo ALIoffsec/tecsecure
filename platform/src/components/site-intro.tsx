@@ -1,5 +1,6 @@
 "use client";
 
+import { motionPreference } from "@/lib/motion";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { burnProgress, createBurningIntro, INTRO_MS } from "@/lib/burning-intro";
 import { usePathname } from "next/navigation";
@@ -23,7 +24,7 @@ export function SiteIntro() {
 
   useEffect(() => {
     const restart = () => {
-      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      if (motionPreference().matches) return;
       document.documentElement.dataset.tecIntro = "pending";
       setFallback(false);
       setFinished(false);
@@ -42,7 +43,7 @@ export function SiteIntro() {
   useEffect(() => {
     const element = dialog.current;
     const surface = canvas.current;
-    const preference = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const preference = motionPreference();
     if (finished || !element || !surface) return;
     document.dispatchEvent(new Event("tecsecure:intro-ready"));
     if (document.documentElement.dataset.tecIntro !== "pending" || preference.matches) {

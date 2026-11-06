@@ -1,3 +1,4 @@
+import { searchProductIds } from "@/lib/search-index";
 import { RecentlyViewed } from "@/components/shop-extras";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -58,7 +59,7 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
     ...(stock ? { stockStatus: stock } : {}),
     ...(hasPriceRange ? { currency, priceMinor: { ...(min !== undefined ? { gte: min } : {}), ...(max !== undefined ? { lte: max } : {}) } } : {}),
     ...(spec ? { specifications: { path: [spec.key], equals: spec.value } } : {}),
-    ...(sp.q ? { OR: ["name", "description", "brand", "model", "sku"].map(key => ({ [key]: { contains: sp.q, mode: "insensitive" } })) } : {})
+    ...(sp.q ? { id: { in: await searchProductIds(sp.q) } } : {})
   };
   const [products, total, categories, brands, currencies, categorySpecs] = await Promise.all([
     prisma.product.findMany({ where, include: { category: { select: { name: true, slug: true } } }, orderBy: sorts[sort], skip: (page - 1) * PAGE_SIZE, take: PAGE_SIZE }),
@@ -99,12 +100,11 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
         <ShopSearchInput key={sp.q ?? ""} value={sp.q} />
         <button className="button" type="submit"><S id="searchAction" /></button>
       </form>
-      <CurrencySelector />
     </section>
     <CompareTray />
     {invalidPrice && <p role="alert" className="shop-price-notice"><S id="priceFrom" /> ≤ <S id="priceTo" />. <Link href={build(current, { min: undefined, max: undefined })}><S id="clear" /></Link></p>}
     {sp.spec && !spec && <p role="alert" className="shop-price-notice"><S id="specHint" /> <Link href={build(current, { spec: undefined })}><S id="clear" /></Link></p>}
-    <FilterPanel activeCount={activeFilters.length}
+    <FilterPanel activeCount={activeFilters.length} currency={<CurrencySelector />}
       categories={<nav className="shop-cats" aria-label="Categories">
         <Link className={`shop-chip${!sp.category ? " is-active" : ""}`} href={build(current, { category: undefined, spec: undefined, brand: undefined })}><S id="all" /></Link>
         {categories.map(category => <Link className={`shop-chip${category.slug === sp.category ? " is-active" : ""}`} href={build(current, { category: category.slug, brand: undefined, spec: undefined })} key={category.slug}>{category.name}</Link>)}
@@ -124,7 +124,6 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
         </nav>}
       </section>}>
       <form action="/products" method="get" key={JSON.stringify(current)}>
-        <h2><S id="filter" /></h2>
         {sp.q && <input type="hidden" name="q" value={sp.q} />}{sp.category && <input type="hidden" name="category" value={sp.category} />}{current.sort && <input type="hidden" name="sort" value={current.sort} />}
         <label className="field"><span><S id="stock" /></span><select name="stock" defaultValue={stock ?? ""}><option value=""><S id="all" /></option>{stocks.map(value => <option value={value} key={value}><S id={value} /></option>)}</select></label>
         {brands.length > 0 && <label className="field"><span><S id="brand" /></span><select name="brand" defaultValue={sp.brand ?? ""}><option value=""><S id="all" /></option>{brands.map(({ brand }) => <option key={brand} value={brand ?? ""}>{brand}</option>)}</select></label>}

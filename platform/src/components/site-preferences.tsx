@@ -3,6 +3,7 @@
 import { createContext, ReactNode, useContext, useEffect, useMemo, useState } from "react";
 import { Locale, MessageKey, messages } from "@/lib/messages";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { journeyCopy } from "@/lib/journey-copy";
 import { FooterGlow } from "./feature-visuals";
 import { siteCopy } from "@/lib/site-copy";
@@ -154,6 +155,9 @@ export function SiteFooter() {
   const { t, locale, openCookieSettings } = useSitePreferences();
   const c = journeyCopy[locale];
   const f = featureCopy[locale];
+  const pathname = usePathname();
+  // Inside the site the page should feel like an app: only the home page carries a full footer.
+  if (pathname !== "/") return <footer className="footer footer-minimal"><span>© {new Date().getFullYear()} Tecsecure</span></footer>;
   return (
     <footer className="footer feature-footer">
       <FooterGlow />
@@ -192,4 +196,4 @@ export function CookieSettingsButton() {
   return <button className="button ghost" type="button" onClick={openCookieSettings}>{t("cookieSettings")}</button>;
 }
 
-export const preferenceBootstrapScript = `(()=>{const r=document.documentElement;try{const c=document.cookie.split("; ").find(x=>x.startsWith("${consentCookie}="))?.slice("${consentCookie}".length+1);const p=c==="all"?document.cookie.split("; ").find(x=>x.startsWith("${preferenceCookie}="))?.slice("${preferenceCookie}".length+1):null;const v=p?JSON.parse(decodeURIComponent(p)):{};const t=v.theme||"dark";const l=v.locale||"uz";const d=t==="system"?(window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"):t;r.dataset.theme=d;r.style.colorScheme=d;r.lang=["uz","ru","en"].includes(l)?l:"uz"}catch{r.dataset.theme="dark";r.style.colorScheme="dark"}})()`;
+export const preferenceBootstrapScript = `(()=>{const r=document.documentElement;try{if(localStorage.getItem("tecsecure-motion")==="off")r.dataset.motion="off"}catch{}try{const c=document.cookie.split("; ").find(x=>x.startsWith("${consentCookie}="))?.slice("${consentCookie}".length+1);const p=c==="all"?document.cookie.split("; ").find(x=>x.startsWith("${preferenceCookie}="))?.slice("${preferenceCookie}".length+1):null;const v=p?JSON.parse(decodeURIComponent(p)):{};const t=v.theme||"dark";const l=v.locale||"uz";const d=t==="system"?(window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"):t;r.dataset.theme=d;r.style.colorScheme=d;r.lang=["uz","ru","en"].includes(l)?l:"uz"}catch{r.dataset.theme="dark";r.style.colorScheme="dark"}})()`;

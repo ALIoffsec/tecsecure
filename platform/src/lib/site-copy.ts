@@ -4,8 +4,9 @@ type MenuLink = { href: string; title: string; hint: string };
 type MenuGroup = { title: string; href: string; links: MenuLink[] };
 
 type SiteCopy = {
-  nav: { home: string; menu: string; account: string; cart: string; search: string; close: string; language: string; theme: string; dark: string; light: string; system: string; primary: string };
-  menu: { services: MenuGroup; learning: MenuGroup; shop: MenuGroup; company: MenuGroup };
+  nav: { home: string; menu: string; account: string; cart: string; search: string; close: string; language: string; theme: string; dark: string; light: string; system: string; primary: string; motion: string; motionOn: string; motionOff: string };
+  menu: { services: MenuGroup; learning: MenuGroup; shop: MenuGroup; company: MenuGroup; legal: MenuGroup };
+  search: { placeholder: string; shopPlaceholder: string; submit: string; pageTitle: string; recent: string; clearRecent: string; clear: string; close: string; popularTitle: string; popular: string[]; popularShop: string[]; noResults: string; noResultsHint: string; askUs: string; all: string; foundLabel: string; loading: string; trigger: string; groups: { product: string; service: string; learning: string; news: string; page: string } };
   cookie: {
     title: string; text: string; acceptAll: string; essential: string; customize: string; save: string; close: string;
     necessary: string; necessaryHint: string; preferences: string; preferencesHint: string; always: string; none: string; privacy: string;
@@ -25,7 +26,7 @@ type SiteCopy = {
 };
 
 const uz: SiteCopy = {
-  nav: { home: "Bosh sahifa", menu: "Menyu", account: "Hisob", cart: "Savat", search: "Qidiruv", close: "Yopish", language: "Til", theme: "Ko‘rinish", dark: "Qorong‘i", light: "Yorug‘", system: "Tizim", primary: "Asosiy menyu" },
+  nav: { home: "Bosh sahifa", menu: "Menyu", account: "Hisob", cart: "Savat", search: "Qidiruv", close: "Yopish", language: "Til", theme: "Ko‘rinish", dark: "Qorong‘i", light: "Yorug‘", system: "Tizim", primary: "Asosiy menyu", motion: "Animatsiyalar", motionOn: "Yoqilgan", motionOff: "O‘chirilgan" },
   menu: {
     services: { title: "Xizmatlar", href: "/services", links: [
       { href: "/services", title: "Barcha xizmatlar", hint: "Tarmoq, videokuzatuv, server va kirish nazorati" },
@@ -53,7 +54,18 @@ const uz: SiteCopy = {
       { href: "/news", title: "Yangiliklar", hint: "Texnologiya va xavfsizlik xabarlari" },
       { href: "/careers", title: "Jamoaga qo‘shilish", hint: "Ochiq ish o‘rinlari" },
       { href: "/contact", title: "Aloqa", hint: "Telefon, Telegram va manzil" }
+    ] },
+    legal: { title: "Hujjatlar", href: "/privacy", links: [
+      { href: "/privacy", title: "Maxfiylik siyosati", hint: "Ma’lumotlaringiz qanday saqlanadi" },
+      { href: "/terms", title: "Shartlar va yetkazish", hint: "Xarid, yetkazish va to‘lov qoidalari" },
+      { href: "/staff/login", title: "Xodimlar kirishi", hint: "Jamoa uchun boshqaruv paneli" }
     ] }
+  },
+  search: {
+    placeholder: "Mahsulot, xizmat yoki mavzu qidiring", shopPlaceholder: "Mahsulot yoki model qidiring", submit: "Qidirish", pageTitle: "Qidiruv", recent: "Yaqinda qidirganlaringiz", clearRecent: "Tozalash", clear: "Tozalash", close: "Yopish",
+    popularTitle: "Ko‘p qidiriladi", popular: ["IP kamera", "Router", "Firewall", "Wi-Fi", "Linux", "Kiberxavfsizlik", "Videokuzatuv", "Tarmoq"], popularShop: ["IP kamera", "Router", "Switch", "NVR", "Firewall", "Kabel"],
+    noResults: "Hech narsa topilmadi", noResultsHint: "Boshqa so‘z bilan urinib ko‘ring yoki bizga yozing: kerakli narsani topib beramiz.", askUs: "Bizdan so‘rash", all: "Barcha natijalar", foundLabel: "Topildi", loading: "Qidirilmoqda…", trigger: "Qidirish",
+    groups: { product: "Mahsulotlar", service: "Xizmatlar", learning: "Ta’lim", news: "Yangiliklar", page: "Bo‘limlar" }
   },
   cookie: {
     title: "Cookie fayllari", text: "Sayt ishlashi uchun zarur cookie’lardan foydalanamiz. Xohlasangiz, tanlagan tilingiz va ko‘rinishingizni ham eslab qolamiz.",
@@ -79,7 +91,7 @@ const uz: SiteCopy = {
 };
 
 const ru: SiteCopy = {
-  nav: { home: "Главная", menu: "Меню", account: "Кабинет", cart: "Корзина", search: "Поиск", close: "Закрыть", language: "Язык", theme: "Оформление", dark: "Тёмная", light: "Светлая", system: "Системная", primary: "Основное меню" },
+  nav: { home: "Главная", menu: "Меню", account: "Кабинет", cart: "Корзина", search: "Поиск", close: "Закрыть", language: "Язык", theme: "Оформление", dark: "Тёмная", light: "Светлая", system: "Системная", primary: "Основное меню", motion: "Анимация", motionOn: "Включена", motionOff: "Выключена" },
   menu: {
     services: { title: "Услуги", href: "/services", links: [
       { href: "/services", title: "Все услуги", hint: "Сети, видеонаблюдение, серверы и контроль доступа" },
@@ -107,7 +119,18 @@ const ru: SiteCopy = {
       { href: "/news", title: "Новости", hint: "Технологии и безопасность" },
       { href: "/careers", title: "Вакансии", hint: "Открытые позиции" },
       { href: "/contact", title: "Контакты", hint: "Телефон, Telegram и адрес" }
+    ] },
+    legal: { title: "Документы", href: "/privacy", links: [
+      { href: "/privacy", title: "Конфиденциальность", hint: "Как хранятся ваши данные" },
+      { href: "/terms", title: "Условия и доставка", hint: "Правила покупки, доставки и оплаты" },
+      { href: "/staff/login", title: "Вход для сотрудников", hint: "Панель управления для команды" }
     ] }
+  },
+  search: {
+    placeholder: "Найдите товар, услугу или тему", shopPlaceholder: "Найдите товар или модель", submit: "Найти", pageTitle: "Поиск", recent: "Вы недавно искали", clearRecent: "Очистить", clear: "Очистить", close: "Закрыть",
+    popularTitle: "Часто ищут", popular: ["IP-камера", "Роутер", "Firewall", "Wi-Fi", "Linux", "Кибербезопасность", "Видеонаблюдение", "Сеть"], popularShop: ["IP-камера", "Роутер", "Коммутатор", "NVR", "Firewall", "Кабель"],
+    noResults: "Ничего не найдено", noResultsHint: "Попробуйте другое слово или напишите нам: мы найдём то, что нужно.", askUs: "Спросить нас", all: "Все результаты", foundLabel: "Найдено", loading: "Идёт поиск…", trigger: "Поиск",
+    groups: { product: "Товары", service: "Услуги", learning: "Обучение", news: "Новости", page: "Разделы" }
   },
   cookie: {
     title: "Файлы cookie", text: "Мы используем cookie, необходимые для работы сайта. По вашему желанию также запомним выбранный язык и оформление.",
@@ -133,7 +156,7 @@ const ru: SiteCopy = {
 };
 
 const en: SiteCopy = {
-  nav: { home: "Home", menu: "Menu", account: "Account", cart: "Cart", search: "Search", close: "Close", language: "Language", theme: "Appearance", dark: "Dark", light: "Light", system: "System", primary: "Main menu" },
+  nav: { home: "Home", menu: "Menu", account: "Account", cart: "Cart", search: "Search", close: "Close", language: "Language", theme: "Appearance", dark: "Dark", light: "Light", system: "System", primary: "Main menu", motion: "Animations", motionOn: "On", motionOff: "Off" },
   menu: {
     services: { title: "Services", href: "/services", links: [
       { href: "/services", title: "All services", hint: "Networks, CCTV, servers and access control" },
@@ -161,7 +184,18 @@ const en: SiteCopy = {
       { href: "/news", title: "News", hint: "Technology and security updates" },
       { href: "/careers", title: "Careers", hint: "Open positions" },
       { href: "/contact", title: "Contact", hint: "Phone, Telegram and address" }
+    ] },
+    legal: { title: "Documents", href: "/privacy", links: [
+      { href: "/privacy", title: "Privacy policy", hint: "How your data is kept" },
+      { href: "/terms", title: "Terms and delivery", hint: "Rules for buying, delivery and payment" },
+      { href: "/staff/login", title: "Staff sign-in", hint: "The team’s control panel" }
     ] }
+  },
+  search: {
+    placeholder: "Find a product, service or topic", shopPlaceholder: "Find a product or model", submit: "Search", pageTitle: "Search", recent: "Your recent searches", clearRecent: "Clear", clear: "Clear", close: "Close",
+    popularTitle: "Popular searches", popular: ["IP camera", "Router", "Firewall", "Wi-Fi", "Linux", "Cybersecurity", "CCTV", "Networking"], popularShop: ["IP camera", "Router", "Switch", "NVR", "Firewall", "Cable"],
+    noResults: "Nothing found", noResultsHint: "Try another word or write to us: we will find what you need.", askUs: "Ask us", all: "All results", foundLabel: "Found", loading: "Searching…", trigger: "Search",
+    groups: { product: "Products", service: "Services", learning: "Learning", news: "News", page: "Sections" }
   },
   cookie: {
     title: "Cookies", text: "We use the cookies this site needs to work. If you agree, we will also remember your language and appearance.",

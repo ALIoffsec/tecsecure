@@ -1,5 +1,6 @@
 "use client";
 
+import { motionPreference } from "@/lib/motion";
 import Link from "next/link";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { DeliveryMap } from "@/components/delivery-map";
@@ -121,7 +122,7 @@ export function CartCheckout({ canOrder = false, signedIn = false, customer, wal
     setError("");
     setStep(next);
     setReached(value => Math.max(value, next));
-    top.current?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+    top.current?.scrollIntoView({ behavior: motionPreference().matches ? "auto" : "smooth", block: "start" });
   }
 
   async function submit(event: FormEvent) {

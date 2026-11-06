@@ -1,34 +1,40 @@
 "use client";
 
-import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { rememberSearch, SearchField, SearchResultRow, useSearchSuggestions } from "./search-field";
 import { useSitePreferences } from "./site-preferences";
-import { useLearningCatalog } from "./learning-catalog-context";
-import { journeyCopy } from "@/lib/journey-copy";
-import { serviceJourneys } from "@/lib/service-journeys";
+import { siteCopy } from "@/lib/site-copy";
+import Link from "next/link";
 
-type Result = { id: string; name: string; slug: string; description: string };
-export function SearchResults({ query, products, services }: { query: string; products: Result[]; services: Result[] }) {
+export function SearchResults({ query }: { query: string }) {
   const { locale } = useSitePreferences();
-  const c = journeyCopy[locale];
-  const catalog = useLearningCatalog();
-  const includes = (text: string) => text.toLocaleLowerCase(locale).includes(query.toLocaleLowerCase(locale));
-  const topics = query ? catalog.modules.filter(module => includes(`${module.title[locale]} ${module.summary[locale]}`)) : [];
-  const needs = query ? serviceJourneys[locale].filter(item => includes(`${item.title} ${item.summary} ${item.scope} ${item.prepare}`)) : [];
-  const groups = [
-    { title: c.services, href: "/services", items: [...needs.map(item => ({ id: item.id, name: item.title, description: item.summary, href: `/services#need-${item.id}` })), ...services.map(item => ({ ...item, href: `/services/${item.slug}` }))] },
-    { title: c.learning, href: "/learning/modules", items: topics.map(module => ({ id: module.slug, name: module.title[locale], description: module.summary[locale], href: `/learning/${module.slug}` })) },
-    { title: c.shop, href: `/products?q=${encodeURIComponent(query)}`, items: products.map(item => ({ ...item, href: `/products/${item.slug}` })) }
-  ];
-  return <div className="container page-shell">
-    <h1 className="page-title">{c.searchTitle}</h1>
-    <p className="muted">{c.searchStart}</p>
-    <form className="hub-search" action="/search" role="search">
-      <label htmlFor="global-query">{c.search}</label><div><input id="global-query" type="search" name="q" defaultValue={query} maxLength={80} required placeholder={c.searchHint} /><button className="button">{c.search}</button></div>
+  const c = siteCopy[locale].search;
+  const router = useRouter();
+  const { data, loading } = useSearchSuggestions(query, "all", 30);
+  return <div className="container page-shell search-page">
+    <h1 className="page-title">{c.pageTitle}</h1>
+    <form className="search-page-form" action="/search" role="search" onSubmit={event => {
+      event.preventDefault();
+      const value = String(new FormData(event.currentTarget).get("q") ?? "").trim();
+      if (!value) return;
+      rememberSearch(value);
+      router.push(`/search?q=${encodeURIComponent(value)}`);
+    }}>
+      <SearchField key={query} id="global-query" defaultValue={query} />
+      <button className="button" type="submit">{c.submit}</button>
     </form>
-    {query && <div className="search-results">{groups.map(group => <section className="panel-card" key={group.title}>
-      <h2>{group.title} <span className="muted small">({group.items.length})</span></h2>
-      {group.items.length ? <ul>{group.items.map(item => <li key={item.id}><Link href={item.href}>{item.name} →</Link><p>{item.description}</p></li>)}</ul> : <p className="muted">{c.searchEmpty}</p>}
-      <Link href={group.href} className="text-link">{c.more} →</Link>
-    </section>)}</div>}
+    {query && data && !loading && <p className="muted search-page-count" role="status">{data.total > 0 ? `${c.foundLabel}: ${data.total}` : ""}</p>}
+    {query && loading && !data && <p className="muted" role="status">{c.loading}</p>}
+    {query && data && data.total === 0 && !loading && <div className="empty-state search-none">
+      <strong>{c.noResults}</strong>
+      <p>{c.noResultsHint}</p>
+      <Link className="button" href="/request-service">{c.askUs}</Link>
+    </div>}
+    {query && data && data.total > 0 && <div className="search-page-groups">
+      {data.groups.map(group => <section className="panel-card search-group" key={group.group}>
+        <h2>{c.groups[group.group]} <span className="muted small">({group.items.length})</span></h2>
+        {group.items.map(item => <SearchResultRow key={item.id} item={item} query={query} />)}
+      </section>)}
+    </div>}
   </div>;
 }

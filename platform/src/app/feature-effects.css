@@ -32,7 +32,7 @@
 #app-shell .gallery-slide[data-active="true"] .media-preview-frame, #app-shell .gallery-slide:focus-within .media-preview-frame { transform: scale(1); }
 #app-shell .feature-gallery-progress { height: 2px; margin-top: 5px; background: var(--line); overflow: hidden; }
 #app-shell .feature-gallery-progress i { display: block; height: 100%; background: var(--accent); transition: width 450ms var(--glass-ease); }
-@media (prefers-reduced-motion: no-preference) {
+:where(:root:not([data-motion="off"])) {
   #app-shell .feature-lamp { animation: feature-lamp-swing 4s ease-in-out both; }
   #app-shell .feature-hero-detail { animation: glass-arrive 350ms ease-out; }
   #app-shell .feature-hero-showcase .brand-glass-pane-front { animation: feature-pane-turn 550ms var(--glass-ease); }
@@ -42,7 +42,7 @@
 @media (max-width: 640px) {
   #app-shell .feature-hero-showcase .brand-glass-scene { margin-inline: auto; }
 }
-@media (prefers-reduced-motion: reduce) {
+:root[data-motion="off"] {
   #app-shell .gallery-slide .media-preview-frame { transform: none; }
 }
 
@@ -59,6 +59,6 @@
 #app-shell .site-intro-static { display: none; position: absolute; inset: 0; place-items: center; background: #fff; color: #000; font-size: clamp(2.5rem, 12vw, 8rem); font-weight: 700; }
 #app-shell .site-intro:not([open]) .site-intro-static, #app-shell .site-intro[data-fallback="true"] .site-intro-static { display: grid; }
 :root[data-tec-intro="pending"] #app-shell { overflow: hidden; }
-@media (prefers-reduced-motion: reduce) {
+:root[data-motion="off"] {
   #app-shell .site-intro { display: none !important; }
 }

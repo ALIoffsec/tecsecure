@@ -1,5 +1,6 @@
 "use client";
 
+import { motionPreference } from "@/lib/motion";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MediaLightbox } from "./media-lightbox";
@@ -124,7 +125,7 @@ export function WorkCarousel({ posts, showLink = false }: { posts: WorkPost[]; s
   }, [count, goTo]);
 
   useEffect(() => {
-    const preference = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const preference = motionPreference();
     motion.current.reduced = preference.matches;
     setPlaying(!preference.matches);
     const onPreference = () => { motion.current.reduced = preference.matches; if (preference.matches) setPlaying(false); };
@@ -162,7 +163,6 @@ export function WorkCarousel({ posts, showLink = false }: { posts: WorkPost[]; s
 
   if (!count) return null;
   const current = slides[active] ?? slides[0];
-  const pad = (value: number) => String(value).padStart(2, "0");
 
   function onPointerDown(event: React.PointerEvent<HTMLDivElement>) {
     if (count < 2 || event.button !== 0) return;
@@ -232,12 +232,7 @@ export function WorkCarousel({ posts, showLink = false }: { posts: WorkPost[]; s
       </div>
     </div>
 
-    <div className="work-panel">
-      <div className="work-caption" key={current.key} aria-live={running ? "off" : "polite"}>
-        <span className="work-count"><b>{pad(active + 1)}</b> / {pad(count)}</span>
-        <h3>{current.title}</h3>
-        <p>{current.description}</p>
-      </div>
+    {count > 1 && <div className="work-nav">
       {count > 1 && <div className="work-controls">
         <button type="button" className="work-arrow" aria-label={c.prev} onClick={() => { setPlaying(false); step(-1); }}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.75 19.5 8.25 12l7.5-7.5" /></svg></button>
         <button type="button" className="work-arrow work-play" aria-pressed={!playing} aria-label={playing ? c.pause : c.play} onClick={() => setPlaying(value => !value)}>
@@ -246,12 +241,11 @@ export function WorkCarousel({ posts, showLink = false }: { posts: WorkPost[]; s
         </button>
         <button type="button" className="work-arrow" aria-label={c.next} onClick={() => { setPlaying(false); step(1); }}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8.25 4.5 7.5 7.5-7.5 7.5" /></svg></button>
       </div>}
-    </div>
-
-    {count > 1 && <div className="work-thumbs" ref={thumbs} role="group" aria-label={c.title}>
+    <div className="work-thumbs" ref={thumbs} role="group" aria-label={c.title}>
       {slides.map((slide, index) => <button type="button" className="work-thumb" key={slide.key} aria-current={index === active} aria-label={`${slide.title} — ${index + 1}`} onClick={() => { setPlaying(false); showIndex(index); }}>
         <img src={`/api/media/${slide.mediaId}`} alt="" loading="lazy" decoding="async" draggable={false} onError={event => { event.currentTarget.style.visibility = "hidden"; }} />
       </button>)}
+    </div>
     </div>}
 
     {showLink && <div className="work-more"><Link className="button secondary" href="/work">{c.seeAll} →</Link></div>}

@@ -1,0 +1,106 @@
+/* Search, the shop filter and the rules that must load after every other stylesheet. */
+
+/* ---------- Footer away from home: one quiet line, so inner pages feel like an app ---------- */
+#app-shell .footer-minimal { margin-top: 48px; padding: 18px 16px 22px; color: var(--muted); font-size: .8rem; text-align: center; border: 0; background: transparent; }
+
+/* ---------- Shop: everything that narrows the list sits together in the filter ---------- */
+#app-shell .shop-hero { overflow: visible; }
+#app-shell .shop-search { width: 100%; max-width: none; padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none; }
+#app-shell .shop-search:focus-within { box-shadow: none; }
+#app-shell .shop-hero { padding: 0; border: 0; background: none; box-shadow: none; }
+:root[data-theme="light"] #app-shell .search-field[data-variant="dropdown"] .search-drop { background: #f6f9ff; }
+#app-shell .shop-filters > h2 { margin: 0 0 8px; font-size: 1.05rem; }
+#app-shell .shop-filters .shop-cats { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 12px; overflow: visible; }
+#app-shell .shop-filters .shop-chip { min-height: 36px; padding: 6px 12px; font-size: .82rem; }
+#app-shell .shop-filters .currency-selector { display: grid; gap: 6px; margin: 0 0 12px; padding: 0 0 12px; border-bottom: 1px solid var(--line); }
+#app-shell .shop-filters .currency-selector label { display: grid; gap: 6px; width: 100%; padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none; }
+#app-shell .shop-filters .currency-selector select { width: 100%; min-height: 42px; }
+#app-shell .shop-filters .currency-selector small { width: 100%; margin: 0; padding: 0; color: var(--muted); font-size: .74rem; text-align: left; }
+#app-shell .shop-filters .currency-selector, #app-shell .shop-filters .currency-selector label, #app-shell .shop-filters .currency-selector select { width: 100%; max-width: none; justify-items: stretch; }
+@media (min-width: 901px) {
+  #app-shell .shop-category-row { display: none; }
+  #app-shell .shop-filters { max-height: calc(100dvh - 100px); overflow-y: auto; scrollbar-width: thin; }
+}
+@media (max-width: 900px) {
+  #app-shell .shop-category-row { margin-bottom: 12px; }
+  #app-shell .shop-filters-toggle { width: 100%; justify-content: center; }
+}
+
+/* ---------- Work strip: only the pictures and the controls ---------- */
+#app-shell .work-nav { display: flex; align-items: center; gap: 14px; min-width: 0; }
+#app-shell .work-nav .work-thumbs { flex: 1; min-width: 0; padding-block: 6px; }
+@media (max-width: 760px) {
+  #app-shell .work-nav { flex-direction: column; align-items: stretch; gap: 8px; }
+  #app-shell .work-nav .work-controls { justify-content: center; }
+}
+
+/* ---------- Search ---------- */
+#app-shell .portal-search-trigger svg, #app-shell .search-field-icon, #app-shell .search-completions svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+#app-shell .portal-search-label, #app-shell .portal-search-trigger kbd { display: none; }
+@media (min-width: 1200px) {
+  #app-shell .portal-search-trigger { display: inline-flex; width: auto; align-items: center; gap: 8px; min-width: 190px; padding-inline: 14px 8px; color: var(--muted); }
+  #app-shell .portal-search-label { display: inline; flex: 1; font-size: .86rem; text-align: left; }
+  #app-shell .portal-search-trigger kbd { display: inline; padding: 2px 7px; font: inherit; font-size: .68rem; border: 1px solid var(--glass-edge); border-radius: 8px; background: #ffffff0f; }
+}
+#app-shell .search-field { position: relative; flex: 1; min-width: 0; }
+#app-shell .search-field-box { display: flex; align-items: center; gap: 8px; min-height: 48px; padding-inline: 14px 8px; color: var(--muted); border: 1px solid var(--glass-edge); border-radius: 16px; background: var(--glass-control); transition: border-color var(--t-quick) linear, box-shadow var(--t-base) var(--ease-lux); }
+#app-shell .search-field-box:focus-within { border-color: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 20%, transparent); }
+/* The box is the field; the general input rule would otherwise draw a second frame inside it. */
+#app-shell .search-field-box input[type="search"] { flex: 1; width: 100%; min-width: 0; min-height: 44px; padding: 0; color: var(--text); font: inherit; font-size: 16px; border: 0 !important; border-radius: 0; outline: 0; background: transparent !important; box-shadow: none !important; appearance: none; -webkit-appearance: none; }
+#app-shell .search-field-box input[type="search"]:focus-visible { outline: 0; }
+#app-shell .search-field-box input::-webkit-search-cancel-button { display: none; }
+#app-shell .search-field-clear { display: grid; flex: none; width: 30px; height: 30px; padding: 0; place-items: center; color: var(--muted); font-size: 1.15rem; line-height: 1; border: 0; border-radius: 50%; background: #ffffff14; cursor: pointer; }
+#app-shell .search-field-spin { flex: none; width: 16px; height: 16px; border: 2px solid var(--glass-edge); border-top-color: var(--accent); border-radius: 50%; animation: search-spin 700ms linear infinite; }
+@keyframes search-spin { to { transform: rotate(360deg); } }
+#app-shell .search-drop { display: grid; gap: 10px; }
+#app-shell .search-field[data-variant="dropdown"] .search-drop { position: absolute; left: 0; right: 0; top: calc(100% + 8px); z-index: 40; max-height: min(66dvh, 560px); padding: 10px; overflow-y: auto; overscroll-behavior: contain; border: 1px solid var(--glass-edge); border-radius: 22px; background: #111a2f; box-shadow: var(--glass-shadow), 0 30px 70px -20px #01061ae6; animation: mega-in 280ms var(--ease-lux) both; }
+#app-shell :is(.shop-hero, .hub-search, .search-page-form):has(.search-field[data-open="true"]) { position: relative; z-index: 42; }
+#app-shell .search-field[data-open="true"] { z-index: 42; }
+#app-shell .search-group { display: grid; gap: 2px; }
+#app-shell .search-group h3, #app-shell .search-empty h3 { margin: 4px 8px; color: var(--muted); font-size: .7rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+#app-shell .search-group h2 { margin: 0 0 8px; font-size: 1.05rem; }
+#app-shell .search-row { display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 7px 8px; color: var(--text); text-decoration: none; border-radius: 14px; transition: background-color var(--t-quick) linear; }
+#app-shell .search-row:hover, #app-shell .search-row[data-active="true"] { background: color-mix(in srgb, var(--accent) 14%, transparent); }
+#app-shell .search-row-icon { display: grid; flex: none; width: 42px; height: 42px; place-items: center; overflow: hidden; color: var(--accent); border: 1px solid var(--glass-edge); border-radius: 12px; background: #ffffff0d; }
+#app-shell .search-row-icon img { width: 100%; height: 100%; object-fit: cover; }
+#app-shell .search-row-text { display: grid; flex: 1; gap: 1px; min-width: 0; }
+#app-shell .search-row-text strong { overflow: hidden; font-size: .92rem; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+#app-shell .search-row-text small { overflow: hidden; color: var(--muted); font-size: .76rem; text-overflow: ellipsis; white-space: nowrap; }
+#app-shell .search-row-price { flex: none; font-size: .84rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+#app-shell .search-field mark, #app-shell .search-page mark { color: var(--accent); background: transparent; }
+#app-shell .search-chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 2px; }
+#app-shell .search-chips button { display: inline-flex; align-items: center; gap: 6px; min-height: 34px; padding: 5px 12px; color: var(--text); font: inherit; font-size: .84rem; border: 1px solid var(--glass-edge); border-radius: 999px; background: #ffffff0a; cursor: pointer; transition: border-color var(--t-quick) linear, background-color var(--t-quick) linear; }
+#app-shell .search-chips button:hover, #app-shell .search-chips button[data-active="true"] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); }
+#app-shell .search-chips svg { width: 14px; height: 14px; color: var(--muted); }
+#app-shell .search-empty { display: grid; gap: 12px; padding: 4px; }
+#app-shell .search-empty section { display: grid; gap: 6px; }
+#app-shell .search-empty header { display: flex; align-items: center; justify-content: space-between; }
+#app-shell .search-empty header button { padding: 2px 8px; color: var(--muted); font: inherit; font-size: .76rem; border: 0; background: none; cursor: pointer; }
+#app-shell .search-all { display: block; padding: 11px; color: var(--accent); font-size: .88rem; font-weight: 600; text-align: center; text-decoration: none; border-top: 1px solid var(--line); }
+#app-shell .search-none { display: grid; justify-items: center; gap: 8px; padding: 22px 12px; text-align: center; }
+#app-shell .search-none p { margin: 0; color: var(--muted); font-size: .88rem; }
+#app-shell .search-palette { position: fixed; left: 50%; top: 9dvh; z-index: 62; display: grid; gap: 8px; width: min(680px, calc(100vw - 24px)); max-height: 82dvh; padding: 12px; translate: -50% 0; color: var(--text); border: 1px solid var(--glass-edge); border-radius: 28px; background: var(--glass-overlay); box-shadow: var(--glass-shadow), 0 40px 100px -20px #01061af0; -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter); animation: palette-in 340ms var(--ease-lux) both; }
+@keyframes palette-in { from { opacity: 0; transform: translateY(-14px) scale(.985); } to { opacity: 1; transform: none; } }
+#app-shell .search-palette form { display: grid; min-height: 0; overflow: hidden; }
+#app-shell .search-palette .search-field { display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 10px; min-height: 0; }
+#app-shell .search-palette .search-field-box { min-height: 54px; border-radius: 18px; }
+#app-shell .search-palette .search-drop { min-height: 0; max-height: calc(82dvh - 130px); padding: 2px; overflow-y: auto; overscroll-behavior: contain; }
+#app-shell .search-palette-close { justify-self: end; padding: 4px 10px; color: var(--muted); font: inherit; font-size: .8rem; border: 0; background: none; cursor: pointer; }
+#app-shell .search-page-form { display: flex; gap: 10px; align-items: flex-start; margin-block: 14px; }
+#app-shell .search-page-form > .button { min-height: 50px; }
+#app-shell .search-page-count { margin: 0 0 12px; }
+#app-shell .search-page-groups { display: grid; gap: 16px; }
+#app-shell .hub-search { overflow: visible; }
+#app-shell .hub-search > div { align-items: flex-start; }
+#app-shell .hub-search > div > .button { min-height: 50px; }
+@media (max-width: 760px) {
+  #app-shell .search-palette { top: 8px; width: calc(100vw - 16px); max-height: calc(100dvh - 16px); border-radius: 24px; }
+  #app-shell .search-palette .search-drop { max-height: calc(100dvh - 130px); }
+  #app-shell .search-row-price { display: none; }
+  #app-shell .search-page-form > .button { display: none; }
+}
+
+/* ---------- Phones keep the cookie card clear of the dock, whatever loaded before this ---------- */
+@media (max-width: 760px) {
+  #app-shell .cookie-consent, #app-shell .cookie-consent[data-details="true"] { left: 12px; right: 12px; bottom: calc(88px + env(safe-area-inset-bottom)); z-index: 56; width: auto; max-height: calc(100dvh - 110px); overflow-y: auto; }
+}

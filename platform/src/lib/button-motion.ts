@@ -1,3 +1,4 @@
+import { motionPreference } from "@/lib/motion";
 import { logoutButtonStates } from "./logout-animation-states";
 
 export type ButtonMotion = { ready: Promise<void>; complete: () => Promise<void>; cancel: () => void };
@@ -6,7 +7,7 @@ function timeline(button: HTMLButtonElement) {
   const animations: Animation[] = [];
   const waits = new Map<ReturnType<typeof setTimeout>, () => void>();
   let cancelled = false;
-  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const reduced = motionPreference().matches;
   const wait = (ms: number) => new Promise<void>(resolve => {
     if (cancelled || reduced) { resolve(); return; }
     const id = setTimeout(() => { waits.delete(id); resolve(); }, ms);

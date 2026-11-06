@@ -322,7 +322,7 @@ html[data-refract] #app-shell .brand-glass-pane {
   #app-shell .feature-footer { margin-top: 130px; }
   #app-shell .feature-footer .footer-inner { flex-direction: row; align-items: center; flex-wrap: wrap; }
 }
-@media (prefers-reduced-motion: reduce) {
+:root[data-motion="off"] {
   #app-shell .feature-lamp, #app-shell .feature-lamp-stars i { animation: none; }
 }
 @media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {

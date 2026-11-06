@@ -9,6 +9,7 @@ import "./store.css";
 import "./admin.css";
 import "./liquid-water.css";
 import "./liquid-ui.css";
+import "./liquid-search.css";
 import { SiteNav } from "@/components/site-nav";
 import { PageBackLink } from "@/components/page-back-link";
 import { FontLoader } from "@/components/font-loader";

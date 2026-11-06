@@ -377,7 +377,7 @@ h2 { font-size: clamp(1.8rem, 4vw, 2.8rem); letter-spacing: -.045em; }
 @keyframes store-shine { to { background-position: -200% 0; } }
 @keyframes store-pulse { 50% { filter: brightness(1.25); } }
 @keyframes store-float { 50% { transform: translateY(-5px); } }
-@media (prefers-reduced-motion: reduce) { .store-card .store-ribbon { animation: store-pulse 2.4s ease-in-out infinite !important; } .store-card.has-deal .store-coins { animation: none !important; } }
+:root[data-motion="off"] { .store-card .store-ribbon { animation: store-pulse 2.4s ease-in-out infinite !important; } .store-card.has-deal .store-coins { animation: none !important; } }
 @media (max-width: 760px) { .htb-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } .htb-columns { grid-template-columns: 1fr; } .htb-head, .htb-stats, .htb-columns { padding-left: 14px; padding-right: 14px; } }
 .portal-shortcuts { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0; padding-bottom: 15px; border-bottom: 1px solid var(--line); }
 .portal-shortcuts a { padding: 7px 12px; border: 1px solid var(--line); border-radius: 30px; background: var(--surface); color: var(--muted); font-size: .85rem; font-weight: 600; }
@@ -1021,7 +1021,7 @@ th { color: var(--muted); font-size: .8rem; text-transform: uppercase; letter-sp
   .admin-sidebar-item { min-width: 0; min-height: 38px; gap: 7px; padding: 5px 7px; font-size: .82rem; }
   .admin-sidebar-marker { width: 26px; height: 26px; }
 }
-@media (prefers-reduced-motion: reduce) {
+:root[data-motion="off"] {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
   :root .brand-mark img { animation-duration: 36s !important; animation-iteration-count: infinite !important; }
   :root .brand-word > span { animation-duration: 30s !important; animation-iteration-count: infinite !important; }
@@ -1029,7 +1029,7 @@ th { color: var(--muted); font-size: .8rem; text-transform: uppercase; letter-sp
     :root .brand-track { animation: brand-scroll 38s linear infinite !important; }
     :root .media-marquee-track { animation: portfolio-media-scroll 48s linear infinite !important; }
   }
-@media (prefers-reduced-motion: reduce) {
+:root[data-motion="off"] {
   .oauth-provider-button { transition-duration: .36s, .25s, .2s, .2s, .2s !important; }
   .oauth-provider-label { transition-duration: .34s, .25s, .18s !important; }
   .oauth-provider-button:hover .oauth-provider-label > span,
@@ -1535,7 +1535,7 @@ th { color: var(--muted); font-size: .8rem; text-transform: uppercase; letter-sp
 @keyframes cel-ring { from { transform: scale(.9); opacity: .9; } to { transform: scale(1.7); opacity: 0; } }
 @keyframes cel-text { to { background-position: 200% center; } }
 @keyframes cel-fall { 0% { opacity: 1; transform: translateY(0) rotate(0); } 100% { opacity: 0; transform: translateY(520px) rotate(540deg); } }
-@media (prefers-reduced-motion: reduce) {
+:root[data-motion="off"] {
   .celebrate-backdrop, .celebrate-card, .celebrate-card *, .celebrate-medal, .celebrate-medal::before, .celebrate-medal::after { animation-duration: .9s !important; animation-iteration-count: 1 !important; }
   .celebrate-confetti i { animation-duration: 2.6s !important; animation-iteration-count: 1 !important; }
 }
@@ -1550,7 +1550,7 @@ th { color: var(--muted); font-size: .8rem; text-transform: uppercase; letter-sp
 .store-card.is-active { border-color: #fbbf24; box-shadow: 0 0 0 1px #fbbf24; }
 @keyframes coin-bob { 50% { transform: translateY(-4px) scaleX(.92); } }
 @keyframes coin-spark { 0%, 100% { opacity: 0; transform: scale(.3) rotate(0); } 50% { opacity: 1; transform: scale(1) rotate(90deg); } }
-@media (prefers-reduced-motion: reduce) {
+:root[data-motion="off"] {
   .store-card .coin-bob { animation: coin-bob 2.4s ease-in-out infinite !important; }
   .store-card .coin-spark { animation: coin-spark 2s ease-in-out infinite !important; }
 }
@@ -1558,7 +1558,7 @@ th { color: var(--muted); font-size: .8rem; text-transform: uppercase; letter-sp
 .store-coins { width: 160px; height: 110px; }
 .store-card .bag-sway { animation: bag-sway 3s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 100%; }
 @keyframes bag-sway { 50% { transform: scale(1.04, .97) rotate(1.5deg); } }
-@media (prefers-reduced-motion: reduce) { .store-card .bag-sway { animation: bag-sway 3s ease-in-out infinite !important; } }
+:root[data-motion="off"] { .store-card .bag-sway { animation: bag-sway 3s ease-in-out infinite !important; } }
 
 .store-coins { width: 190px; height: 142px; }
 .store-card { background: radial-gradient(circle at 50% 22%, rgba(251, 191, 36, .12), transparent 55%), linear-gradient(180deg, rgba(255, 255, 255, .04), transparent 40%), var(--surface); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .07), 0 10px 30px rgba(0, 0, 0, .28); }
@@ -1572,7 +1572,7 @@ th { color: var(--muted); font-size: .8rem; text-transform: uppercase; letter-sp
 .store-card .chest-glow, .store-card .art-halo { animation: art-glow 2.8s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
 .store-card .coin-spark.s3 { animation-delay: .5s; }
 @keyframes art-glow { 50% { opacity: .55; transform: scale(1.08); } }
-@media (prefers-reduced-motion: reduce) { .store-card .chest-glow, .store-card .art-halo { animation: art-glow 2.8s ease-in-out infinite !important; } .store-card::after { display: none; } }
+:root[data-motion="off"] { .store-card .chest-glow, .store-card .art-halo { animation: art-glow 2.8s ease-in-out infinite !important; } .store-card::after { display: none; } }
 
 .store-card[class*="plan-"] .store-coins { width: 190px; height: 142px; }
 .store-card.plan-basic { background: radial-gradient(circle at 50% 22%, rgba(224, 134, 47, .2), transparent 58%), var(--surface); }
@@ -1592,12 +1592,12 @@ th { color: var(--muted); font-size: .8rem; text-transform: uppercase; letter-sp
 .store-card.plan-expert.is-active { border-color: #c084fc; box-shadow: 0 0 0 1px #c084fc; }
 .store-card .plan-float { animation: plan-float 3.2s ease-in-out infinite; }
 @keyframes plan-float { 50% { transform: translateY(-5px); } }
-@media (prefers-reduced-motion: reduce) { .store-card .plan-float { animation: plan-float 3.2s ease-in-out infinite !important; } }
+:root[data-motion="off"] { .store-card .plan-float { animation: plan-float 3.2s ease-in-out infinite !important; } }
 
 .store-card .coin-bob { animation: none; }
 .store-card .plan-glint { animation: plan-glint 4.5s ease-in-out infinite; }
 @keyframes plan-glint { 0%, 55% { transform: translateX(0) skewX(-18deg); } 100% { transform: translateX(150px) skewX(-18deg); } }
-@media (prefers-reduced-motion: reduce) { .store-card .plan-glint { animation: plan-glint 4.5s ease-in-out infinite !important; } }
+:root[data-motion="off"] { .store-card .plan-glint { animation: plan-glint 4.5s ease-in-out infinite !important; } }
 
 .store-card:not(:hover):not(:focus-within) :is(.bag-sway, .chest-glow, .art-halo, .plan-float, .plan-glint, .coin-spark) { animation-play-state: paused !important; }
 .store-card { contain: layout paint; }
@@ -1698,7 +1698,7 @@ th { color: var(--muted); font-size: .8rem; text-transform: uppercase; letter-sp
   .site-nav { backdrop-filter: none; }
 }
 
-@media (prefers-reduced-motion: reduce) {
+:root[data-motion="off"] {
   :root .store-card .store-ribbon,
   :root .store-card.has-deal .store-coins,
   :root .store-card .coin-bob,

@@ -9,6 +9,8 @@ import { useCart } from "./cart";
 import { siteCopy } from "@/lib/site-copy";
 import type { Locale } from "@/lib/messages";
 import { AppInstallButton } from "./app-install-button";
+import { SearchPalette } from "./search-field";
+import { motionOff, setMotionOff } from "@/lib/motion";
 
 const languages: { id: Locale; label: string }[] = [{ id: "uz", label: "O‘zbekcha" }, { id: "ru", label: "Русский" }, { id: "en", label: "English" }];
 
@@ -38,18 +40,21 @@ function useHideOnScroll(locked: boolean) {
 }
 
 export function SiteNav() {
-  const { locale, setLocale, theme, setTheme } = useSitePreferences();
+  const { locale, setLocale, theme, setTheme, t, openCookieSettings } = useSitePreferences();
   const c = siteCopy[locale];
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [mega, setMega] = useState<string | null>(null);
   const [typing, setTyping] = useState(false);
+  const [searching, setSearching] = useState(false);
+  const [motion, setMotion] = useState(true);
+  useEffect(() => { setMotion(!motionOff()); }, [open]);
   const toggle = useRef<HTMLButtonElement>(null);
   const closeTimer = useRef(0);
   const count = useCart().reduce((sum, line) => sum + line.quantity, 0);
-  const hidden = useHideOnScroll(open || mega !== null);
+  const hidden = useHideOnScroll(open || mega !== null || searching);
 
-  useEffect(() => { setOpen(false); setMega(null); }, [pathname]);
+  useEffect(() => { setOpen(false); setMega(null); setSearching(false); }, [pathname]);
 
   // The dock would ride on top of the on-screen keyboard, so it steps aside while someone types.
   useEffect(() => {
@@ -82,7 +87,7 @@ export function SiteNav() {
   const dockIndex = dock.findIndex(item => item.href === "/" ? pathname === "/" : isActive(pathname, item.active));
   const openMega = (key: string) => { window.clearTimeout(closeTimer.current); setMega(key); };
   const closeMega = () => { closeTimer.current = window.setTimeout(() => setMega(null), 140); };
-  const groups = [c.menu.services, c.menu.learning, c.menu.shop, c.menu.company];
+  const groups = [c.menu.services, c.menu.learning, c.menu.shop, c.menu.company, c.menu.legal];
 
   return <>
     <header className="portal-nav" data-hidden={hidden} onKeyDown={event => {
@@ -102,7 +107,10 @@ export function SiteNav() {
           </div>)}
         </nav>
         <div className="portal-tools">
-          <Link className="portal-icon-link" href="/search" aria-label={c.nav.search} title={c.nav.search}><span aria-hidden="true">⌕</span></Link>
+          <Link className="portal-icon-link portal-search-trigger" href="/search" aria-label={c.nav.search} title={c.nav.search} onClick={event => { if (event.metaKey || event.ctrlKey) return; event.preventDefault(); setSearching(true); }}>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.8-3.8" /></svg>
+            <span className="portal-search-label">{c.search.trigger}</span><kbd>Ctrl K</kbd>
+          </Link>
           <Link className="portal-icon-link" href="/cart" aria-label={`${c.nav.cart}${count ? `: ${count}` : ""}`} title={c.nav.cart}><UiIcon name="box" />{count > 0 && <span className="portal-count">{count}</span>}</Link>
           <Link className="portal-account" href="/portal/profile" aria-label={c.nav.account}><UiIcon name="user" /><span>{c.nav.account}</span></Link>
           <button ref={toggle} type="button" className="portal-icon-link portal-menu-toggle" aria-expanded={open} aria-controls="portal-menu" aria-label={open ? c.nav.close : c.nav.menu} onClick={() => setOpen(value => !value)}>
@@ -133,10 +141,20 @@ export function SiteNav() {
               {(["dark", "light", "system"] as const).map(mode => <button type="button" key={mode} aria-pressed={theme === mode} onClick={() => setTheme(mode)}>{c.nav[mode]}</button>)}
             </div>
           </div>
+          <div role="group" aria-label={c.nav.motion}>
+            <span>{c.nav.motion}</span>
+            <div className="segmented">
+              <button type="button" aria-pressed={motion} onClick={() => { setMotionOff(false); setMotion(true); }}>{c.nav.motionOn}</button>
+              <button type="button" aria-pressed={!motion} onClick={() => { setMotionOff(true); setMotion(false); }}>{c.nav.motionOff}</button>
+            </div>
+          </div>
+          <button type="button" className="button secondary" onClick={() => { setOpen(false); openCookieSettings(); }}>{t("cookieSettings")}</button>
           <AppInstallButton />
         </div>
       </div>
     </>}
+
+    <SearchPalette open={searching} onOpenChange={setSearching} />
 
     <nav className="mobile-dock" aria-label={c.nav.primary} data-typing={typing} style={{ "--dock-index": Math.max(dockIndex, 0), "--dock-count": dock.length } as React.CSSProperties}>
       {dockIndex >= 0 && <span className="mobile-dock-drop" aria-hidden="true" />}

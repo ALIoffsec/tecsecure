@@ -5,6 +5,7 @@ import { useId, useState } from "react";
 import { useSitePreferences } from "./site-preferences";
 import { UiIcon, type IconName } from "./ui-icon";
 import { journeyCopy } from "@/lib/journey-copy";
+import { SearchField } from "./search-field";
 
 export function HomeHero() {
   const { locale } = useSitePreferences();
@@ -67,7 +68,7 @@ export function HomeHero() {
       </nav>
       <form className="hub-search" action="/search" role="search">
         <label htmlFor="hub-search">{c.searchTitle}</label>
-        <div><input id="hub-search" type="search" name="q" maxLength={80} placeholder={c.searchHint} required /><button className="button" type="submit">{c.search}</button></div>
+        <div><SearchField id="hub-search" required placeholder={c.searchHint} /><button className="button" type="submit">{c.search}</button></div>
       </form>
     </div>
   </section></>;

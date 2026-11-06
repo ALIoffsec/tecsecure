@@ -291,7 +291,7 @@
   .shop-grid { grid-template-columns: 1fr; }
   .portal-brand img { display: none; }
 }
-@media (prefers-reduced-motion: reduce) {
+:root[data-motion="off"] {
   .hub-path { transition: none; }
   .hub-path:hover { transform: none; }
   .hub-path-art > svg { transition: none; }
