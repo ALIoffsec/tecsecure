@@ -44,10 +44,11 @@ export async function POST(request: Request) {
   if (!parsed.success) return Response.json({ error: "Xodim ma’lumotlari noto‘g‘ri.", details: parsed.error.flatten() }, { status: 400 });
 
   try {
-    const passwordHash = await bcrypt.hash(parsed.data.password, 12);
+    const { password, ...account } = parsed.data;
+    const passwordHash = await bcrypt.hash(password, 12);
     const user = await prisma.$transaction(async (tx) => {
       const created = await tx.user.create({
-        data: { ...parsed.data, passwordHash },
+        data: { ...account, passwordHash },
         select: { id: true, name: true, email: true, role: true, active: true, permissions: true }
       });
       if (actor.role !== "FOUNDER" && created.role === "ADMIN") throw new Error("ONLY_FOUNDER_CAN_CREATE_ADMIN");
