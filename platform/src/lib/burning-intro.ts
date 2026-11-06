@@ -50,17 +50,18 @@ void main() {
   float burn = clamp((field - .24) / .34, 0., 1.);
   float d = burn - t;
 
-  // Paper: warm white with faint fibres, printed with the wordmark.
+  // Paper: black card with faint fibres, printed with the wordmark in white.
   float fibre = fbm(vec2(90., 26.) * uv);
-  vec3 color = texture2D(u_text, screenUv).rgb * vec3(.975, .955, .915) * (.94 + .1 * fibre);
+  vec3 color = texture2D(u_text, screenUv).rgb + vec3(.022, .021, .024) * fibre;
 
-  // Heat travels ahead of the flame: a long soft browning, then char, then the hole.
-  float scorch = 1. - smoothstep(.03, .3, d);
-  color = mix(color, color * vec3(.74, .55, .33), scorch * scorch);
-  float toast = 1. - smoothstep(.02, .13, d);
-  color = mix(color, vec3(.2, .095, .035), toast * toast);
-  float char = 1. - smoothstep(.006, .06, d);
-  color = mix(color, vec3(.022, .016, .014), char);
+  // Black paper cannot brown, so heat shows as a red glow creeping ahead of the flame,
+  // then a band of pale ash, then char right before the hole opens.
+  float heat = 1. - smoothstep(.02, .24, d);
+  color += vec3(.46, .1, .012) * heat * heat * heat * (.7 + .6 * fibre);
+  float ash = (1. - smoothstep(.022, .075, d)) * smoothstep(.2, .55, fibre + .25 * fbm(30. * uv));
+  color = mix(color, vec3(.5, .47, .44) * (.6 + fibre), ash * .62);
+  float char = 1. - smoothstep(.004, .03, d);
+  color = mix(color, vec3(.012, .01, .01), char);
 
   // Embers: a thin hot line right at the hole, cooling to deep red, with sparks of glow in the char.
   float flicker = fbm(11. * uv + vec2(0., -1.5 * u_time));
@@ -157,11 +158,11 @@ export function createBurningIntro(canvas: HTMLCanvasElement) {
       const scale = Math.min(window.devicePixelRatio || 1, 1.5, 1600 / window.innerWidth, 1000 / window.innerHeight);
       canvas.width = text.width = Math.max(1, Math.round(window.innerWidth * scale));
       canvas.height = text.height = Math.max(1, Math.round(window.innerHeight * scale));
-      ctx.fillStyle = "#fff";
+      ctx.fillStyle = "#08090d";
       ctx.fillRect(0, 0, text.width, text.height);
       const fontSize = Math.min(text.width * .15, text.height * .18);
       ctx.font = `800 ${fontSize}px -apple-system, "Segoe UI", Arial, sans-serif`;
-      ctx.fillStyle = "#0d1b33";
+      ctx.fillStyle = "#f4f6fb";
       ctx.textAlign = "center"; ctx.textBaseline = "middle";
       ctx.fillText("Tecsecure", text.width / 2, text.height / 2, text.width * .82);
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, text);

@@ -157,7 +157,13 @@ export function SiteFooter() {
   const f = featureCopy[locale];
   const pathname = usePathname();
   // Inside the site the page should feel like an app: only the home page carries a full footer.
-  if (pathname !== "/") return <footer className="footer footer-minimal"><span>© {new Date().getFullYear()} Tecsecure</span></footer>;
+  // The water stays everywhere; only the columns of links belong to the home page.
+  if (pathname !== "/") return (
+    <footer className="footer feature-footer feature-footer-compact">
+      <FooterGlow />
+      <div className="feature-footer-body"><div className="container footer-compact-line">© {new Date().getFullYear()} Tecsecure</div></div>
+    </footer>
+  );
   return (
     <footer className="footer feature-footer">
       <FooterGlow />

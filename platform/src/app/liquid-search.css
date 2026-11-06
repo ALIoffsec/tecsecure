@@ -1,7 +1,8 @@
 /* Search, the shop filter and the rules that must load after every other stylesheet. */
 
-/* ---------- Footer away from home: one quiet line, so inner pages feel like an app ---------- */
-#app-shell .footer-minimal { margin-top: 48px; padding: 18px 16px 22px; color: var(--muted); font-size: .8rem; text-align: center; border: 0; background: transparent; }
+/* ---------- Footer away from home: the same water, with one quiet line under it ---------- */
+#app-shell .feature-footer-compact .feature-footer-body { padding-block: 14px 16px; }
+#app-shell .footer-compact-line { color: var(--footer-muted); font-size: .84rem; text-align: center; }
 
 /* ---------- Shop: everything that narrows the list sits together in the filter ---------- */
 #app-shell .shop-hero { overflow: visible; }
@@ -102,5 +103,8 @@
 
 /* ---------- Phones keep the cookie card clear of the dock, whatever loaded before this ---------- */
 @media (max-width: 760px) {
+  /* The water runs to the bottom of the screen behind the dock, with room left for the dock. */
+  #app-shell { padding-bottom: 0; }
+  #app-shell .feature-footer-body, #app-shell .feature-footer-compact .feature-footer-body { padding-bottom: calc(100px + env(safe-area-inset-bottom)); }
   #app-shell .cookie-consent, #app-shell .cookie-consent[data-details="true"] { left: 12px; right: 12px; bottom: calc(88px + env(safe-area-inset-bottom)); z-index: 56; width: auto; max-height: calc(100dvh - 110px); overflow-y: auto; }
 }

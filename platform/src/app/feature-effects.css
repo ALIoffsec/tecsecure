@@ -54,9 +54,9 @@
   -webkit-backdrop-filter: none; backdrop-filter: none;
 }
 #app-shell .site-intro::backdrop { background: transparent; backdrop-filter: none; }
-:root[data-tec-intro="pending"] #app-shell .site-intro:not([open]) { display: block; z-index: 10000; background: #fff; }
+:root[data-tec-intro="pending"] #app-shell .site-intro:not([open]) { display: block; z-index: 10000; background: #08090d; }
 #app-shell .site-intro canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
-#app-shell .site-intro-static { display: none; position: absolute; inset: 0; place-items: center; background: #fff; color: #000; font-size: clamp(2.5rem, 12vw, 8rem); font-weight: 700; }
+#app-shell .site-intro-static { display: none; position: absolute; inset: 0; place-items: center; background: #08090d; color: #f4f6fb; font-size: clamp(2.5rem, 12vw, 8rem); font-weight: 700; }
 #app-shell .site-intro:not([open]) .site-intro-static, #app-shell .site-intro[data-fallback="true"] .site-intro-static { display: grid; }
 :root[data-tec-intro="pending"] #app-shell { overflow: hidden; }
 :root[data-motion="off"] {
