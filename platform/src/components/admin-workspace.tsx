@@ -19,7 +19,7 @@ import { TecGiftManager } from "@/components/tec-gift-manager";
 import { SystemStatus } from "@/components/system-status";
 import { AdminIntegrations } from "@/components/admin-integrations";
 import { MediaGallery, MediaUploader } from "@/components/media-uploader";
-import { AdminProductManager, type AdminCategory, type AdminProduct } from "@/components/admin-product-manager";
+import { AdminProductManager, type AdminCategory } from "@/components/admin-product-manager";
 import { LearningContentManager } from "@/components/learning-content-manager";
 import type { AdminModule } from "@/lib/auth";
 import type { MessageKey } from "@/lib/messages";
@@ -138,14 +138,13 @@ function priceFromForm(data: FormData, field: string) {
   return value;
 }
 
-export function AdminWorkspace({ overview, newOrderCount, services, requests: initialRequests, requestStats, requestTotal, products, productCategories, articles, settings, notifications, projects, quotations, pendingPayments, plans, users, siteBlocks, portfolioPosts, walletRequests, metrics, role, permissions, actorId }: {
+export function AdminWorkspace({ overview, newOrderCount, services, requests: initialRequests, requestStats, requestTotal, productCategories, articles, settings, notifications, projects, quotations, pendingPayments, plans, users, siteBlocks, portfolioPosts, walletRequests, metrics, role, permissions, actorId }: {
   overview: AdminOverviewData;
   newOrderCount: number;
   services: Service[];
   requests: RequestRecord[];
   requestStats: Partial<Record<RequestStatus, number>>;
   requestTotal: number;
-  products: AdminProduct[];
   productCategories: AdminCategory[];
   articles: Article[];
   settings: Record<string, string>;
@@ -529,7 +528,7 @@ export function AdminWorkspace({ overview, newOrderCount, services, requests: in
           </details>
         </section>}
 
-        {availableSections.includes("products") && selectedSection === "products" && <AdminProductManager products={products} categories={productCategories} />}
+        {availableSections.includes("products") && selectedSection === "products" && <AdminProductManager categories={productCategories} />}
 
         {availableSections.includes("learning") && <div className={`admin-panel-section ${selectedSection === "learning" ? "active" : ""}`}><LearningContentManager /></div>}
 

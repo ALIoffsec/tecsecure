@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { MediaUploader } from "@/components/media-uploader";
 import { ProductVisual } from "@/components/product-visual";
@@ -32,7 +32,7 @@ const copy = {
     warranty: "Kafolat", price: "Narx", priceHint: "Oddiy summa, masalan 1 250 000. Bo‘sh qolsa, saytda «Narx so‘rov bo‘yicha» ko‘rinadi.", currency: "Valyuta", stock: "Ombor holati", status: "Nashr holati",
     photos: "Rasmlar", photoHint: "Birinchi rasm kartochkada ko‘rinadi. Eng yaxshisi: oq fon, kamida 1000 px, mahsulot kadrni to‘ldirgan.",
     save: "Saqlash", saving: "Saqlanmoqda…", cancel: "Bekor qilish", saved: "Saqlandi", invalidPrice: "Narxni to‘g‘ri kiriting, masalan 1250000 yoki 19.99.", publishWarning: "Diqqat: nashr qilinayotgan mahsulotda quyidagilar yo‘q:",
-    categories: "Kategoriyalar", newCategory: "Yangi kategoriya nomi", addCategory: "Qo‘shish", rename: "Saqlash", remove: "O‘chirish", confirmRemove: "O‘chirilsinmi", failed: "So‘rov bajarilmadi."
+    prev: "Oldingi", next: "Keyingi", loading: "Yuklanmoqda…", categories: "Kategoriyalar", newCategory: "Yangi kategoriya nomi", addCategory: "Qo‘shish", rename: "Saqlash", remove: "O‘chirish", confirmRemove: "O‘chirilsinmi", failed: "So‘rov bajarilmadi."
   },
   ru: {
     add: "Добавить товар", search: "Название, бренд, модель или SKU", allStatus: "Все статусы", allCategories: "Все категории", attention: "Только незаполненные",
@@ -44,7 +44,7 @@ const copy = {
     warranty: "Гарантия", price: "Цена", priceHint: "Обычная сумма, например 1 250 000. Если пусто, на сайте будет «Цена по запросу».", currency: "Валюта", stock: "Наличие", status: "Статус публикации",
     photos: "Фотографии", photoHint: "Первое фото видно на карточке. Лучше всего: белый фон, от 1000 px, товар заполняет кадр.",
     save: "Сохранить", saving: "Сохранение…", cancel: "Отмена", saved: "Сохранено", invalidPrice: "Укажите цену правильно, например 1250000 или 19.99.", publishWarning: "Внимание: у публикуемого товара нет:",
-    categories: "Категории", newCategory: "Название новой категории", addCategory: "Добавить", rename: "Сохранить", remove: "Удалить", confirmRemove: "Удалить", failed: "Запрос не выполнен."
+    prev: "Назад", next: "Далее", loading: "Загрузка…", categories: "Категории", newCategory: "Название новой категории", addCategory: "Добавить", rename: "Сохранить", remove: "Удалить", confirmRemove: "Удалить", failed: "Запрос не выполнен."
   },
   en: {
     add: "Add product", search: "Name, brand, model or SKU", allStatus: "All statuses", allCategories: "All categories", attention: "Incomplete only",
@@ -56,7 +56,7 @@ const copy = {
     warranty: "Warranty", price: "Price", priceHint: "A plain amount, like 1 250 000. Leave empty to show “Price on request”.", currency: "Currency", stock: "Stock status", status: "Publication status",
     photos: "Photos", photoHint: "The first photo shows on the card. Best: white background, 1000 px or more, product fills the frame.",
     save: "Save", saving: "Saving…", cancel: "Cancel", saved: "Saved", invalidPrice: "Enter a valid price, like 1250000 or 19.99.", publishWarning: "Note: this product is being published without:",
-    categories: "Categories", newCategory: "New category name", addCategory: "Add", rename: "Save", remove: "Delete", confirmRemove: "Delete", failed: "Request failed."
+    prev: "Previous", next: "Next", loading: "Loading…", categories: "Categories", newCategory: "New category name", addCategory: "Add", rename: "Save", remove: "Delete", confirmRemove: "Delete", failed: "Request failed."
   }
 } satisfies Record<Locale, Record<string, string>>;
 type Copy = typeof copy.uz;
@@ -82,7 +82,7 @@ async function send(path: string, method: string, body?: unknown) {
   return result;
 }
 
-export function AdminProductManager({ products, categories }: { products: AdminProduct[]; categories: AdminCategory[] }) {
+export function AdminProductManager({ categories }: { categories: AdminCategory[] }) {
   const router = useRouter();
   const { locale } = useSitePreferences();
   const c = copy[locale];
@@ -95,15 +95,51 @@ export function AdminProductManager({ products, categories }: { products: AdminP
   const [notice, setNotice] = useState("");
   const [busyId, setBusyId] = useState("");
 
-  const visible = useMemo(() => {
-    const needle = query.trim().toLocaleLowerCase();
-    return products.filter((product) =>
-      (status ? product.status === status : product.status !== "ARCHIVED")
-      && (!categoryId || product.categoryId === categoryId)
-      && (!attention || gaps(product, c).length > 0)
-      && (!needle || [product.name, product.brand, product.model, product.sku].filter(Boolean).join(" ").toLocaleLowerCase().includes(needle))
-    );
-  }, [products, query, status, categoryId, attention, c]);
+  const [products, setProducts] = useState<AdminProduct[]>([]);
+  const [total, setTotal] = useState(0);
+  const [pageSize, setPageSize] = useState(50);
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [version, setVersion] = useState(0);
+  const listTop = useRef<HTMLDivElement>(null);
+  const failedText = c.failed;
+
+  const reload = useCallback(() => setVersion((value) => value + 1), []);
+  // A new filter starts again from the first page.
+  useEffect(() => { setPage(1); }, [query, status, categoryId, attention]);
+  useEffect(() => {
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      setLoading(true);
+      const params = new URLSearchParams({ page: String(page) });
+      if (query.trim()) params.set("q", query.trim());
+      if (status) params.set("status", status);
+      if (categoryId) params.set("categoryId", categoryId);
+      if (attention) params.set("attention", "1");
+      try {
+        const response = await fetch(`/api/admin/products?${params}`, { signal: controller.signal });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error ?? "");
+        setProducts(result.products);
+        setTotal(result.total);
+        setPageSize(result.pageSize);
+        setError("");
+      } catch (issue) {
+        if (controller.signal.aborted) return;
+        setError(issue instanceof Error && issue.message ? issue.message : failedText);
+      }
+      setLoading(false);
+    }, query ? 300 : 0);
+    return () => { window.clearTimeout(timer); controller.abort(); };
+  }, [query, status, categoryId, attention, page, version, failedText]);
+
+  function goToPage(next: number) {
+    setPage(next);
+    listTop.current?.scrollIntoView({ block: "start" });
+  }
+  const pages = Math.max(1, Math.ceil(total / pageSize));
+  const firstShown = total === 0 ? 0 : (page - 1) * pageSize + 1;
+  const lastShown = Math.min(page * pageSize, total);
 
   async function quickUpdate(product: AdminProduct, next: string) {
     if (next === "ARCHIVED" && !window.confirm(`${c.confirmArchive}: ${product.name}?`)) return;
@@ -111,6 +147,7 @@ export function AdminProductManager({ products, categories }: { products: AdminP
     try {
       await send(`/api/products/${product.id}`, next === "ARCHIVED" ? "DELETE" : "PATCH", next === "ARCHIVED" ? undefined : { status: next });
       setNotice(c.saved);
+      reload();
       router.refresh();
     } catch (issue) { setError(issue instanceof Error && issue.message ? issue.message : c.failed); }
     finally { setBusyId(""); }
@@ -119,10 +156,10 @@ export function AdminProductManager({ products, categories }: { products: AdminP
   return <section className="panel-card admin-panel-section active admin-products">
     <ToastMessage message={error || notice} variant={error ? "error" : "success"} />
     <div className="admin-products-head">
-      <h2>{locale === "en" ? "Products" : locale === "ru" ? "Товары" : "Mahsulotlar"} <span className="muted">· {products.length}</span></h2>
+      <h2>{locale === "en" ? "Products" : locale === "ru" ? "Товары" : "Mahsulotlar"} <span className="muted">· {total}</span></h2>
       <button className="button" type="button" onClick={() => setEditing("new")}>+ {c.add}</button>
     </div>
-    <div className="admin-products-filters">
+    <div className="admin-products-filters" ref={listTop}>
       <input type="search" aria-label={c.search} placeholder={c.search} value={query} onChange={(event) => setQuery(event.target.value)} />
       <select aria-label={c.status} value={status} onChange={(event) => setStatus(event.target.value)}>
         <option value="">{c.allStatus}</option>
@@ -135,9 +172,11 @@ export function AdminProductManager({ products, categories }: { products: AdminP
       <label className="admin-products-toggle"><input type="checkbox" checked={attention} onChange={(event) => setAttention(event.target.checked)} /> {c.attention}</label>
     </div>
 
-    {visible.length === 0
-      ? <div className="empty-state">{products.length ? c.noResults : c.empty}</div>
-      : <ul className="admin-product-list">{visible.map((product) => {
+    {loading && products.length === 0
+      ? <div className="empty-state" role="status">{c.loading}</div>
+      : products.length === 0
+      ? <div className="empty-state">{query || status || categoryId || attention ? c.noResults : c.empty}</div>
+      : <ul className="admin-product-list" aria-busy={loading}>{products.map((product) => {
         const ids = mediaOf(product);
         const missing = gaps(product, c);
         return <li className="admin-product-row" key={product.id}>
@@ -167,8 +206,14 @@ export function AdminProductManager({ products, categories }: { products: AdminP
         </li>;
       })}</ul>}
 
+    {pages > 1 && <nav className="admin-products-pager" aria-label={c.search}>
+      <button className="button secondary small" type="button" disabled={page <= 1 || loading} onClick={() => goToPage(page - 1)}>← {c.prev}</button>
+      <span className="small muted">{firstShown}–{lastShown} / {total}</span>
+      <button className="button secondary small" type="button" disabled={page >= pages || loading} onClick={() => goToPage(page + 1)}>{c.next} →</button>
+    </nav>}
+
     <CategoryManager categories={categories} c={c} />
-    {editing && <ProductEditor key={editing === "new" ? "new" : editing.id} product={editing === "new" ? null : editing} categories={categories} c={c} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); setError(""); setNotice(c.saved); router.refresh(); }} />}
+    {editing && <ProductEditor key={editing === "new" ? "new" : editing.id} product={editing === "new" ? null : editing} categories={categories} c={c} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); setError(""); setNotice(c.saved); reload(); router.refresh(); }} />}
   </section>;
 }
 

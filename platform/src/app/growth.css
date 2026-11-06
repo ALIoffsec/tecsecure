@@ -134,6 +134,9 @@ html[data-tma="customer"] #app-shell .contact-dock { display: none; }
 #app-shell .admin-errors li { display: grid; gap: 2px; font-size: .88rem; overflow-wrap: anywhere; }
 #app-shell .admin-errors small { color: var(--muted); }
 
+#app-shell .admin-products-pager { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 12px; margin: 16px 0; }
+#app-shell .admin-product-list[aria-busy="true"] { opacity: .6; }
+
 /* ---------- Home footer: one more column of links ---------- */
 @media (min-width: 901px) {
   #app-shell .footer-columns:has(> nav:nth-of-type(4)) { grid-template-columns: 1.4fr repeat(4, 1fr); }
