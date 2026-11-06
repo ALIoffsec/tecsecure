@@ -24,7 +24,7 @@ export function SiteIntro() {
 
   useEffect(() => {
     const restart = () => {
-      if (motionPreference().matches) return;
+      if (motionPreference().matches || document.documentElement.dataset.tma) return;
       document.documentElement.dataset.tecIntro = "pending";
       setFallback(false);
       setFinished(false);

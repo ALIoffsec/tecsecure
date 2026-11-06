@@ -28,7 +28,7 @@ export function ServiceJourneys() {
     <div className="journey-actions">
       <Link href="/products" className="button secondary">{c.shopAction}</Link>
       <Link href="/learning" className="button secondary">{c.learningLink}</Link>
-      <Link href="/monitoring" className="text-link">{t("cctvCalculator")}</Link>
+      <Link href="/estimate" className="text-link">{t("cctvCalculator")}</Link>
       <Link href="/cybersecurity" className="text-link">{t("cybersecurity")}</Link>
       <Link href="/consultation" className="text-link">{t("consultation")}</Link>
     </div>

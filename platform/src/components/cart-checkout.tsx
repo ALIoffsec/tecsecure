@@ -16,12 +16,14 @@ import { journeyCopy } from "@/lib/journey-copy";
 import { siteCopy } from "@/lib/site-copy";
 import type { CatalogMedia, QuotedProduct } from "@/lib/catalog-utils";
 import { checkoutCopy } from "@/lib/checkout-copy";
+import { growthCopy } from "@/lib/growth-copy";
+import { trackGoal } from "@/lib/analytics";
 import { formatMinor } from "@/lib/format";
 import { OriginalOrderButton } from "./original-order-button";
 import { startOrderMotion, type ButtonMotion } from "@/lib/button-motion";
 
 type PreviewProduct = QuotedProduct & { name: string; slug: string; category: { slug: string } | null; assets: CatalogMedia[] };
-type Method = "CASH" | "CARD_ON_DELIVERY" | "CARD_TRANSFER" | "WALLET";
+type Method = "CASH" | "CARD_ON_DELIVERY" | "CARD_TRANSFER" | "WALLET" | "BANK_TRANSFER" | "ONLINE_PAYME";
 export type PaymentCard = { number: string; holder: string; bank: string };
 
 const REMEMBER_KEY = "tecsecure-checkout";
@@ -39,16 +41,19 @@ function Steps({ current, reached, onSelect, label }: { current: number; reached
   </ol>;
 }
 
-export function CartCheckout({ canOrder = false, signedIn = false, customer, walletBalance = 0, paymentCard = null }: {
+export function CartCheckout({ canOrder = false, signedIn = false, customer, walletBalance = 0, paymentCard = null, paymeEnabled = false, bankEnabled = false }: {
   canOrder?: boolean;
   signedIn?: boolean;
   customer?: { name: string; phone: string | null } | null;
   walletBalance?: number;
   paymentCard?: PaymentCard | null;
+  paymeEnabled?: boolean;
+  bankEnabled?: boolean;
 }) {
   const { locale } = useSitePreferences();
   const c = shopCopy[locale];
   const d = checkoutCopy[locale];
+  const g = growthCopy[locale].b2b;
   const copy = siteCopy[locale];
   const journey = journeyCopy[locale];
   const lines = useCart();
@@ -57,12 +62,13 @@ export function CartCheckout({ canOrder = false, signedIn = false, customer, wal
   const [form, setForm] = useState({ recipientName: customer?.name ?? "", phone: customer?.phone ?? "", city: "Toshkent", address: "", note: "" });
   const [coords, setCoords] = useState<[number, number] | null>(null);
   const [method, setMethod] = useState<Method>("CASH");
+  const [buyer, setBuyer] = useState<{ type: "INDIVIDUAL" | "COMPANY"; companyName: string; companyTin: string }>({ type: "INDIVIDUAL", companyName: "", companyTin: "" });
   const [proof, setProof] = useState<string[]>([]);
   const [paymentReference, setPaymentReference] = useState("");
   const [copied, setCopied] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [done, setDone] = useState<{ reference: string; method: Method } | null>(null);
+  const [done, setDone] = useState<{ id: string; reference: string; method: Method } | null>(null);
   const [preview, setPreview] = useState<PreviewProduct[] | null>(null);
   const [previewError, setPreviewError] = useState("");
   const [version, setVersion] = useState(0);
@@ -115,8 +121,10 @@ export function CartCheckout({ canOrder = false, signedIn = false, customer, wal
 
   // A method can stop being valid when the cart changes while the customer is on the last step.
   useEffect(() => {
-    if ((method === "CARD_TRANSFER" && (!canPrepay || !paymentCard)) || (method === "WALLET" && !walletEnough)) setMethod("CASH");
-  }, [method, canPrepay, paymentCard, walletEnough]);
+    if ((method === "CARD_TRANSFER" && (!canPrepay || !paymentCard)) || (method === "WALLET" && !walletEnough)
+      || (method === "BANK_TRANSFER" && (!bankEnabled || buyer.type !== "COMPANY" || !canPrepay))
+      || (method === "ONLINE_PAYME" && (!paymeEnabled || walletTotal === null))) setMethod("CASH");
+  }, [method, canPrepay, paymentCard, walletEnough, bankEnabled, paymeEnabled, buyer.type, walletTotal]);
 
   function goTo(next: 1 | 2 | 3) {
     setError("");
@@ -130,6 +138,7 @@ export function CartCheckout({ canOrder = false, signedIn = false, customer, wal
     if (step === 1) { if (preview && !unavailable) goTo(2); return; }
     if (step === 2) {
       if (!hasLocation) { setError(d.locationNeeded); return; }
+      if (buyer.type === "COMPANY" && !/^\d{9}$/.test(buyer.companyTin)) { setError(g.tinInvalid); return; }
       goTo(3);
       return;
     }
@@ -146,6 +155,9 @@ export function CartCheckout({ canOrder = false, signedIn = false, customer, wal
         body: JSON.stringify({
           ...form,
           paymentMethod: method,
+          customerType: buyer.type,
+          companyName: buyer.type === "COMPANY" ? buyer.companyName : undefined,
+          companyTin: buyer.type === "COMPANY" ? buyer.companyTin : undefined,
           paymentReference: method === "CARD_TRANSFER" ? paymentReference : undefined,
           paymentProofMediaId: method === "CARD_TRANSFER" ? proof[0] : undefined,
           expectedProducts: preview.map(({ id, priceMinor, currency, stockStatus }) => ({ id, priceMinor, currency, stockStatus })),
@@ -165,7 +177,10 @@ export function CartCheckout({ canOrder = false, signedIn = false, customer, wal
       await animation.current?.complete();
       try { window.localStorage.setItem(REMEMBER_KEY, JSON.stringify({ phone: form.phone, city: form.city, address: form.address })); } catch { /* optional convenience */ }
       clearCart();
-      setDone({ reference: data.order.reference, method });
+      trackGoal("order_placed");
+      setDone({ id: data.order.id, reference: data.order.reference, method });
+      // The card is typed on Payme's own page, never here.
+      if (method === "ONLINE_PAYME") window.location.assign(`/api/orders/${data.order.id}/payme?l=${locale}`);
     } catch {
       setError(d.network);
     } finally {
@@ -191,8 +206,10 @@ export function CartCheckout({ canOrder = false, signedIn = false, customer, wal
         <svg className="order-accepted-mark" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="18" /><path d="m11 20 6 6 12-13" /></svg>
         <h2>{d.accepted}</h2>
         <p>{d.reference}: <strong>{done.reference}</strong></p>
-        <p className="muted">{d.next[done.method]}</p>
+        <p className="muted">{done.method === "BANK_TRANSFER" ? g.nextBank : done.method === "ONLINE_PAYME" ? g.nextOnline : d.next[done.method]}</p>
         <div className="checkout-done-actions">
+          {done.method === "BANK_TRANSFER" && <Link className="button" href={`/portal/orders/${done.id}/invoice`}>{g.invoice}</Link>}
+          {done.method === "ONLINE_PAYME" && <a className="button" href={`/api/orders/${done.id}/payme?l=${locale}`}>{g.onlineGo}</a>}
           <Link className="button" href="/portal/orders">{d.track}</Link>
           <Link className="button ghost" href="/products">{d.continue}</Link>
         </div>
@@ -212,7 +229,9 @@ export function CartCheckout({ canOrder = false, signedIn = false, customer, wal
     { id: "CASH", icon: "wallet", title: d.methods.cash.title, hint: d.methods.cash.hint },
     { id: "CARD_ON_DELIVERY", icon: "creditCard", title: d.methods.terminal.title, hint: d.methods.terminal.hint },
     { id: "CARD_TRANSFER", icon: "send", title: d.methods.transfer.title, hint: d.methods.transfer.hint, disabled: !canPrepay || !paymentCard, note: !paymentCard ? d.transferOff : !canPrepay ? d.prepayNeedsPrice : undefined },
-    { id: "WALLET", icon: "wallet", title: d.methods.wallet.title, hint: `${d.balance}: ${formatMinor(walletBalance, "UZS", locale)}`, disabled: !walletEnough, note: walletTotal === null ? d.prepayNeedsPrice : !walletEnough ? d.walletShort : undefined }
+    { id: "WALLET", icon: "wallet", title: d.methods.wallet.title, hint: `${d.balance}: ${formatMinor(walletBalance, "UZS", locale)}`, disabled: !walletEnough, note: walletTotal === null ? d.prepayNeedsPrice : !walletEnough ? d.walletShort : undefined },
+    ...(paymeEnabled ? [{ id: "ONLINE_PAYME" as Method, icon: "creditCard" as IconName, title: g.online.title, hint: g.online.hint, disabled: walletTotal === null, note: walletTotal === null ? d.prepayNeedsPrice : undefined }] : []),
+    ...(bankEnabled ? [{ id: "BANK_TRANSFER" as Method, icon: "receipt" as IconName, title: g.bank.title, hint: g.bank.hint, disabled: buyer.type !== "COMPANY" || !canPrepay, note: buyer.type !== "COMPANY" ? g.companyOnly : !canPrepay ? d.prepayNeedsPrice : undefined }] : [])
   ];
   const chosen = methods.find(item => item.id === method);
 
@@ -253,6 +272,17 @@ export function CartCheckout({ canOrder = false, signedIn = false, customer, wal
           </section>
           <section className="panel-card stack shop-contact-card">
             <div><h2>{d.contactTitle}</h2><p className="small muted">{d.contactHint}</p></div>
+            <div className="buyer-type">
+              <span className="small muted">{g.who}</span>
+              <div className="segmented" role="group" aria-label={g.who}>
+                <button type="button" aria-pressed={buyer.type === "INDIVIDUAL"} onClick={() => setBuyer(current => ({ ...current, type: "INDIVIDUAL" }))}>{g.person}</button>
+                <button type="button" aria-pressed={buyer.type === "COMPANY"} onClick={() => setBuyer(current => ({ ...current, type: "COMPANY" }))}>{g.company}</button>
+              </div>
+            </div>
+            {buyer.type === "COMPANY" && <div className="shop-field-row">
+              <label className="shop-field"><span>{g.companyName}</span><input required minLength={2} maxLength={160} value={buyer.companyName} onChange={event => setBuyer(current => ({ ...current, companyName: event.target.value }))} autoComplete="organization" /></label>
+              <label className="shop-field"><span>{g.tin}</span><input required inputMode="numeric" pattern="[0-9]{9}" maxLength={9} value={buyer.companyTin} onChange={event => setBuyer(current => ({ ...current, companyTin: event.target.value.replace(/\D/g, "") }))} /></label>
+            </div>}
             <div className="shop-field-row">
               <label className="shop-field"><span>{d.name}</span><input required minLength={2} value={form.recipientName} onChange={update("recipientName")} maxLength={120} autoComplete="name" /></label>
               <label className="shop-field"><span>{d.phone}</span><input required minLength={7} type="tel" placeholder="+998 90 123 45 67" value={form.phone} onChange={update("phone")} maxLength={30} inputMode="tel" autoComplete="tel" /></label>
@@ -270,11 +300,11 @@ export function CartCheckout({ canOrder = false, signedIn = false, customer, wal
               <span className="pay-method-text"><strong>{item.title}</strong><span>{item.note ?? item.hint}</span></span>
               <span className="pay-method-dot" aria-hidden="true" />
             </label>)}
-            <div className="pay-method" data-disabled="true" aria-disabled="true">
+            {!paymeEnabled && <div className="pay-method" data-disabled="true" aria-disabled="true">
               <span className="pay-method-icon"><UiIcon name="creditCard" size={22} /></span>
               <span className="pay-method-text"><strong>{d.methods.online.title}</strong><span>{d.methods.online.hint}</span></span>
               <span className="pay-method-soon">{d.soon}</span>
-            </div>
+            </div>}
           </div>
 
           {method === "CARD_TRANSFER" && paymentCard && <div className="pay-transfer">

@@ -1,11 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { useSitePreferences } from "./site-preferences";
 import { ToastMessage } from "./toast-provider";
 import { OAuthSignIn } from "./oauth-sign-in";
 import { featureCopy } from "@/lib/feature-copy";
+import { growthCopy } from "@/lib/growth-copy";
 
 type Mode = "login" | "register";
 type Props = { mode: Mode; audience?: "customer" | "staff"; redirectTo?: string };
@@ -14,6 +16,7 @@ export function AuthForm({ mode, audience = "customer", redirectTo }: Props) {
   const router = useRouter();
   const { t, locale } = useSitePreferences();
   const c = featureCopy[locale];
+  const g = growthCopy[locale].auth;
   const [active, setActive] = useState<Mode>(mode);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -67,6 +70,7 @@ export function AuthForm({ mode, audience = "customer", redirectTo }: Props) {
             </fieldset>
           </form>
           {audience === "customer" && <>
+            {kind === "login" && <p className="auth-alt-links animation"><Link href="/login/reset">{g.forgot}</Link><Link href="/login/code">{g.phoneLogin}</Link></p>}
             <p className="regi-link animation">{kind === "login" ? t("noAccount") : t("alreadyHaveAccount")} <button type="button" disabled={busy} onClick={() => switchMode(kind === "login" ? "register" : "login")}>{kind === "login" ? t("registerLink") : t("signIn")}</button></p>
             {selected && <OAuthSignIn mode={kind} redirectTo={redirectTo} />}
           </>}

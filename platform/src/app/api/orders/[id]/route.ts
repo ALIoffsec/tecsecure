@@ -18,7 +18,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   }
   if (z.object({ paymentStatus: z.literal("PAID") }).safeParse(body).success) {
     const confirmed = await prisma.$transaction(async (tx) => {
-      const result = await tx.order.updateMany({ where: { id, paymentStatus: "AWAITING_CONFIRMATION" }, data: { paymentStatus: "PAID" } });
+      const result = await tx.order.updateMany({ where: { id, OR: [{ paymentStatus: "AWAITING_CONFIRMATION" }, { paymentStatus: "AWAITING_PAYMENT", paymentMethod: "BANK_TRANSFER" }] }, data: { paymentStatus: "PAID" } });
       if (result.count === 0) return false;
       await tx.auditLog.create({ data: { actorId: actor.id, action: "ORDER_PAYMENT_CONFIRMED", entity: "Order", entityId: id } });
       return true;
@@ -48,6 +48,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         data: { userId: order.customerId, kind: "ORDER_REFUND", status: "APPROVED", amountMinor: order.totalMinor, reference: order.reference, reviewedById: actor.id, reviewedAt: new Date() }
       });
       await tx.order.update({ where: { id }, data: { paymentStatus: "REFUNDED" } });
+    } else if (parsed.data.status === "CANCELLED" && order.paymentStatus === "PAID") {
+      // Money that came from outside the wallet has to be returned by hand, so the order must say so.
+      await tx.order.update({ where: { id }, data: { paymentStatus: "REFUND_DUE" } });
     }
     await tx.orderStatusHistory.create({
       data: { orderId: id, fromStatus: order.status, toStatus: parsed.data.status, note: parsed.data.note || null, actorId: actor.id }

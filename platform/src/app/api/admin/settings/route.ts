@@ -5,12 +5,18 @@ import { z } from "zod";
 
 export const runtime = "nodejs";
 
-const allowed = ["companyName", "phone", "email", "telegram", "instagram", "address", "siteDesign", "paymentCardNumber", "paymentCardHolder", "paymentCardBank"] as const;
+const allowed = ["companyName", "phone", "email", "telegram", "instagram", "address", "siteDesign", "paymentCardNumber", "paymentCardHolder", "paymentCardBank", "legalName", "legalTin", "legalAddress", "bankName", "bankAccount", "bankMfo"] as const;
 const settingsSchema = z.object({
   companyName: z.string().trim().min(1).max(120).optional(),
   paymentCardNumber: z.string().trim().regex(/^[\d ]{0,23}$/).optional(),
   paymentCardHolder: z.string().trim().max(80).optional(),
   paymentCardBank: z.string().trim().max(60).optional(),
+  legalName: z.string().trim().max(160).optional(),
+  legalTin: z.string().trim().regex(/^(\d{9})?$/).optional(),
+  legalAddress: z.string().trim().max(300).optional(),
+  bankName: z.string().trim().max(120).optional(),
+  bankAccount: z.string().trim().regex(/^[\d ]{0,30}$/).optional(),
+  bankMfo: z.string().trim().regex(/^(\d{5})?$/).optional(),
   phone: z.string().trim().max(120).optional(),
   email: z.string().trim().email().max(254).or(z.literal("")).optional(),
   telegram: z.string().trim().max(80).optional(),

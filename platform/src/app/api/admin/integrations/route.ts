@@ -20,6 +20,12 @@ const telegramUpdateSchema = z.object({
   botUsername: z.string().max(100).optional(),
   adminChatId: z.string().max(100).optional(),
   webhookSecret: z.string().max(512).optional(),
+  staffBotToken: z.string().max(512).optional(),
+  staffBotUsername: z.string().max(100).optional(),
+  staffWebhookSecret: z.string().max(512).optional(),
+  clearStaffBotToken: z.boolean().optional(),
+  clearStaffBotUsername: z.boolean().optional(),
+  clearStaffWebhookSecret: z.boolean().optional(),
   clearBotToken: z.boolean().optional(),
   clearBotUsername: z.boolean().optional(),
   clearAdminChatId: z.boolean().optional(),
@@ -94,7 +100,10 @@ export async function PATCH(request: Request) {
         botToken: updateValue(requested.telegram.botToken, requested.telegram.clearBotToken, current.botToken),
         botUsername: updateValue(requested.telegram.botUsername, requested.telegram.clearBotUsername, current.botUsername),
         adminChatId: updateValue(requested.telegram.adminChatId, requested.telegram.clearAdminChatId, current.adminChatId),
-        webhookSecret: updateValue(requested.telegram.webhookSecret, requested.telegram.clearWebhookSecret, current.webhookSecret)
+        webhookSecret: updateValue(requested.telegram.webhookSecret, requested.telegram.clearWebhookSecret, current.webhookSecret),
+        staffBotToken: updateValue(requested.telegram.staffBotToken, requested.telegram.clearStaffBotToken, current.staffBotToken),
+        staffBotUsername: updateValue(requested.telegram.staffBotUsername, requested.telegram.clearStaffBotUsername, current.staffBotUsername),
+        staffWebhookSecret: updateValue(requested.telegram.staffWebhookSecret, requested.telegram.clearStaffWebhookSecret, current.staffWebhookSecret)
       };
     }
     if (requested.yandexMaps) {

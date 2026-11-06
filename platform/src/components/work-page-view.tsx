@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { WorkCarousel, type WorkPost } from "./work-carousel";
+import { WorkCarousel } from "./work-carousel";
+import { WorkProjectList, type WorkStory } from "./growth-pages";
 import { useSitePreferences } from "./site-preferences";
 import { siteCopy } from "@/lib/site-copy";
 
-export function WorkPageView({ posts }: { posts: WorkPost[] }) {
+export function WorkPageView({ posts }: { posts: WorkStory[] }) {
   const { locale, t } = useSitePreferences();
   const c = siteCopy[locale].work;
   const shots = posts.reduce((sum, post) => sum + (Array.isArray(post.media) ? post.media.length : 0), 0);
@@ -15,6 +16,7 @@ export function WorkPageView({ posts }: { posts: WorkPost[] }) {
     <p className="page-intro">{c.intro}</p>
     {posts.length > 0 && <p className="work-stats"><b>{posts.length}</b> {c.projects} · <b>{shots}</b> {c.shots}</p>}
     {posts.length ? <WorkCarousel posts={posts} /> : <div className="empty-state">{t("sitePortfolioEmpty")}</div>}
+    <WorkProjectList posts={posts} />
     <aside className="work-cta">
       <div><h2>{c.cta}</h2><p className="muted">{c.ctaHint}</p></div>
       <Link className="button" href="/request-service">{c.ctaButton}</Link>

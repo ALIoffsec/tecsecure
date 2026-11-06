@@ -12,6 +12,7 @@ import {
   parseTelegramWalletCallbackData,
   walletDecisionText,
   notifyTelegramUser,
+  withTelegramBot,
   sendTelegramMessage
 } from "@/lib/telegram";
 import { getTelegramCredentials } from "@/lib/integration-credentials";
@@ -231,11 +232,13 @@ async function handleAdminCallback(update: TelegramUpdateBody, adminChatId: stri
   );
 }
 
-export async function POST(request: Request) {
+async function handleUpdate(request: Request, bot: "customer" | "staff"): Promise<Response> {
   let webhookSecret: string;
   let adminChatId: string;
   try {
-    ({ webhookSecret, adminChatId } = await getTelegramCredentials());
+    const credentials = await getTelegramCredentials();
+    adminChatId = credentials.adminChatId;
+    webhookSecret = bot === "staff" ? credentials.staffWebhookSecret : credentials.webhookSecret;
   } catch (error) {
     console.error("Telegram webhook configuration unavailable", error instanceof Error ? error.name : "UnknownError");
     return Response.json({ error: "Telegram sozlamalarini o‘qib bo‘lmadi." }, { status: 503 });
@@ -317,4 +320,9 @@ export async function POST(request: Request) {
     await sendTelegramMessage(adminChatId, "Javob berish uchun xabar ostidagi tugmani bosing yoki <code>/reply MUROJAAT-RAQAMI javob matni</code> deb yozing.");
   }
   return Response.json({ ok: true });
+}
+
+export async function POST(request: Request) {
+  const bot = new URL(request.url).searchParams.get("bot") === "staff" ? "staff" : "customer";
+  return withTelegramBot(bot, () => handleUpdate(request, bot));
 }

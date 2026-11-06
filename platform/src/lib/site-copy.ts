@@ -13,7 +13,7 @@ type SiteCopy = {
   };
   orders: {
     eyebrow: string; title: string; empty: string; browse: string; delivery: string; total: string; totalPending: string; payment: string; history: string; cancelled: string; map: string; trackLabel: string; note: string; account: string;
-    status: Record<string, string>; method: Record<string, string>; paymentStatus: Record<string, string>;
+    status: Record<string, string>; statusAction: Record<string, string>; method: Record<string, string>; paymentStatus: Record<string, string>;
   };
   admin: {
     overview: string; overviewHint: string; attention: string; allClear: string; quick: string; ordersTitle: string; all: string; byStatus: string; noOrders: string; back: string; search: string; viewProof: string; confirmPayment: string; confirmed: string; failed: string;
@@ -33,6 +33,9 @@ const uz: SiteCopy = {
       { href: "/cybersecurity", title: "Kiberxavfsizlik", hint: "Xavflarni aniqlash va himoyani kuchaytirish" },
       { href: "/monitoring", title: "Monitoring", hint: "Qurilmalaringiz holatini doimiy kuzatish" },
       { href: "/consultation", title: "Maslahat", hint: "Mutaxassis bilan yechimni birga tanlash" },
+      { href: "/support-plans", title: "Oylik IT yordam", hint: "Doimiy IT xodim o‘rniga oylik xizmat" },
+      { href: "/estimate", title: "Smeta kalkulyatori", hint: "Tarmoq va kamera uchun dastlabki hisob" },
+      { href: "/security-check", title: "Xavfsizlik testi", hint: "10 savol, baho va tavsiyalar" },
       { href: "/request-service", title: "Ariza qoldirish", hint: "Vazifani yozing, biz bog‘lanamiz" }
     ] },
     learning: { title: "Ta’lim", href: "/learning", links: [
@@ -40,6 +43,7 @@ const uz: SiteCopy = {
       { href: "/learning/modules", title: "Modullar", hint: "Aniq mavzu bo‘yicha darslar" },
       { href: "/learning/practice", title: "Amaliyot", hint: "Laboratoriya va mashqlar" },
       { href: "/learning/exams", title: "Imtihonlar", hint: "Bilimni tekshirish va sertifikat" },
+      { href: "/learning/business", title: "Kompaniyalar uchun", hint: "Xodimlar guruhi uchun o‘quv dasturi" },
       { href: "/learning/dashboard", title: "Mening o‘qishim", hint: "Natijalar va davom ettirish" }
     ] },
     shop: { title: "Do‘kon", href: "/products", links: [
@@ -77,8 +81,9 @@ const uz: SiteCopy = {
   orders: {
     eyebrow: "Buyurtmalar", title: "Mening buyurtmalarim", empty: "Hali buyurtma yo‘q", browse: "Katalogga o‘tish", delivery: "Yetkazib berish", total: "Jami", totalPending: "Narx tasdiqlanganda bildiriladi", payment: "To‘lov", history: "Holatlar tarixi", cancelled: "Buyurtma bekor qilingan.", map: "Xaritada ko‘rish", trackLabel: "Buyurtma holati", note: "Izoh", account: "Hisob",
     status: { NEW: "Qabul qilindi", CONFIRMED: "Tasdiqlandi", PREPARING: "Tayyorlanmoqda", SHIPPED: "Yo‘lda", DELIVERED: "Yetkazildi", CANCELLED: "Bekor qilindi" },
-    method: { CASH: "Naqd pul", CARD_ON_DELIVERY: "Karta (kuryerga)", CARD_TRANSFER: "Kartaga o‘tkazma", WALLET: "Tecsecure hamyoni", UNSPECIFIED: "Kelishiladi" },
-    paymentStatus: { PENDING: "Qabul qilganda to‘lanadi", AWAITING_CONFIRMATION: "Chek tekshirilmoqda", PAID: "To‘langan", REFUNDED: "Qaytarilgan" }
+    statusAction: { CONFIRMED: "Tasdiqlash", PREPARING: "Tayyorlashni boshlash", SHIPPED: "Yo‘lga chiqarish", DELIVERED: "Yetkazildi deb belgilash", CANCELLED: "Bekor qilish" },
+    method: { CASH: "Naqd pul", CARD_ON_DELIVERY: "Karta (kuryerga)", CARD_TRANSFER: "Kartaga o‘tkazma", WALLET: "Tecsecure hamyoni", BANK_TRANSFER: "Bank o‘tkazmasi", ONLINE_PAYME: "Payme", UNSPECIFIED: "Kelishiladi" },
+    paymentStatus: { PENDING: "Qabul qilganda to‘lanadi", AWAITING_CONFIRMATION: "Chek tekshirilmoqda", PAID: "To‘langan", AWAITING_PAYMENT: "To‘lov kutilmoqda", REFUND_DUE: "Qaytarilishi kerak", REFUNDED: "Qaytarilgan" }
   },
   admin: {
     overview: "Umumiy holat", overviewHint: "Bugun e’tibor talab qiladigan ishlar bir joyda.", attention: "Kutilayotgan ishlar", allClear: "Hozircha kutilayotgan ish yo‘q.", quick: "Tezkor amallar", ordersTitle: "Buyurtmalar", all: "Hammasi", byStatus: "Holat bo‘yicha", noOrders: "Bu holatda buyurtma yo‘q.", back: "Admin panel", search: "Raqam, ism yoki telefon bo‘yicha qidirish", viewProof: "Chekni ko‘rish", confirmPayment: "To‘lovni tasdiqlash", confirmed: "To‘lov tasdiqlandi.", failed: "Amal bajarilmadi. Qayta urinib ko‘ring.",
@@ -98,6 +103,9 @@ const ru: SiteCopy = {
       { href: "/cybersecurity", title: "Кибербезопасность", hint: "Поиск рисков и усиление защиты" },
       { href: "/monitoring", title: "Мониторинг", hint: "Постоянный контроль состояния устройств" },
       { href: "/consultation", title: "Консультация", hint: "Подберём решение вместе со специалистом" },
+      { href: "/support-plans", title: "Ежемесячная IT-поддержка", hint: "Сервис вместо штатного IT-специалиста" },
+      { href: "/estimate", title: "Калькулятор сметы", hint: "Предварительный расчёт сети и камер" },
+      { href: "/security-check", title: "Тест безопасности", hint: "10 вопросов, оценка и советы" },
       { href: "/request-service", title: "Оставить заявку", hint: "Опишите задачу, мы свяжемся с вами" }
     ] },
     learning: { title: "Обучение", href: "/learning", links: [
@@ -105,6 +113,7 @@ const ru: SiteCopy = {
       { href: "/learning/modules", title: "Модули", hint: "Уроки по конкретной теме" },
       { href: "/learning/practice", title: "Практика", hint: "Лаборатории и упражнения" },
       { href: "/learning/exams", title: "Экзамены", hint: "Проверка знаний и сертификат" },
+      { href: "/learning/business", title: "Для компаний", hint: "Программа для группы сотрудников" },
       { href: "/learning/dashboard", title: "Моё обучение", hint: "Результаты и продолжение" }
     ] },
     shop: { title: "Магазин", href: "/products", links: [
@@ -142,8 +151,9 @@ const ru: SiteCopy = {
   orders: {
     eyebrow: "Заказы", title: "Мои заказы", empty: "Заказов пока нет", browse: "Перейти в каталог", delivery: "Доставка", total: "Итого", totalPending: "Сообщим после подтверждения цены", payment: "Оплата", history: "История статусов", cancelled: "Заказ отменён.", map: "Показать на карте", trackLabel: "Статус заказа", note: "Комментарий", account: "Аккаунт",
     status: { NEW: "Принят", CONFIRMED: "Подтверждён", PREPARING: "Готовится", SHIPPED: "В пути", DELIVERED: "Доставлен", CANCELLED: "Отменён" },
-    method: { CASH: "Наличные", CARD_ON_DELIVERY: "Картой курьеру", CARD_TRANSFER: "Перевод на карту", WALLET: "Кошелёк Tecsecure", UNSPECIFIED: "По договорённости" },
-    paymentStatus: { PENDING: "Оплата при получении", AWAITING_CONFIRMATION: "Чек проверяется", PAID: "Оплачен", REFUNDED: "Возвращён" }
+    statusAction: { CONFIRMED: "Подтвердить", PREPARING: "Начать подготовку", SHIPPED: "Отправить", DELIVERED: "Отметить доставленным", CANCELLED: "Отменить" },
+    method: { CASH: "Наличные", CARD_ON_DELIVERY: "Картой курьеру", CARD_TRANSFER: "Перевод на карту", WALLET: "Кошелёк Tecsecure", BANK_TRANSFER: "Банковский перевод", ONLINE_PAYME: "Payme", UNSPECIFIED: "По договорённости" },
+    paymentStatus: { PENDING: "Оплата при получении", AWAITING_CONFIRMATION: "Чек проверяется", PAID: "Оплачен", AWAITING_PAYMENT: "Ожидается оплата", REFUND_DUE: "Нужен возврат", REFUNDED: "Возвращён" }
   },
   admin: {
     overview: "Обзор", overviewHint: "Всё, что требует внимания сегодня, в одном месте.", attention: "Ожидают действий", allClear: "Сейчас нет ожидающих задач.", quick: "Быстрые действия", ordersTitle: "Заказы", all: "Все", byStatus: "По статусу", noOrders: "Заказов с таким статусом нет.", back: "Админ-панель", search: "Поиск по номеру, имени или телефону", viewProof: "Посмотреть чек", confirmPayment: "Подтвердить оплату", confirmed: "Оплата подтверждена.", failed: "Не удалось выполнить. Попробуйте ещё раз.",
@@ -163,6 +173,9 @@ const en: SiteCopy = {
       { href: "/cybersecurity", title: "Cybersecurity", hint: "Find risks and strengthen protection" },
       { href: "/monitoring", title: "Monitoring", hint: "Continuous watch over your devices" },
       { href: "/consultation", title: "Consultation", hint: "Choose the right solution with an expert" },
+      { href: "/support-plans", title: "Monthly IT support", hint: "A service instead of a full-time IT hire" },
+      { href: "/estimate", title: "Estimate calculator", hint: "A first estimate for network and cameras" },
+      { href: "/security-check", title: "Security check", hint: "10 questions, a score and advice" },
       { href: "/request-service", title: "Send a request", hint: "Describe the task and we will contact you" }
     ] },
     learning: { title: "Learning", href: "/learning", links: [
@@ -170,6 +183,7 @@ const en: SiteCopy = {
       { href: "/learning/modules", title: "Modules", hint: "Lessons on a specific topic" },
       { href: "/learning/practice", title: "Practice", hint: "Labs and exercises" },
       { href: "/learning/exams", title: "Exams", hint: "Test your knowledge and earn a certificate" },
+      { href: "/learning/business", title: "For companies", hint: "A programme for a group of employees" },
       { href: "/learning/dashboard", title: "My learning", hint: "Results and where to continue" }
     ] },
     shop: { title: "Shop", href: "/products", links: [
@@ -207,8 +221,9 @@ const en: SiteCopy = {
   orders: {
     eyebrow: "Orders", title: "My orders", empty: "No orders yet", browse: "Browse the catalog", delivery: "Delivery", total: "Total", totalPending: "Shown once the price is confirmed", payment: "Payment", history: "Status history", cancelled: "This order was cancelled.", map: "View on map", trackLabel: "Order status", note: "Note", account: "Account",
     status: { NEW: "Received", CONFIRMED: "Confirmed", PREPARING: "Preparing", SHIPPED: "On the way", DELIVERED: "Delivered", CANCELLED: "Cancelled" },
-    method: { CASH: "Cash", CARD_ON_DELIVERY: "Card to courier", CARD_TRANSFER: "Card transfer", WALLET: "Tecsecure wallet", UNSPECIFIED: "To be agreed" },
-    paymentStatus: { PENDING: "Pay on delivery", AWAITING_CONFIRMATION: "Receipt under review", PAID: "Paid", REFUNDED: "Refunded" }
+    statusAction: { CONFIRMED: "Confirm", PREPARING: "Start preparing", SHIPPED: "Ship", DELIVERED: "Mark as delivered", CANCELLED: "Cancel" },
+    method: { CASH: "Cash", CARD_ON_DELIVERY: "Card to courier", CARD_TRANSFER: "Card transfer", WALLET: "Tecsecure wallet", BANK_TRANSFER: "Bank transfer", ONLINE_PAYME: "Payme", UNSPECIFIED: "To be agreed" },
+    paymentStatus: { PENDING: "Pay on delivery", AWAITING_CONFIRMATION: "Receipt under review", PAID: "Paid", AWAITING_PAYMENT: "Awaiting payment", REFUND_DUE: "Refund due", REFUNDED: "Refunded" }
   },
   admin: {
     overview: "Overview", overviewHint: "Everything that needs attention today, in one place.", attention: "Waiting for action", allClear: "Nothing is waiting right now.", quick: "Quick actions", ordersTitle: "Orders", all: "All", byStatus: "By status", noOrders: "No orders with this status.", back: "Admin panel", search: "Search by number, name or phone", viewProof: "View receipt", confirmPayment: "Confirm payment", confirmed: "Payment confirmed.", failed: "That did not work. Please try again.",

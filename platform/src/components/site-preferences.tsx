@@ -8,6 +8,9 @@ import { journeyCopy } from "@/lib/journey-copy";
 import { FooterGlow } from "./feature-visuals";
 import { siteCopy } from "@/lib/site-copy";
 import { featureCopy } from "@/lib/feature-copy";
+import { growthCopy, seoFooterLinks } from "@/lib/growth-copy";
+import { ANALYTICS_COOKIE } from "@/lib/analytics";
+import { AnalyticsLoader, analyticsAvailable } from "./analytics-loader";
 
 type ThemeMode = "light" | "dark" | "system";
 type TextOverrides = Partial<Record<Locale, Partial<Record<MessageKey, string>>>>;
@@ -42,11 +45,14 @@ export function SitePreferencesProvider({ children, overrides = {} }: { children
   const [cookieSettingsOpen, setCookieSettingsOpen] = useState(false);
   const [cookieDetails, setCookieDetails] = useState(false);
   const [rememberChoice, setRememberChoice] = useState(true);
+  const [analyticsOn, setAnalyticsOn] = useState(false);
+  const [analyticsChoice, setAnalyticsChoice] = useState(false);
 
   useEffect(() => {
     const storedConsent = readCookie(consentCookie);
     const consent = storedConsent === "essential" || storedConsent === "all" ? storedConsent : null;
     setCookieConsent(consent);
+    setAnalyticsOn(readCookie(ANALYTICS_COOKIE) === "1");
     if (consent !== "all" && readCookie(preferenceCookie)) writeCookie(preferenceCookie, "", 0);
     const preferenceValue = consent === "all" ? readCookie(preferenceCookie) : null;
     let cookiePreferences: Partial<{ locale: Locale; theme: ThemeMode }> = {};
@@ -94,13 +100,15 @@ export function SitePreferencesProvider({ children, overrides = {} }: { children
     theme,
     setLocale: setLocaleState,
     setTheme: setThemeState,
-    openCookieSettings: () => { setCookieDetails(true); setRememberChoice(readCookie(consentCookie) !== "essential"); setCookieSettingsOpen(true); },
+    openCookieSettings: () => { setCookieDetails(true); setRememberChoice(readCookie(consentCookie) !== "essential"); setAnalyticsChoice(readCookie(ANALYTICS_COOKIE) === "1"); setCookieSettingsOpen(true); },
     t: (key) => overrides[locale]?.[key] ?? messages[locale][key]
   }), [locale, theme, overrides]);
 
-  function chooseCookieConsent(consent: CookieConsent) {
+  function chooseCookieConsent(consent: CookieConsent, statistics: boolean) {
     setCookieConsent(consent);
     writeCookie(consentCookie, consent);
+    writeCookie(ANALYTICS_COOKIE, statistics ? "1" : "0");
+    setAnalyticsOn(statistics);
     if (consent === "all") {
       writeCookie(preferenceCookie, encodeURIComponent(JSON.stringify({ locale, theme })));
     } else {
@@ -111,15 +119,18 @@ export function SitePreferencesProvider({ children, overrides = {} }: { children
   }
 
   const cookie = siteCopy[locale].cookie;
+  const statistics = growthCopy[locale].analytics;
+  const hasCounter = analyticsAvailable();
   return <PreferencesContext.Provider value={value}>
     {children}
+    <AnalyticsLoader enabled={analyticsOn} />
     {(cookieConsent === null || cookieSettingsOpen) && (
       <aside className="cookie-consent" role="dialog" aria-modal="false" aria-labelledby="cookie-consent-title" data-details={cookieDetails}>
         <div className="cookie-consent-head">
           <strong id="cookie-consent-title">{cookie.title}</strong>
           {cookieSettingsOpen && <button className="cookie-consent-close" type="button" aria-label={cookie.close} onClick={() => { setCookieSettingsOpen(false); setCookieDetails(false); }}>×</button>}
         </div>
-        <p>{cookie.text}</p>
+        <p>{cookie.text}{hasCounter ? ` ${statistics.hint}` : ""}</p>
         {cookieDetails && <div className="cookie-options">
           <div className="cookie-option">
             <div><strong>{cookie.necessary}</strong><span>{cookie.necessaryHint}</span></div>
@@ -129,14 +140,18 @@ export function SitePreferencesProvider({ children, overrides = {} }: { children
             <div><strong>{cookie.preferences}</strong><span>{cookie.preferencesHint}</span></div>
             <input className="switch" type="checkbox" role="switch" checked={rememberChoice} onChange={event => setRememberChoice(event.target.checked)} />
           </label>
-          <p className="cookie-note">{cookie.none} <Link href="/privacy">{cookie.privacy}</Link></p>
+          {hasCounter && <label className="cookie-option">
+            <div><strong>{statistics.title}</strong><span>{statistics.hint}</span></div>
+            <input className="switch" type="checkbox" role="switch" checked={analyticsChoice} onChange={event => setAnalyticsChoice(event.target.checked)} />
+          </label>}
+          <p className="cookie-note">{hasCounter ? statistics.none : cookie.none} <Link href="/privacy">{cookie.privacy}</Link></p>
         </div>}
         <div className="cookie-consent-actions">
           {cookieDetails
-            ? <button className="button" type="button" onClick={() => chooseCookieConsent(rememberChoice ? "all" : "essential")}>{cookie.save}</button>
+            ? <button className="button" type="button" onClick={() => chooseCookieConsent(rememberChoice ? "all" : "essential", hasCounter && analyticsChoice)}>{cookie.save}</button>
             : <>
-              <button className="button" type="button" onClick={() => chooseCookieConsent("all")}>{cookie.acceptAll}</button>
-              <button className="button ghost" type="button" onClick={() => chooseCookieConsent("essential")}>{cookie.essential}</button>
+              <button className="button" type="button" onClick={() => chooseCookieConsent("all", hasCounter)}>{cookie.acceptAll}</button>
+              <button className="button ghost" type="button" onClick={() => chooseCookieConsent("essential", false)}>{cookie.essential}</button>
               <button className="cookie-customize" type="button" onClick={() => setCookieDetails(true)}>{cookie.customize}</button>
             </>}
         </div>
@@ -170,6 +185,10 @@ export function SiteFooter() {
       <div className="feature-footer-body">
         <div className="container footer-columns">
           <div className="footer-brand"><strong>Tecsecure</strong><span>{t("footerTagline")}</span></div>
+          {seoFooterLinks[locale].length > 0 && <nav aria-label={growthCopy[locale].seoFooter}>
+            <h2>{growthCopy[locale].seoFooter}</h2>
+            {seoFooterLinks[locale].map(link => <Link href={link.href} key={link.href}>{link.title}</Link>)}
+          </nav>}
           <nav aria-label={f.footerExplore}>
             <h2>{f.footerExplore}</h2>
             <Link href="/services">{c.services}</Link><Link href="/learning">{c.learning}</Link><Link href="/products">{c.shop}</Link><Link href="/work">{t("sitePortfolioTitle")}</Link>

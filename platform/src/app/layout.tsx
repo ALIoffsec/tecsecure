@@ -10,6 +10,7 @@ import "./admin.css";
 import "./liquid-water.css";
 import "./liquid-ui.css";
 import "./liquid-search.css";
+import "./growth.css";
 import { SiteNav } from "@/components/site-nav";
 import { PageBackLink } from "@/components/page-back-link";
 import { FontLoader } from "@/components/font-loader";
@@ -28,6 +29,7 @@ import { CurrencyProvider } from "@/components/currency-context";
 import { ProductCompareProvider } from "@/components/product-compare";
 import { SiteMotion } from "@/components/site-motion";
 import { ContactDock } from "@/components/shop-extras";
+import { TelegramBridge } from "@/components/telegram-app";
 import { SiteIntro } from "@/components/site-intro";
 import { introBootstrapScript } from "@/lib/burning-intro";
 import { siteOrigin } from "@/lib/site-origin";
@@ -93,6 +95,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
             <ToastProvider>
               <LearningCatalogProvider data={learningCatalog}>
                 <ProductCompareProvider>
+                <TelegramBridge />
                 <SiteNav />
                 <PageBackLink />
                 <main id="main-content" tabIndex={-1}>{children}</main>

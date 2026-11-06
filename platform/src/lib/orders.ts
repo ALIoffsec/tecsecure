@@ -12,18 +12,20 @@ export const orderStatusLabels: Record<OrderStatusValue, string> = {
   CANCELLED: "Bekor qilindi"
 };
 
-export const paymentMethods = ["CASH", "CARD_ON_DELIVERY", "CARD_TRANSFER", "WALLET"] as const;
+export const paymentMethods = ["CASH", "CARD_ON_DELIVERY", "CARD_TRANSFER", "WALLET", "BANK_TRANSFER", "ONLINE_PAYME"] as const;
 export type PaymentMethodValue = (typeof paymentMethods)[number];
-export const paymentStatuses = ["PENDING", "AWAITING_CONFIRMATION", "PAID", "REFUNDED"] as const;
+export const paymentStatuses = ["PENDING", "AWAITING_CONFIRMATION", "AWAITING_PAYMENT", "PAID", "REFUND_DUE", "REFUNDED"] as const;
 export type PaymentStatusValue = (typeof paymentStatuses)[number];
 /** Methods that take the money before delivery, so the order total must be known. */
-export const prepaidMethods: readonly PaymentMethodValue[] = ["CARD_TRANSFER", "WALLET"];
+export const prepaidMethods: readonly PaymentMethodValue[] = ["CARD_TRANSFER", "WALLET", "BANK_TRANSFER", "ONLINE_PAYME"];
 
 export const paymentMethodLabels: Record<string, string> = {
   CASH: "Naqd pul (qabul qilganda)",
   CARD_ON_DELIVERY: "Karta (kuryerga, terminal orqali)",
   CARD_TRANSFER: "Kartaga o‘tkazma",
   WALLET: "Tecsecure hamyoni",
+  BANK_TRANSFER: "Bank o‘tkazmasi (yuridik shaxs)",
+  ONLINE_PAYME: "Payme orqali onlayn",
   UNSPECIFIED: "Kelishiladi"
 };
 
@@ -56,6 +58,9 @@ export const orderSchema = z.object({
   paymentMethod: z.enum(paymentMethods),
   paymentReference: z.string().trim().max(160).optional(),
   paymentProofMediaId: z.string().cuid().optional(),
+  customerType: z.enum(["INDIVIDUAL", "COMPANY"]).default("INDIVIDUAL"),
+  companyName: z.string().trim().max(160).optional(),
+  companyTin: z.string().trim().optional(),
   expectedProducts: z.array(z.object({
     id: z.string().cuid(),
     priceMinor: z.number().int().nonnegative().nullable(),
@@ -69,6 +74,13 @@ export const orderSchema = z.object({
 }).superRefine((order, context) => {
   if (order.paymentMethod === "CARD_TRANSFER" && !order.paymentProofMediaId) {
     context.addIssue({ code: "custom", path: ["paymentProofMediaId"], message: "To‘lov chekini yuklang." });
+  }
+  if (order.customerType === "COMPANY") {
+    if (!order.companyName || order.companyName.length < 2) context.addIssue({ code: "custom", path: ["companyName"], message: "Kompaniya nomini kiriting." });
+    if (!order.companyTin || !/^\d{9}$/.test(order.companyTin)) context.addIssue({ code: "custom", path: ["companyTin"], message: "STIR 9 ta raqamdan iborat bo‘lishi kerak." });
+  }
+  if (order.paymentMethod === "BANK_TRANSFER" && order.customerType !== "COMPANY") {
+    context.addIssue({ code: "custom", path: ["paymentMethod"], message: "Bank o‘tkazmasi yuridik shaxslar uchun." });
   }
   const hasCoordinates = order.latitude != null && order.longitude != null;
   const hasManualLocation = order.address.length >= 5 || (order.note?.trim().length ?? 0) >= 5;

@@ -3,6 +3,7 @@ import { Prisma } from "@prisma/client";
 import { isResponse, requireModuleApi } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { portfolioStoryFields } from "@/lib/portfolio-story";
 
 export const runtime = "nodejs";
 
@@ -10,7 +11,8 @@ const postSchema = z.object({
   title: z.string().trim().min(2).max(180),
   description: z.string().trim().min(5).max(10000),
   media: z.array(z.string().cuid()).max(20).default([]),
-  published: z.boolean().default(false)
+  published: z.boolean().default(false),
+  ...portfolioStoryFields
 });
 
 function createSlug(title: string) {

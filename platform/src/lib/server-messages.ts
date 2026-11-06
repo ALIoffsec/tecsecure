@@ -140,7 +140,18 @@ const dictionary: Record<string, { ru: string; en: string }> = {
   "Barcha imtihonlardan o‘ting": { ru: "Сдайте все экзамены", en: "Pass all exams" },
   "Yo‘nalish yakuni": { ru: "Направление пройдено", en: "Path complete" },
   "Bitta yo‘nalishni to‘liq tugating": { ru: "Полностью пройдите одно направление", en: "Finish one full path" },
-  "1000 XP to‘plang": { ru: "Наберите 1000 XP", en: "Earn 1000 XP" }
+  "1000 XP to‘plang": { ru: "Наберите 1000 XP", en: "Earn 1000 XP" },
+  "Avval admin paneldan Telegram'ni xodim hisobingizga ulang.": { ru: "Сначала подключите Telegram к учётной записи сотрудника в админ-панели.", en: "First connect Telegram to your staff account in the admin panel." },
+  "Bu hisob faol emas.": { ru: "Этот аккаунт неактивен.", en: "This account is not active." },
+  "Kod noto‘g‘ri yoki muddati tugagan.": { ru: "Код неверный или устарел.", en: "The code is wrong or has expired." },
+  "Kod yoki parol noto‘g‘ri.": { ru: "Неверный код или пароль.", en: "The code or password is wrong." },
+  "Kodni yuborib bo‘lmadi. Keyinroq urinib ko‘ring.": { ru: "Не удалось отправить код. Попробуйте позже.", en: "Could not send the code. Please try later." },
+  "So‘rov noto‘g‘ri.": { ru: "Неверный запрос.", en: "Invalid request." },
+  "Telefon raqami yoki email noto‘g‘ri.": { ru: "Неверный телефон или email.", en: "The phone number or email is not valid." },
+  "Telegram ma’lumotini tasdiqlab bo‘lmadi.": { ru: "Не удалось подтвердить данные Telegram.", en: "Could not verify the Telegram data." },
+  "Xodim hisobi uchun xodimlar botini oching.": { ru: "Для учётной записи сотрудника откройте бот для сотрудников.", en: "For a staff account, open the staff bot." },
+  "Onlayn to‘lov hozircha mavjud emas.": { ru: "Онлайн-оплата пока недоступна.", en: "Online payment is not available yet." },
+  "Bank o‘tkazmasi hozircha mavjud emas.": { ru: "Банковский перевод пока недоступен.", en: "Bank transfer is not available yet." }
 };
 
 export function translateMessage(text: string, locale: Locale): string {

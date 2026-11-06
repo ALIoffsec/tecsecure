@@ -5,11 +5,14 @@ import { useRouter } from "next/navigation";
 import { MediaGallery, MediaUploader } from "@/components/media-uploader";
 import { useSitePreferences } from "@/components/site-preferences";
 import { ToastMessage } from "@/components/toast-provider";
+import { growthCopy } from "@/lib/growth-copy";
 
-type PortfolioPost = { id: string; title: string; description: string; media: unknown; published: boolean; slug: string };
+type PortfolioPost = { id: string; title: string; description: string; media: unknown; published: boolean; slug: string; location?: string | null; task?: string | null; work?: string | null; result?: string | null; clientName?: string | null; clientRole?: string | null; clientQuote?: string | null };
 
 export function PortfolioManager({ posts }: { posts: PortfolioPost[] }) {
-  const { t } = useSitePreferences();
+  const { t, locale } = useSitePreferences();
+  const story = growthCopy[locale].workAdmin;
+  const storyTitle = growthCopy[locale].work.story;
   const router = useRouter();
   const [editing, setEditing] = useState<PortfolioPost | null>(null);
   const [media, setMedia] = useState<string[]>([]);
@@ -36,6 +39,8 @@ export function PortfolioManager({ posts }: { posts: PortfolioPost[] }) {
           title: data.get("title"),
           description: data.get("description"),
           published: data.get("published") === "on",
+          location: data.get("location"), task: data.get("task"), work: data.get("work"), result: data.get("result"),
+          clientName: data.get("clientName"), clientRole: data.get("clientRole"), clientQuote: data.get("clientQuote"),
           media
         })
       });
@@ -67,6 +72,16 @@ export function PortfolioManager({ posts }: { posts: PortfolioPost[] }) {
         <div className="field"><label>{t("portfolioTitle")}</label><input name="title" defaultValue={editing?.title ?? ""} minLength={2} maxLength={180} required /></div>
         <div className="field"><label>{t("description")}</label><textarea name="description" defaultValue={editing?.description ?? ""} minLength={5} maxLength={10000} required /></div>
         <MediaUploader scope="PORTFOLIO" value={media} onChange={setMedia} />
+        <h3>{storyTitle}</h3>
+        <div className="field"><label>{story.location}</label><input name="location" defaultValue={editing?.location ?? ""} maxLength={120} /></div>
+        <div className="field"><label>{story.task}</label><textarea name="task" defaultValue={editing?.task ?? ""} maxLength={4000} rows={3} /></div>
+        <div className="field"><label>{story.done}</label><textarea name="work" defaultValue={editing?.work ?? ""} maxLength={4000} rows={3} /></div>
+        <div className="field"><label>{story.result}</label><textarea name="result" defaultValue={editing?.result ?? ""} maxLength={4000} rows={3} /></div>
+        <div className="form-row">
+          <div className="field"><label>{story.clientName}</label><input name="clientName" defaultValue={editing?.clientName ?? ""} maxLength={120} /></div>
+          <div className="field"><label>{story.clientRole}</label><input name="clientRole" defaultValue={editing?.clientRole ?? ""} maxLength={120} /></div>
+        </div>
+        <div className="field"><label>{story.clientQuote}</label><textarea name="clientQuote" defaultValue={editing?.clientQuote ?? ""} maxLength={1000} rows={2} /></div>
         <label className="permission-option"><input type="checkbox" name="published" defaultChecked={editing?.published ?? false} />{t("publishPortfolioPost")}</label>
         <div className="hero-actions"><button className="button" disabled={busy}>{editing ? t("save") : t("addPortfolioPost")}</button>{editing && <button className="button ghost" type="button" onClick={() => { setEditing(null); setMedia([]); if (editorRef.current) editorRef.current.open = false; }}>{t("cancel")}</button>}</div>
       </form>

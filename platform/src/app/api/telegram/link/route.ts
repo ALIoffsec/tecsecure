@@ -7,13 +7,16 @@ export const runtime = "nodejs";
 
 export async function POST() {
   const user = await getCurrentUser();
-  if (!user || user.role !== "CUSTOMER") {
-    return Response.json({ error: "Mijoz hisobiga kirish talab qilinadi." }, { status: 401 });
+  if (!user) {
+    return Response.json({ error: "Kirish talab qilinadi." }, { status: 401 });
   }
   let botUsername: string;
   let botToken: string;
   try {
-    ({ botUsername, botToken } = await getTelegramCredentials());
+    const credentials = await getTelegramCredentials();
+    const staff = user.role !== "CUSTOMER" && Boolean(credentials.staffBotToken);
+    botUsername = staff ? credentials.staffBotUsername : credentials.botUsername;
+    botToken = staff ? credentials.staffBotToken : credentials.botToken;
   } catch (error) {
     console.error("Telegram linking configuration unavailable", error instanceof Error ? error.name : "UnknownError");
     return Response.json({ error: "Telegram sozlamalarini o‘qib bo‘lmadi." }, { status: 503 });
@@ -34,10 +37,17 @@ export async function POST() {
   }, { headers: { "Cache-Control": "private, no-store" } });
 }
 
+export async function GET() {
+  const user = await getCurrentUser();
+  if (!user) return Response.json({ error: "Kirish talab qilinadi." }, { status: 401 });
+  const account = await prisma.user.findUnique({ where: { id: user.id }, select: { telegramChatId: true } });
+  return Response.json({ linked: Boolean(account?.telegramChatId) }, { headers: { "Cache-Control": "private, no-store" } });
+}
+
 export async function DELETE() {
   const user = await getCurrentUser();
-  if (!user || user.role !== "CUSTOMER") {
-    return Response.json({ error: "Mijoz hisobiga kirish talab qilinadi." }, { status: 401 });
+  if (!user) {
+    return Response.json({ error: "Kirish talab qilinadi." }, { status: 401 });
   }
   await prisma.user.update({
     where: { id: user.id },

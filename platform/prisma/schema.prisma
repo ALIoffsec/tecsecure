@@ -99,6 +99,7 @@ model User {
   email                String                 @unique
   name                 String
   phone                String?
+  phoneVerifiedAt      DateTime?
   telegramChatId       String?                @unique
   telegramLinkToken    String?                @unique
   telegramLinkExpiresAt DateTime?
@@ -313,6 +314,10 @@ model Order {
   paymentStatus   String               @default("PENDING")
   paymentReference String?
   paymentProofMediaId String?
+  customerType    String               @default("INDIVIDUAL")
+  companyName     String?
+  companyTin      String?
+  paymeTransactions PaymeTransaction[]
   totalMinor      Float?
   currency        String               @default("UZS")
   createdAt       DateTime             @default(now())
@@ -567,6 +572,13 @@ model PortfolioPost {
   slug        String   @unique
   title       String
   description String   @db.Text
+  location    String?
+  task        String?  @db.Text
+  work        String?  @db.Text
+  result      String?  @db.Text
+  clientName  String?
+  clientRole  String?
+  clientQuote String?  @db.Text
   media       Json     @default("[]")
   published   Boolean  @default(false)
   createdAt   DateTime @default(now())
@@ -915,4 +927,48 @@ model ProductQuestion {
   createdAt  DateTime  @default(now())
 
   @@index([productId, createdAt])
+}
+
+model OtpCode {
+  id         String    @id @default(cuid())
+  purpose    String
+  target     String
+  codeHash   String
+  attempts   Int       @default(0)
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([target, purpose, createdAt])
+}
+
+model PaymeTransaction {
+  id          String  @id @default(cuid())
+  paymeId     String  @unique
+  orderId     String
+  order       Order   @relation(fields: [orderId], references: [id])
+  amountMinor Float
+  state       Int     @default(1)
+  reason      Int?
+  paymeTime   BigInt
+  createTime  BigInt
+  performTime BigInt  @default(0)
+  cancelTime  BigInt  @default(0)
+
+  @@index([orderId])
+  @@index([paymeTime])
+}
+
+model ErrorEvent {
+  id          String    @id @default(cuid())
+  fingerprint String    @unique
+  source      String
+  message     String    @db.Text
+  path        String?
+  count       Int       @default(1)
+  firstSeenAt DateTime  @default(now())
+  lastSeenAt  DateTime  @default(now())
+  alertedAt   DateTime?
+
+  @@index([lastSeenAt])
 }

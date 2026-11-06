@@ -4,7 +4,9 @@ import Link from "next/link";
 import { useSitePreferences } from "./site-preferences";
 import { UiIcon, type IconName } from "./ui-icon";
 import { siteCopy } from "@/lib/site-copy";
-import { formatMinor, formatNumber } from "@/lib/format";
+import { formatDateTime, formatMinor, formatNumber } from "@/lib/format";
+import { growthCopy } from "@/lib/growth-copy";
+import { TelegramLinkCard } from "./code-sign-in";
 
 export type AdminOverviewData = {
   newOrders: number | null;
@@ -14,6 +16,8 @@ export type AdminOverviewData = {
   customers: number | null;
   monthRevenueMinor: number | null;
   botConfigured: boolean | null;
+  recentErrors: { id: string; source: string; message: string; path: string | null; count: number; lastSeenAt: Date | string }[] | null;
+  telegramLinked: boolean;
 };
 
 export function AdminOverview({ data, onOpen }: { data: AdminOverviewData; onOpen: (section: "requests" | "wallet" | "payments" | "users" | "products" | "portfolio" | "system") => void }) {
@@ -36,6 +40,13 @@ export function AdminOverview({ data, onOpen }: { data: AdminOverviewData; onOpe
       <div><strong>{c.botOff}</strong><span>{c.botOffHint}</span></div>
       <button className="button secondary" type="button" onClick={() => onOpen("system")}>{c.openIntegrations}</button>
     </div>}
+
+    <TelegramLinkCard staff />
+
+    {data.recentErrors && data.recentErrors.length > 0 && <details className="admin-errors">
+      <summary>{growthCopy[locale].errors.recent} · {data.recentErrors.reduce((sum, item) => sum + item.count, 0)}</summary>
+      <ul>{data.recentErrors.map(item => <li key={item.id}><strong>{item.source}{item.path ? ` · ${item.path}` : ""}</strong><span>{item.message.slice(0, 200)}</span><small>{formatDateTime(item.lastSeenAt)} · × {item.count}</small></li>)}</ul>
+    </details>}
 
     <div className="admin-tiles">
       {tiles.map(tile => {

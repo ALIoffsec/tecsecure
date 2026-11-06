@@ -1,5 +1,6 @@
 "use client";
 
+import { growthCopy } from "@/lib/growth-copy";
 import { FormEvent, useMemo, useRef, useState } from "react";
 import type { RequestStatus } from "@prisma/client";
 import { useRouter } from "next/navigation";
@@ -627,6 +628,18 @@ export function AdminWorkspace({ overview, newOrderCount, services, requests: in
                 <div className="field"><label>{siteCopy[locale].admin.cardHolder}</label><input name="paymentCardHolder" defaultValue={settings.paymentCardHolder ?? ""} maxLength={80} /></div>
               </div>
               <div className="field"><label>{siteCopy[locale].admin.cardBank}</label><input name="paymentCardBank" defaultValue={settings.paymentCardBank ?? ""} maxLength={60} /></div>
+              <h3>{growthCopy[locale].requisites.title}</h3>
+              <p className="small muted">{growthCopy[locale].requisites.hint}</p>
+              <div className="field"><label>{growthCopy[locale].requisites.name}</label><input name="legalName" defaultValue={settings.legalName ?? ""} maxLength={160} /></div>
+              <div className="form-row">
+                <div className="field"><label>{growthCopy[locale].requisites.tin}</label><input name="legalTin" inputMode="numeric" defaultValue={settings.legalTin ?? ""} pattern="[0-9]{9}" maxLength={9} /></div>
+                <div className="field"><label>{growthCopy[locale].requisites.mfo}</label><input name="bankMfo" inputMode="numeric" defaultValue={settings.bankMfo ?? ""} pattern="[0-9]{5}" maxLength={5} /></div>
+              </div>
+              <div className="form-row">
+                <div className="field"><label>{growthCopy[locale].requisites.bank}</label><input name="bankName" defaultValue={settings.bankName ?? ""} maxLength={120} /></div>
+                <div className="field"><label>{growthCopy[locale].requisites.account}</label><input name="bankAccount" inputMode="numeric" defaultValue={settings.bankAccount ?? ""} pattern="[0-9 ]*" maxLength={30} /></div>
+              </div>
+              <div className="field"><label>{growthCopy[locale].requisites.address}</label><input name="legalAddress" defaultValue={settings.legalAddress ?? ""} maxLength={300} /></div>
               <p className="small muted">{t("providerNotice")}</p>
               <button className="button" disabled={busy}>{t("saveSettings")}</button>
             </form>

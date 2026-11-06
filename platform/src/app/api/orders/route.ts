@@ -6,6 +6,8 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { escapeTelegramHtml, notifyTelegramAdmins } from "@/lib/telegram";
 import { pricesMatch } from "@/lib/catalog-utils";
 import { formatMinor } from "@/lib/format";
+import { paymeConfigured } from "@/lib/payme";
+import { getCompanyRequisites } from "@/lib/payment-card";
 
 export const runtime = "nodejs";
 
@@ -67,6 +69,12 @@ export async function POST(request: Request) {
   if (prepaidMethods.includes(paymentMethod) && totalMinor === null) {
     return Response.json({ error: "Narxi kelishiladigan mahsulot uchun to‘lovni qabul qilganda amalga oshiring.", code: "PREPAID_NEEDS_PRICE" }, { status: 400 });
   }
+  if (paymentMethod === "ONLINE_PAYME" && (!paymeConfigured() || [...currencies][0] !== "UZS")) {
+    return Response.json({ error: "Onlayn to‘lov hozircha mavjud emas.", code: "ONLINE_UNAVAILABLE" }, { status: 400 });
+  }
+  if (paymentMethod === "BANK_TRANSFER" && !(await getCompanyRequisites())) {
+    return Response.json({ error: "Bank o‘tkazmasi hozircha mavjud emas.", code: "BANK_UNAVAILABLE" }, { status: 400 });
+  }
   if (paymentMethod === "WALLET" && [...currencies][0] !== "UZS") {
     return Response.json({ error: "Hamyondan faqat so‘mdagi buyurtmani to‘lash mumkin.", code: "WALLET_CURRENCY" }, { status: 400 });
   }
@@ -103,7 +111,10 @@ export async function POST(request: Request) {
           longitude: longitude ?? null,
           note: parsed.data.note || null,
           paymentMethod,
-          paymentStatus: paymentMethod === "WALLET" ? "PAID" : paymentMethod === "CARD_TRANSFER" ? "AWAITING_CONFIRMATION" : "PENDING",
+          paymentStatus: paymentMethod === "WALLET" ? "PAID" : paymentMethod === "CARD_TRANSFER" ? "AWAITING_CONFIRMATION" : paymentMethod === "BANK_TRANSFER" || paymentMethod === "ONLINE_PAYME" ? "AWAITING_PAYMENT" : "PENDING",
+          customerType: parsed.data.customerType,
+          companyName: parsed.data.customerType === "COMPANY" ? parsed.data.companyName : null,
+          companyTin: parsed.data.customerType === "COMPANY" ? parsed.data.companyTin : null,
           paymentReference: parsed.data.paymentReference || null,
           paymentProofMediaId: parsed.data.paymentProofMediaId ?? null,
           totalMinor,
@@ -170,9 +181,10 @@ export async function POST(request: Request) {
       `Mahsulotlar: ${escapeTelegramHtml(lines.map((line) => `${line.product.name} × ${line.quantity}`).join(", "))}`,
       totalMinor !== null ? `Jami: <b>${formatMinor(totalMinor, [...currencies][0])}</b>` : "Jami: kelishiladi",
       `To‘lov: ${escapeTelegramHtml(paymentMethodLabels[paymentMethod])}${paymentMethod === "CARD_TRANSFER" ? " — chekni admin panelda tekshiring" : ""}`,
+      parsed.data.customerType === "COMPANY" ? `Kompaniya: ${escapeTelegramHtml(parsed.data.companyName ?? "")} (STIR ${escapeTelegramHtml(parsed.data.companyTin ?? "")})` : "",
       "",
       `Javob: <code>/reply ${escapeTelegramHtml(order.reference)} matn</code>`
-    ].join("\n");
+    ].filter((line, index, lines) => line !== "" || index === lines.length - 2).join("\n");
     await notifyTelegramAdmins(telegramBody, order.reference);
     return Response.json({ order }, { status: 201 });
   } catch (error) {

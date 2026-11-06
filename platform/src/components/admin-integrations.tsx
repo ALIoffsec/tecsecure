@@ -1,6 +1,7 @@
 "use client";
 
 import { siteCopy } from "@/lib/site-copy";
+import { growthCopy } from "@/lib/growth-copy";
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { ToastMessage } from "@/components/toast-provider";
 import { useSitePreferences } from "@/components/site-preferences";
@@ -12,6 +13,9 @@ type IntegrationStatus = {
     adminChatId: string;
     hasBotToken: boolean;
     hasWebhookSecret: boolean;
+    staffBotUsername: string;
+    hasStaffBotToken: boolean;
+    hasStaffWebhookSecret: boolean;
   };
   yandexMaps: { configured: boolean };
   oauth: Record<OAuthProviderId, {
@@ -40,6 +44,7 @@ function checked(data: FormData, name: string): boolean {
 export function AdminIntegrations() {
   const { t, locale } = useSitePreferences();
   const bot = siteCopy[locale].admin;
+  const staffBot = growthCopy[locale].integrations;
   const [status, setStatus] = useState<IntegrationStatus | null>(null);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -126,7 +131,13 @@ export function AdminIntegrations() {
             clearBotToken: checked(data, "clearBotToken"),
             clearBotUsername: checked(data, "clearBotUsername"),
             clearAdminChatId: checked(data, "clearAdminChatId"),
-            clearWebhookSecret: checked(data, "clearWebhookSecret")
+            clearWebhookSecret: checked(data, "clearWebhookSecret"),
+            staffBotToken: fieldValue(data, "staffBotToken"),
+            staffBotUsername: fieldValue(data, "staffBotUsername"),
+            staffWebhookSecret: fieldValue(data, "staffWebhookSecret"),
+            clearStaffBotToken: checked(data, "clearStaffBotToken"),
+            clearStaffBotUsername: checked(data, "clearStaffBotUsername"),
+            clearStaffWebhookSecret: checked(data, "clearStaffWebhookSecret")
           }
         }))}>
           <div className="field">
@@ -150,6 +161,25 @@ export function AdminIntegrations() {
             <label>{t("telegramWebhookSecret")}</label>
             <input name="webhookSecret" type="password" autoComplete="new-password" placeholder={secretPlaceholder(status.telegram.hasWebhookSecret)} />
             {status.telegram.hasWebhookSecret && <label className="admin-integration-clear"><input type="checkbox" name="clearWebhookSecret" /> {t("clearCurrentValue")}</label>}
+          </div>
+          <h3>{staffBot.staffBot}</h3>
+          <p className="small muted">{staffBot.staffHint}</p>
+          <div className="field">
+            <label>{staffBot.staffToken}</label>
+            <input name="staffBotToken" type="password" autoComplete="new-password" placeholder={secretPlaceholder(status.telegram.hasStaffBotToken)} />
+            {status.telegram.hasStaffBotToken && <label className="admin-integration-clear"><input type="checkbox" name="clearStaffBotToken" /> {t("clearCurrentValue")}</label>}
+          </div>
+          <div className="form-row">
+            <div className="field">
+              <label>{staffBot.staffUsername}</label>
+              <input name="staffBotUsername" defaultValue={status.telegram.staffBotUsername} maxLength={100} placeholder="@botname" />
+              {status.telegram.staffBotUsername && <label className="admin-integration-clear"><input type="checkbox" name="clearStaffBotUsername" /> {t("clearCurrentValue")}</label>}
+            </div>
+            <div className="field">
+              <label>{staffBot.staffSecret}</label>
+              <input name="staffWebhookSecret" type="password" autoComplete="new-password" placeholder={secretPlaceholder(status.telegram.hasStaffWebhookSecret)} />
+              {status.telegram.hasStaffWebhookSecret && <label className="admin-integration-clear"><input type="checkbox" name="clearStaffWebhookSecret" /> {t("clearCurrentValue")}</label>}
+            </div>
           </div>
           <div className="admin-integration-actions">
             <button className="button" disabled={busy}>{busy ? t("saving") : t("saveIntegration")}</button>

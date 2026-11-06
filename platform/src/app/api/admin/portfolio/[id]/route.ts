@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import { isResponse, requireModuleApi } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { portfolioStoryFields } from "@/lib/portfolio-story";
 
 export const runtime = "nodejs";
 type Context = { params: Promise<{ id: string }> };
@@ -10,7 +11,8 @@ const updateSchema = z.object({
   title: z.string().trim().min(2).max(180).optional(),
   description: z.string().trim().min(5).max(10000).optional(),
   media: z.array(z.string().cuid()).max(20).optional(),
-  published: z.boolean().optional()
+  published: z.boolean().optional(),
+  ...portfolioStoryFields
 }).refine((data) => Object.keys(data).length > 0);
 
 export async function PATCH(request: Request, context: Context) {

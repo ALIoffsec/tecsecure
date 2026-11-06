@@ -28,7 +28,7 @@ export default async function AdminPage() {
     can("PRODUCTS") ? prisma.productCategory.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, _count: { select: { products: true } } } }) : [],
     can("PRODUCTS") ? prisma.order.count({ where: { status: "NEW" } }) : 0,
     can("NEWS") ? prisma.newsArticle.findMany({ orderBy: { updatedAt: "desc" }, take: 100 }) : [],
-    can("COMPANY") ? prisma.siteSetting.findMany({ where: { key: { in: ["companyName", "phone", "email", "telegram", "instagram", "address", "siteDesign", "paymentCardNumber", "paymentCardHolder", "paymentCardBank"] } } }) : [],
+    can("COMPANY") ? prisma.siteSetting.findMany({ where: { key: { in: ["companyName", "phone", "email", "telegram", "instagram", "address", "siteDesign", "paymentCardNumber", "paymentCardHolder", "paymentCardBank", "legalName", "legalTin", "legalAddress", "bankName", "bankAccount", "bankMfo"] } } }) : [],
     can("COMPANY") ? prisma.notification.findMany({ where: { userId: actor.id }, orderBy: { createdAt: "desc" }, take: 20 }) : [],
     privileged ? prisma.user.findMany({ where: { deletedAt: null }, select: { id: true, name: true, email: true, role: true, active: true, permissions: true }, orderBy: [{ role: "asc" }, { name: "asc" }] }) : [],
     can("PROJECTS") ? prisma.project.findMany({
@@ -61,10 +61,12 @@ export default async function AdminPage() {
   const monthStart = new Date();
   monthStart.setDate(1);
   monthStart.setHours(0, 0, 0, 0);
-  const [customerCount, monthRevenue, botConfigured] = await Promise.all([
+  const [customerCount, monthRevenue, botConfigured, recentErrors, telegramAccount] = await Promise.all([
     privileged ? prisma.user.count({ where: { role: "CUSTOMER", deletedAt: null } }) : null,
     can("PRODUCTS") ? prisma.order.aggregate({ where: { status: "DELIVERED", currency: "UZS", updatedAt: { gte: monthStart } }, _sum: { totalMinor: true } }) : null,
-    privileged ? getTelegramCredentials().then(({ botToken, adminChatId }) => Boolean(botToken && adminChatId)).catch(() => false) : null
+    privileged ? getTelegramCredentials().then(({ botToken, adminChatId }) => Boolean(botToken && adminChatId)).catch(() => false) : null,
+    privileged ? prisma.errorEvent.findMany({ where: { lastSeenAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } }, orderBy: { lastSeenAt: "desc" }, take: 10, select: { id: true, source: true, message: true, path: true, count: true, lastSeenAt: true } }) : null,
+    prisma.user.findUnique({ where: { id: actor.id }, select: { telegramChatId: true } })
   ]);
   const overview = {
     newOrders: can("PRODUCTS") ? newOrderCount : null,
@@ -73,7 +75,9 @@ export default async function AdminPage() {
     pendingPayments: can("PAYMENTS") ? pendingPayments.length : null,
     customers: customerCount,
     monthRevenueMinor: monthRevenue ? monthRevenue._sum.totalMinor ?? 0 : null,
-    botConfigured
+    botConfigured,
+    recentErrors,
+    telegramLinked: Boolean(telegramAccount?.telegramChatId)
   };
   const managedUsers = users.map((user) => ({
     ...user,

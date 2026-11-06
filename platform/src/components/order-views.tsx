@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import { useSitePreferences } from "./site-preferences";
 import { ToastMessage } from "./toast-provider";
 import { siteCopy } from "@/lib/site-copy";
+import { growthCopy } from "@/lib/growth-copy";
 import { formatDateTime, formatMinor } from "@/lib/format";
 import { nextStatuses, orderStatuses, type OrderStatusValue } from "@/lib/orders";
 
@@ -14,6 +15,7 @@ type OrderBase = {
   id: string; reference: string; status: string; recipientName: string; phone: string; city: string; address: string;
   latitude: number | null; longitude: number | null; note: string | null; totalMinor: number | null; currency: string; createdAt: Date | string;
   paymentMethod: string; paymentStatus: string; paymentReference: string | null; paymentProofMediaId: string | null;
+  companyName: string | null; companyTin: string | null;
   items: OrderItem[];
 };
 export type CustomerOrder = OrderBase & { history: { id: string; toStatus: string; createdAt: Date | string; note: string | null }[] };
@@ -25,7 +27,7 @@ function PaymentBadge({ order }: { order: OrderBase }) {
   const { locale } = useSitePreferences();
   const c = siteCopy[locale].orders;
   const settled = order.paymentStatus === "PAID";
-  return <span className={`pay-badge${settled ? " is-paid" : order.paymentStatus === "AWAITING_CONFIRMATION" ? " is-review" : ""}`}>
+  return <span className={`pay-badge${settled ? " is-paid" : order.paymentStatus === "AWAITING_CONFIRMATION" || order.paymentStatus === "AWAITING_PAYMENT" ? " is-review" : order.paymentStatus === "REFUND_DUE" ? " is-refund" : ""}`}>
     {c.method[order.paymentMethod] ?? order.paymentMethod} · {c.paymentStatus[order.paymentStatus] ?? order.paymentStatus}
   </span>;
 }
@@ -33,6 +35,7 @@ function PaymentBadge({ order }: { order: OrderBase }) {
 export function CustomerOrders({ orders }: { orders: CustomerOrder[] }) {
   const { locale } = useSitePreferences();
   const c = siteCopy[locale].orders;
+  const g = growthCopy[locale].b2b;
   return <div className="container page-shell customer-orders">
     <span className="eyebrow">{c.eyebrow}</span>
     <h1 className="page-title">{c.title}</h1>
@@ -68,7 +71,10 @@ export function CustomerOrders({ orders }: { orders: CustomerOrder[] }) {
                 {order.latitude !== null && order.longitude !== null && <a className="small text-link" href={`https://yandex.uz/maps/?pt=${order.longitude},${order.latitude}&z=16&l=map`} target="_blank" rel="noreferrer">{c.map}</a>}
               </div>
               <div><h3>{c.total}</h3><p><strong>{order.totalMinor === null ? c.totalPending : formatMinor(order.totalMinor, order.currency, locale)}</strong></p></div>
-              <div><h3>{c.payment}</h3><PaymentBadge order={order} /></div>
+              <div><h3>{c.payment}</h3><PaymentBadge order={order} />
+                {!cancelled && order.paymentMethod === "ONLINE_PAYME" && order.paymentStatus === "AWAITING_PAYMENT" && <a className="button order-pay" href={`/api/orders/${order.id}/payme?l=${locale}`}>{g.pay}</a>}
+                {order.paymentMethod === "BANK_TRANSFER" && <Link className="small text-link order-invoice" href={`/portal/orders/${order.id}/invoice`}>{g.invoice}</Link>}
+              </div>
             </div>
             <ul className="order-items">{order.items.map((item) => <li key={item.id}><span>{item.name}</span><strong>× {item.quantity}</strong></li>)}</ul>
             <details>
@@ -103,8 +109,8 @@ function AdminOrderActions({ order }: { order: AdminOrder }) {
   }
   const options = nextStatuses(order.status as OrderStatusValue);
   return <div className="order-actions">
-    {order.paymentStatus === "AWAITING_CONFIRMATION" && <button type="button" className="button" disabled={busy} onClick={() => void send({ paymentStatus: "PAID" })}>{copy.admin.confirmPayment}</button>}
-    {options.map((next) => <button key={next} type="button" className={next === "CANCELLED" ? "button danger" : "button secondary"} disabled={busy} onClick={() => void send({ status: next })}>{copy.orders.status[next]}</button>)}
+    {(order.paymentStatus === "AWAITING_CONFIRMATION" || (order.paymentStatus === "AWAITING_PAYMENT" && order.paymentMethod === "BANK_TRANSFER")) && <button type="button" className="button" disabled={busy} onClick={() => void send({ paymentStatus: "PAID" })}>{copy.admin.confirmPayment}</button>}
+    {options.map((next) => <button key={next} type="button" className={next === "CANCELLED" ? "button danger" : "button secondary"} disabled={busy} onClick={() => void send({ status: next })}>{copy.orders.statusAction[next]}</button>)}
     <ToastMessage message={error} variant="error" />
   </div>;
 }
@@ -142,6 +148,7 @@ export function AdminOrders({ orders, counts, total, status }: { orders: AdminOr
             <strong>{order.recipientName}</strong> · <a href={`tel:${order.phone.replace(/[^\d+]/g, "")}`}>{order.phone}</a><br />
             {[order.city, order.address].filter(Boolean).join(", ")}<br />
             <span className="small muted">{c.account}: {order.customer.name} ({order.customer.email})</span>
+            {order.companyName && <><br /><span className="small">{order.companyName} · STIR {order.companyTin}</span></>}
           </p>
           {order.latitude !== null && order.longitude !== null && <a className="small text-link" href={`https://yandex.uz/maps/?pt=${order.longitude},${order.latitude}&z=16&l=map`} target="_blank" rel="noreferrer">{c.map}</a>}
           <ul className="order-items">{order.items.map((item) => <li key={item.id}>
@@ -153,6 +160,7 @@ export function AdminOrders({ orders, counts, total, status }: { orders: AdminOr
             <PaymentBadge order={order} />
             {order.paymentReference && <span className="small muted">{order.paymentReference}</span>}
             {order.paymentProofMediaId && <a className="small text-link" href={`/api/media/${order.paymentProofMediaId}`} target="_blank" rel="noreferrer">{copy.admin.viewProof}</a>}
+            {order.paymentMethod === "BANK_TRANSFER" && <a className="small text-link" href={`/portal/orders/${order.id}/invoice`} target="_blank" rel="noreferrer">{growthCopy[locale].b2b.invoice}</a>}
           </div>
           {order.note && <p className="small">{c.note}: {order.note}</p>}
           <AdminOrderActions order={order} />

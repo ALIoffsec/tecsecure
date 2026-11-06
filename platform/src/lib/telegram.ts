@@ -1,5 +1,23 @@
+import { AsyncLocalStorage } from "node:async_hooks";
 import { prisma } from "@/lib/prisma";
 import { getTelegramCredentials } from "@/lib/integration-credentials";
+
+export type TelegramBotName = "customer" | "staff";
+const activeBot = new AsyncLocalStorage<TelegramBotName>();
+
+/** Everything sent inside `run` goes out through the named bot. */
+export function withTelegramBot<T>(bot: TelegramBotName, run: () => Promise<T>): Promise<T> {
+  return activeBot.run(bot, run);
+}
+
+/**
+ * Staff traffic uses the staff bot when one is configured and falls back to the single bot, so the
+ * site keeps working with one token until a second is added.
+ */
+function tokenFor(credentials: { botToken: string; staffBotToken: string; adminChatId: string }, chatId?: string): string {
+  const wantsStaff = activeBot.getStore() === "staff" || (activeBot.getStore() !== "customer" && chatId !== undefined && chatId === credentials.adminChatId);
+  return wantsStaff ? credentials.staffBotToken || credentials.botToken : credentials.botToken;
+}
 
 type TelegramResponse<T> = {
   ok: boolean;
@@ -146,13 +164,15 @@ async function sendWithToken(token: string, chatId: string, text: string, option
 }
 
 export async function sendTelegramMessage(chatId: string, text: string, options: TelegramSendOptions = {}): Promise<void> {
-  const { botToken } = await getTelegramCredentials();
+  const credentials = await getTelegramCredentials();
+  const botToken = tokenFor(credentials, chatId);
   if (!botToken) throw new Error("Telegram bot token is not configured");
   await sendWithToken(botToken, chatId, text, options);
 }
 
 export async function answerTelegramCallbackQuery(callbackQueryId: string, text: string): Promise<void> {
-  const { botToken } = await getTelegramCredentials();
+  const credentials = await getTelegramCredentials();
+  const botToken = tokenFor(credentials, credentials.adminChatId);
   if (!botToken) throw new Error("Telegram bot token is not configured");
   await callTelegramApi(botToken, "answerCallbackQuery", {
     callback_query_id: callbackQueryId,
@@ -167,7 +187,8 @@ export async function editTelegramAdminMessage(
   text: string,
   replyMarkup: TelegramReplyMarkup
 ): Promise<void> {
-  const { botToken } = await getTelegramCredentials();
+  const credentials = await getTelegramCredentials();
+  const botToken = tokenFor(credentials, chatId);
   if (!botToken) throw new Error("Telegram bot token is not configured");
   await callTelegramApi(botToken, "editMessageText", {
     chat_id: chatId,
@@ -179,7 +200,9 @@ export async function editTelegramAdminMessage(
 
 export async function notifyTelegramAdmins(text: string, reference: string): Promise<boolean> {
   try {
-    const { botToken, adminChatId } = await getTelegramCredentials();
+    const credentials = await getTelegramCredentials();
+    const { adminChatId } = credentials;
+    const botToken = tokenFor(credentials, adminChatId);
     if (!botToken || !adminChatId) {
       console.warn("Telegram admin notification skipped: bot token or admin chat ID is not configured.");
       return false;
@@ -201,7 +224,9 @@ export async function notifyTelegramAdminsWithProof(
   replyMarkup: TelegramReplyMarkup
 ): Promise<boolean> {
   try {
-    const { botToken, adminChatId } = await getTelegramCredentials();
+    const credentials = await getTelegramCredentials();
+    const { adminChatId } = credentials;
+    const botToken = tokenFor(credentials, adminChatId);
     if (!botToken || !adminChatId) {
       console.warn("Telegram admin notification skipped: bot token or admin chat ID is not configured.");
       return false;
@@ -234,7 +259,8 @@ export async function notifyTelegramUser(userId: string, text: string): Promise<
   try {
     const user = await prisma.user.findUnique({ where: { id: userId }, select: { telegramChatId: true } });
     if (!user?.telegramChatId) return false;
-    await sendTelegramMessage(user.telegramChatId, text);
+    // Customers always hear from the customer bot, even when a staff button triggered the message.
+    await withTelegramBot("customer", () => sendTelegramMessage(user.telegramChatId as string, text));
     return true;
   } catch (error) {
     console.error("Telegram customer notification failed", error);
@@ -242,23 +268,32 @@ export async function notifyTelegramUser(userId: string, text: string): Promise<
   }
 }
 
-export type TelegramConnection = { botName: string; messageSent: true; webhook: "connected" | "needs-https" | "needs-secret" };
+export type TelegramConnection = { botName: string; staffBotName: string; messageSent: true; webhook: "connected" | "needs-https" | "needs-secret" };
 
-/** Proves the saved credentials work end to end and points Telegram's button presses at this site. */
+async function connectOneBot(token: string, secret: string, appUrl: string, botParam: string, menuPath: string, commands: { command: string; description: string }[]) {
+  await callTelegramApi(token, "setWebhook", { url: new URL(`/api/telegram/webhook${botParam}`, appUrl).toString(), secret_token: secret, allowed_updates: ["message", "callback_query"] });
+  await callTelegramApi(token, "setMyCommands", { commands });
+  await callTelegramApi(token, "setChatMenuButton", { menu_button: { type: "web_app", text: "Tecsecure", web_app: { url: new URL(menuPath, appUrl).toString() } } });
+}
+
+/** Proves the saved credentials work end to end, then points Telegram's buttons and Mini Apps at this site. */
 export async function connectTelegramBot(): Promise<TelegramConnection> {
-  const { botToken, adminChatId, webhookSecret } = await getTelegramCredentials();
+  const { botToken, adminChatId, webhookSecret, staffBotToken, staffWebhookSecret } = await getTelegramCredentials();
   if (!botToken || !adminChatId) throw new Error("Bot token va admin chat ID kiritilmagan.");
+  const adminToken = staffBotToken || botToken;
   const me = await callTelegramApi<{ username?: string }>(botToken, "getMe", {});
-  await sendWithToken(botToken, adminChatId, "✅ <b>Tecsecure boti ulandi.</b>\nYangi buyurtma va arizalar shu chatga keladi. Hisobot uchun: /hisobot");
+  const staffMe = staffBotToken ? await callTelegramApi<{ username?: string }>(staffBotToken, "getMe", {}) : me;
+  await sendWithToken(adminToken, adminChatId, "✅ <b>Tecsecure boti ulandi.</b>\nYangi buyurtma va arizalar shu chatga keladi. Hisobot uchun: /hisobot");
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "";
   let webhook: TelegramConnection["webhook"] = "needs-https";
   if (appUrl.startsWith("https://")) {
-    if (webhookSecret) {
-      await callTelegramApi(botToken, "setWebhook", { url: new URL("/api/telegram/webhook", appUrl).toString(), secret_token: webhookSecret, allowed_updates: ["message", "callback_query"] });
+    if (webhookSecret && (!staffBotToken || staffWebhookSecret)) {
+      await connectOneBot(botToken, webhookSecret, appUrl, "", "/tg", [{ command: "start", description: "Tecsecure'ni ochish" }]);
+      if (staffBotToken) await connectOneBot(staffBotToken, staffWebhookSecret, appUrl, "?bot=staff", "/tg/staff", [{ command: "hisobot", description: "Bugungi hisobot" }]);
       webhook = "connected";
     } else {
       webhook = "needs-secret";
     }
   }
-  return { botName: me?.username ?? "", messageSent: true, webhook };
+  return { botName: me?.username ?? "", staffBotName: staffMe?.username ?? "", messageSent: true, webhook };
 }

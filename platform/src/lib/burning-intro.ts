@@ -183,4 +183,4 @@ export function createBurningIntro(canvas: HTMLCanvasElement) {
 }
 
 // Decide before first paint so the site does not flash ahead of the opening.
-export const introBootstrapScript = `(()=>{if(location.pathname==="/"&&document.documentElement.dataset.motion!=="off"){document.documentElement.dataset.tecIntro="pending";const timer=setTimeout(()=>{if(document.documentElement.dataset.tecIntro==="pending"){document.querySelector("dialog.site-intro[open]")?.close();delete document.documentElement.dataset.tecIntro}},6000);document.addEventListener("tecsecure:intro-ready",()=>clearTimeout(timer),{once:true})}})()`;
+export const introBootstrapScript = `(()=>{let t=false;try{t=!!sessionStorage.getItem("tecsecure-tma")}catch{}if(!t&&location.pathname==="/"&&document.documentElement.dataset.motion!=="off"){document.documentElement.dataset.tecIntro="pending";const timer=setTimeout(()=>{if(document.documentElement.dataset.tecIntro==="pending"){document.querySelector("dialog.site-intro[open]")?.close();delete document.documentElement.dataset.tecIntro}},6000);document.addEventListener("tecsecure:intro-ready",()=>clearTimeout(timer),{once:true})}})()`;

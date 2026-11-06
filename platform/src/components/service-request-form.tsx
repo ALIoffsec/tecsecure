@@ -1,5 +1,6 @@
 "use client";
 
+import { trackGoal } from "@/lib/analytics";
 import { FormEvent, useState } from "react";
 import { useSitePreferences } from "@/components/site-preferences";
 import { ToastMessage } from "@/components/toast-provider";
@@ -37,6 +38,7 @@ export function ServiceRequestForm({ services, showRegisterLink = false, initial
         return;
       }
       form.reset();
+      trackGoal("request_sent");
       setMessage({ text: t("requestSaved"), reference: result.request.reference, error: false });
     } catch {
       setMessage({ text: t("serverUnavailable"), error: true });
