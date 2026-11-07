@@ -60,6 +60,14 @@ export const requestSchema = z.object({
   ].filter(Boolean).join("\n")
 }));
 
+const productDetailValue = z.union([z.string().trim().max(1000), z.number(), z.boolean()]);
+const productLanguage = z.object({
+  name: z.string().trim().min(2).max(200).optional(),
+  description: z.string().trim().min(5).max(5000).optional(),
+  specifications: z.record(z.string(), productDetailValue).nullable().optional(),
+  compatibility: z.union([z.array(z.string().trim().max(160)).max(50), z.record(z.string(), productDetailValue)]).nullable().optional()
+});
+
 export const productSchema = z.object({
   name: z.string().trim().min(2).max(160),
   description: z.string().trim().min(5).max(5000),
@@ -74,7 +82,8 @@ export const productSchema = z.object({
   stockStatus: z.enum(["UNKNOWN", "IN_STOCK", "OUT_OF_STOCK", "ON_REQUEST"]).default("UNKNOWN"),
   warrantyDescription: z.string().trim().max(500).optional(),
   status: z.enum(["DRAFT", "PUBLISHED", "ARCHIVED"]).default("DRAFT"),
-  media: z.array(z.string().cuid()).max(20).default([])
+  media: z.array(z.string().cuid()).max(20).default([]),
+  translations: z.object({ ru: productLanguage.optional(), en: productLanguage.optional() }).nullable().optional()
 });
 
 export const projectSchema = z.object({

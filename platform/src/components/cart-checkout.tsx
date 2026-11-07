@@ -16,13 +16,14 @@ import { journeyCopy } from "@/lib/journey-copy";
 import { siteCopy } from "@/lib/site-copy";
 import type { CatalogMedia, QuotedProduct } from "@/lib/catalog-utils";
 import { checkoutCopy } from "@/lib/checkout-copy";
+import { productVariants } from "@/lib/product-i18n";
 import { growthCopy } from "@/lib/growth-copy";
 import { trackGoal } from "@/lib/analytics";
 import { formatMinor } from "@/lib/format";
 import { OriginalOrderButton } from "./original-order-button";
 import { startOrderMotion, type ButtonMotion } from "@/lib/button-motion";
 
-type PreviewProduct = QuotedProduct & { name: string; slug: string; category: { slug: string } | null; assets: CatalogMedia[] };
+type PreviewProduct = QuotedProduct & { name: string; description: string; translations?: unknown; slug: string; category: { slug: string } | null; assets: CatalogMedia[] };
 type Method = "CASH" | "CARD_ON_DELIVERY" | "CARD_TRANSFER" | "WALLET" | "BANK_TRANSFER" | "ONLINE_PAYME";
 export type PaymentCard = { number: string; holder: string; bank: string };
 
@@ -248,7 +249,7 @@ export function CartCheckout({ canOrder = false, signedIn = false, customer, wal
           {lines.map((line) => <div className="shop-line" key={line.productId}>
             <ProductMedia assets={byId.get(line.productId)?.assets ?? []} title={line.name} slug={line.slug} categorySlug={line.categorySlug} />
             <div>
-              <Link href={`/products/${line.slug}`}>{line.name}</Link>
+              <Link href={`/products/${line.slug}`}>{byId.get(line.productId) ? productVariants(byId.get(line.productId)!)[locale].name : line.name}</Link>
               <div className="small muted">{byId.get(line.productId)?.priceMinor != null ? <CurrencyPrice amountMinor={byId.get(line.productId)!.priceMinor! * line.quantity} currency={byId.get(line.productId)!.currency} /> : c.priceRequest}</div>
               {preview && (!byId.has(line.productId) || byId.get(line.productId)?.stockStatus === "OUT_OF_STOCK") && <p role="status">{c.OUT_OF_STOCK}</p>}
               <button type="button" className="small cart-remove" onClick={() => setQuantity(line.productId, 0)}>{c.remove}</button>

@@ -12,7 +12,7 @@ export async function POST(request: Request) {
   try {
     const products = await prisma.product.findMany({
       where: { id: { in: parsed.data.ids }, status: "PUBLISHED" },
-      select: { id: true, name: true, slug: true, priceMinor: true, currency: true, stockStatus: true, media: true, category: { select: { slug: true } } }
+      select: { id: true, name: true, slug: true, translations: true, description: true, priceMinor: true, currency: true, stockStatus: true, media: true, category: { select: { slug: true } } }
     });
     const getMedia = await catalogMedia(products);
     return Response.json({ products: products.map(({ media, ...product }) => ({ ...product, assets: getMedia(media) })) }, { headers: { "Cache-Control": "no-store" } });

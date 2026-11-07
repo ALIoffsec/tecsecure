@@ -134,6 +134,8 @@ html[data-tma="customer"] #app-shell .contact-dock { display: none; }
 #app-shell .admin-errors li { display: grid; gap: 2px; font-size: .88rem; overflow-wrap: anywhere; }
 #app-shell .admin-errors small { color: var(--muted); }
 
+#app-shell .admin-product-languages fieldset { display: grid; gap: 10px; margin: 12px 0 0; padding: 12px; border: 1px solid var(--glass-edge); border-radius: 14px; }
+#app-shell .admin-product-languages legend { padding: 0 6px; font-weight: 650; }
 #app-shell .admin-products-pager { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 12px; margin: 16px 0; }
 #app-shell .admin-product-list[aria-busy="true"] { opacity: .6; }
 

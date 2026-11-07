@@ -1,3 +1,4 @@
+import { categoryName, productVariants } from "@/lib/product-i18n";
 import { prisma } from "@/lib/prisma";
 import { isPreviewMode } from "@/lib/preview-mode";
 import { getPublishedLearningDocuments } from "@/lib/learning-content";
@@ -44,7 +45,7 @@ async function buildIndex(locale: Locale): Promise<IndexedItem[]> {
 
   if (!isPreviewMode) {
     const [products, services, news, modules, paths, labs, exams] = await Promise.all([
-      prisma.product.findMany({ where: { status: "PUBLISHED" }, select: { id: true, name: true, slug: true, description: true, brand: true, model: true, sku: true, media: true, priceMinor: true, currency: true, specifications: true, category: { select: { name: true } } }, take: 2000 }),
+      prisma.product.findMany({ where: { status: "PUBLISHED" }, select: { id: true, name: true, slug: true, description: true, brand: true, model: true, sku: true, media: true, priceMinor: true, currency: true, specifications: true, translations: true, category: { select: { name: true } } }, take: 2000 }),
       prisma.service.findMany({ where: { status: "PUBLISHED", availability: true }, select: { id: true, name: true, slug: true, description: true }, take: 500 }),
       prisma.newsArticle.findMany({ where: { status: "PUBLISHED" }, select: { id: true, title: true, slug: true, excerpt: true }, take: 500 }),
       getPublishedLearningDocuments("module"),
@@ -54,8 +55,10 @@ async function buildIndex(locale: Locale): Promise<IndexedItem[]> {
     ]);
     for (const product of products) {
       const media = Array.isArray(product.media) ? product.media.find((id): id is string => typeof id === "string") ?? null : null;
-      add({ id: `product:${product.id}`, group: "product", title: product.name, subtitle: [product.brand, product.category?.name].filter(Boolean).join(" · ") || short(product.description, 60), href: `/products/${product.slug}`, imageId: media, priceMinor: product.priceMinor, currency: product.currency },
-        [product.brand, product.model, product.sku, product.category?.name, specText(product.specifications)].filter(Boolean).join(" "), product.description);
+      const own = productVariants(product)[locale];
+      const category = product.category ? categoryName(product.category.name, locale) : null;
+      add({ id: `product:${product.id}`, group: "product", title: own.name, subtitle: [product.brand, category].filter(Boolean).join(" · ") || short(own.description, 60), href: `/products/${product.slug}`, imageId: media, priceMinor: product.priceMinor, currency: product.currency },
+        [product.name, product.brand, product.model, product.sku, category, specText(own.specifications)].filter(Boolean).join(" "), own.description);
     }
     for (const service of services) add({ id: `service:${service.id}`, group: "service", title: service.name, subtitle: short(service.description), href: `/services/${service.slug}` }, "", service.description);
     for (const article of news) add({ id: `news:${article.id}`, group: "news", title: article.title, subtitle: short(article.excerpt), href: `/news/${article.slug}` }, "", article.excerpt);

@@ -31,7 +31,7 @@ export async function POST(request: Request) {
   const slug = `${parsed.data.name.toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}-${crypto.randomUUID().slice(0, 8)}`;
   try {
     const product = await prisma.$transaction(async (tx) => {
-      const { categoryId, specifications, compatibility, ...productData } = parsed.data;
+      const { categoryId, specifications, compatibility, translations, ...productData } = parsed.data;
       const created = await tx.product.create({
         data: {
           ...productData,
@@ -40,6 +40,7 @@ export async function POST(request: Request) {
           model: productData.model || null,
           warrantyDescription: productData.warrantyDescription || null,
           ...(categoryId ? { category: { connect: { id: categoryId } } } : {}),
+          ...(translations !== undefined ? { translations: translations ?? Prisma.DbNull } : {}),
           ...(specifications !== undefined ? { specifications: specifications ?? Prisma.DbNull } : {}),
           ...(compatibility !== undefined ? { compatibility: compatibility ?? Prisma.DbNull } : {}),
           slug

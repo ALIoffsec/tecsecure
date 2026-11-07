@@ -276,6 +276,7 @@ model Product {
   stockStatus         String            @default("UNKNOWN")
   warrantyDescription String?
   media               Json?
+  translations        Json?
   status              PublicationStatus @default(DRAFT)
   createdAt           DateTime          @default(now())
   updatedAt           DateTime          @updatedAt

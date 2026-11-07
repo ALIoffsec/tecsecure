@@ -23,7 +23,7 @@ export async function PATCH(request: Request, context: Context) {
   }
   try {
     const product = await prisma.$transaction(async (tx) => {
-      const { categoryId, specifications, compatibility, ...productData } = onlyProvided(parsed.data, body);
+      const { categoryId, specifications, compatibility, translations, ...productData } = onlyProvided(parsed.data, body);
       const updated = await tx.product.update({
         where: { id },
         data: {
@@ -33,6 +33,7 @@ export async function PATCH(request: Request, context: Context) {
           ...(productData.model !== undefined ? { model: productData.model || null } : {}),
           ...(productData.warrantyDescription !== undefined ? { warrantyDescription: productData.warrantyDescription || null } : {}),
           ...(categoryId !== undefined ? { category: categoryId ? { connect: { id: categoryId } } : { disconnect: true } } : {}),
+          ...(translations !== undefined ? { translations: translations ?? Prisma.DbNull } : {}),
           ...(specifications !== undefined ? { specifications: specifications ?? Prisma.DbNull } : {}),
           ...(compatibility !== undefined ? { compatibility: compatibility ?? Prisma.DbNull } : {})
         }

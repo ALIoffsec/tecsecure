@@ -15,9 +15,12 @@ import { catalogMedia } from "@/lib/catalog-media";
 import { coverMedia, detailRows } from "@/lib/catalog-utils";
 import { inquiryHref } from "@/lib/journey-copy";
 import { AnswerForm, QuestionForm, ReviewForm } from "@/components/product-feedback";
-import { CollapsibleSpecs, ExpandableText, ProductDetailTabs } from "@/components/product-detail-tabs";
+import { ExpandableText, ProductDetailTabs } from "@/components/product-detail-tabs";
 import { CurrencyPrice, CurrencySelector } from "@/components/currency-context";
 import { formatDate } from "@/lib/format";
+import { Localized, LocalizedSpecs, LocalizedText } from "@/components/localized";
+import { categoryName, perLocale, productVariants } from "@/lib/product-i18n";
+import type { Locale } from "@/lib/messages";
 
 export const dynamic = "force-dynamic";
 type Props = { params: Promise<{ slug: string }> };
@@ -79,14 +82,18 @@ export default async function ProductDetailPage({ params }: Props) {
 
   const getMedia = await catalogMedia([product, ...related]);
   const assets = getMedia(product.media);
-  const specs = detailRows(product.specifications);
-  const compatibility = detailRows(product.compatibility);
-  const detailSpecs: [ReactNode, string][] = [...specs];
-  if (product.brand) detailSpecs.unshift([<S id="brand" key="brand" />, product.brand]);
-  if (product.model) detailSpecs.unshift([<S id="model" key="model" />, product.model]);
-  if (product.sku) detailSpecs.push(["SKU", product.sku]);
-  if (product.warrantyDescription) detailSpecs.push([<S id="warranty" key="warranty" />, product.warrantyDescription]);
-  for (const [label, value] of compatibility) detailSpecs.push([label || <S id="compatibility" key={value} />, value]);
+  const text = productVariants(product);
+  const names = perLocale((locale) => text[locale].name);
+  const descriptions = perLocale((locale) => text[locale].description);
+  const detailSpecsFor = (locale: Locale) => {
+    const rows: [ReactNode, string][] = [...detailRows(text[locale].specifications)];
+    if (product.brand) rows.unshift([<S id="brand" key="brand" />, product.brand]);
+    if (product.model) rows.unshift([<S id="model" key="model" />, product.model]);
+    if (product.sku) rows.push(["SKU", product.sku]);
+    if (product.warrantyDescription) rows.push([<S id="warranty" key="warranty" />, product.warrantyDescription]);
+    for (const [label, value] of detailRows(text[locale].compatibility)) rows.push([label || <S id="compatibility" key={value} />, value]);
+    return rows;
+  };
   const priced = product.priceMinor !== null;
   const average = reviews.length ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length : 0;
   const distribution = [5, 4, 3, 2, 1].map((n) => ({ n, count: reviews.filter((r) => r.rating === n).length }));
@@ -108,8 +115,8 @@ export default async function ProductDetailPage({ params }: Props) {
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, "\\u003c") }} />
     <nav className="shop-crumbs" aria-label="Breadcrumb">
       <Link href="/products"><S id="catalog" /></Link><span>/</span>
-      {product.category && <><Link href={`/products?category=${product.category.slug}`}>{product.category.name}</Link><span>/</span></>}
-      <span aria-current="page">{product.name}</span>
+      {product.category && <><Link href={`/products?category=${product.category.slug}`}><Localized values={perLocale((locale) => categoryName(product.category!.name, locale))} /></Link><span>/</span></>}
+      <span aria-current="page"><Localized values={names} /></span>
     </nav>
 
     <CompareTray />
@@ -119,8 +126,8 @@ export default async function ProductDetailPage({ params }: Props) {
       </div>
 
       <div className="shop-pdp-info">
-        {(product.brand || product.category) && <span className="shop-card-cat">{[product.brand, product.category?.name].filter(Boolean).join(" · ")}</span>}
-        <h1>{product.name}</h1>
+        {(product.brand || product.category) && <span className="shop-card-cat"><Localized values={perLocale((locale) => [product.brand, product.category ? categoryName(product.category.name, locale) : null].filter(Boolean).join(" · "))} /></span>}
+        <h1><Localized values={names} /></h1>
         <div className="shop-meta-row">
           {reviews.length > 0 && <div className="shop-rating-link">
             <Stars value={average} />
@@ -129,12 +136,15 @@ export default async function ProductDetailPage({ params }: Props) {
           </div>}
           {product.sku && <span className="muted">SKU: {product.sku}</span>}
         </div>
-        {specs.length > 0
-          ? <ul className="shop-highlights">
-            {product.model && <li><span><S id="model" /></span><strong>{product.model}</strong></li>}
-            {specs.slice(0, 5).map(([k, v], i) => <li key={`${k}-${i}`}><span>{k || "•"}</span><strong>{v}</strong></li>)}
-          </ul>
-          : <div className="shop-pdp-lead"><ExpandableText text={product.description} /></div>}
+        <Localized values={perLocale((locale) => {
+          const specs = detailRows(text[locale].specifications);
+          return specs.length > 0
+            ? <ul className="shop-highlights">
+              {product.model && <li><span><S id="model" /></span><strong>{product.model}</strong></li>}
+              {specs.slice(0, 5).map(([k, v], i) => <li key={`${k}-${i}`}><span>{k || "•"}</span><strong>{v}</strong></li>)}
+            </ul>
+            : <div className="shop-pdp-lead"><ExpandableText text={text[locale].description} /></div>;
+        })} />
       </div>
 
       <aside className="shop-buybox" aria-label="Xarid">
@@ -156,7 +166,7 @@ export default async function ProductDetailPage({ params }: Props) {
         label: <S id="description" />,
         content: <section>
           <h2><S id="description" /></h2>
-          <ExpandableText text={product.description} />
+          <LocalizedText values={descriptions} />
         </section>
       },
       {
@@ -164,7 +174,7 @@ export default async function ProductDetailPage({ params }: Props) {
         label: <S id="specs" />,
         content: <section>
           <h2><S id="specs" /></h2>
-          <CollapsibleSpecs rows={detailSpecs} />
+          <LocalizedSpecs rows={perLocale(detailSpecsFor)} />
         </section>
       },
       {

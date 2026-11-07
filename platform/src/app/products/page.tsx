@@ -1,3 +1,5 @@
+import { Localized } from "@/components/localized";
+import { categoryName, perLocale } from "@/lib/product-i18n";
 import { searchProductIds } from "@/lib/search-index";
 import { RecentlyViewed } from "@/components/shop-extras";
 import Link from "next/link";
@@ -107,7 +109,7 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
     <FilterPanel activeCount={activeFilters.length} currency={<CurrencySelector />}
       categories={<nav className="shop-cats" aria-label="Categories">
         <Link className={`shop-chip${!sp.category ? " is-active" : ""}`} href={build(current, { category: undefined, spec: undefined, brand: undefined })}><S id="all" /></Link>
-        {categories.map(category => <Link className={`shop-chip${category.slug === sp.category ? " is-active" : ""}`} href={build(current, { category: category.slug, brand: undefined, spec: undefined })} key={category.slug}>{category.name}</Link>)}
+        {categories.map(category => <Link className={`shop-chip${category.slug === sp.category ? " is-active" : ""}`} href={build(current, { category: category.slug, brand: undefined, spec: undefined })} key={category.slug}><Localized values={perLocale((locale) => categoryName(category.name, locale))} /></Link>)}
       </nav>}
       results={<section className="shop-results">
         <div className="shop-results-bar">

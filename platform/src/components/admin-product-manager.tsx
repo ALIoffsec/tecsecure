@@ -17,7 +17,7 @@ export type AdminProduct = {
   id: string; name: string; slug: string; sku: string | null; brand: string | null; model: string | null;
   categoryId: string | null; category: { name: string; slug: string } | null;
   specifications: unknown; compatibility: unknown; warrantyDescription: string | null;
-  status: string; priceMinor: number | null; currency: string; stockStatus: string; description: string; media: unknown;
+  status: string; priceMinor: number | null; currency: string; stockStatus: string; description: string; media: unknown; translations?: unknown;
 };
 export type AdminCategory = { id: string; name: string; _count: { products: number } };
 
@@ -32,7 +32,7 @@ const copy = {
     warranty: "Kafolat", price: "Narx", priceHint: "Oddiy summa, masalan 1 250 000. Bo‘sh qolsa, saytda «Narx so‘rov bo‘yicha» ko‘rinadi.", currency: "Valyuta", stock: "Ombor holati", status: "Nashr holati",
     photos: "Rasmlar", photoHint: "Birinchi rasm kartochkada ko‘rinadi. Eng yaxshisi: oq fon, kamida 1000 px, mahsulot kadrni to‘ldirgan.",
     save: "Saqlash", saving: "Saqlanmoqda…", cancel: "Bekor qilish", saved: "Saqlandi", invalidPrice: "Narxni to‘g‘ri kiriting, masalan 1250000 yoki 19.99.", publishWarning: "Diqqat: nashr qilinayotgan mahsulotda quyidagilar yo‘q:",
-    prev: "Oldingi", next: "Keyingi", loading: "Yuklanmoqda…", categories: "Kategoriyalar", newCategory: "Yangi kategoriya nomi", addCategory: "Qo‘shish", rename: "Saqlash", remove: "O‘chirish", confirmRemove: "O‘chirilsinmi", failed: "So‘rov bajarilmadi."
+    languages: "Boshqa tillar", languagesHint: "Yuqoridagi matn o‘zbekcha. Bo‘sh qolgan maydon o‘zbekcha ko‘rinadi.", prev: "Oldingi", next: "Keyingi", loading: "Yuklanmoqda…", categories: "Kategoriyalar", newCategory: "Yangi kategoriya nomi", addCategory: "Qo‘shish", rename: "Saqlash", remove: "O‘chirish", confirmRemove: "O‘chirilsinmi", failed: "So‘rov bajarilmadi."
   },
   ru: {
     add: "Добавить товар", search: "Название, бренд, модель или SKU", allStatus: "Все статусы", allCategories: "Все категории", attention: "Только незаполненные",
@@ -44,7 +44,7 @@ const copy = {
     warranty: "Гарантия", price: "Цена", priceHint: "Обычная сумма, например 1 250 000. Если пусто, на сайте будет «Цена по запросу».", currency: "Валюта", stock: "Наличие", status: "Статус публикации",
     photos: "Фотографии", photoHint: "Первое фото видно на карточке. Лучше всего: белый фон, от 1000 px, товар заполняет кадр.",
     save: "Сохранить", saving: "Сохранение…", cancel: "Отмена", saved: "Сохранено", invalidPrice: "Укажите цену правильно, например 1250000 или 19.99.", publishWarning: "Внимание: у публикуемого товара нет:",
-    prev: "Назад", next: "Далее", loading: "Загрузка…", categories: "Категории", newCategory: "Название новой категории", addCategory: "Добавить", rename: "Сохранить", remove: "Удалить", confirmRemove: "Удалить", failed: "Запрос не выполнен."
+    languages: "Другие языки", languagesHint: "Текст выше на узбекском. Пустое поле покажется на узбекском.", prev: "Назад", next: "Далее", loading: "Загрузка…", categories: "Категории", newCategory: "Название новой категории", addCategory: "Добавить", rename: "Сохранить", remove: "Удалить", confirmRemove: "Удалить", failed: "Запрос не выполнен."
   },
   en: {
     add: "Add product", search: "Name, brand, model or SKU", allStatus: "All statuses", allCategories: "All categories", attention: "Incomplete only",
@@ -56,7 +56,7 @@ const copy = {
     warranty: "Warranty", price: "Price", priceHint: "A plain amount, like 1 250 000. Leave empty to show “Price on request”.", currency: "Currency", stock: "Stock status", status: "Publication status",
     photos: "Photos", photoHint: "The first photo shows on the card. Best: white background, 1000 px or more, product fills the frame.",
     save: "Save", saving: "Saving…", cancel: "Cancel", saved: "Saved", invalidPrice: "Enter a valid price, like 1250000 or 19.99.", publishWarning: "Note: this product is being published without:",
-    prev: "Previous", next: "Next", loading: "Loading…", categories: "Categories", newCategory: "New category name", addCategory: "Add", rename: "Save", remove: "Delete", confirmRemove: "Delete", failed: "Request failed."
+    languages: "Other languages", languagesHint: "The text above is Uzbek. An empty field shows the Uzbek text.", prev: "Previous", next: "Next", loading: "Loading…", categories: "Categories", newCategory: "New category name", addCategory: "Add", rename: "Save", remove: "Delete", confirmRemove: "Delete", failed: "Request failed."
   }
 } satisfies Record<Locale, Record<string, string>>;
 type Copy = typeof copy.uz;
@@ -235,7 +235,13 @@ function ProductEditor({ product, categories, c, onClose, onSaved }: { product: 
         categoryId: data.get("categoryId") || null,
         specifications: parseProductDetails(String(data.get("specifications") ?? ""), "specifications"),
         compatibility: parseProductDetails(String(data.get("compatibility") ?? ""), "compatibility"),
-        priceMinor, currency: data.get("currency"), stockStatus: data.get("stockStatus"), status: data.get("status"), media
+        priceMinor, currency: data.get("currency"), stockStatus: data.get("stockStatus"), status: data.get("status"), media,
+        translations: Object.fromEntries((["ru", "en"] as const).map((language) => [language, {
+          ...(String(data.get(`${language}Name`) ?? "").trim() ? { name: String(data.get(`${language}Name`)).trim() } : {}),
+          ...(String(data.get(`${language}Description`) ?? "").trim() ? { description: String(data.get(`${language}Description`)).trim() } : {}),
+          specifications: parseProductDetails(String(data.get(`${language}Specifications`) ?? ""), "specifications"),
+          compatibility: parseProductDetails(String(data.get(`${language}Compatibility`) ?? ""), "compatibility")
+        }]))
       };
       if (body.status === "PUBLISHED" && product?.status !== "PUBLISHED") {
         const missing = gaps({ media, priceMinor, specifications: body.specifications, categoryId: body.categoryId as string | null }, c);
@@ -257,6 +263,20 @@ function ProductEditor({ product, categories, c, onClose, onSaved }: { product: 
       <div className="form-row"><div className="field"><label>{c.stock}</label><select name="stockStatus" defaultValue={product?.stockStatus ?? "IN_STOCK"}>{stockOptions.map((value) => <option key={value} value={value}>{c[value]}</option>)}</select></div><div className="field"><label>{c.status}</label><select name="status" defaultValue={product?.status ?? "DRAFT"}>{statusOptions.map((value) => <option key={value} value={value}>{c[value]}</option>)}</select></div></div>
       <div className="field"><label>{c.description}</label><textarea name="description" rows={4} defaultValue={product?.description ?? ""} required minLength={5} maxLength={5000} /></div>
       <div className="form-row"><div className="field"><label>{c.specs}</label><textarea name="specifications" rows={5} defaultValue={formatProductDetails(product?.specifications)} placeholder={"Portlar: 8\nTezlik: 1 Gbit/s"} /><small className="muted">{c.specsHint}</small></div><div className="field"><label>{c.compat}</label><textarea name="compatibility" rows={5} defaultValue={formatProductDetails(product?.compatibility)} placeholder={"Windows\nLinux"} /><small className="muted">{c.compatHint}</small></div></div>
+      <details className="admin-records-accordion admin-product-languages">
+        <summary>{c.languages}</summary>
+        <p className="small muted">{c.languagesHint}</p>
+        {(["ru", "en"] as const).map((language) => {
+          const own = (product?.translations as Record<string, { name?: string; description?: string; specifications?: unknown; compatibility?: unknown } | undefined> | null | undefined)?.[language];
+          const label = language === "ru" ? "Русский" : "English";
+          return <fieldset key={language}>
+            <legend>{label}</legend>
+            <div className="field"><label>{c.name}</label><input name={`${language}Name`} defaultValue={own?.name ?? ""} maxLength={200} /></div>
+            <div className="field"><label>{c.description}</label><textarea name={`${language}Description`} rows={4} defaultValue={own?.description ?? ""} maxLength={5000} /></div>
+            <div className="form-row"><div className="field"><label>{c.specs}</label><textarea name={`${language}Specifications`} rows={5} defaultValue={formatProductDetails(own?.specifications)} /></div><div className="field"><label>{c.compat}</label><textarea name={`${language}Compatibility`} rows={5} defaultValue={formatProductDetails(own?.compatibility)} /></div></div>
+          </fieldset>;
+        })}
+      </details>
       <div className="field"><label>{c.warranty}</label><input name="warrantyDescription" defaultValue={product?.warrantyDescription ?? ""} maxLength={500} /></div>
       {error && <p className="form-error" role="alert">{error}</p>}
       <div className="hero-actions"><button className="button" disabled={busy}>{busy ? c.saving : c.save}</button><button className="button ghost" type="button" onClick={onClose}>{c.cancel}</button></div>
