@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useSitePreferences } from "./site-preferences";
 import { shopCopy } from "@/lib/shop-copy";
@@ -74,23 +74,48 @@ export function clearCart() {
   write([]);
 }
 
+export function CartIcon() {
+  return <svg aria-hidden="true" viewBox="0 0 24 24">
+    <path d="M3 4h2l2.2 11.1a2 2 0 0 0 2 1.6h8.1a2 2 0 0 0 1.9-1.5L21 8H6" />
+    <circle cx="10" cy="20" r="1" />
+    <circle cx="18" cy="20" r="1" />
+  </svg>;
+}
+
+// A double tap on "add" must not also press the "go to cart" link that takes its place.
+const DOUBLE_TAP_MS = 400;
+
 export function AddToCartButton({ product, disabled }: { product: Omit<CartLine, "quantity">; disabled?: boolean }) {
   const { locale } = useSitePreferences();
   const c = shopCopy[locale];
-  const [added, setAdded] = useState(false);
+  const quantity = useCart().find((line) => line.productId === product.productId)?.quantity ?? 0;
+  const addedAt = useRef(0);
+  const root = useRef<HTMLDivElement>(null);
+  const moveFocus = useRef(false);
+  // The control that was pressed is replaced, so keyboard focus moves to the one that took its place.
   useEffect(() => {
-    if (!added) return;
-    const t = window.setTimeout(() => setAdded(false), 1800);
-    return () => window.clearTimeout(t);
-  }, [added]);
-  const label = disabled ? c.OUT_OF_STOCK : added ? c.added : c.add;
-  return <button type="button" className="button shop-add-to-cart" aria-label={label} title={label} disabled={disabled} onClick={() => { addToCart(product); setAdded(true); }}>
-    <svg aria-hidden="true" viewBox="0 0 24 24">
-      <path d="M3 4h2l2.2 11.1a2 2 0 0 0 2 1.6h8.1a2 2 0 0 0 1.9-1.5L21 8H6" />
-      <circle cx="10" cy="20" r="1" />
-      <circle cx="18" cy="20" r="1" />
-    </svg>
-    <span className="shop-add-label" aria-live="polite">{label}</span>
-  </button>;
+    if (!moveFocus.current) return;
+    moveFocus.current = false;
+    root.current?.querySelector<HTMLElement>("a, button")?.focus({ preventScroll: true });
+  }, [quantity]);
+  if (disabled || quantity === 0) {
+    return <div className="shop-cart-action" ref={root}>
+      <button type="button" className="button shop-add-to-cart" disabled={disabled} onClick={() => { addedAt.current = Date.now(); moveFocus.current = true; addToCart(product); }}>
+        <CartIcon />
+        <span className="shop-add-label">{disabled ? c.OUT_OF_STOCK : c.add}</span>
+      </button>
+    </div>;
+  }
+  return <div className="shop-cart-action" ref={root}>
+    <Link className="button shop-add-to-cart" href="/cart" onClick={(event) => { if (Date.now() - addedAt.current < DOUBLE_TAP_MS) event.preventDefault(); }}>
+      <CartIcon />
+      <span className="shop-add-label">{c.goToCart}</span>
+    </Link>
+    <div className="shop-qty" role="group" aria-label={product.name}>
+      <button type="button" aria-label={c.decrease} onClick={() => { if (quantity === 1) moveFocus.current = true; setQuantity(product.productId, quantity - 1); }}>−</button>
+      <span aria-live="polite">{quantity}</span>
+      <button type="button" aria-label={c.increase} disabled={quantity >= 999} onClick={() => addToCart(product)}>+</button>
+    </div>
+  </div>;
 }
 

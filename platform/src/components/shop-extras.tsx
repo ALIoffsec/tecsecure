@@ -8,7 +8,7 @@ import { UiIcon, type IconName } from "./ui-icon";
 import { siteCopy } from "@/lib/site-copy";
 import { defaultContact } from "@/lib/site-contact";
 import { formatMinor } from "@/lib/format";
-import { addToCart } from "./cart";
+import { AddToCartButton } from "./cart";
 
 const RECENT_KEY = "tecsecure-recent-products";
 const RECENT_LIMIT = 8;
@@ -74,7 +74,6 @@ export function MobileBuyBar({ line, priceMinor, currency, available, anchor }: 
   anchor: string;
 }) {
   const { locale } = useSitePreferences();
-  const c = siteCopy[locale].shop;
   const [visible, setVisible] = useState(false);
   const observer = useRef<IntersectionObserver | null>(null);
   useEffect(() => {
@@ -85,9 +84,9 @@ export function MobileBuyBar({ line, priceMinor, currency, available, anchor }: 
     return () => observer.current?.disconnect();
   }, [anchor]);
   if (!available) return null;
-  return <div className="mobile-buy-bar" data-visible={visible} aria-hidden={!visible}>
+  return <div className="mobile-buy-bar" data-visible={visible} inert={!visible}>
     <strong>{priceMinor !== null ? formatMinor(priceMinor, currency, locale) : siteCopy[locale].orders.totalPending}</strong>
-    <button className="button" type="button" tabIndex={visible ? 0 : -1} onClick={() => addToCart(line)}>{c.buy}</button>
+    <AddToCartButton product={line} />
   </div>;
 }
 

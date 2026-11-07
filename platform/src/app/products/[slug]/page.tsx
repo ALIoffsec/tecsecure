@@ -230,6 +230,6 @@ export default async function ProductDetailPage({ params }: Props) {
     </section>}
     <RecentlyViewed exclude={product.slug} />
     <TrackProductView product={{ slug: product.slug, name: product.name, imageId: cover?.mimeType.startsWith("image/") ? cover.id : null, priceMinor: product.priceMinor, currency: product.currency }} />
-    <MobileBuyBar anchor=".shop-add-to-cart" line={{ productId: product.id, name: product.name, slug: product.slug, categorySlug: product.category?.slug ?? null }} priceMinor={product.priceMinor} currency={product.currency} available={stockKey !== "OUT_OF_STOCK"} />
+    <MobileBuyBar anchor=".shop-buybox .shop-cart-action" line={{ productId: product.id, name: product.name, slug: product.slug, categorySlug: product.category?.slug ?? null }} priceMinor={product.priceMinor} currency={product.currency} available={stockKey !== "OUT_OF_STOCK"} />
   </div>;
 }

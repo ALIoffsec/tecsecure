@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useSitePreferences } from "./site-preferences";
 import { UiIcon, type IconName } from "./ui-icon";
-import { useCart } from "./cart";
+import { CartIcon, useCart } from "./cart";
 import { siteCopy } from "@/lib/site-copy";
 import type { Locale } from "@/lib/messages";
 import { AppInstallButton } from "./app-install-button";
@@ -39,6 +39,18 @@ function useHideOnScroll(locked: boolean) {
   return hidden && !locked;
 }
 
+/** Stays in reach while someone browses the shop, on the right, just above the bottom bar on phones. */
+function ShopCartButton({ typing }: { typing: boolean }) {
+  const { locale } = useSitePreferences();
+  const c = siteCopy[locale];
+  const count = useCart().reduce((sum, line) => sum + line.quantity, 0);
+  return <Link className="shop-cart-fab" href="/cart" data-typing={typing} data-filled={count > 0} aria-label={`${c.nav.cart}${count ? `: ${count}` : ""}`} title={c.nav.cart}>
+    <CartIcon />
+    <span className="shop-cart-fab-label">{c.nav.cart}</span>
+    {count > 0 && <span className="shop-cart-fab-count" key={count}>{count}</span>}
+  </Link>;
+}
+
 export function SiteNav() {
   const { locale, setLocale, theme, setTheme, t, openCookieSettings } = useSitePreferences();
   const c = siteCopy[locale];
@@ -51,7 +63,6 @@ export function SiteNav() {
   useEffect(() => { setMotion(!motionOff()); }, [open]);
   const toggle = useRef<HTMLButtonElement>(null);
   const closeTimer = useRef(0);
-  const count = useCart().reduce((sum, line) => sum + line.quantity, 0);
   const hidden = useHideOnScroll(open || mega !== null || searching);
 
   useEffect(() => { setOpen(false); setMega(null); setSearching(false); }, [pathname]);
@@ -111,7 +122,6 @@ export function SiteNav() {
             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.8-3.8" /></svg>
             <span className="portal-search-label">{c.search.trigger}</span><kbd>Ctrl K</kbd>
           </Link>
-          <Link className="portal-icon-link" href="/cart" aria-label={`${c.nav.cart}${count ? `: ${count}` : ""}`} title={c.nav.cart}><UiIcon name="box" />{count > 0 && <span className="portal-count">{count}</span>}</Link>
           <Link className="portal-account" href="/portal/profile" aria-label={c.nav.account}><UiIcon name="user" /><span>{c.nav.account}</span></Link>
           <button ref={toggle} type="button" className="portal-icon-link portal-menu-toggle" aria-expanded={open} aria-controls="portal-menu" aria-label={open ? c.nav.close : c.nav.menu} onClick={() => setOpen(value => !value)}>
             <span className="portal-burger" data-open={open} aria-hidden="true"><i /><i /></span>
@@ -155,6 +165,8 @@ export function SiteNav() {
     </>}
 
     <SearchPalette open={searching} onOpenChange={setSearching} />
+
+    {isActive(pathname, ["/products"]) && <ShopCartButton typing={typing} />}
 
     <nav className="mobile-dock" aria-label={c.nav.primary} data-typing={typing} style={{ "--dock-index": Math.max(dockIndex, 0), "--dock-count": dock.length } as React.CSSProperties}>
       {dockIndex >= 0 && <span className="mobile-dock-drop" aria-hidden="true" />}

@@ -1,15 +1,13 @@
 import { Localized } from "@/components/localized";
 import { categoryName, perLocale } from "@/lib/product-i18n";
-import { searchProductIds } from "@/lib/search-index";
 import { RecentlyViewed } from "@/components/shop-extras";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
-import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { catalogMedia } from "@/lib/catalog-media";
-import { priceBound, specificationFilter } from "@/lib/catalog-utils";
+import { listingWhere, loadProductCards, PAGE_SIZE, productQuery, productsHref as build, readListing, sortKeys, stocks } from "@/lib/product-listing";
 import { FilterPanel } from "@/components/filter-panel";
+import { ShopGrid } from "@/components/shop-more";
 import { ProductCard } from "@/components/product-card";
 import { CompareTray } from "@/components/product-compare";
 import { ShopText as S, ShopSearchInput, ShopSortSelect } from "@/components/shop-text";
@@ -22,49 +20,16 @@ export const metadata: Metadata = {
   alternates: { canonical: "/products" }
 };
 
-const PAGE_SIZE = 12;
-const sorts = {
-  name: [{ name: "asc" }, { id: "asc" }],
-  new: [{ createdAt: "desc" }, { id: "asc" }],
-  // Prices in different currencies cannot be ranked against each other, so they stay grouped.
-  priceAsc: [{ currency: "asc" }, { priceMinor: { sort: "asc", nulls: "last" } }, { id: "asc" }],
-  priceDesc: [{ currency: "asc" }, { priceMinor: { sort: "desc", nulls: "last" } }, { id: "asc" }]
-} satisfies Record<string, Prisma.ProductOrderByWithRelationInput[]>;
-type SortKey = keyof typeof sorts;
-const sortKeys = Object.keys(sorts) as SortKey[];
-const stocks = ["IN_STOCK", "ON_REQUEST", "OUT_OF_STOCK", "UNKNOWN"] as const;
-type Search = Partial<Record<"q" | "category" | "brand" | "stock" | "sort" | "page" | "min" | "max" | "currency" | "spec", string>>;
-function build(params: Search, patch: Search = {}) {
-  const query = new URLSearchParams();
-  for (const [key, value] of Object.entries({ ...params, ...patch })) if (value) query.set(key, value);
-  return `/products${query.size ? `?${query}` : ""}`;
-}
+// A reload deep into the list opens this many batches at once, not every one before it.
+const MOST_PAGES_AT_ONCE = 8;
 
 export default async function ProductsPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
-  const raw = await searchParams;
-  const str = (key: string) => typeof raw[key] === "string" ? raw[key].trim().slice(0, key === "spec" ? 1200 : 100) || undefined : undefined;
-  const sp: Search = { q: str("q"), category: str("category"), brand: str("brand"), stock: str("stock"), sort: str("sort"), page: str("page"), min: str("min"), max: str("max"), currency: str("currency"), spec: str("spec") };
-  const sort: SortKey = sortKeys.find(key => key === sp.sort) ?? "name";
-  const stock = stocks.find(value => value === sp.stock);
-  const page = Math.max(1, Math.min(Number.parseInt(sp.page ?? "1", 10) || 1, 1000));
-  const currency = sp.currency && /^[A-Z]{3}$/.test(sp.currency) ? sp.currency : "UZS";
-  const min = priceBound(sp.min);
-  const max = priceBound(sp.max);
-  const invalidPrice = (Boolean(sp.min) && min === undefined) || (Boolean(sp.max) && max === undefined) || (min !== undefined && max !== undefined && min > max);
-  const hasPriceRange = !invalidPrice && (min !== undefined || max !== undefined);
-  const spec = sp.category ? specificationFilter(sp.spec) : null;
-  const current: Search = { ...sp, page: undefined, stock, sort: sort === "name" ? undefined : sort, currency: hasPriceRange && currency !== "UZS" ? currency : undefined };
-  const where: Prisma.ProductWhereInput = {
-    status: "PUBLISHED",
-    ...(sp.category ? { category: { slug: sp.category } } : {}),
-    ...(sp.brand ? { brand: sp.brand } : {}),
-    ...(stock ? { stockStatus: stock } : {}),
-    ...(hasPriceRange ? { currency, priceMinor: { ...(min !== undefined ? { gte: min } : {}), ...(max !== undefined ? { lte: max } : {}) } } : {}),
-    ...(spec ? { specifications: { path: [spec.key], equals: spec.value } } : {}),
-    ...(sp.q ? { id: { in: await searchProductIds(sp.q) } } : {})
-  };
+  const listing = readListing(await searchParams);
+  const { sp, sort, stock, page, currency, invalidPrice, hasPriceRange, spec, current } = listing;
+  const where = await listingWhere(listing);
+  const firstPage = Math.max(1, page - MOST_PAGES_AT_ONCE + 1);
   const [products, total, categories, brands, currencies, categorySpecs] = await Promise.all([
-    prisma.product.findMany({ where, include: { category: { select: { name: true, slug: true } } }, orderBy: sorts[sort], skip: (page - 1) * PAGE_SIZE, take: PAGE_SIZE }),
+    loadProductCards(where, sort, (firstPage - 1) * PAGE_SIZE, (page - firstPage + 1) * PAGE_SIZE),
     prisma.product.count({ where }),
     prisma.productCategory.findMany({ where: { products: { some: { status: "PUBLISHED" } } }, select: { name: true, slug: true }, orderBy: { name: "asc" } }),
     prisma.product.groupBy({ by: ["brand"], where: { status: "PUBLISHED", brand: { not: null }, ...(sp.category ? { category: { slug: sp.category } } : {}) }, orderBy: { brand: "asc" } }),
@@ -73,7 +38,6 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
   ]);
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   if (page > pages) redirect(build(current, { page: String(pages) }));
-  const getMedia = await catalogMedia(products);
   const specOptions = new Map<string, string>();
   for (const product of categorySpecs) {
     if (!product.specifications || typeof product.specifications !== "object" || Array.isArray(product.specifications)) continue;
@@ -118,12 +82,10 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
         </div>
         {activeFilters.length > 0 && <div className="shop-active">{activeFilters.map((filter, index) => <Link className="shop-chip is-active removable" key={index} href={build(current, filter.patch)}>{filter.label}<span aria-hidden="true"> ×</span><span className="sr-only"> — <S id="remove" /></span></Link>)}<Link className="shop-chip" href="/products"><S id="clear" /></Link></div>}
         {products.length > 0
-          ? <div className="shop-grid">{products.map(product => <ProductCard key={product.id} product={product} assets={getMedia(product.media)} />)}</div>
+          ? <ShopGrid key={`${JSON.stringify(current)}|${page}`} ids={products.map(product => product.id)} page={page} pages={pages} total={total} pageSize={PAGE_SIZE} query={productQuery(current)}>
+            {products.map(({ assets, ...product }) => <ProductCard key={product.id} product={product} assets={assets} />)}
+          </ShopGrid>
           : <div className="empty-state"><h2><S id="empty" /></h2><p><S id="emptyHint" /></p><div className="journey-actions"><Link className="button secondary" href="/products"><S id="clear" /></Link><Link href="/contact" className="text-link"><S id="quote" /></Link></div></div>}
-        {pages > 1 && <nav className="shop-pager" aria-label="Pagination">
-          {page > 1 && <Link className="button secondary" rel="prev" href={build(current, { page: String(page - 1) })}>←</Link>}<span>{page} / {pages}</span>
-          {page < pages && <Link className="button secondary" rel="next" href={build(current, { page: String(page + 1) })}>→</Link>}
-        </nav>}
       </section>}>
       <form action="/products" method="get" key={JSON.stringify(current)}>
         {sp.q && <input type="hidden" name="q" value={sp.q} />}{sp.category && <input type="hidden" name="category" value={sp.category} />}{current.sort && <input type="hidden" name="sort" value={current.sort} />}

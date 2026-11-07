@@ -1822,7 +1822,6 @@ th { color: var(--muted); font-size: .8rem; text-transform: uppercase; letter-sp
 .shop-visual svg { width: 58%; max-width: 220px; height: auto; filter: drop-shadow(0 10px 18px color-mix(in srgb, var(--accent) 30%, transparent)); }
 .shop-visual.is-large { aspect-ratio: 1 / 1; border: 1px solid var(--line); border-radius: var(--radius); }
 
-.shop-pager { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 26px; }
 .shop-crumbs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; color: var(--muted); font-size: .85rem; }
 .shop-crumbs a:hover { color: var(--accent); }
 .shop-crumbs span[aria-current] { color: var(--text); }
