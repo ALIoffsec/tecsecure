@@ -170,6 +170,12 @@ html[data-tma="customer"] #app-shell .contact-dock { display: none; }
 #app-shell .mobile-buy-bar .shop-qty { flex: 0 0 auto; }
 #app-shell .mobile-buy-bar .shop-qty button { min-width: 34px; }
 #app-shell .mobile-buy-bar .shop-qty span { min-width: 22px; }
+#app-shell .mobile-buy-bar strong { min-width: 0; line-height: 1.2; }
+/* Once it is in the cart the bar holds the two controls instead, so it never grows into the cart button. */
+#app-shell .mobile-buy-bar:has(.shop-qty) { padding-left: 8px; }
+#app-shell .mobile-buy-bar:has(.shop-qty) strong { display: none; }
+#app-shell .mobile-buy-bar:has(.shop-qty) .shop-cart-action { flex: 1 1 auto; width: 100%; }
+#app-shell .mobile-buy-bar:has(.shop-qty) .shop-add-to-cart { flex: 1 1 auto; }
 
 #app-shell .shop-cart-fab {
   position: fixed; right: 24px; bottom: 24px; z-index: 50; display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 52px; padding: 0 20px;
@@ -188,6 +194,6 @@ html[data-tma="customer"] #app-shell .contact-dock { display: none; }
   #app-shell .shop-cart-fab { right: 14px; bottom: calc(90px + env(safe-area-inset-bottom)); width: 56px; min-height: 56px; padding: 0; }
   #app-shell .shop-cart-fab-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
   #app-shell .shop-cart-fab[data-typing="true"] { transform: translateY(240%); opacity: 0; pointer-events: none; }
-  #app-shell:has(.mobile-buy-bar[data-visible="true"]) .shop-cart-fab { bottom: calc(158px + env(safe-area-inset-bottom)); }
+  #app-shell:has(.mobile-buy-bar[data-visible="true"]) .shop-cart-fab { bottom: calc(166px + env(safe-area-inset-bottom)); }
   #app-shell .shop-grid .shop-qty button { min-width: 40px; min-height: 40px; }
 }
