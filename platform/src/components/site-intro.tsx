@@ -23,21 +23,11 @@ export function SiteIntro() {
   }, []);
 
   useEffect(() => {
-    const restart = () => {
-      if (motionPreference().matches || document.documentElement.dataset.tma) return;
-      document.documentElement.dataset.tecIntro = "pending";
-      setFallback(false);
-      setFinished(false);
-    };
-    // The opening belongs to the home page: every arrival plays it, leaving ends it.
-    if (previousPath.current !== pathname) {
-      if (pathname === "/") restart();
-      else if (document.documentElement.dataset.tecIntro) close();
-    }
+    // The opening plays once per visit: when the home page itself is opened (typed address, reload, new tab).
+    // The head script decides that before the page paints. Moving to home from inside the site, or going back to it,
+    // does not play it again; leaving home while it plays ends it.
+    if (previousPath.current !== pathname && document.documentElement.dataset.tecIntro) close();
     previousPath.current = pathname;
-    const onShow = (event: PageTransitionEvent) => { if (event.persisted && pathname === "/") restart(); };
-    window.addEventListener("pageshow", onShow);
-    return () => window.removeEventListener("pageshow", onShow);
   }, [close, pathname]);
 
   useEffect(() => {

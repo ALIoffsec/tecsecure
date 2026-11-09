@@ -1,12 +1,15 @@
 import { createHash, randomInt, timingSafeEqual } from "node:crypto";
 import { prisma } from "@/lib/prisma";
-import { getTelegramCredentials } from "@/lib/integration-credentials";
+import { getSmsCredentials, getTelegramCredentials, type SmsCredentials } from "@/lib/integration-credentials";
 import { notifyTelegramUser } from "@/lib/telegram";
+import { otpSmsText, type OtpPurpose } from "@/lib/otp-text";
 
-export type OtpPurpose = "LOGIN" | "RESET";
+export { otpSmsText, type OtpPurpose };
+
 const TTL_MS = 5 * 60 * 1000;
 const MAX_ATTEMPTS = 5;
 const RESEND_AFTER_MS = 60 * 1000;
+const ESKIZ = "https://notify.eskiz.uz/api";
 
 /** One spelling for a Uzbek mobile number, however it was typed: +998901234567. Null if it is not one. */
 export function normalizePhone(input: string): string | null {
@@ -28,11 +31,21 @@ function hashCode(code: string, target: string): string {
   return createHash("sha256").update(`${pepper}:${target}:${code}`).digest("hex");
 }
 
-export function otpChannels() {
+async function smsCredentials(): Promise<SmsCredentials | null> {
+  try {
+    const credentials = await getSmsCredentials();
+    return credentials.eskizEmail && credentials.eskizPassword ? credentials : null;
+  } catch (error) {
+    console.error("SMS settings could not be read", error instanceof Error ? error.message : "UnknownError");
+    return null;
+  }
+}
+
+export async function otpChannels() {
   const consoleMode = process.env.NODE_ENV !== "production" && process.env.OTP_DEV_CONSOLE === "1";
   return {
     consoleMode,
-    sms: Boolean(process.env.ESKIZ_EMAIL && process.env.ESKIZ_PASSWORD) || consoleMode,
+    sms: Boolean(await smsCredentials()) || consoleMode,
     email: Boolean(process.env.RESEND_API_KEY && process.env.MAIL_FROM) || consoleMode
   };
 }
@@ -62,54 +75,98 @@ export async function findCustomer(identifier: { kind: "phone" | "email"; value:
   return user && user.role === "CUSTOMER" && user.active && !user.deletedAt ? user : null;
 }
 
-let eskizToken: { value: string; expiresAt: number } | null = null;
+/** What Eskiz said, kept so the admin test and the server log show the real reason (moderation, balance, login). */
+export class SmsSendError extends Error {
+  constructor(readonly status: number, readonly detail: string) {
+    super(`Eskiz ${status}: ${detail}`);
+    this.name = "SmsSendError";
+  }
+}
 
-async function eskizLogin(): Promise<string> {
-  if (eskizToken && eskizToken.expiresAt > Date.now()) return eskizToken.value;
+async function eskizMessage(response: Response): Promise<string> {
+  const text = await response.text().catch(() => "");
+  try {
+    const body = JSON.parse(text) as { message?: unknown; data?: unknown; errors?: unknown };
+    const message = body.message ?? body.errors ?? body.data;
+    return (typeof message === "string" ? message : JSON.stringify(message ?? body)).slice(0, 300);
+  } catch {
+    return text.slice(0, 300) || response.statusText;
+  }
+}
+
+let eskizToken: { account: string; value: string; expiresAt: number } | null = null;
+
+async function eskizLogin(credentials: SmsCredentials, fresh = false): Promise<string> {
+  const account = createHash("sha256").update(`${credentials.eskizEmail}:${credentials.eskizPassword}`).digest("hex");
+  if (!fresh && eskizToken && eskizToken.account === account && eskizToken.expiresAt > Date.now()) return eskizToken.value;
   const form = new FormData();
-  form.set("email", process.env.ESKIZ_EMAIL ?? "");
-  form.set("password", process.env.ESKIZ_PASSWORD ?? "");
-  const response = await fetch("https://notify.eskiz.uz/api/auth/login", { method: "POST", body: form });
+  form.set("email", credentials.eskizEmail);
+  form.set("password", credentials.eskizPassword);
+  const response = await fetch(`${ESKIZ}/auth/login`, { method: "POST", body: form, signal: AbortSignal.timeout(15000) });
+  if (!response.ok) throw new SmsSendError(response.status, `login: ${await eskizMessage(response)}`);
   const body = await response.json() as { data?: { token?: string } };
-  if (!response.ok || !body.data?.token) throw new Error(`Eskiz login failed: ${response.status}`);
-  eskizToken = { value: body.data.token, expiresAt: Date.now() + 25 * 24 * 60 * 60 * 1000 };
+  if (!body.data?.token) throw new SmsSendError(response.status, "login: no token in the answer");
+  // Eskiz tokens last 30 days; renew a little early.
+  eskizToken = { account, value: body.data.token, expiresAt: Date.now() + 25 * 24 * 60 * 60 * 1000 };
   return eskizToken.value;
 }
 
-async function sendSms(phone: string, text: string): Promise<void> {
-  const token = await eskizLogin();
-  const form = new FormData();
-  form.set("mobile_phone", phone.replace("+", ""));
-  form.set("message", text);
-  form.set("from", process.env.ESKIZ_FROM ?? "4546");
-  const response = await fetch("https://notify.eskiz.uz/api/message/sms/send", { method: "POST", headers: { Authorization: `Bearer ${token}` }, body: form });
-  if (!response.ok) throw new Error(`Eskiz send failed: ${response.status}`);
+/** Sends one SMS. Returns Eskiz's own message id. */
+export async function sendSms(phone: string, text: string): Promise<string> {
+  const credentials = await smsCredentials();
+  if (!credentials) throw new SmsSendError(0, "SMS is not configured");
+  const send = async (token: string) => {
+    const form = new FormData();
+    form.set("mobile_phone", phone.replace(/\D/g, ""));
+    form.set("message", text);
+    form.set("from", credentials.eskizFrom || "4546");
+    return fetch(`${ESKIZ}/message/sms/send`, { method: "POST", headers: { Authorization: `Bearer ${token}` }, body: form, signal: AbortSignal.timeout(15000) });
+  };
+  let response = await send(await eskizLogin(credentials));
+  // A token can be revoked before it expires (password change, new login elsewhere): log in once more.
+  if (response.status === 401) response = await send(await eskizLogin(credentials, true));
+  if (!response.ok) throw new SmsSendError(response.status, await eskizMessage(response));
+  const body = await response.json().catch(() => ({})) as { id?: unknown; status?: unknown };
+  if (body.status === "error") throw new SmsSendError(response.status, JSON.stringify(body).slice(0, 300));
+  return String(body.id ?? "");
 }
 
 async function sendEmail(to: string, subject: string, text: string): Promise<void> {
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ from: process.env.MAIL_FROM, to, subject, text })
+    body: JSON.stringify({ from: process.env.MAIL_FROM, to, subject, text }),
+    signal: AbortSignal.timeout(15000)
   });
   if (!response.ok) throw new Error(`Email send failed: ${response.status}`);
 }
 
-export type OtpDelivery = "telegram" | "sms" | "email" | "none";
+/** "recent": a code went out less than a minute ago and is still valid. "none": nothing can reach this person. */
+export type OtpDelivery = "telegram" | "sms" | "email" | "recent" | "none";
 
 /** Creates a code and sends it the cheapest way that reaches this person. The code itself is never stored. */
 export async function issueOtp(purpose: OtpPurpose, target: string, kind: "phone" | "email", user: { id: string; telegramChatId?: string | null } | null): Promise<OtpDelivery> {
-  const channels = otpChannels();
+  const channels = await otpChannels();
   const recent = await prisma.otpCode.findFirst({ where: { target, purpose, createdAt: { gt: new Date(Date.now() - RESEND_AFTER_MS) } }, select: { id: true } });
-  if (recent) return "none";
+  if (recent) return "recent";
+  const direct = kind === "phone" ? channels.sms : channels.email;
+  if (!user?.telegramChatId && !direct) return "none";
+
   const code = String(randomInt(100000, 1000000));
-  const text = `Tecsecure tasdiqlash kodi: ${code}. Kod 5 daqiqa amal qiladi. Uni hech kimga bermang.`;
-  await prisma.otpCode.create({ data: { purpose, target, codeHash: hashCode(code, target), expiresAt: new Date(Date.now() + TTL_MS) } });
-  if (channels.consoleMode) console.info(`[OTP dev] ${target} ${purpose} ${code}`);
-  if (user?.telegramChatId && await notifyTelegramUser(user.id, `🔐 <b>Tecsecure</b>\nTasdiqlash kodi: <code>${code}</code>\nKod 5 daqiqa amal qiladi. Uni hech kimga bermang.`)) return "telegram";
-  if (channels.consoleMode) return kind === "phone" ? "sms" : "email";
-  if (kind === "phone" && channels.sms) { await sendSms(target, text); return "sms"; }
-  if (kind === "email" && channels.email) { await sendEmail(target, "Tecsecure tasdiqlash kodi", text); return "email"; }
+  const record = await prisma.otpCode.create({ data: { purpose, target, codeHash: hashCode(code, target), expiresAt: new Date(Date.now() + TTL_MS) }, select: { id: true } });
+  // A code that never left must not block the next try for a minute.
+  const discard = () => prisma.otpCode.delete({ where: { id: record.id } }).catch(() => undefined);
+  try {
+    if (channels.consoleMode) console.info(`[OTP dev] ${target} ${purpose} ${code}`);
+    if (user?.telegramChatId && await notifyTelegramUser(user.id, `🔐 <b>Tecsecure</b>\nTasdiqlash kodi: <code>${code}</code>\nKod 5 daqiqa amal qiladi. Uni hech kimga bermang.`)) return "telegram";
+    if (channels.consoleMode) return kind === "phone" ? "sms" : "email";
+    if (kind === "phone" && channels.sms) { await sendSms(target, otpSmsText(purpose, code)); return "sms"; }
+    if (kind === "email" && channels.email) { await sendEmail(target, "Tecsecure tasdiqlash kodi", `${otpSmsText(purpose, code)} Kod 5 daqiqa amal qiladi.`); return "email"; }
+  } catch (error) {
+    await discard();
+    throw error;
+  }
+  await discard();
   return "none";
 }
 

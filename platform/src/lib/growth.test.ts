@@ -3,6 +3,7 @@ import { createHmac } from "node:crypto";
 import test from "node:test";
 import { paymeAuthorized, paymeCheckoutUrl } from "./payme";
 import { normalizeIdentifier, normalizePhone } from "./otp";
+import { otpSmsText } from "./otp-text";
 import { verifyTelegramInitData } from "./telegram-webapp";
 import { buildNetworkEstimate } from "./network-estimate";
 import { scoreSecurityCheck, securityQuestions } from "./security-check";
@@ -76,4 +77,16 @@ test("the security check scores answers and gives advice only for weak ones", ()
   assert.equal(scoreSecurityCheck(worst).level, "risk");
   assert.equal(scoreSecurityCheck(worst).weak.length, 10);
   assert.equal(scoreSecurityCheck({}).percent, 0, "unanswered questions count as no protection");
+});
+
+test("SMS code texts name the site and the purpose, and each fits one plain SMS", () => {
+  for (const purpose of ["LOGIN", "RESET"] as const) {
+    const text = otpSmsText(purpose, "123456");
+    assert.match(text, /tecsecure\.uz/);
+    assert.match(text, /123456/);
+    assert.match(text, /^[ -~]+$/, "only GSM-safe ASCII, so it stays a single 160-character SMS");
+    assert.ok(text.length <= 160, `${purpose} is ${text.length} characters`);
+  }
+  assert.match(otpSmsText("LOGIN", "1"), /kirish/);
+  assert.match(otpSmsText("RESET", "1"), /parolni tiklash/);
 });

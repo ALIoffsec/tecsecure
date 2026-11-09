@@ -4,7 +4,7 @@ import { z } from "zod";
 import { createSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/rate-limit";
-import { findCustomer, issueOtp, normalizeIdentifier, otpChannels, telegramAvailable, verifyOtp } from "@/lib/otp";
+import { findCustomer, issueOtp, normalizeIdentifier, otpChannels, telegramAvailable, verifyOtp, type OtpDelivery } from "@/lib/otp";
 
 export const runtime = "nodejs";
 
@@ -15,7 +15,7 @@ const verifySchema = z.object({
 });
 
 export async function GET() {
-  const { sms, email } = otpChannels();
+  const { sms, email } = await otpChannels();
   return Response.json({ sms, email, telegram: await telegramAvailable() }, { headers: { "Cache-Control": "no-store" } });
 }
 
@@ -33,17 +33,23 @@ export async function POST(request: Request) {
     if (!(await checkRateLimit("otp-ip", ip, 12, 60 * 60 * 1000)) || !(await checkRateLimit("otp-target", identifier.value, 6, 60 * 60 * 1000))) {
       return Response.json({ error: "Urinishlar limiti oshdi. Keyinroq urinib ko‘ring." }, { status: 429 });
     }
+    const login = asked.data.purpose === "LOGIN";
     const user = await findCustomer(identifier);
+    let delivery: OtpDelivery = "none";
     // A reset for an unknown account answers exactly like a real one, so nobody can test who has an account here.
-    if (user || asked.data.purpose === "LOGIN") {
+    if (user || login) {
       try {
-        await issueOtp(asked.data.purpose, identifier.value, identifier.kind, user);
+        delivery = await issueOtp(asked.data.purpose, identifier.value, identifier.kind, user);
       } catch (error) {
         console.error("Sending a sign-in code failed", error instanceof Error ? error.message : "UnknownError");
-        return Response.json({ error: "Kodni yuborib bo‘lmadi. Keyinroq urinib ko‘ring." }, { status: 502 });
+        return Response.json({ error: "Kodni yuborib bo‘lmadi. Keyinroq urinib ko‘ring.", code: "SEND_FAILED" }, { status: 502 });
       }
     }
-    return Response.json({ ok: true, target: identifier.value, isNew: asked.data.purpose === "LOGIN" && !user });
+    // Sign-in says nothing went out rather than showing a code field for a code that will never come.
+    if (login && delivery === "none") {
+      return Response.json({ error: "SMS xizmati hozircha ishlamayapti. Email va parol bilan kiring.", code: "NO_CHANNEL" }, { status: 503 });
+    }
+    return Response.json({ ok: true, target: identifier.value, isNew: login && !user, ...(login ? { via: delivery } : {}) });
   }
 
   const parsed = verifySchema.safeParse(body);

@@ -6,8 +6,10 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 import { ToastMessage } from "@/components/toast-provider";
 import { useSitePreferences } from "@/components/site-preferences";
 import type { OAuthProviderId } from "@/lib/integration-credentials";
+import { otpSmsText } from "@/lib/otp-text";
 
 type IntegrationStatus = {
+  sms: { eskizEmail: string; eskizFrom: string; hasPassword: boolean; configured: boolean };
   telegram: {
     botUsername: string;
     adminChatId: string;
@@ -91,6 +93,26 @@ export function AdminIntegrations() {
   const statusLabel = (configured: boolean) => configured ? t("integrationConfigured") : t("integrationNotConfigured");
   const secretPlaceholder = (saved: boolean) => saved ? t("secretAlreadySet") : t("secretNotSet");
 
+  async function testSms(phone: string) {
+    setBusy(true);
+    setError("");
+    setNotice("");
+    try {
+      const response = await fetch("/api/admin/integrations/test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ channel: "sms", phone })
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error ?? t("requestFailed"));
+      setNotice(staffBot.smsTestSent);
+    } catch (issue) {
+      setError(issue instanceof Error ? issue.message : t("requestFailed"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function testBot() {
     setBusy(true);
     setError("");
@@ -117,7 +139,50 @@ export function AdminIntegrations() {
     <p className="small muted">{t("integrationsEncryptionNotice")}</p>
 
     {!status ? <p className="small muted" aria-live="polite">{error || t("loading")}</p> : <>
-      <details className="admin-records-accordion" open>
+      <details className="admin-records-accordion" open={!status.sms.configured}>
+        <summary>{staffBot.smsTitle} · {statusLabel(status.sms.configured)}</summary>
+        <form className="form admin-integration-form" key={`sms-${formVersion}`} onSubmit={(event) => void save(event, (data) => ({
+          sms: {
+            eskizEmail: fieldValue(data, "eskizEmail"),
+            eskizPassword: fieldValue(data, "eskizPassword"),
+            eskizFrom: fieldValue(data, "eskizFrom"),
+            clearEskizEmail: checked(data, "clearEskizEmail"),
+            clearEskizPassword: checked(data, "clearEskizPassword")
+          }
+        }))}>
+          <p className="small muted">{staffBot.smsHint}</p>
+          <div className="form-row">
+            <div className="field">
+              <label htmlFor="eskiz-email">{staffBot.smsEmail}</label>
+              <input id="eskiz-email" name="eskizEmail" type="email" defaultValue={status.sms.eskizEmail} maxLength={254} autoComplete="off" />
+              {status.sms.eskizEmail && <label className="admin-integration-clear"><input type="checkbox" name="clearEskizEmail" /> {t("clearCurrentValue")}</label>}
+            </div>
+            <div className="field">
+              <label htmlFor="eskiz-password">{staffBot.smsPassword}</label>
+              <input id="eskiz-password" name="eskizPassword" type="password" autoComplete="new-password" maxLength={512} placeholder={secretPlaceholder(status.sms.hasPassword)} />
+              {status.sms.hasPassword && <label className="admin-integration-clear"><input type="checkbox" name="clearEskizPassword" /> {t("clearCurrentValue")}</label>}
+            </div>
+          </div>
+          <div className="field">
+            <label htmlFor="eskiz-from">{staffBot.smsFrom}</label>
+            <input id="eskiz-from" name="eskizFrom" defaultValue={status.sms.eskizFrom} maxLength={32} placeholder="4546" />
+            <small className="muted">{staffBot.smsFromHint}</small>
+          </div>
+          <p className="small muted">{staffBot.smsTemplates}</p>
+          <pre className="admin-sms-template">{otpSmsText("LOGIN", "123456")}</pre>
+          <pre className="admin-sms-template">{otpSmsText("RESET", "123456")}</pre>
+          <div className="field">
+            <label htmlFor="eskiz-test-phone">{staffBot.smsTestPhone}</label>
+            <input id="eskiz-test-phone" name="testPhone" inputMode="tel" autoComplete="off" placeholder="+998 90 123 45 67" />
+          </div>
+          <div className="admin-integration-actions">
+            <button className="button" disabled={busy}>{busy ? t("saving") : t("saveIntegration")}</button>
+            <button className="button secondary" type="button" disabled={busy || !status.sms.configured} onClick={(event) => void testSms(String(new FormData(event.currentTarget.form ?? undefined).get("testPhone") ?? ""))}>{staffBot.smsTest}</button>
+          </div>
+        </form>
+      </details>
+
+      <details className="admin-records-accordion" open={status.sms.configured}>
         <summary>{t("telegramIntegration")} · {statusLabel(
           status.telegram.hasBotToken && status.telegram.hasWebhookSecret &&
           Boolean(status.telegram.botUsername && status.telegram.adminChatId)

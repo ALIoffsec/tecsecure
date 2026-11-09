@@ -20,6 +20,8 @@ export type OAuthCredentials = {
   tenantId?: string;
 };
 export type YandexMapsCredentials = { apiKey: string };
+/** Eskiz (notify.eskiz.uz) account that sends sign-in and reset codes by SMS. */
+export type SmsCredentials = { eskizEmail: string; eskizPassword: string; eskizFrom: string };
 
 const telegramSchema = z.object({
   botToken: z.string().max(512),
@@ -36,10 +38,16 @@ const oauthSchema = z.object({
   tenantId: z.string().max(128).optional()
 }).strict();
 const yandexMapsSchema = z.object({ apiKey: z.string().max(512) }).strict();
+const smsSchema = z.object({
+  eskizEmail: z.string().max(254),
+  eskizPassword: z.string().max(512),
+  eskizFrom: z.string().max(32)
+}).strict();
 
 const credentialStorageKeys = {
   telegram: "integration:telegram",
   yandexMaps: "integration:yandex-maps",
+  sms: "integration:sms",
   oauth: (provider: OAuthProviderId) => `integration:oauth:${provider}`
 } as const;
 
@@ -146,7 +154,21 @@ export async function getYandexMapsCredentials(): Promise<YandexMapsCredentials>
   );
 }
 
+/** Saved in the admin panel first; the server's ESKIZ_* variables are only the fallback. */
+export async function getSmsCredentials(): Promise<SmsCredentials> {
+  return readStoredConfig(
+    credentialStorageKeys.sms,
+    smsSchema,
+    {
+      eskizEmail: process.env.ESKIZ_EMAIL ?? "",
+      eskizPassword: process.env.ESKIZ_PASSWORD ?? "",
+      eskizFrom: process.env.ESKIZ_FROM || "4546"
+    }
+  );
+}
+
 export type IntegrationStatus = {
+  sms: { eskizEmail: string; eskizFrom: string; hasPassword: boolean; configured: boolean };
   telegram: {
     botUsername: string;
     adminChatId: string;
@@ -166,7 +188,8 @@ export type IntegrationStatus = {
 };
 
 export async function getIntegrationStatus(): Promise<IntegrationStatus> {
-  const [telegram, yandexMaps, google, github, yandex, microsoft] = await Promise.all([
+  const [sms, telegram, yandexMaps, google, github, yandex, microsoft] = await Promise.all([
+    getSmsCredentials(),
     getTelegramCredentials(),
     getYandexMapsCredentials(),
     getOAuthCredentials("google"),
@@ -176,6 +199,12 @@ export async function getIntegrationStatus(): Promise<IntegrationStatus> {
   ]);
   const oauth = { google, github, yandex, microsoft };
   return {
+    sms: {
+      eskizEmail: sms.eskizEmail,
+      eskizFrom: sms.eskizFrom,
+      hasPassword: Boolean(sms.eskizPassword),
+      configured: Boolean(sms.eskizEmail && sms.eskizPassword)
+    },
     telegram: {
       botUsername: telegram.botUsername,
       adminChatId: telegram.adminChatId,
@@ -199,6 +228,7 @@ export async function getIntegrationStatus(): Promise<IntegrationStatus> {
 }
 
 export type IntegrationCredentialUpdates = {
+  sms?: SmsCredentials;
   telegram?: TelegramCredentials;
   yandexMaps?: YandexMapsCredentials;
   oauth?: Partial<Record<OAuthProviderId, OAuthCredentials>>;
@@ -209,6 +239,11 @@ export async function saveIntegrationCredentials(
   actorId: string
 ): Promise<void> {
   const records: { key: string; value: string }[] = [];
+  if (updates.sms) {
+    const config = smsSchema.parse(updates.sms);
+    const key = credentialStorageKeys.sms;
+    records.push({ key, value: encryptIntegrationCredential(JSON.stringify(config), key, getMasterSecret()) });
+  }
   if (updates.telegram) {
     const config = telegramSchema.parse(updates.telegram);
     const key = credentialStorageKeys.telegram;

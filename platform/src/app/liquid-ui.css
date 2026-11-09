@@ -281,6 +281,7 @@ html { scroll-padding-top: 90px; }
 #app-shell .shop-qty span { min-width: 34px; color: var(--text); text-align: center; background: transparent; }
 #app-shell .shop-qty button { background: transparent; }
 #app-shell .admin-integration-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+#app-shell .admin-sms-template { margin: 0; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--glass-edge); background: var(--glass-control); font: 13px/1.45 ui-monospace, SFMono-Regular, Consolas, monospace; white-space: pre-wrap; overflow-wrap: anywhere; user-select: all; }
 @media (max-width: 760px) {
   #app-shell .shop-steps { gap: 6px; }
   #app-shell .shop-steps li { flex-direction: row; gap: 6px; min-width: 0; padding: 8px; font-size: .74rem; }

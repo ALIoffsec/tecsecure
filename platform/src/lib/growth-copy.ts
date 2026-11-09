@@ -7,7 +7,10 @@ const uz = {
     phone: "Telefon raqami", identifier: "Telefon raqami yoki email", send: "Kodni yuborish", sending: "Yuborilmoqda…",
     sent: "Agar bunday hisob bo‘lsa, kod yuborildi. Telegram, SMS yoki emailingizni tekshiring.", sentLogin: "Kod yuborildi. Telegram yoki SMS’ni tekshiring.",
     code: "6 xonali kod", name: "Ismingiz", newPassword: "Yangi parol", confirm: "Tasdiqlash", resend: "Kodni qayta yuborish", resendIn: "Qayta yuborish", back: "Kirish sahifasiga qaytish",
-    unavailable: "SMS orqali kirish hozircha yoqilmagan. Email va parol bilan kiring yoki Telegram’ni profilingizga ulang.", done: "Tayyor, kirmoqdasiz…"
+    unavailable: "SMS orqali kirish hozircha yoqilmagan. Email va parol bilan kiring yoki Telegram’ni profilingizga ulang.", done: "Tayyor, kirmoqdasiz…",
+    sentSms: "Kod SMS orqali yuborildi. Bir-ikki daqiqa ichida keladi.", sentTelegram: "Kod Telegram’ga yuborildi: Tecsecure botini oching.", recent: "Kod bir daqiqa ichida allaqachon yuborilgan. Shu kodni kiriting yoki biroz kuting.",
+    noChannel: "Bu raqamga kod yuborib bo‘lmadi: SMS xizmati hozircha ulanmagan. Email va parol bilan kiring yoki biz bilan bog‘laning.", sendFailed: "SMS yuborilmadi. Bir daqiqadan keyin qayta urinib ko‘ring.",
+    smsOff: "SMS hozircha ishlamayapti. Kod faqat Telegram ulangan hisoblarga keladi.", sentResetNoSms: "Agar bu raqam bilan hisob bo‘lsa va unga Telegram ulangan bo‘lsa, kod Telegram’ga yuborildi. SMS hozircha ishlamayapti."
   },
   auth: { forgot: "Parolni unutdingizmi?", phoneLogin: "Telefon raqam bilan kirish" },
   telegram: {
@@ -61,7 +64,8 @@ const uz = {
   },
   work: { story: "Loyiha tarixi", task: "Vazifa", done: "Nima qilindi", result: "Natija", client: "Mijoz fikri", location: "Joylashuv", more: "Loyihani ko‘rish", all: "Barcha ishlar", photos: "Suratlar", cta: "Shunday loyiha kerakmi?", ctaButton: "Ariza qoldirish", list: "Loyihalar" },
   workAdmin: { location: "Joylashuv (masalan, Toshkent)", task: "Vazifa: mijozga nima kerak edi", done: "Nima qilindi", result: "Natija", clientName: "Mijoz nomi (ixtiyoriy)", clientRole: "Lavozimi", clientQuote: "Mijoz fikri" },
-  integrations: { staffBot: "Xodimlar boti (ixtiyoriy)", staffToken: "Xodimlar boti tokeni", staffUsername: "Xodimlar boti nomi", staffSecret: "Xodimlar boti webhook kaliti", staffHint: "Bo‘sh qolsa, xodim xabarlari ham asosiy botga keladi." },
+  integrations: { staffBot: "Xodimlar boti (ixtiyoriy)", staffToken: "Xodimlar boti tokeni", staffUsername: "Xodimlar boti nomi", staffSecret: "Xodimlar boti webhook kaliti", staffHint: "Bo‘sh qolsa, xodim xabarlari ham asosiy botga keladi.",
+    smsTitle: "SMS kodlar (Eskiz)", smsHint: "Telefon raqam bilan kirish va parolni tiklash kodlari shu orqali boradi. notify.eskiz.uz kabinetiga kiradigan email va parolni yozing.", smsEmail: "Eskiz email", smsPassword: "Eskiz paroli", smsFrom: "Yuboruvchi nomi", smsFromHint: "Eskiz tasdiqlagan nom. O‘z nomingiz hali tasdiqlanmagan bo‘lsa, 4546 qoldiring.", smsTemplates: "Eskiz faqat tasdiqlangan shablonga mos matnni yuboradi. Kabinetdagi «Shablonlar» bo‘limida shu ikki matnni yuboring; raqamlar o‘zgaruvchi qism:", smsTestPhone: "Sinov uchun telefon raqami", smsTest: "Sinov SMS yuborish", smsTestSent: "Eskiz SMS’ni qabul qildi. Telefonni tekshiring: kelmasa, shablon hali tasdiqlanmagan bo‘lishi mumkin." },
   analytics: { title: "Statistika", hint: "Sayt qanday ishlatilishini tushunish uchun Yandex Metrika. Reklama uchun ishlatilmaydi.", none: "Reklama cookie’lari ishlatilmaydi." },
   errors: { recent: "Oxirgi 24 soatdagi xatolar" },
   seoFooter: "Ommabop xizmatlar"
@@ -76,7 +80,10 @@ const ru: GrowthCopy = {
     phone: "Номер телефона", identifier: "Телефон или email", send: "Отправить код", sending: "Отправка…",
     sent: "Если такой аккаунт есть, код отправлен. Проверьте Telegram, SMS или email.", sentLogin: "Код отправлен. Проверьте Telegram или SMS.",
     code: "Код из 6 цифр", name: "Ваше имя", newPassword: "Новый пароль", confirm: "Подтвердить", resend: "Отправить код ещё раз", resendIn: "Повторить", back: "Вернуться ко входу",
-    unavailable: "Вход по SMS пока не включён. Войдите по email и паролю или подключите Telegram в профиле.", done: "Готово, выполняем вход…"
+    unavailable: "Вход по SMS пока не включён. Войдите по email и паролю или подключите Telegram в профиле.", done: "Готово, выполняем вход…",
+    sentSms: "Код отправлен по SMS. Он придёт в течение пары минут.", sentTelegram: "Код отправлен в Telegram: откройте бот Tecsecure.", recent: "Код уже отправлен меньше минуты назад. Введите его или немного подождите.",
+    noChannel: "Не удалось отправить код на этот номер: SMS-сервис пока не подключён. Войдите по email и паролю или свяжитесь с нами.", sendFailed: "SMS не отправлено. Попробуйте ещё раз через минуту.",
+    smsOff: "SMS пока не работает. Код приходит только в аккаунты с подключённым Telegram.", sentResetNoSms: "Если с этим номером есть аккаунт и к нему подключён Telegram, код отправлен в Telegram. SMS пока не работает."
   },
   auth: { forgot: "Забыли пароль?", phoneLogin: "Войти по номеру телефона" },
   telegram: {
@@ -130,7 +137,8 @@ const ru: GrowthCopy = {
   },
   work: { story: "История проекта", task: "Задача", done: "Что сделано", result: "Результат", client: "Отзыв клиента", location: "Расположение", more: "Посмотреть проект", all: "Все работы", photos: "Фотографии", cta: "Нужен такой проект?", ctaButton: "Оставить заявку", list: "Проекты" },
   workAdmin: { location: "Расположение (например, Ташкент)", task: "Задача: что было нужно клиенту", done: "Что сделано", result: "Результат", clientName: "Имя клиента (необязательно)", clientRole: "Должность", clientQuote: "Отзыв клиента" },
-  integrations: { staffBot: "Бот для сотрудников (необязательно)", staffToken: "Токен бота сотрудников", staffUsername: "Имя бота сотрудников", staffSecret: "Секрет вебхука бота сотрудников", staffHint: "Если оставить пустым, сообщения сотрудникам будут идти в основной бот." },
+  integrations: { staffBot: "Бот для сотрудников (необязательно)", staffToken: "Токен бота сотрудников", staffUsername: "Имя бота сотрудников", staffSecret: "Секрет вебхука бота сотрудников", staffHint: "Если оставить пустым, сообщения сотрудникам будут идти в основной бот.",
+    smsTitle: "SMS-коды (Eskiz)", smsHint: "Через него уходят коды входа по телефону и восстановления пароля. Укажите email и пароль от кабинета notify.eskiz.uz.", smsEmail: "Email Eskiz", smsPassword: "Пароль Eskiz", smsFrom: "Имя отправителя", smsFromHint: "Имя, одобренное Eskiz. Пока ваше не одобрено, оставьте 4546.", smsTemplates: "Eskiz отправляет только текст, совпадающий с одобренным шаблоном. Отправьте эти два текста в разделе «Шаблоны»; цифры — переменная часть:", smsTestPhone: "Номер для проверки", smsTest: "Отправить тестовое SMS", smsTestSent: "Eskiz принял SMS. Проверьте телефон: если не пришло, шаблон, возможно, ещё не одобрен." },
   analytics: { title: "Статистика", hint: "Яндекс Метрика, чтобы понимать, как используется сайт. Не для рекламы.", none: "Рекламные cookie не используются." },
   errors: { recent: "Ошибки за последние 24 часа" },
   seoFooter: "Популярные услуги"
@@ -143,7 +151,10 @@ const en: GrowthCopy = {
     phone: "Phone number", identifier: "Phone number or email", send: "Send code", sending: "Sending…",
     sent: "If this account exists, a code was sent. Check Telegram, SMS or email.", sentLogin: "Code sent. Check Telegram or SMS.",
     code: "6-digit code", name: "Your name", newPassword: "New password", confirm: "Confirm", resend: "Send the code again", resendIn: "Resend", back: "Back to sign in",
-    unavailable: "SMS sign-in is not switched on yet. Use email and password, or connect Telegram in your profile.", done: "Done, signing you in…"
+    unavailable: "SMS sign-in is not switched on yet. Use email and password, or connect Telegram in your profile.", done: "Done, signing you in…",
+    sentSms: "Code sent by SMS. It arrives within a minute or two.", sentTelegram: "Code sent to Telegram: open the Tecsecure bot.", recent: "A code was already sent less than a minute ago. Enter it or wait a little.",
+    noChannel: "We could not send a code to this number: the SMS service is not connected yet. Sign in with email and password, or contact us.", sendFailed: "The SMS was not sent. Try again in a minute.",
+    smsOff: "SMS is not working yet. Codes only reach accounts with Telegram connected.", sentResetNoSms: "If an account uses this number and has Telegram connected, the code was sent to Telegram. SMS is not working yet."
   },
   auth: { forgot: "Forgot your password?", phoneLogin: "Sign in with your phone" },
   telegram: {
@@ -197,7 +208,8 @@ const en: GrowthCopy = {
   },
   work: { story: "Project story", task: "The task", done: "What we did", result: "The result", client: "Client’s words", location: "Location", more: "View project", all: "All projects", photos: "Photos", cta: "Need a project like this?", ctaButton: "Send a request", list: "Projects" },
   workAdmin: { location: "Location (for example, Tashkent)", task: "Task: what the client needed", done: "What we did", result: "Result", clientName: "Client name (optional)", clientRole: "Role", clientQuote: "Client’s words" },
-  integrations: { staffBot: "Staff bot (optional)", staffToken: "Staff bot token", staffUsername: "Staff bot username", staffSecret: "Staff bot webhook secret", staffHint: "If left empty, staff messages also go to the main bot." },
+  integrations: { staffBot: "Staff bot (optional)", staffToken: "Staff bot token", staffUsername: "Staff bot username", staffSecret: "Staff bot webhook secret", staffHint: "If left empty, staff messages also go to the main bot.",
+    smsTitle: "SMS codes (Eskiz)", smsHint: "Phone sign-in and password reset codes go out through it. Enter the email and password of your notify.eskiz.uz account.", smsEmail: "Eskiz email", smsPassword: "Eskiz password", smsFrom: "Sender name", smsFromHint: "The name Eskiz approved. Keep 4546 until yours is approved.", smsTemplates: "Eskiz only sends text that matches an approved template. Submit these two texts under Templates in the cabinet; the digits are the variable part:", smsTestPhone: "Phone number for the test", smsTest: "Send a test SMS", smsTestSent: "Eskiz accepted the SMS. Check the phone: if nothing arrives, the template may not be approved yet." },
   analytics: { title: "Statistics", hint: "Yandex Metrika, to understand how the site is used. Not used for advertising.", none: "We do not use advertising cookies." },
   errors: { recent: "Errors in the last 24 hours" },
   seoFooter: "Popular services"

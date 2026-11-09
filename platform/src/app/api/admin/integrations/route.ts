@@ -2,6 +2,7 @@ import { requireAdminApi } from "@/lib/auth";
 import {
   getIntegrationStatus,
   getOAuthCredentials,
+  getSmsCredentials,
   getTelegramCredentials,
   getYandexMapsCredentials,
   oauthProviderIds,
@@ -40,6 +41,13 @@ const oauthUpdateSchema = z.object({
   clearTenantId: z.boolean().optional()
 }).strict();
 const integrationsUpdateSchema = z.object({
+  sms: z.object({
+    eskizEmail: z.string().max(254).optional(),
+    eskizPassword: z.string().max(512).optional(),
+    eskizFrom: z.string().max(32).optional(),
+    clearEskizEmail: z.boolean().optional(),
+    clearEskizPassword: z.boolean().optional()
+  }).strict().optional(),
   telegram: telegramUpdateSchema.optional(),
   yandexMaps: z.object({
     apiKey: z.string().max(512).optional(),
@@ -94,6 +102,14 @@ export async function PATCH(request: Request) {
   try {
     const updates: IntegrationCredentialUpdates = {};
     const requested = parsed.data;
+    if (requested.sms) {
+      const current = await getSmsCredentials();
+      updates.sms = {
+        eskizEmail: updateValue(requested.sms.eskizEmail, requested.sms.clearEskizEmail, current.eskizEmail),
+        eskizPassword: updateValue(requested.sms.eskizPassword, requested.sms.clearEskizPassword, current.eskizPassword),
+        eskizFrom: updateValue(requested.sms.eskizFrom, false, current.eskizFrom) || "4546"
+      };
+    }
     if (requested.telegram) {
       const current = await getTelegramCredentials();
       updates.telegram = {

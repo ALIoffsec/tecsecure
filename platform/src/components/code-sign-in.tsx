@@ -19,14 +19,14 @@ export function CodeSignIn({ purpose }: { purpose: "LOGIN" | "RESET" }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [wait, setWait] = useState(0);
-  const [available, setAvailable] = useState(true);
+  const [channels, setChannels] = useState<{ sms: boolean; email: boolean; telegram: boolean } | null>(null);
+  const [sentNote, setSentNote] = useState("");
   const login = purpose === "LOGIN";
+  const available = !channels || (login ? channels.sms || channels.telegram : channels.sms || channels.email || channels.telegram);
 
   useEffect(() => {
-    fetch("/api/auth/otp").then(response => response.json()).then((status: { sms: boolean; email: boolean; telegram: boolean }) => {
-      setAvailable(login ? status.sms || status.telegram : status.sms || status.email || status.telegram);
-    }).catch(() => {});
-  }, [login]);
+    fetch("/api/auth/otp").then(response => response.json()).then(setChannels).catch(() => {});
+  }, []);
   useEffect(() => {
     if (wait <= 0) return;
     const timer = window.setTimeout(() => setWait(value => value - 1), 1000);
@@ -36,7 +36,7 @@ export function CodeSignIn({ purpose }: { purpose: "LOGIN" | "RESET" }) {
   async function post(body: object) {
     const response = await fetch("/api/auth/otp", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     const data = await response.json();
-    if (!response.ok) throw new Error(data.error ?? t("requestFailed"));
+    if (!response.ok) throw new Error(data.code === "NO_CHANNEL" ? c.noChannel : data.code === "SEND_FAILED" ? c.sendFailed : data.error ?? t("requestFailed"));
     return data;
   }
 
@@ -47,6 +47,10 @@ export function CodeSignIn({ purpose }: { purpose: "LOGIN" | "RESET" }) {
     try {
       const data = await post({ action: "request", purpose, identifier });
       setIsNew(Boolean(data.isNew));
+      // Say where the code went, so nobody waits for an SMS that was sent to Telegram, or never sent at all.
+      setSentNote(login
+        ? data.via === "sms" ? c.sentSms : data.via === "telegram" ? c.sentTelegram : data.via === "recent" ? c.recent : c.sentLogin
+        : !identifier.includes("@") && channels && !channels.sms ? c.sentResetNoSms : c.sent);
       setSent(true);
       setWait(RESEND_SECONDS);
     } catch (issue) {
@@ -77,6 +81,7 @@ export function CodeSignIn({ purpose }: { purpose: "LOGIN" | "RESET" }) {
       <p className="muted">{login ? c.loginHint : c.resetHint}</p>
       <ToastMessage message={error} variant="error" />
       {!available && <p className="code-note" role="status">{c.unavailable}</p>}
+      {available && login && channels && !channels.sms && !sent && <p className="code-note" role="status">{c.smsOff}</p>}
       {!sent
         ? <form className="form" onSubmit={requestCode}>
           <div className="field"><label htmlFor="code-identifier">{login ? c.phone : c.identifier}</label>
@@ -85,7 +90,7 @@ export function CodeSignIn({ purpose }: { purpose: "LOGIN" | "RESET" }) {
           <button className="button" type="submit" disabled={busy || !available}>{busy ? c.sending : c.send}</button>
         </form>
         : <form className="form" onSubmit={verify}>
-          <p className="code-note" role="status">{login ? c.sentLogin : c.sent}</p>
+          <p className="code-note" role="status">{sentNote}</p>
           <div className="field"><label htmlFor="code-value">{c.code}</label>
             <input id="code-value" className="code-input" name="code" required inputMode="numeric" pattern="[0-9]{6}" maxLength={6} autoComplete="one-time-code" autoFocus />
           </div>
