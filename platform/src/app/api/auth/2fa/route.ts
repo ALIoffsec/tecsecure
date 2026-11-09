@@ -1,3 +1,4 @@
+import { clientIp } from "@/lib/client-ip";
 import { z } from "zod";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { completeSignIn } from "@/lib/two-factor";
@@ -8,7 +9,7 @@ const schema = z.object({ ticket: z.string().min(20).max(100), code: z.string().
 
 /** Second step of a sign-in for accounts with two-factor: the authenticator code or a backup code. */
 export async function POST(request: Request) {
-  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  const ip = clientIp(request);
   if (!(await checkRateLimit("two-factor", ip, 20, 15 * 60 * 1000))) {
     return Response.json({ error: "Urinishlar limiti oshdi. 15 daqiqadan so‘ng qayta urinib ko‘ring." }, { status: 429 });
   }

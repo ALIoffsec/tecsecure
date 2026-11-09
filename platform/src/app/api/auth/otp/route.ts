@@ -1,3 +1,4 @@
+import { clientIp } from "@/lib/client-ip";
 import { randomBytes } from "node:crypto";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
@@ -32,7 +33,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  const ip = clientIp(request);
   let body: unknown;
   try { body = await request.json(); } catch {
     return Response.json({ error: "So‘rov JSON formatida bo‘lishi kerak." }, { status: 400 });

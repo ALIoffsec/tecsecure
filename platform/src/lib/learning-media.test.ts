@@ -44,3 +44,9 @@ test("every Linux lesson carries its video slot, and stored modules with videos 
   assert.doesNotThrow(() => validateLearningData("module", module));
   assert.throws(() => validateLearningData("module", { ...module, sections: [{ title: "A", video: { src: "/a.mp4", extra: 1 } }] }));
 });
+
+test("lesson links and media refuse addresses that run code", () => {
+  const module = (href: string) => ({ slug: "x-module", title: "X", summary: "X", difficulty: "easy", category: "systems", hours: 1, hasLab: false, references: [{ label: "L", href }], sections: [{ title: "A" }] });
+  for (const good of ["https://example.com/a", "/learning-assets/a.svg", "http://legacy.example.com"]) assert.doesNotThrow(() => validateLearningData("module", module(good)), good);
+  for (const bad of ["javascript:alert(1)", " JavaScript:alert(1)", "java\tscript:alert(1)", "data:text/html,<script>", "vbscript:x"]) assert.throws(() => validateLearningData("module", module(bad)), bad);
+});

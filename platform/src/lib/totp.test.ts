@@ -48,3 +48,12 @@ test("phone numbers shown in the bot are masked", () => {
   assert.equal(maskPhone("+998901234567"), "+998 ** *** 45 67");
   assert.equal(maskPhone("12"), "***");
 });
+
+test("rate limits use the address nginx appended, not one the client wrote", async () => {
+  const { clientIp } = await import("./client-ip");
+  const request = (headers: Record<string, string>) => new Request("http://localhost/", { headers });
+  assert.equal(clientIp(request({ "x-forwarded-for": "1.2.3.4, 203.0.113.9" })), "203.0.113.9");
+  assert.equal(clientIp(request({ "x-forwarded-for": "203.0.113.9" })), "203.0.113.9");
+  assert.equal(clientIp(request({ "x-real-ip": "198.51.100.4" })), "198.51.100.4");
+  assert.equal(clientIp(request({})), "unknown");
+});

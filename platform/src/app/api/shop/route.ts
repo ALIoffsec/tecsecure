@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 
 const noStore = { "Cache-Control": "private, no-store" };
 
-async function readProfile(request: Request): Promise<ShopProfile | Response> {
+async function readProfile(request: Request, ownerId: string): Promise<ShopProfile | Response> {
   let body: unknown;
   try { body = await request.json(); } catch {
     return Response.json({ error: "So‘rov JSON formatida bo‘lishi kerak." }, { status: 400 });
@@ -19,8 +19,9 @@ async function readProfile(request: Request): Promise<ShopProfile | Response> {
   const parsed = shopProfileSchema.safeParse(body);
   if (!parsed.success) return Response.json({ error: "Do‘kon ma’lumotlarini tekshiring.", details: parsed.error.flatten() }, { status: 400 });
   if (parsed.data.logoMediaId) {
-    const logo = await prisma.mediaAsset.findUnique({ where: { id: parsed.data.logoMediaId }, select: { mimeType: true } });
-    if (!logo?.mimeType.startsWith("image/")) return Response.json({ error: "Logotip rasm bo‘lishi kerak." }, { status: 400 });
+    const logo = await prisma.mediaAsset.findUnique({ where: { id: parsed.data.logoMediaId }, select: { mimeType: true, private: true, ownerId: true } });
+    // A private file (someone's payment receipt) can never become a public logo, whoever knows its id.
+    if (!logo?.mimeType.startsWith("image/") || (logo.private && logo.ownerId !== ownerId)) return Response.json({ error: "Logotip rasm bo‘lishi kerak." }, { status: 400 });
   }
   return parsed.data;
 }
@@ -47,7 +48,7 @@ export async function POST(request: Request) {
   if (!(await checkRateLimit("shop-apply", owner.user.id, 5, 24 * 60 * 60 * 1000))) {
     return Response.json({ error: "Urinishlar limiti oshdi. Ertaga qayta urinib ko‘ring." }, { status: 429 });
   }
-  const profile = await readProfile(request);
+  const profile = await readProfile(request, owner.user.id);
   if (profile instanceof Response) return profile;
   try {
     const shop = await prisma.$transaction(async (tx) => {
@@ -80,7 +81,7 @@ export async function PATCH(request: Request) {
   if (owner instanceof Response) return owner;
   if (!owner.shop) return Response.json({ error: "Avval do‘kon arizasini yuboring." }, { status: 404 });
   if (owner.shop.status === "SUSPENDED") return Response.json({ error: "Do‘kon to‘xtatilgan. Admin bilan bog‘laning.", code: "SHOP_SUSPENDED" }, { status: 403 });
-  const profile = await readProfile(request);
+  const profile = await readProfile(request, owner.user.id);
   if (profile instanceof Response) return profile;
   // A rejected application is sent again by editing it.
   const resubmit = owner.shop.status === "REJECTED";

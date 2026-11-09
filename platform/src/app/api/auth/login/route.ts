@@ -1,3 +1,4 @@
+import { clientIp } from "@/lib/client-ip";
 import bcrypt from "bcryptjs";
 import { createHash } from "node:crypto";
 import { beginSignIn } from "@/lib/two-factor";
@@ -20,7 +21,7 @@ export async function POST(request: Request) {
   if (!parsed.success) {
     return Response.json({ error: "Email yoki parol noto‘g‘ri." }, { status: 400 });
   }
-  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  const ip = clientIp(request);
   const identity = createHash("sha256").update(`${parsed.data.email}:${ip}`).digest("hex");
   const accountIdentity = createHash("sha256").update(parsed.data.email).digest("hex");
   if (!(await checkRateLimit("login", identity, 10, 15 * 60 * 1000)) || !(await checkRateLimit("login-account", accountIdentity, 50, 15 * 60 * 1000))) {

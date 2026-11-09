@@ -15,6 +15,7 @@ const uz = {
   copy: "Nusxalash", copied: "Nusxalandi", done: "Saqladim",
   backupLeft: "Qolgan zaxira kodlar",
   disableHint: "O‘chirish uchun ilovadagi joriy kodni yoki zaxira kodni kiriting.",
+  currentPassword: "Joriy parol", currentPasswordHint: "Email yoki telefonni o‘zgartirsangiz, joriy parol kerak. Hisobingiz telefon yoki Telegram orqali ochilgan bo‘lsa, avval “Parolni unutdingizmi?” orqali parol o‘rnating.",
   enabledNotice: "Ikki bosqichli himoya yoqildi.", disabledNotice: "Ikki bosqichli himoya o‘chirildi.", failed: "Amal bajarilmadi. Qayta urinib ko‘ring."
 };
 
@@ -35,6 +36,7 @@ export const securityCopy: Record<Locale, typeof uz> = {
     copy: "Копировать", copied: "Скопировано", done: "Я сохранил",
     backupLeft: "Осталось резервных кодов",
     disableHint: "Чтобы выключить, введите текущий код из приложения или резервный код.",
+    currentPassword: "Текущий пароль", currentPasswordHint: "Чтобы изменить email или телефон, нужен текущий пароль. Если аккаунт открыт через телефон или Telegram, сначала задайте пароль через «Забыли пароль?».",
     enabledNotice: "Двухэтапная защита включена.", disabledNotice: "Двухэтапная защита выключена.", failed: "Не удалось. Попробуйте ещё раз."
   },
   en: {
@@ -52,6 +54,7 @@ export const securityCopy: Record<Locale, typeof uz> = {
     copy: "Copy", copied: "Copied", done: "I saved them",
     backupLeft: "Backup codes left",
     disableHint: "To turn it off, enter the current code from the app or a backup code.",
+    currentPassword: "Current password", currentPasswordHint: "Changing your email or phone needs your current password. If the account was opened by phone or Telegram, set a password first with “Forgot your password?”.",
     enabledNotice: "Two-step protection is on.", disabledNotice: "Two-step protection is off.", failed: "That did not work. Try again."
   }
 };

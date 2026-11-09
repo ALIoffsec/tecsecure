@@ -7,10 +7,11 @@ import { PasswordChangeForm } from "@/components/password-change-form";
 import { useSitePreferences } from "@/components/site-preferences";
 import { ToastMessage } from "@/components/toast-provider";
 import { TelegramLinkCard } from "@/components/code-sign-in";
+import { securityCopy } from "@/lib/security-copy";
 
 export function ProfileDetails({ user }: { user: { name: string; email: string; phone: string | null; role: string } }) {
   const router = useRouter();
-  const { t } = useSitePreferences();
+  const { t, locale } = useSitePreferences();
   const [editing, setEditing] = useState(false);
   const [profileError, setProfileError] = useState("");
   const [profileNotice, setProfileNotice] = useState("");
@@ -87,6 +88,7 @@ export function ProfileDetails({ user }: { user: { name: string; email: string; 
           <div className="field"><label htmlFor="profile-name">{t("name")}</label><input id="profile-name" name="name" defaultValue={user.name} minLength={2} maxLength={100} required /></div>
           <div className="field"><label htmlFor="profile-email">{t("email")}</label><input id="profile-email" name="email" type="email" defaultValue={standInEmail ? "" : user.email} maxLength={254} required={!standInEmail} /></div>
           <div className="field"><label htmlFor="profile-phone">{t("phone")}</label><input id="profile-phone" name="phone" type="tel" defaultValue={user.phone ?? ""} maxLength={40} /></div>
+          <div className="field"><label htmlFor="profile-current-password">{securityCopy[locale].currentPassword}</label><input id="profile-current-password" name="currentPassword" type="password" autoComplete="current-password" maxLength={128} /><small className="muted">{securityCopy[locale].currentPasswordHint}</small></div>
           <ToastMessage message={profileError} variant="error" />
           <div className="hero-actions"><button className="button" type="submit" disabled={savingProfile}>{savingProfile ? t("saving") : t("save")}</button><button className="button ghost" type="button" disabled={savingProfile} onClick={() => { setEditing(false); setProfileError(""); }}>{t("cancel")}</button></div>
         </form> : <>

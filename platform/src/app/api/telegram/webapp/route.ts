@@ -1,3 +1,4 @@
+import { clientIp } from "@/lib/client-ip";
 import { randomBytes } from "node:crypto";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
@@ -13,7 +14,7 @@ const schema = z.object({ initData: z.string().min(10).max(4096), app: z.enum(["
 
 /** Signs a Mini App user in. Staff must have linked their Telegram first; customers may create an account here. */
 export async function POST(request: Request) {
-  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  const ip = clientIp(request);
   if (!(await checkRateLimit("telegram-webapp", ip, 60, 60 * 60 * 1000))) return Response.json({ error: "Urinishlar limiti oshdi. Keyinroq urinib ko‘ring." }, { status: 429 });
   let body: unknown;
   try { body = await request.json(); } catch {

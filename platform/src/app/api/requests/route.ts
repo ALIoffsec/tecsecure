@@ -1,3 +1,4 @@
+import { clientIp } from "@/lib/client-ip";
 import { randomBytes } from "node:crypto";
 import { getCurrentUser, requireModuleApi } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -8,7 +9,7 @@ import { requestSchema } from "@/lib/validation";
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
-  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  const ip = clientIp(request);
   if (!(await checkRateLimit("service-request", ip, 6, 60 * 60 * 1000))) {
     return Response.json({ error: "Ariza yuborish limiti oshdi. Keyinroq urinib ko‘ring." }, { status: 429 });
   }

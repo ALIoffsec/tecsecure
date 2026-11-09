@@ -1,3 +1,4 @@
+import { clientIp } from "@/lib/client-ip";
 import bcrypt from "bcryptjs";
 import { Prisma } from "@prisma/client";
 import { createSession } from "@/lib/auth";
@@ -8,7 +9,7 @@ import { registerSchema } from "@/lib/validation";
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
-  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  const ip = clientIp(request);
   if (!(await checkRateLimit("register-ip", ip, 8, 60 * 60 * 1000))) {
     return Response.json({ error: "Urinishlar limiti oshdi. Keyinroq urinib ko‘ring." }, { status: 429 });
   }

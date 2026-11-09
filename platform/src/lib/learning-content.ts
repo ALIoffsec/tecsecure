@@ -26,12 +26,14 @@ export type LearningAdminDocument<K extends LearningContentKind = LearningConten
 export class LearningContentValidationError extends Error {}
 
 const slugSchema = z.string().trim().min(2).max(100).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Slug faqat kichik lotin harflari, raqam va chiziqchadan iborat bo‘lsin.");
+/** Links and media in lessons may not run code: javascript:, vbscript: and data: addresses are refused. */
+const safeUrl = z.string().trim().min(1).max(2000).refine(value => !/^[\s\u0000-\u001f]*(javascript|vbscript|data):/i.test(value.replace(/[\t\r\n]/g, "")), "Bu manzil turi ruxsat etilmagan.");
 const localizedSchema = z.union([
   z.string().trim().min(1).max(30000),
   z.object({ uz: z.string().max(30000), ru: z.string().max(30000), en: z.string().max(30000) }).strict()
 ]);
 const learningImageSchema = z.object({
-  src: z.string().trim().min(1).max(1000),
+  src: safeUrl,
   alt: localizedSchema,
   caption: localizedSchema,
   width: z.number().int().positive().max(10000),
@@ -67,9 +69,9 @@ const interactivePracticeSchema = z.object({
   }).strict()).min(1).max(100)
 }).strict();
 const videoSchema = z.object({
-  src: z.string().trim().min(1).max(1000),
-  poster: z.string().trim().min(1).max(1000).optional(),
-  captions: z.array(z.object({ src: z.string().trim().min(1).max(1000), srclang: z.enum(["uz", "ru", "en"]), label: z.string().trim().min(1).max(60) }).strict()).max(3).optional(),
+  src: safeUrl,
+  poster: safeUrl.optional(),
+  captions: z.array(z.object({ src: safeUrl, srclang: z.enum(["uz", "ru", "en"]), label: z.string().trim().min(1).max(60) }).strict()).max(3).optional(),
   durationSec: z.number().int().positive().max(36000).optional()
 }).strict();
 const sectionSchema = z.object({
@@ -84,7 +86,7 @@ const sectionSchema = z.object({
   terminalPractice: terminalPracticeSchema.optional(),
   interactivePractice: interactivePracticeSchema.optional()
 }).strict();
-const referenceSchema = z.object({ label: localizedSchema, href: z.string().trim().min(1).max(2000) }).strict();
+const referenceSchema = z.object({ label: localizedSchema, href: safeUrl }).strict();
 
 const moduleSchema = z.object({
   slug: slugSchema,
