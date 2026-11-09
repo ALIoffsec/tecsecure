@@ -25,6 +25,8 @@ export type OAuthCredentials = {
 export type YandexMapsCredentials = { apiKey: string };
 /** Eskiz (notify.eskiz.uz) account that sends sign-in and reset codes by SMS. */
 export type SmsCredentials = { eskizEmail: string; eskizPassword: string; eskizFrom: string };
+/** Telegram Gateway (gatewayapi.telegram.org): sends verification codes into Telegram by phone number. */
+export type GatewayCredentials = { token: string };
 /** The mailbox that sends codes and notices: Gmail by default (smtp.gmail.com with an app password). */
 export type MailCredentials = { address: string; password: string; host: string; port: number; senderName: string };
 
@@ -60,7 +62,10 @@ const mailSchema = z.object({
   senderName: z.string().max(80)
 }).strict();
 
+const gatewaySchema = z.object({ token: z.string().max(1024) }).strict();
+
 const credentialStorageKeys = {
+  gateway: "integration:telegram-gateway",
   mail: "integration:mail",
   telegram: "integration:telegram",
   yandexMaps: "integration:yandex-maps",
@@ -197,7 +202,12 @@ export async function getMailCredentials(): Promise<MailCredentials> {
   });
 }
 
+export async function getGatewayCredentials(): Promise<GatewayCredentials> {
+  return readStoredConfig(credentialStorageKeys.gateway, gatewaySchema, { token: process.env.TELEGRAM_GATEWAY_TOKEN ?? "" });
+}
+
 export type IntegrationStatus = {
+  gateway: { configured: boolean };
   mail: { address: string; host: string; port: number; senderName: string; hasPassword: boolean; configured: boolean };
   sms: { eskizEmail: string; eskizFrom: string; hasPassword: boolean; configured: boolean };
   telegram: {
@@ -222,7 +232,8 @@ export type IntegrationStatus = {
 };
 
 export async function getIntegrationStatus(): Promise<IntegrationStatus> {
-  const [mail, sms, telegram, yandexMaps, google, github, yandex, microsoft] = await Promise.all([
+  const [gateway, mail, sms, telegram, yandexMaps, google, github, yandex, microsoft] = await Promise.all([
+    getGatewayCredentials(),
     getMailCredentials(),
     getSmsCredentials(),
     getTelegramCredentials(),
@@ -234,6 +245,7 @@ export async function getIntegrationStatus(): Promise<IntegrationStatus> {
   ]);
   const oauth = { google, github, yandex, microsoft };
   return {
+    gateway: { configured: Boolean(gateway.token) },
     mail: { address: mail.address, host: mail.host, port: mail.port, senderName: mail.senderName, hasPassword: Boolean(mail.password), configured: Boolean(mail.address && mail.password && mail.host) },
     sms: {
       eskizEmail: sms.eskizEmail,
@@ -267,6 +279,7 @@ export async function getIntegrationStatus(): Promise<IntegrationStatus> {
 }
 
 export type IntegrationCredentialUpdates = {
+  gateway?: GatewayCredentials;
   mail?: MailCredentials;
   sms?: SmsCredentials;
   telegram?: TelegramCredentials;
@@ -279,6 +292,10 @@ export async function saveIntegrationCredentials(
   actorId: string
 ): Promise<void> {
   const records: { key: string; value: string }[] = [];
+  if (updates.gateway) {
+    const key = credentialStorageKeys.gateway;
+    records.push({ key, value: encryptIntegrationCredential(JSON.stringify(gatewaySchema.parse(updates.gateway)), key, getMasterSecret()) });
+  }
   if (updates.mail) {
     const config = mailSchema.parse(updates.mail);
     const key = credentialStorageKeys.mail;

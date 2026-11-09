@@ -7,6 +7,7 @@ import { ToastMessage } from "@/components/toast-provider";
 import { useSitePreferences } from "@/components/site-preferences";
 import type { OAuthProviderId } from "@/lib/integration-credentials";
 import { otpSmsText } from "@/lib/otp-text";
+import { AdminBotStatus } from "./admin-bot-status";
 
 type IntegrationStatus = {
   mail: { address: string; host: string; port: number; senderName: string; hasPassword: boolean; configured: boolean };
@@ -141,7 +142,10 @@ export function AdminIntegrations() {
       const response = await fetch("/api/admin/integrations/test", { method: "POST" });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error ?? bot.botTestFailed);
-      setNotice(`${bot.botTestSent} ${result.webhook === "connected" ? bot.botWebhookOn : result.webhook === "needs-secret" ? bot.botWebhookSecret : bot.botWebhookLocal}`);
+      const perBot = Array.isArray(result.bots) ? result.bots.map((item: { bot: string; result: string; error?: string }) => `${item.bot}: ${item.result}${item.error ? ` (${item.error})` : ""}`).join("; ") : "";
+      const webhookNote = result.webhook === "connected" ? bot.botWebhookOn : result.webhook === "needs-secret" ? bot.botWebhookSecret : bot.botWebhookLocal;
+      if (result.messageSent) setNotice(`${bot.botTestSent} ${webhookNote}${perBot ? ` ${perBot}` : ""}`);
+      else setError(`${webhookNote}${perBot ? ` ${perBot}.` : ""} Admin chatga xabar yuborilmadi: ${result.messageError ?? ""}`);
     } catch (issue) {
       setError(issue instanceof Error ? issue.message : bot.botTestFailed);
     } finally {
@@ -344,6 +348,8 @@ export function AdminIntegrations() {
           </div>
         </form>
       </details>
+
+      <AdminBotStatus />
 
       <details className="admin-records-accordion">
         <summary>{t("yandexMapsIntegration")} · {statusLabel(status.yandexMaps.configured)}</summary>

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getSmsCredentials, getTelegramCredentials, type SmsCredentials } from "@/lib/integration-credentials";
 import { notifyTelegramUser } from "@/lib/telegram";
 import { mailConfigured, sendMail } from "@/lib/mailer";
+import { deliverPhoneCode, gatewayToken, reportGatewayVerified, sendGatewayCode } from "@/lib/telegram-gateway";
 import { otpSmsText, type OtpPurpose } from "@/lib/otp-text";
 
 export { otpSmsText, type OtpPurpose };
@@ -44,9 +45,14 @@ async function smsCredentials(): Promise<SmsCredentials | null> {
 
 export async function otpChannels() {
   const consoleMode = process.env.NODE_ENV !== "production" && process.env.OTP_DEV_CONSOLE === "1";
+  const gateway = Boolean(await gatewayToken());
+  const sms = Boolean(await smsCredentials());
   return {
     consoleMode,
-    sms: Boolean(await smsCredentials()) || consoleMode,
+    gateway,
+    // "sms" means a phone can get a code directly, by Telegram Gateway or by SMS.
+    sms: gateway || sms || consoleMode,
+    smsOnly: sms,
     email: (await mailConfigured()) || consoleMode
   };
 }
@@ -133,8 +139,11 @@ export async function sendSms(phone: string, text: string): Promise<string> {
 }
 
 
-/** "recent": a code went out less than a minute ago and is still valid. "none": nothing can reach this person. */
-export type OtpDelivery = "telegram" | "sms" | "email" | "recent" | "none";
+/**
+ * "telegram": our own bot (the account is linked). "gateway": Telegram Gateway to the number's Telegram.
+ * "recent": a code went out less than a minute ago and is still valid. "none": nothing can reach this person.
+ */
+export type OtpDelivery = "telegram" | "gateway" | "sms" | "email" | "recent" | "none";
 
 /** Creates a code and sends it the cheapest way that reaches this person. The code itself is never stored. */
 export async function issueOtp(purpose: OtpPurpose, target: string, kind: "phone" | "email", user: { id: string; telegramChatId?: string | null } | null): Promise<OtpDelivery> {
@@ -152,7 +161,19 @@ export async function issueOtp(purpose: OtpPurpose, target: string, kind: "phone
     if (channels.consoleMode) console.info(`[OTP dev] ${target} ${purpose} ${code}`);
     if (user?.telegramChatId && await notifyTelegramUser(user.id, `🔐 <b>Tecsecure</b>\nTasdiqlash kodi: <code>${code}</code>\nKod 5 daqiqa amal qiladi. Uni hech kimga bermang.`)) return "telegram";
     if (channels.consoleMode) return kind === "phone" ? "sms" : "email";
-    if (kind === "phone" && channels.sms) { await sendSms(target, otpSmsText(purpose, code)); return "sms"; }
+    if (kind === "phone" && channels.sms) {
+      // Gateway first, then Eskiz SMS; with neither, the site offers the bot link instead.
+      const token = channels.gateway ? await gatewayToken() : "";
+      const sent = await deliverPhoneCode(target, code, purpose, {
+        gateway: token ? (phone, value, kindOfCode) => sendGatewayCode(token, phone, value, kindOfCode) : null,
+        sms: channels.smsOnly ? async (phone) => { await sendSms(phone, otpSmsText(purpose, code)); } : null
+      });
+      if (sent.via === "gateway") {
+        await prisma.otpCode.update({ where: { id: record.id }, data: { providerRef: sent.requestId, deliveryStatus: "sent" } });
+        return "gateway";
+      }
+      if (sent.via === "sms") return "sms";
+    }
     if (kind === "email" && channels.email) {
       await sendMail(target, purpose === "RESET" ? "Tecsecure: parolni tiklash kodi" : "Tecsecure: kirish kodi", `${otpSmsText(purpose, code)}\nKod 5 daqiqa amal qiladi.`, code);
       return "email";
@@ -174,5 +195,7 @@ export async function verifyOtp(purpose: OtpPurpose | "RESET_TICKET", target: st
   const expected = Buffer.from(record.codeHash);
   if (given.length !== expected.length || !timingSafeEqual(given, expected)) return false;
   const consumed = await prisma.otpCode.updateMany({ where: { id: record.id, consumedAt: null }, data: { consumedAt: new Date() } });
+  // Telegram counts conversions when told the code was right; sign-in does not wait for it.
+  if (consumed.count === 1 && record.providerRef) reportGatewayVerified(record.providerRef, code.trim());
   return consumed.count === 1;
 }

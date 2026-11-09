@@ -1,6 +1,7 @@
 import { requireAdminApi } from "@/lib/auth";
 import {
   getIntegrationStatus,
+  getGatewayCredentials,
   getMailCredentials,
   getOAuthCredentials,
   getSmsCredentials,
@@ -48,6 +49,7 @@ const oauthUpdateSchema = z.object({
   clearTenantId: z.boolean().optional()
 }).strict();
 const integrationsUpdateSchema = z.object({
+  gateway: z.object({ token: z.string().max(1024).optional(), clearToken: z.boolean().optional() }).strict().optional(),
   mail: z.object({
     address: z.string().trim().email().max(254).or(z.literal("")).optional(),
     password: z.string().max(512).optional(),
@@ -117,6 +119,10 @@ export async function PATCH(request: Request) {
   try {
     const updates: IntegrationCredentialUpdates = {};
     const requested = parsed.data;
+    if (requested.gateway) {
+      const current = await getGatewayCredentials();
+      updates.gateway = { token: updateValue(requested.gateway.token, requested.gateway.clearToken, current.token) };
+    }
     if (requested.mail) {
       const current = await getMailCredentials();
       updates.mail = {

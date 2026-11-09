@@ -339,3 +339,10 @@ html { scroll-padding-top: 90px; }
 #app-shell .two-factor-codes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 18px; margin: 0; padding-left: 22px; font: 600 1rem/1.5 ui-monospace, Consolas, monospace; }
 #app-shell .two-factor-panel { max-width: 460px; margin: 40px auto; }
 #app-shell .two-factor-step { display: grid; gap: 10px; }
+/* Admin bot status */
+#app-shell .admin-bot-card { display: grid; gap: 8px; padding: 12px 14px; border: 1px solid var(--glass-edge); border-radius: 14px; background: var(--glass-control); }
+#app-shell .admin-bot-facts { display: grid; grid-template-columns: minmax(120px, auto) 1fr; gap: 4px 12px; margin: 0; font-size: .85rem; }
+#app-shell .admin-bot-facts dt { color: var(--muted); }
+#app-shell .admin-bot-facts dd { margin: 0; overflow-wrap: anywhere; }
+#app-shell .admin-bot-problems { margin: 0; padding-left: 18px; color: #e5484d; font-size: .85rem; }
+@media (max-width: 520px) { #app-shell .admin-bot-facts { grid-template-columns: 1fr; } }

@@ -1005,12 +1005,17 @@ model OtpCode {
   purpose    String
   target     String
   codeHash   String
+  /// Telegram Gateway request_id when the code went out through Gateway.
+  providerRef String?
+  /// The last delivery status Gateway reported: sent, delivered, read, expired or revoked.
+  deliveryStatus String?
   attempts   Int       @default(0)
   expiresAt  DateTime
   consumedAt DateTime?
   createdAt  DateTime  @default(now())
 
   @@index([target, purpose, createdAt])
+  @@index([providerRef])
 }
 
 model PaymeTransaction {

@@ -235,6 +235,22 @@ async function handleAdminCallback(update: TelegramUpdateBody, adminChatId: stri
   );
 }
 
+/** The answer to a plain /start: what the bot is for and a button into its Mini App. */
+async function sendWelcome(chatId: string, bot: "customer" | "staff"): Promise<void> {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "";
+  const path = bot === "staff" ? "/tg/staff" : "/tg";
+  const button = appUrl.startsWith("https://") ? { replyMarkup: { inline_keyboard: [[{ text: bot === "staff" ? "Ish oynasini ochish" : "Tecsecure’ni ochish", web_app: { url: new URL(path, appUrl).toString() } }]] } } : {};
+  const text = bot === "staff"
+    ? ["<b>Tecsecure xodimlar boti</b>", "Yangi buyurtma va arizalar shu yerga keladi.", "Ish oynasini pastdagi tugmadan oching. Bugungi raqamlar: /hisobot"].join("\n")
+    : [
+      "<b>Assalomu alaykum! Bu Tecsecure boti.</b>",
+      "• Do‘kon, buyurtmalar va hisobingiz pastdagi tugma orqali ochiladi.",
+      "• Saytda “Kodni Telegram orqali olish” tugmasini bosgan bo‘lsangiz, saytga qayting va o‘sha tugmani yana bir bor bosing: bot raqamingizni so‘raydi va kodni shu yerga yuboradi.",
+      "• Buyurtma holati va javoblar ham shu yerga keladi."
+    ].join("\n");
+  await sendTelegramMessage(chatId, text, button);
+}
+
 /** The shop bot only opens the shop cabinet; selling, orders and money all live in its Mini App. */
 async function handleShopMessage(update: TelegramUpdateBody): Promise<void> {
   const message = update.message;
@@ -298,7 +314,7 @@ async function handleUpdate(request: Request, bot: "customer" | "staff" | "shop"
     try {
       await onSharedContact(String(message.chat.id), message.from?.id, message.contact);
     } catch (error) {
-      console.error("Telegram phone check failed", error instanceof Error ? error.message : "UnknownError");
+      console.error("Telegram phone check failed at the shared-contact step:", error instanceof Error ? `${error.name}: ${error.message}` : String(error));
     }
     return Response.json({ ok: true });
   }
@@ -310,12 +326,22 @@ async function handleUpdate(request: Request, bot: "customer" | "staff" | "shop"
     try {
       await onPhoneCheckStart(start[1].slice(PHONE_START_PREFIX.length), String(message.chat.id));
     } catch (error) {
-      console.error("Telegram phone check start failed", error instanceof Error ? error.message : "UnknownError");
+      // Usually the reply could not be sent (wrong token, the person blocked the bot) or the database was unreachable.
+      console.error("Telegram phone check failed at the /start step:", error instanceof Error ? `${error.name}: ${error.message}` : String(error));
     }
     return Response.json({ ok: true });
   }
   if (start?.[1]) {
     await handleStart(update, start[1]);
+    return Response.json({ ok: true });
+  }
+  // A plain /start (or one with a parameter we do not know) used to get no answer at all.
+  if (/^\/start(?:@\w+)?(?:\s|$)/.test(text) && (bot === "customer" || bot === "staff")) {
+    try {
+      await sendWelcome(String(message.chat.id), bot);
+    } catch (error) {
+      console.error("Telegram welcome failed:", error instanceof Error ? `${error.name}: ${error.message}` : String(error));
+    }
     return Response.json({ ok: true });
   }
 

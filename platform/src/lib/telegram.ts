@@ -46,7 +46,7 @@ type TelegramSendOptions = {
   replyToMessageId?: number;
 };
 
-async function callTelegramApi<T>(
+export async function callTelegramApi<T>(
   token: string,
   method: string,
   payload: Record<string, unknown>
@@ -272,33 +272,60 @@ export async function notifyTelegramUser(userId: string, text: string): Promise<
   }
 }
 
-export type TelegramConnection = { botName: string; staffBotName: string; messageSent: true; webhook: "connected" | "needs-https" | "needs-secret" };
+export type TelegramConnection = {
+  botName: string;
+  staffBotName: string;
+  messageSent: boolean;
+  messageError?: string;
+  webhook: "connected" | "needs-https" | "needs-secret";
+  /** Per bot: connected, or why not. */
+  bots: { bot: "customer" | "staff" | "shop"; result: "connected" | "needs-secret" | "needs-https" | "failed"; error?: string }[];
+};
 
-async function connectOneBot(token: string, secret: string, appUrl: string, botParam: string, menuPath: string, commands: { command: string; description: string }[]) {
+async function connectOneBot(token: string, secret: string, appUrl: string, botParam: string, menuPath: string, menuText: string, commands: { command: string; description: string }[]) {
   await callTelegramApi(token, "setWebhook", { url: new URL(`/api/telegram/webhook${botParam}`, appUrl).toString(), secret_token: secret, allowed_updates: ["message", "callback_query"] });
   await callTelegramApi(token, "setMyCommands", { commands });
-  await callTelegramApi(token, "setChatMenuButton", { menu_button: { type: "web_app", text: "Tecsecure", web_app: { url: new URL(menuPath, appUrl).toString() } } });
+  await callTelegramApi(token, "setChatMenuButton", { menu_button: { type: "web_app", text: menuText, web_app: { url: new URL(menuPath, appUrl).toString() } } });
 }
 
-/** Proves the saved credentials work end to end, then points Telegram's buttons and Mini Apps at this site. */
+/**
+ * Points every configured bot at this site, each on its own (one bot without a secret no longer stops the
+ * others), then sends a test message to the admin chat. A failed test message is reported, not fatal:
+ * it used to abort before any webhook was set, which left the bots silent.
+ */
 export async function connectTelegramBot(): Promise<TelegramConnection> {
   const { botToken, adminChatId, webhookSecret, staffBotToken, staffWebhookSecret, shopBotToken, shopWebhookSecret } = await getTelegramCredentials();
-  if (!botToken || !adminChatId) throw new Error("Bot token va admin chat ID kiritilmagan.");
-  const adminToken = staffBotToken || botToken;
+  if (!botToken) throw new Error("Bot token kiritilmagan.");
   const me = await callTelegramApi<{ username?: string }>(botToken, "getMe", {});
   const staffMe = staffBotToken ? await callTelegramApi<{ username?: string }>(staffBotToken, "getMe", {}) : me;
-  await sendWithToken(adminToken, adminChatId, "✅ <b>Tecsecure boti ulandi.</b>\nYangi buyurtma va arizalar shu chatga keladi. Hisobot uchun: /hisobot");
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "";
-  let webhook: TelegramConnection["webhook"] = "needs-https";
-  if (appUrl.startsWith("https://")) {
-    if (webhookSecret && (!staffBotToken || staffWebhookSecret) && (!shopBotToken || shopWebhookSecret)) {
-      await connectOneBot(botToken, webhookSecret, appUrl, "", "/tg", [{ command: "start", description: "Tecsecure'ni ochish" }]);
-      if (staffBotToken) await connectOneBot(staffBotToken, staffWebhookSecret, appUrl, "?bot=staff", "/tg/staff", [{ command: "hisobot", description: "Bugungi hisobot" }]);
-      if (shopBotToken) await connectOneBot(shopBotToken, shopWebhookSecret, appUrl, "?bot=shop", "/tg/shop", [{ command: "start", description: "Do'kon kabinetini ochish" }]);
-      webhook = "connected";
-    } else {
-      webhook = "needs-secret";
+  const plan = [
+    { bot: "customer" as const, token: botToken, secret: webhookSecret, param: "", menu: "/tg", text: "Tecsecure", commands: [{ command: "start", description: "Tecsecure'ni ochish" }] },
+    { bot: "staff" as const, token: staffBotToken, secret: staffWebhookSecret, param: "?bot=staff", menu: "/tg/staff", text: "Ish oynasi", commands: [{ command: "hisobot", description: "Bugungi hisobot" }] },
+    { bot: "shop" as const, token: shopBotToken, secret: shopWebhookSecret, param: "?bot=shop", menu: "/tg/shop", text: "Do'kon kabineti", commands: [{ command: "start", description: "Do'kon kabinetini ochish" }] }
+  ].filter(item => item.token);
+  const bots: TelegramConnection["bots"] = [];
+  for (const item of plan) {
+    if (!appUrl.startsWith("https://")) { bots.push({ bot: item.bot, result: "needs-https" }); continue; }
+    if (!item.secret) { bots.push({ bot: item.bot, result: "needs-secret" }); continue; }
+    try {
+      await connectOneBot(item.token, item.secret, appUrl, item.param, item.menu, item.text, item.commands);
+      bots.push({ bot: item.bot, result: "connected" });
+    } catch (error) {
+      bots.push({ bot: item.bot, result: "failed", error: error instanceof Error ? error.message : "UnknownError" });
     }
   }
-  return { botName: me?.username ?? "", staffBotName: staffMe?.username ?? "", messageSent: true, webhook };
+  let messageSent = false;
+  let messageError: string | undefined;
+  if (!adminChatId) messageError = "Admin chat ID kiritilmagan.";
+  else {
+    try {
+      await sendWithToken(staffBotToken || botToken, adminChatId, "✅ <b>Tecsecure boti ulandi.</b>\nYangi buyurtma va arizalar shu chatga keladi. Hisobot uchun: /hisobot");
+      messageSent = true;
+    } catch (error) {
+      messageError = error instanceof Error ? error.message : "UnknownError";
+    }
+  }
+  const webhook: TelegramConnection["webhook"] = !appUrl.startsWith("https://") ? "needs-https" : bots.every(item => item.result === "connected") ? "connected" : "needs-secret";
+  return { botName: me?.username ?? "", staffBotName: staffMe?.username ?? "", messageSent, messageError, webhook, bots };
 }
