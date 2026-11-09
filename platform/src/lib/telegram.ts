@@ -2,7 +2,7 @@ import { AsyncLocalStorage } from "node:async_hooks";
 import { prisma } from "@/lib/prisma";
 import { getTelegramCredentials } from "@/lib/integration-credentials";
 
-export type TelegramBotName = "customer" | "staff";
+export type TelegramBotName = "customer" | "staff" | "shop";
 const activeBot = new AsyncLocalStorage<TelegramBotName>();
 
 /** Everything sent inside `run` goes out through the named bot. */
@@ -14,7 +14,8 @@ export function withTelegramBot<T>(bot: TelegramBotName, run: () => Promise<T>):
  * Staff traffic uses the staff bot when one is configured and falls back to the single bot, so the
  * site keeps working with one token until a second is added.
  */
-function tokenFor(credentials: { botToken: string; staffBotToken: string; adminChatId: string }, chatId?: string): string {
+function tokenFor(credentials: { botToken: string; staffBotToken: string; shopBotToken: string; adminChatId: string }, chatId?: string): string {
+  if (activeBot.getStore() === "shop") return credentials.shopBotToken || credentials.botToken;
   const wantsStaff = activeBot.getStore() === "staff" || (activeBot.getStore() !== "customer" && chatId !== undefined && chatId === credentials.adminChatId);
   return wantsStaff ? credentials.staffBotToken || credentials.botToken : credentials.botToken;
 }
@@ -28,6 +29,7 @@ type TelegramInlineKeyboardButton = {
   text: string;
   callback_data?: string;
   url?: string;
+  web_app?: { url: string };
 };
 export type TelegramReplyMarkup =
   | { inline_keyboard: TelegramInlineKeyboardButton[][] }
@@ -278,7 +280,7 @@ async function connectOneBot(token: string, secret: string, appUrl: string, botP
 
 /** Proves the saved credentials work end to end, then points Telegram's buttons and Mini Apps at this site. */
 export async function connectTelegramBot(): Promise<TelegramConnection> {
-  const { botToken, adminChatId, webhookSecret, staffBotToken, staffWebhookSecret } = await getTelegramCredentials();
+  const { botToken, adminChatId, webhookSecret, staffBotToken, staffWebhookSecret, shopBotToken, shopWebhookSecret } = await getTelegramCredentials();
   if (!botToken || !adminChatId) throw new Error("Bot token va admin chat ID kiritilmagan.");
   const adminToken = staffBotToken || botToken;
   const me = await callTelegramApi<{ username?: string }>(botToken, "getMe", {});
@@ -287,9 +289,10 @@ export async function connectTelegramBot(): Promise<TelegramConnection> {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "";
   let webhook: TelegramConnection["webhook"] = "needs-https";
   if (appUrl.startsWith("https://")) {
-    if (webhookSecret && (!staffBotToken || staffWebhookSecret)) {
+    if (webhookSecret && (!staffBotToken || staffWebhookSecret) && (!shopBotToken || shopWebhookSecret)) {
       await connectOneBot(botToken, webhookSecret, appUrl, "", "/tg", [{ command: "start", description: "Tecsecure'ni ochish" }]);
       if (staffBotToken) await connectOneBot(staffBotToken, staffWebhookSecret, appUrl, "?bot=staff", "/tg/staff", [{ command: "hisobot", description: "Bugungi hisobot" }]);
+      if (shopBotToken) await connectOneBot(shopBotToken, shopWebhookSecret, appUrl, "?bot=shop", "/tg/shop", [{ command: "start", description: "Do'kon kabinetini ochish" }]);
       webhook = "connected";
     } else {
       webhook = "needs-secret";

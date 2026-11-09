@@ -18,6 +18,8 @@ import { WalletReviewManager } from "@/components/wallet-panel";
 import { TecGiftManager } from "@/components/tec-gift-manager";
 import { SystemStatus } from "@/components/system-status";
 import { AdminIntegrations } from "@/components/admin-integrations";
+import { AdminDeliverySettings } from "@/components/admin-delivery-settings";
+import { sellerCopy } from "@/lib/seller-copy";
 import { MediaGallery, MediaUploader } from "@/components/media-uploader";
 import { AdminProductManager, type AdminCategory } from "@/components/admin-product-manager";
 import { LearningContentManager } from "@/components/learning-content-manager";
@@ -138,9 +140,10 @@ function priceFromForm(data: FormData, field: string) {
   return value;
 }
 
-export function AdminWorkspace({ overview, newOrderCount, services, requests: initialRequests, requestStats, requestTotal, productCategories, articles, settings, notifications, projects, quotations, pendingPayments, plans, users, siteBlocks, portfolioPosts, walletRequests, metrics, role, permissions, actorId }: {
+export function AdminWorkspace({ overview, newOrderCount, pendingShopCount = 0, services, requests: initialRequests, requestStats, requestTotal, productCategories, articles, settings, notifications, projects, quotations, pendingPayments, plans, users, siteBlocks, portfolioPosts, walletRequests, metrics, role, permissions, actorId }: {
   overview: AdminOverviewData;
   newOrderCount: number;
+  pendingShopCount?: number;
   services: Service[];
   requests: RequestRecord[];
   requestStats: Partial<Record<RequestStatus, number>>;
@@ -485,6 +488,11 @@ export function AdminWorkspace({ overview, newOrderCount, services, requests: in
               {sidebarOpen && <span>{siteCopy[locale].admin.ordersTitle}</span>}
               {sidebarOpen && newOrderCount > 0 && <span className="admin-sidebar-count">{newOrderCount}</span>}
             </Link>}
+            {isPrivileged && <Link className="admin-sidebar-item" href="/admin/shops" aria-label={sellerCopy[locale].admin.title} title={sellerCopy[locale].admin.title}>
+              <span className="admin-sidebar-marker"><UiIcon name="building" size={17} /></span>
+              {sidebarOpen && <span>{sellerCopy[locale].admin.title}</span>}
+              {sidebarOpen && pendingShopCount > 0 && <span className="admin-sidebar-count">{pendingShopCount}</span>}
+            </Link>}
           </nav>
         </aside>
         <div className="admin-section-content">
@@ -643,6 +651,7 @@ export function AdminWorkspace({ overview, newOrderCount, services, requests: in
               <button className="button" disabled={busy}>{t("saveSettings")}</button>
             </form>
           </details>
+          <AdminDeliverySettings />
           <details className="admin-records-accordion">
             <summary>{t("siteAppearance")}</summary>
             <section className="site-appearance">

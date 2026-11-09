@@ -11,6 +11,8 @@ import { growthCopy } from "@/lib/growth-copy";
 import { formatDateTime, formatMinor } from "@/lib/format";
 import { nextStatuses, orderStatuses, type OrderStatusValue } from "@/lib/orders";
 import type { OrderLineProduct } from "@/lib/order-lines";
+import { checkoutCopy } from "@/lib/checkout-copy";
+import { regionCodes, regionNames, type RegionCode } from "@/lib/delivery";
 
 type OrderItem = { id: string; name: string; sku?: string | null; quantity: number; unitPriceMinor?: number | null; product?: OrderLineProduct };
 type OrderBase = {
@@ -18,6 +20,7 @@ type OrderBase = {
   latitude: number | null; longitude: number | null; note: string | null; totalMinor: number | null; currency: string; createdAt: Date | string;
   paymentMethod: string; paymentStatus: string; paymentReference: string | null; paymentProofMediaId: string | null;
   companyName: string | null; companyTin: string | null;
+  region?: string | null; deliveryMethod?: string | null; deliveryFeeMinor?: number | null; itemsTotalMinor?: number | null; vatMinor?: number | null;
   items: OrderItem[];
 };
 export type CustomerOrder = OrderBase & { history: { id: string; toStatus: string; createdAt: Date | string; note: string | null }[] };
@@ -50,6 +53,31 @@ export function OrderLines({ items, currency }: { items: OrderItem[]; currency: 
       </li>;
     })}
   </ul>;
+}
+
+/** Where it goes and how: region and address, the delivery method and its price. */
+function DeliverySummary({ order }: { order: OrderBase }) {
+  const { locale } = useSitePreferences();
+  const d = checkoutCopy[locale];
+  const region = order.region && (regionCodes as readonly string[]).includes(order.region) ? regionNames[locale][order.region as RegionCode] : null;
+  const method = order.deliveryMethod === "EXPRESS" || order.deliveryMethod === "COURIER" || order.deliveryMethod === "PICKUP" ? d.delivery[order.deliveryMethod].title : order.deliveryMethod === "AGREED" ? d.agreedShort : null;
+  return <>
+    {[region, order.city, order.deliveryMethod === "PICKUP" ? null : order.address].filter(Boolean).join(", ")}
+    {method && <><br /><span className="small">{d.deliveryRow}: {method}{order.deliveryFeeMinor != null ? ` · ${order.deliveryFeeMinor === 0 ? d.free : formatMinor(order.deliveryFeeMinor, "UZS", locale)}` : ""}</span></>}
+  </>;
+}
+
+/** Goods, delivery and the total; VAT when the company shows it. */
+function OrderTotals({ order }: { order: OrderBase }) {
+  const { locale } = useSitePreferences();
+  const d = checkoutCopy[locale];
+  const c = siteCopy[locale].orders;
+  if (order.totalMinor === null) return <span className="muted">{c.totalPending}</span>;
+  return <span className="order-totals">
+    {order.itemsTotalMinor != null && order.deliveryFeeMinor != null && <span className="small muted">{d.itemsRow}: {formatMinor(order.itemsTotalMinor, order.currency, locale)} · {d.deliveryRow}: {order.deliveryFeeMinor === 0 ? d.free : formatMinor(order.deliveryFeeMinor, order.currency, locale)}</span>}
+    <strong>{formatMinor(order.totalMinor, order.currency, locale)}</strong>
+    {order.vatMinor != null && <span className="small muted">{d.vatIncluded}: {formatMinor(order.vatMinor, order.currency, locale)}</span>}
+  </span>;
 }
 
 const flow: OrderStatusValue[] = ["NEW", "CONFIRMED", "PREPARING", "SHIPPED", "DELIVERED"];
@@ -98,10 +126,10 @@ export function CustomerOrders({ orders }: { orders: CustomerOrder[] }) {
                 </li>)}
               </ol>}
             <div className="order-meta">
-              <div><h3>{c.delivery}</h3><p>{order.recipientName} · {order.phone}<br />{[order.city, order.address].filter(Boolean).join(", ")}</p>
+              <div><h3>{c.delivery}</h3><p>{order.recipientName} · {order.phone}<br /><DeliverySummary order={order} /></p>
                 {order.latitude !== null && order.longitude !== null && <a className="small text-link" href={`https://yandex.uz/maps/?pt=${order.longitude},${order.latitude}&z=16&l=map`} target="_blank" rel="noreferrer">{c.map}</a>}
               </div>
-              <div><h3>{c.total}</h3><p><strong>{order.totalMinor === null ? c.totalPending : formatMinor(order.totalMinor, order.currency, locale)}</strong></p></div>
+              <div><h3>{c.total}</h3><p><OrderTotals order={order} /></p></div>
               <div><h3>{c.payment}</h3><PaymentBadge order={order} />
                 {!cancelled && order.paymentMethod === "ONLINE_PAYME" && order.paymentStatus === "AWAITING_PAYMENT" && <a className="button order-pay" href={`/api/orders/${order.id}/payme?l=${locale}`}>{g.pay}</a>}
                 {order.paymentMethod === "BANK_TRANSFER" && <Link className="small text-link order-invoice" href={`/portal/orders/${order.id}/invoice`}>{g.invoice}</Link>}
@@ -177,13 +205,13 @@ export function AdminOrders({ orders, counts, total, status }: { orders: AdminOr
         <div className="order-body">
           <p className="order-customer">
             <strong>{order.recipientName}</strong> · <a href={`tel:${order.phone.replace(/[^\d+]/g, "")}`}>{order.phone}</a><br />
-            {[order.city, order.address].filter(Boolean).join(", ")}<br />
+            <DeliverySummary order={order} /><br />
             <span className="small muted">{c.account}: {order.customer.name} ({order.customer.email})</span>
             {order.companyName && <><br /><span className="small">{order.companyName} · STIR {order.companyTin}</span></>}
           </p>
           {order.latitude !== null && order.longitude !== null && <a className="small text-link" href={`https://yandex.uz/maps/?pt=${order.longitude},${order.latitude}&z=16&l=map`} target="_blank" rel="noreferrer">{c.map}</a>}
           <OrderLines items={order.items} currency={order.currency} />
-          <p className="order-total">{order.totalMinor !== null ? <>{c.total}: <strong>{formatMinor(order.totalMinor, order.currency, locale)}</strong></> : <span className="muted">{c.totalPending}</span>}</p>
+          <p className="order-total">{c.total}: <OrderTotals order={order} /></p>
           <div className="order-payment">
             <PaymentBadge order={order} />
             {order.paymentReference && <span className="small muted">{order.paymentReference}</span>}

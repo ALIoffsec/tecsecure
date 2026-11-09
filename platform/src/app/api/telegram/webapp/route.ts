@@ -9,7 +9,7 @@ import { verifyTelegramInitData } from "@/lib/telegram-webapp";
 
 export const runtime = "nodejs";
 
-const schema = z.object({ initData: z.string().min(10).max(4096), app: z.enum(["customer", "staff"]), create: z.boolean().optional() });
+const schema = z.object({ initData: z.string().min(10).max(4096), app: z.enum(["customer", "staff", "shop"]), create: z.boolean().optional() });
 
 /** Signs a Mini App user in. Staff must have linked their Telegram first; customers may create an account here. */
 export async function POST(request: Request) {
@@ -23,7 +23,9 @@ export async function POST(request: Request) {
   if (!parsed.success) return Response.json({ error: "So‘rov noto‘g‘ri." }, { status: 400 });
 
   const credentials = await getTelegramCredentials();
-  const token = parsed.data.app === "staff" ? credentials.staffBotToken || credentials.botToken : credentials.botToken;
+  const token = parsed.data.app === "staff" ? credentials.staffBotToken || credentials.botToken
+    : parsed.data.app === "shop" ? credentials.shopBotToken || credentials.botToken
+    : credentials.botToken;
   const telegramUser = verifyTelegramInitData(parsed.data.initData, token);
   if (!telegramUser) return Response.json({ error: "Telegram ma’lumotini tasdiqlab bo‘lmadi." }, { status: 401 });
 
@@ -39,9 +41,11 @@ export async function POST(request: Request) {
   }
 
   if (isStaff) return Response.json({ error: "Xodim hisobi uchun xodimlar botini oching.", code: "USE_STAFF_BOT" }, { status: 403 });
+  // The shop app lands in the shop cabinet, where a new seller fills in the application.
+  const next = parsed.data.app === "shop" ? "/shop" : "/products";
   if (user) {
     await createSession(user.id);
-    return Response.json({ ok: true, next: "/products" });
+    return Response.json({ ok: true, next });
   }
   if (!parsed.data.create) return Response.json({ ok: false, needsAccount: true, name: telegramUser.first_name ?? "" });
   const name = [telegramUser.first_name, telegramUser.last_name].filter(Boolean).join(" ").trim().slice(0, 100);
@@ -55,5 +59,5 @@ export async function POST(request: Request) {
     select: { id: true }
   });
   await createSession(created.id);
-  return Response.json({ ok: true, next: "/products" });
+  return Response.json({ ok: true, next });
 }

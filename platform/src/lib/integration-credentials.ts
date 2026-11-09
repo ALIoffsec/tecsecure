@@ -13,6 +13,9 @@ export type TelegramCredentials = {
   staffBotToken: string;
   staffBotUsername: string;
   staffWebhookSecret: string;
+  shopBotToken: string;
+  shopBotUsername: string;
+  shopWebhookSecret: string;
 };
 export type OAuthCredentials = {
   clientId: string;
@@ -30,7 +33,10 @@ const telegramSchema = z.object({
   webhookSecret: z.string().max(512),
   staffBotToken: z.string().max(512).default(""),
   staffBotUsername: z.string().max(100).default(""),
-  staffWebhookSecret: z.string().max(512).default("")
+  staffWebhookSecret: z.string().max(512).default(""),
+  shopBotToken: z.string().max(512).default(""),
+  shopBotUsername: z.string().max(100).default(""),
+  shopWebhookSecret: z.string().max(512).default("")
 }).strict();
 const oauthSchema = z.object({
   clientId: z.string().max(512),
@@ -127,7 +133,10 @@ export async function getTelegramCredentials(): Promise<TelegramCredentials> {
       webhookSecret: process.env.TELEGRAM_WEBHOOK_SECRET ?? "",
       staffBotToken: process.env.TELEGRAM_STAFF_BOT_TOKEN ?? "",
       staffBotUsername: process.env.TELEGRAM_STAFF_BOT_USERNAME ?? "",
-      staffWebhookSecret: process.env.TELEGRAM_STAFF_WEBHOOK_SECRET ?? ""
+      staffWebhookSecret: process.env.TELEGRAM_STAFF_WEBHOOK_SECRET ?? "",
+      shopBotToken: process.env.TELEGRAM_SHOP_BOT_TOKEN ?? "",
+      shopBotUsername: process.env.TELEGRAM_SHOP_BOT_USERNAME ?? "",
+      shopWebhookSecret: process.env.TELEGRAM_SHOP_WEBHOOK_SECRET ?? ""
     }
   );
 }
@@ -177,6 +186,9 @@ export type IntegrationStatus = {
     staffBotUsername: string;
     hasStaffBotToken: boolean;
     hasStaffWebhookSecret: boolean;
+    shopBotUsername: string;
+    hasShopBotToken: boolean;
+    hasShopWebhookSecret: boolean;
   };
   yandexMaps: { configured: boolean };
   oauth: Record<OAuthProviderId, {
@@ -212,7 +224,10 @@ export async function getIntegrationStatus(): Promise<IntegrationStatus> {
       hasWebhookSecret: Boolean(telegram.webhookSecret),
       staffBotUsername: telegram.staffBotUsername,
       hasStaffBotToken: Boolean(telegram.staffBotToken),
-      hasStaffWebhookSecret: Boolean(telegram.staffWebhookSecret)
+      hasStaffWebhookSecret: Boolean(telegram.staffWebhookSecret),
+      shopBotUsername: telegram.shopBotUsername,
+      hasShopBotToken: Boolean(telegram.shopBotToken),
+      hasShopWebhookSecret: Boolean(telegram.shopWebhookSecret)
     },
     yandexMaps: { configured: Boolean(yandexMaps.apiKey) },
     oauth: Object.fromEntries(oauthProviderIds.map((provider) => [

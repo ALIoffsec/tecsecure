@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { deliveryMethods, regionCodes } from "./delivery";
 
 export const orderStatuses = ["NEW", "CONFIRMED", "PREPARING", "SHIPPED", "DELIVERED", "CANCELLED"] as const;
 export type OrderStatusValue = (typeof orderStatuses)[number];
@@ -27,6 +28,13 @@ export const paymentMethodLabels: Record<string, string> = {
   BANK_TRANSFER: "Bank o‘tkazmasi (yuridik shaxs)",
   ONLINE_PAYME: "Payme orqali onlayn",
   UNSPECIFIED: "Kelishiladi"
+};
+
+export const deliveryMethodLabels: Record<string, string> = {
+  EXPRESS: "Shahar ichida kuryer",
+  COURIER: "Viloyatga kuryer yoki pochta",
+  PICKUP: "Olib ketish",
+  AGREED: "Telefonda kelishiladi"
 };
 
 const transitions: Record<OrderStatusValue, OrderStatusValue[]> = {
@@ -67,6 +75,11 @@ export const orderSchema = z.object({
     currency: z.string().length(3),
     stockStatus: z.enum(["IN_STOCK", "ON_REQUEST", "OUT_OF_STOCK", "UNKNOWN"])
   })).max(50).optional(),
+  region: z.enum(regionCodes).optional(),
+  deliveryMethod: z.enum(deliveryMethods).optional(),
+  /** What the customer was shown; a different server figure means prices moved and they must look again. */
+  expectedDeliveryFeeMinor: z.number().int().nonnegative().nullable().optional(),
+  expectedTotalMinor: z.number().int().nonnegative().nullable().optional(),
   items: z
     .array(z.object({ productId: z.string().min(1).max(40), quantity: z.number().int().min(1).max(999) }))
     .min(1)
@@ -82,6 +95,8 @@ export const orderSchema = z.object({
   if (order.paymentMethod === "BANK_TRANSFER" && order.customerType !== "COMPANY") {
     context.addIssue({ code: "custom", path: ["paymentMethod"], message: "Bank o‘tkazmasi yuridik shaxslar uchun." });
   }
+  // Collecting it in person needs no address.
+  if (order.deliveryMethod === "PICKUP") return;
   const hasCoordinates = order.latitude != null && order.longitude != null;
   const hasManualLocation = order.address.length >= 5 || (order.note?.trim().length ?? 0) >= 5;
   if (!hasCoordinates && !hasManualLocation) {

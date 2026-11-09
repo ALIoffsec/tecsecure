@@ -1,4 +1,4 @@
-export type IconName = "home" | "user" | "sun" | "moon" | "monitor" | "network" | "camera" | "clipboard" | "toolbox" | "settings" | "phone" | "mail" | "send" | "instagram" | "clock" | "cloud" | "shield" | "refresh" | "box" | "newspaper" | "building" | "users" | "receipt" | "creditCard" | "layout" | "briefcase" | "wallet" | "server" | "book" | "download";
+export type IconName = "home" | "user" | "sun" | "moon" | "monitor" | "network" | "camera" | "clipboard" | "toolbox" | "settings" | "phone" | "mail" | "send" | "instagram" | "clock" | "cloud" | "shield" | "refresh" | "box" | "newspaper" | "building" | "users" | "receipt" | "creditCard" | "layout" | "briefcase" | "wallet" | "server" | "book" | "download" | "truck";
 
 export function UiIcon({ name, size = 20 }: { name: IconName; size?: number }) {
   const common = { fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
@@ -21,6 +21,7 @@ export function UiIcon({ name, size = 20 }: { name: IconName; size?: number }) {
     cloud: <path d="M7 18h10a4 4 0 0 0 .5-8A6 6 0 0 0 6 9a4.5 4.5 0 0 0 1 9Z" />,
     shield: <><path d="M12 22s8-4 8-11V5l-8-3-8 3v6c0 7 8 11 8 11Z" /><path d="m9 12 2 2 4-4" /></>,
     refresh: <><path d="M20 7v5h-5" /><path d="M4 17v-5h5" /><path d="M5.6 9A7 7 0 0 1 18 6.5L20 12M4 12l2 5.5A7 7 0 0 0 18.4 15" /></>,
+    truck: <><path d="M2 6h12v10H2z" /><path d="M14 9h4l3 3.5V16h-7" /><circle cx="6.5" cy="17.5" r="1.8" /><circle cx="17" cy="17.5" r="1.8" /></>,
     box: <><path d="m12 3 9 5-9 5-9-5 9-5Z" /><path d="M3 8v9l9 5 9-5V8M12 13v9" /></>,
     newspaper: <><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M7 8h4v4H7zm7 0h3m-3 4h3M7 16h10" /></>,
     building: <><path d="M4 21V4a1 1 0 0 1 1-1h10v18M15 8h4a1 1 0 0 1 1 1v12M2 21h20" /><path d="M8 7h3m-3 4h3m-3 4h3m7-3h1m-1 4h1" /></>,

@@ -22,9 +22,14 @@ import { trackGoal } from "@/lib/analytics";
 import { formatMinor } from "@/lib/format";
 import { OriginalOrderButton } from "./original-order-button";
 import { startOrderMotion, type ButtonMotion } from "@/lib/button-motion";
+import { deliveryOptions, deliveryTime, regionCodes, regionNames, tariffsConfigured, vatPart, type DeliveryMethod, type DeliveryTariffs, type RegionCode } from "@/lib/delivery";
+import { toUzsMinor, type CurrencyRates } from "@/lib/currency";
+import { formatNumber } from "@/lib/format";
 
 type PreviewProduct = QuotedProduct & { name: string; description: string; translations?: unknown; slug: string; category: { slug: string } | null; assets: CatalogMedia[] };
 type Method = "CASH" | "CARD_ON_DELIVERY" | "CARD_TRANSFER" | "WALLET" | "BANK_TRANSFER" | "ONLINE_PAYME";
+type CheckoutConfig = { tariffs: DeliveryTariffs; vat: "NONE" | "INCLUDED"; pickupAddress: string; rates: CurrencyRates | null };
+const deliveryIcons: Record<DeliveryMethod, IconName> = { EXPRESS: "truck", COURIER: "box", PICKUP: "building" };
 export type PaymentCard = { number: string; holder: string; bank: string };
 
 const REMEMBER_KEY = "tecsecure-checkout";
@@ -60,7 +65,10 @@ export function CartCheckout({ canOrder = false, signedIn = false, customer, wal
   const lines = useCart();
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [reached, setReached] = useState(1);
-  const [form, setForm] = useState({ recipientName: customer?.name ?? "", phone: customer?.phone ?? "", city: "Toshkent", address: "", note: "" });
+  const [form, setForm] = useState({ recipientName: customer?.name ?? "", phone: customer?.phone ?? "", city: "", address: "", note: "" });
+  const [region, setRegion] = useState<RegionCode | "">("");
+  const [delivery, setDelivery] = useState<DeliveryMethod | null>(null);
+  const [config, setConfig] = useState<CheckoutConfig | null>(null);
   const [coords, setCoords] = useState<[number, number] | null>(null);
   const [method, setMethod] = useState<Method>("CASH");
   const [buyer, setBuyer] = useState<{ type: "INDIVIDUAL" | "COMPANY"; companyName: string; companyTin: string }>({ type: "INDIVIDUAL", companyName: "", companyTin: "" });
@@ -81,8 +89,9 @@ export function CartCheckout({ canOrder = false, signedIn = false, customer, wal
   // Returning customers should not retype where they live.
   useEffect(() => {
     try {
-      const saved = JSON.parse(window.localStorage.getItem(REMEMBER_KEY) ?? "null") as Partial<typeof form> | null;
+      const saved = JSON.parse(window.localStorage.getItem(REMEMBER_KEY) ?? "null") as (Partial<typeof form> & { region?: string }) | null;
       if (saved) setForm(current => ({ ...current, phone: current.phone || saved.phone || "", city: saved.city || current.city, address: saved.address || "" }));
+      if (saved?.region && (regionCodes as readonly string[]).includes(saved.region)) setRegion(saved.region as RegionCode);
     } catch { /* storage may be unavailable; the form simply starts empty */ }
   }, []);
 
@@ -96,7 +105,7 @@ export function CartCheckout({ canOrder = false, signedIn = false, customer, wal
       .then(async response => {
         const data = await response.json();
         if (!response.ok || !Array.isArray(data.products)) throw new Error(data.error ?? journey.mediaError);
-        if (!controller.signal.aborted) setPreview(data.products);
+        if (!controller.signal.aborted) { setPreview(data.products); setConfig(data.checkout ?? null); }
       }).catch((issue: unknown) => {
         if (!controller.signal.aborted) setPreviewError(issue instanceof Error ? issue.message : journey.mediaError);
       });
@@ -113,12 +122,36 @@ export function CartCheckout({ canOrder = false, signedIn = false, customer, wal
     if (product && product.priceMinor !== null) subtotals.set(product.currency, (subtotals.get(product.currency) ?? 0) + product.priceMinor * line.quantity);
   }
   const unpriced = Boolean(preview?.some(product => product.priceMinor === null));
-  const singleTotal = !unpriced && subtotals.size === 1 ? [...subtotals][0] : null;
+  // The same arithmetic as the order route: goods in so'm at the server's rate, then delivery from the saved tariffs.
+  let itemsMinor: number | null = preview && !unpriced ? 0 : null;
+  for (const line of lines) {
+    const product = byId.get(line.productId);
+    const unit = product && product.priceMinor !== null ? toUzsMinor(product.priceMinor, product.currency, config?.rates ?? null) : null;
+    itemsMinor = itemsMinor === null || unit === null ? null : itemsMinor + unit * line.quantity;
+  }
+  const foreign = Boolean(preview?.some(product => product.currency !== "UZS" && product.priceMinor !== null));
+  const configured = config ? tariffsConfigured(config.tariffs) : false;
+  const options = config && region ? deliveryOptions(config.tariffs, region, itemsMinor) : [];
+  const chosenDelivery = options.find(option => option.method === delivery) ?? null;
+  const deliveryFee = options.length > 0 ? chosenDelivery?.feeMinor ?? null : null;
+  const totalMinor = itemsMinor === null || (options.length > 0 && !chosenDelivery) ? null : itemsMinor + (deliveryFee ?? 0);
+  const singleTotal: [string, number] | null = totalMinor !== null ? ["UZS", totalMinor] : null;
   const canPrepay = singleTotal !== null;
-  const walletTotal = singleTotal && singleTotal[0] === "UZS" ? singleTotal[1] : null;
+  const walletTotal = totalMinor;
   const walletEnough = walletTotal !== null && walletBalance >= walletTotal;
   const transferReady = method !== "CARD_TRANSFER" || proof.length > 0;
-  const hasLocation = Boolean(coords) || form.address.trim().length >= 5 || form.note.trim().length >= 5;
+  const hasLocation = delivery === "PICKUP" || Boolean(coords) || form.address.trim().length >= 5 || form.note.trim().length >= 5;
+
+  // A new region starts from its first method (delivery to the door before pickup); otherwise keep a choice the
+  // region still offers, so a pickup chosen only because one region had nothing else does not follow the customer.
+  const optionKey = options.map(option => option.method).join(",");
+  const choiceRegion = useRef(region);
+  useEffect(() => {
+    const available = optionKey ? optionKey.split(",") as DeliveryMethod[] : [];
+    const regionChanged = choiceRegion.current !== region;
+    choiceRegion.current = region;
+    setDelivery(current => !regionChanged && current && available.includes(current) ? current : available[0] ?? null);
+  }, [optionKey, region]);
 
   // A method can stop being valid when the cart changes while the customer is on the last step.
   useEffect(() => {
@@ -138,6 +171,7 @@ export function CartCheckout({ canOrder = false, signedIn = false, customer, wal
     event.preventDefault();
     if (step === 1) { if (preview && !unavailable) goTo(2); return; }
     if (step === 2) {
+      if (configured && (!region || (options.length > 0 && !chosenDelivery))) { setError(d.regionNeeded); return; }
       if (!hasLocation) { setError(d.locationNeeded); return; }
       if (buyer.type === "COMPANY" && !/^\d{9}$/.test(buyer.companyTin)) { setError(g.tinInvalid); return; }
       goTo(3);
@@ -162,6 +196,10 @@ export function CartCheckout({ canOrder = false, signedIn = false, customer, wal
           paymentReference: method === "CARD_TRANSFER" ? paymentReference : undefined,
           paymentProofMediaId: method === "CARD_TRANSFER" ? proof[0] : undefined,
           expectedProducts: preview.map(({ id, priceMinor, currency, stockStatus }) => ({ id, priceMinor, currency, stockStatus })),
+          ...(region ? { region } : {}),
+          ...(chosenDelivery ? { deliveryMethod: chosenDelivery.method } : {}),
+          expectedDeliveryFeeMinor: deliveryFee,
+          expectedTotalMinor: totalMinor,
           latitude: coords?.[0] ?? null,
           longitude: coords?.[1] ?? null,
           items: lines.map((l) => ({ productId: l.productId, quantity: l.quantity }))
@@ -170,13 +208,13 @@ export function CartCheckout({ canOrder = false, signedIn = false, customer, wal
       const data = await response.json();
       if (response.status === 401) { setError(c.signInOrder); return; }
       if (!response.ok) {
-        setError(data.code === "CATALOG_CHANGED" ? c.changed : data.code === "WALLET_BALANCE_TOO_LOW" ? d.walletShort : data.error ?? d.fail);
+        setError(data.code === "CATALOG_CHANGED" ? c.changed : data.code === "TOTAL_CHANGED" ? d.totalChanged : data.code === "WALLET_BALANCE_TOO_LOW" ? d.walletShort : data.error ?? d.fail);
         if (response.status === 409) setVersion(value => value + 1);
         return;
       }
       if (typeof data.order?.reference !== "string" || !data.order.reference.trim()) { setError(d.fail); return; }
       await animation.current?.complete();
-      try { window.localStorage.setItem(REMEMBER_KEY, JSON.stringify({ phone: form.phone, city: form.city, address: form.address })); } catch { /* optional convenience */ }
+      try { window.localStorage.setItem(REMEMBER_KEY, JSON.stringify({ phone: form.phone, city: form.city, address: form.address, region })); } catch { /* optional convenience */ }
       clearCart();
       trackGoal("order_placed");
       setDone({ id: data.order.id, reference: data.order.reference, method });
@@ -265,12 +303,40 @@ export function CartCheckout({ canOrder = false, signedIn = false, customer, wal
         {step === 2 && <>
           <section className="panel-card stack shop-address-card">
             <div><h2>{d.addressTitle}</h2><p className="small muted">{d.addressHint}</p></div>
-            <DeliveryMap value={coords} address={form.address} onChange={(point, address) => { setCoords(point); setForm((f) => ({ ...f, address: address ?? f.address })); }} />
+            <label className="shop-field"><span>{d.region}</span>
+              <select required={configured} value={region} onChange={event => {
+                const next = event.target.value as RegionCode | "";
+                setRegion(next);
+                setError("");
+                // The capital is a city of its own, so its name can be filled in; elsewhere the town is the customer's to type.
+                if (next === "TASHKENT_CITY") setForm(current => current.city.trim() ? current : { ...current, city: "Toshkent" });
+              }} autoComplete="address-level1">
+                <option value="">{d.chooseRegion}</option>
+                {regionCodes.map(code => <option key={code} value={code}>{regionNames[locale][code]}</option>)}
+              </select>
+            </label>
+            {delivery !== "PICKUP" && <DeliveryMap value={coords} address={form.address} onChange={(point, address) => { setCoords(point); setForm((f) => ({ ...f, address: address ?? f.address })); }} />}
             <div className="shop-field-row">
-              <label className="shop-field"><span>{d.city}</span><input required minLength={2} value={form.city} onChange={update("city")} maxLength={80} autoComplete="address-level1" /></label>
-              <label className="shop-field"><span>{d.address}</span><input placeholder={d.addressPlaceholder} value={form.address} onChange={update("address")} maxLength={300} autoComplete="street-address" /></label>
+              <label className="shop-field"><span>{d.city}</span><input required minLength={2} value={form.city} onChange={update("city")} maxLength={80} autoComplete="address-level2" /></label>
+              {delivery !== "PICKUP" && <label className="shop-field"><span>{d.address}</span><input placeholder={d.addressPlaceholder} value={form.address} onChange={update("address")} maxLength={300} autoComplete="street-address" /></label>}
             </div>
           </section>
+          {region && <section className="panel-card stack checkout-delivery">
+            <div><h2>{d.deliveryTitle}</h2><p className="small muted">{d.deliveryHint}</p></div>
+            {options.length === 0
+              ? <p className="code-note" role="status">{d.agreed}</p>
+              : <div className="pay-methods" role="radiogroup" aria-label={d.deliveryTitle}>
+                {options.map(option => <label className="pay-method" key={option.method} data-selected={delivery === option.method}>
+                  <input type="radio" name="deliveryMethod" value={option.method} checked={delivery === option.method} onChange={() => { setDelivery(option.method); setError(""); }} />
+                  <span className="pay-method-icon"><UiIcon name={deliveryIcons[option.method]} size={22} /></span>
+                  <span className="pay-method-text">
+                    <strong>{d.delivery[option.method].title}</strong>
+                    <span>{option.method === "PICKUP" && config?.pickupAddress ? `${d.pickupAt}: ${config.pickupAddress}` : `${d.delivery[option.method].hint} · ${deliveryTime(option.days, locale)}`}</span>
+                  </span>
+                  <span className="delivery-fee">{option.feeMinor === 0 ? d.free : formatMinor(option.feeMinor, "UZS", locale)}</span>
+                </label>)}
+              </div>}
+          </section>}
           <section className="panel-card stack shop-contact-card">
             <div><h2>{d.contactTitle}</h2><p className="small muted">{d.contactHint}</p></div>
             <div className="buyer-type">
@@ -339,10 +405,18 @@ export function CartCheckout({ canOrder = false, signedIn = false, customer, wal
         <div className="row"><span>{d.count}</span><strong>{count}</strong></div>
         {step > 1 && <div className="row"><span>{d.location}</span><strong>{coords ? d.chosen : form.address ? d.manual : "—"}</strong></div>}
         {step === 3 && chosen && <div className="row"><span>{copy.orders.payment}</span><strong>{chosen.title}</strong></div>}
-        {preview && [...subtotals].map(([currency, total]) => <div className="row checkout-total" key={currency}><span>{c.subtotal}</span><strong><CurrencyPrice amountMinor={total} currency={currency} /></strong></div>)}
+        {preview && itemsMinor !== null && <div className="row"><span>{d.itemsRow}</span><strong>{formatMinor(itemsMinor, "UZS", locale)}</strong></div>}
+        {preview && itemsMinor === null && [...subtotals].map(([currency, total]) => <div className="row" key={currency}><span>{d.itemsRow}</span><strong><CurrencyPrice amountMinor={total} currency={currency} /></strong></div>)}
+        {step > 1 && region && <div className="row"><span>{d.deliveryRow}</span><strong>{options.length === 0 ? "—" : deliveryFee === null ? "—" : deliveryFee === 0 ? d.free : formatMinor(deliveryFee, "UZS", locale)}</strong></div>}
+        {totalMinor !== null && <div className="row checkout-total"><span>{d.totalRow}</span><strong>{formatMinor(totalMinor, "UZS", locale)}</strong></div>}
+        {totalMinor !== null && config?.vat === "INCLUDED" && <p className="small muted checkout-vat">{d.vatIncluded}: {formatMinor(vatPart(totalMinor), "UZS", locale)}</p>}
+        {foreign && config?.rates && <p className="small muted">{d.rateNote.replace("{rate}", formatNumber(config.rates.rates.USD, 2)).replace("{date}", config.rates.date)}</p>}
+        {foreign && config && !config.rates && <p className="small">{d.noRate}</p>}
+        {step > 1 && region && options.length === 0 && <p className="small muted">{d.agreed}</p>}
         {unpriced && <p className="small">{c.pendingPrice}</p>}
         {!preview && !previewError && <p role="status" className="small muted">{d.sending}</p>}
-        <p className="small muted">{journey.deliveryNote}</p>
+        {/* "Agreed before confirmation" is only true while no tariffs are set. */}
+        {config && !configured && <p className="small muted">{journey.deliveryNote}</p>}
         <Link className="text-link small" href="/terms">{journey.terms}</Link>
         {previewError && <><p role="alert">{previewError}</p><button className="button secondary" type="button" onClick={() => setVersion(value => value + 1)}>{c.refresh}</button></>}
         {unavailable && <p role="alert">{c.OUT_OF_STOCK}</p>}

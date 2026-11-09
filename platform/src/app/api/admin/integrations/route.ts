@@ -27,6 +27,12 @@ const telegramUpdateSchema = z.object({
   clearStaffBotToken: z.boolean().optional(),
   clearStaffBotUsername: z.boolean().optional(),
   clearStaffWebhookSecret: z.boolean().optional(),
+  shopBotToken: z.string().max(512).optional(),
+  shopBotUsername: z.string().max(100).optional(),
+  shopWebhookSecret: z.string().max(512).optional(),
+  clearShopBotToken: z.boolean().optional(),
+  clearShopBotUsername: z.boolean().optional(),
+  clearShopWebhookSecret: z.boolean().optional(),
   clearBotToken: z.boolean().optional(),
   clearBotUsername: z.boolean().optional(),
   clearAdminChatId: z.boolean().optional(),
@@ -119,7 +125,10 @@ export async function PATCH(request: Request) {
         webhookSecret: updateValue(requested.telegram.webhookSecret, requested.telegram.clearWebhookSecret, current.webhookSecret),
         staffBotToken: updateValue(requested.telegram.staffBotToken, requested.telegram.clearStaffBotToken, current.staffBotToken),
         staffBotUsername: updateValue(requested.telegram.staffBotUsername, requested.telegram.clearStaffBotUsername, current.staffBotUsername),
-        staffWebhookSecret: updateValue(requested.telegram.staffWebhookSecret, requested.telegram.clearStaffWebhookSecret, current.staffWebhookSecret)
+        staffWebhookSecret: updateValue(requested.telegram.staffWebhookSecret, requested.telegram.clearStaffWebhookSecret, current.staffWebhookSecret),
+        shopBotToken: updateValue(requested.telegram.shopBotToken, requested.telegram.clearShopBotToken, current.shopBotToken),
+        shopBotUsername: updateValue(requested.telegram.shopBotUsername, requested.telegram.clearShopBotUsername, current.shopBotUsername),
+        shopWebhookSecret: updateValue(requested.telegram.shopWebhookSecret, requested.telegram.clearShopWebhookSecret, current.shopWebhookSecret)
       };
     }
     if (requested.yandexMaps) {

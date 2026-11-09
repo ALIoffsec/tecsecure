@@ -24,7 +24,7 @@ const SESSION_KEY = "tecsecure-tma";
 const webApp = () => (window as unknown as { Telegram?: { WebApp?: TelegramWebApp } }).Telegram?.WebApp;
 
 /** The Mini App's front door: proves who opened it, then hands over to the normal site. */
-export function TelegramEntry({ app }: { app: "customer" | "staff" }) {
+export function TelegramEntry({ app }: { app: "customer" | "staff" | "shop" }) {
   const { locale } = useSitePreferences();
   const c = growthCopy[locale].tma;
   const router = useRouter();
@@ -80,7 +80,7 @@ export function TelegramBridge() {
     if (entry || !telegram?.initData) return;
     document.documentElement.dataset.tma = pathname.startsWith("/admin") ? "staff" : "customer";
     const back = () => router.back();
-    if (pathname === "/products" || pathname === "/admin/app") {
+    if (pathname === "/products" || pathname === "/admin/app" || pathname === "/shop") {
       telegram.BackButton.hide();
       return;
     }

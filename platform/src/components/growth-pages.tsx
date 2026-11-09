@@ -7,6 +7,7 @@ import { useSitePreferences } from "./site-preferences";
 import { UiIcon } from "./ui-icon";
 import { WorkCarousel, type WorkPost } from "./work-carousel";
 import { growthCopy } from "@/lib/growth-copy";
+import { checkoutCopy } from "@/lib/checkout-copy";
 import { inquiryHref } from "@/lib/journey-copy";
 import { buildNetworkEstimate } from "@/lib/network-estimate";
 import { scoreSecurityCheck, securityQuestions } from "@/lib/security-check";
@@ -225,11 +226,12 @@ export function WorkProjectList({ posts }: { posts: WorkStory[] }) {
 }
 
 /* ---------- Invoice ---------- */
-export type InvoiceOrder = { reference: string; createdAt: Date | string; companyName: string | null; companyTin: string | null; recipientName: string; totalMinor: number | null; currency: string; items: { id: string; name: string; quantity: number; unitPriceMinor: number | null }[] };
+export type InvoiceOrder = { reference: string; createdAt: Date | string; companyName: string | null; companyTin: string | null; recipientName: string; totalMinor: number | null; currency: string; deliveryMethod?: string | null; deliveryFeeMinor?: number | null; vatMinor?: number | null; items: { id: string; name: string; quantity: number; unitPriceMinor: number | null }[] };
 
 export function InvoiceView({ order, seller }: { order: InvoiceOrder; seller: CompanyRequisites | null }) {
   const { locale } = useSitePreferences();
   const c = growthCopy[locale].invoice;
+  const d = checkoutCopy[locale];
   const money = (value: number | null) => value === null ? "—" : formatMinor(value, order.currency, locale);
   return <div className="container page-shell invoice-page">
     <section className="panel-card invoice">
@@ -241,8 +243,14 @@ export function InvoiceView({ order, seller }: { order: InvoiceOrder; seller: Co
       </div>
       <table className="table invoice-table">
         <thead><tr><th>{c.item}</th><th>{c.qty}</th><th>{c.price}</th><th>{c.sum}</th></tr></thead>
-        <tbody>{order.items.map(item => <tr key={item.id}><td>{item.name}</td><td>{item.quantity}</td><td>{money(item.unitPriceMinor)}</td><td>{money(item.unitPriceMinor === null ? null : item.unitPriceMinor * item.quantity)}</td></tr>)}</tbody>
-        <tfoot><tr><th colSpan={3}>{c.total}</th><td><strong>{money(order.totalMinor)}</strong></td></tr></tfoot>
+        <tbody>
+          {order.items.map(item => <tr key={item.id}><td>{item.name}</td><td>{item.quantity}</td><td>{money(item.unitPriceMinor)}</td><td>{money(item.unitPriceMinor === null ? null : item.unitPriceMinor * item.quantity)}</td></tr>)}
+          {order.deliveryFeeMinor != null && order.deliveryFeeMinor > 0 && <tr><td>{d.deliveryRow}{order.deliveryMethod === "EXPRESS" || order.deliveryMethod === "COURIER" ? `: ${d.delivery[order.deliveryMethod].title}` : ""}</td><td>1</td><td>{money(order.deliveryFeeMinor)}</td><td>{money(order.deliveryFeeMinor)}</td></tr>}
+        </tbody>
+        <tfoot>
+          <tr><th colSpan={3}>{c.total}</th><td><strong>{money(order.totalMinor)}</strong></td></tr>
+          {order.vatMinor != null && <tr><th colSpan={3}>{d.vatIncluded}</th><td>{money(order.vatMinor)}</td></tr>}
+        </tfoot>
       </table>
       <p><strong>{c.purpose}:</strong> {c.purposeText} {order.reference}</p>
       <p className="small muted">{c.note}</p>

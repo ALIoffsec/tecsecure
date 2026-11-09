@@ -137,6 +137,39 @@ model User {
   paymentsSubmitted    Payment[]              @relation("PaymentSubmitter")
   paymentsVerified     Payment[]              @relation("PaymentVerifier")
   subscriptionEvents   SubscriptionEvent[]    @relation("SubscriptionEventActor")
+  shop                 Shop?                  @relation("ShopOwner")
+}
+
+/// A seller on the marketplace. One per customer account; staff accounts cannot own one.
+model Shop {
+  id                        String    @id @default(cuid())
+  slug                      String    @unique
+  name                      String
+  ownerId                   String    @unique
+  owner                     User      @relation("ShopOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  /// PENDING until staff approve it, then ACTIVE; SUSPENDED or REJECTED stop it from selling.
+  status                    String    @default("PENDING")
+  phone                     String
+  telegram                  String?
+  instagram                 String?
+  region                    String?
+  city                      String?
+  address                   String?
+  description               String?
+  logoMediaId               String?
+  legalName                 String?
+  tin                       String?
+  /// Percent of the goods price Tecsecure keeps; the lower rate applies to buyers the shop's own QR brought.
+  commissionPercent         Float     @default(15)
+  referralCommissionPercent Float     @default(10)
+  /// What Tecsecure owes the shop, in so'm minor units.
+  balanceMinor              Float     @default(0)
+  reviewNote                String?
+  approvedAt                DateTime?
+  createdAt                 DateTime  @default(now())
+  updatedAt                 DateTime  @updatedAt
+
+  @@index([status, createdAt])
 }
 
 model Session {
@@ -321,6 +354,17 @@ model Order {
   paymeTransactions PaymeTransaction[]
   totalMinor      Float?
   currency        String               @default("UZS")
+  /// One of lib/delivery regionCodes; null on orders placed before delivery pricing.
+  region          String?
+  /// EXPRESS, COURIER or PICKUP; AGREED when no tariff covered the address.
+  deliveryMethod  String?
+  deliveryFeeMinor Float?
+  /// Goods only, in so'm. totalMinor = itemsTotalMinor + deliveryFeeMinor.
+  itemsTotalMinor Float?
+  /// The VAT already inside totalMinor, when the company charges it.
+  vatMinor        Float?
+  /// The Central Bank rates used to turn foreign prices into so'm.
+  exchangeRates   Json?
   createdAt       DateTime             @default(now())
   updatedAt       DateTime             @updatedAt
   items           OrderItem[]
@@ -340,6 +384,9 @@ model OrderItem {
   sku            String?
   quantity       Int
   unitPriceMinor Float?
+  /// The catalogue price before conversion to so'm, when it was in another currency.
+  listPriceMinor Float?
+  listCurrency   String?
 
   @@index([orderId])
 }

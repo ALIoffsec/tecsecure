@@ -53,3 +53,11 @@ export function convertMinorAmount(
   }
   return (amountMinor / 100) * sourceRate / targetRate;
 }
+
+/** A price in so'm minor units, rounded to whole so'm. Null when the currency is unknown or no rate is available. */
+export function toUzsMinor(amountMinor: number, currency: string, rates: CurrencyRates | null): number | null {
+  if (currency === "UZS") return Math.round(amountMinor / 100) * 100;
+  const rate = rates?.rates[currency as keyof CurrencyRates["rates"]];
+  if (!rate || !Number.isFinite(rate) || rate <= 0) return null;
+  return Math.round((amountMinor / 100) * rate) * 100;
+}

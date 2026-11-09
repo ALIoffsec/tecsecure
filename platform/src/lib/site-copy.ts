@@ -50,7 +50,8 @@ const uz: SiteCopy = {
       { href: "/products", title: "Barcha uskunalar", hint: "Tarmoq, kamera va xavfsizlik jihozlari" },
       { href: "/products/compare", title: "Taqqoslash", hint: "Modellarni yonma-yon solishtirish" },
       { href: "/cart", title: "Savat", hint: "Buyurtmani rasmiylashtirish" },
-      { href: "/portal/orders", title: "Buyurtmalarim", hint: "Yetkazish holatini kuzatish" }
+      { href: "/portal/orders", title: "Buyurtmalarim", hint: "Yetkazish holatini kuzatish" },
+      { href: "/shop", title: "Sotuvchilar uchun", hint: "O‘z do‘koningiz bilan Tecsecure’da soting" }
     ] },
     company: { title: "Kompaniya", href: "/about", links: [
       { href: "/about", title: "Biz haqimizda", hint: "Nima qilamiz va qanday ishlaymiz" },
@@ -120,7 +121,8 @@ const ru: SiteCopy = {
       { href: "/products", title: "Всё оборудование", hint: "Сети, камеры и системы безопасности" },
       { href: "/products/compare", title: "Сравнение", hint: "Модели рядом друг с другом" },
       { href: "/cart", title: "Корзина", hint: "Оформление заказа" },
-      { href: "/portal/orders", title: "Мои заказы", hint: "Отслеживание доставки" }
+      { href: "/portal/orders", title: "Мои заказы", hint: "Отслеживание доставки" },
+      { href: "/shop", title: "Продавцам", hint: "Продавайте на Tecsecure под своим именем" }
     ] },
     company: { title: "Компания", href: "/about", links: [
       { href: "/about", title: "О нас", hint: "Чем занимаемся и как работаем" },
@@ -190,7 +192,8 @@ const en: SiteCopy = {
       { href: "/products", title: "All equipment", hint: "Networking, cameras and security gear" },
       { href: "/products/compare", title: "Compare", hint: "See models side by side" },
       { href: "/cart", title: "Cart", hint: "Complete your order" },
-      { href: "/portal/orders", title: "My orders", hint: "Track your delivery" }
+      { href: "/portal/orders", title: "My orders", hint: "Track your delivery" },
+      { href: "/shop", title: "For sellers", hint: "Sell on Tecsecure under your own name" }
     ] },
     company: { title: "Company", href: "/about", links: [
       { href: "/about", title: "About us", hint: "What we do and how we work" },

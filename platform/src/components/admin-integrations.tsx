@@ -18,6 +18,9 @@ type IntegrationStatus = {
     staffBotUsername: string;
     hasStaffBotToken: boolean;
     hasStaffWebhookSecret: boolean;
+    shopBotUsername: string;
+    hasShopBotToken: boolean;
+    hasShopWebhookSecret: boolean;
   };
   yandexMaps: { configured: boolean };
   oauth: Record<OAuthProviderId, {
@@ -202,7 +205,13 @@ export function AdminIntegrations() {
             staffWebhookSecret: fieldValue(data, "staffWebhookSecret"),
             clearStaffBotToken: checked(data, "clearStaffBotToken"),
             clearStaffBotUsername: checked(data, "clearStaffBotUsername"),
-            clearStaffWebhookSecret: checked(data, "clearStaffWebhookSecret")
+            clearStaffWebhookSecret: checked(data, "clearStaffWebhookSecret"),
+            shopBotToken: fieldValue(data, "shopBotToken"),
+            shopBotUsername: fieldValue(data, "shopBotUsername"),
+            shopWebhookSecret: fieldValue(data, "shopWebhookSecret"),
+            clearShopBotToken: checked(data, "clearShopBotToken"),
+            clearShopBotUsername: checked(data, "clearShopBotUsername"),
+            clearShopWebhookSecret: checked(data, "clearShopWebhookSecret")
           }
         }))}>
           <div className="field">
@@ -244,6 +253,25 @@ export function AdminIntegrations() {
               <label>{staffBot.staffSecret}</label>
               <input name="staffWebhookSecret" type="password" autoComplete="new-password" placeholder={secretPlaceholder(status.telegram.hasStaffWebhookSecret)} />
               {status.telegram.hasStaffWebhookSecret && <label className="admin-integration-clear"><input type="checkbox" name="clearStaffWebhookSecret" /> {t("clearCurrentValue")}</label>}
+            </div>
+          </div>
+          <h3>{staffBot.shopBot}</h3>
+          <p className="small muted">{staffBot.shopHint}</p>
+          <div className="field">
+            <label htmlFor="shop-bot-token">{staffBot.shopToken}</label>
+            <input id="shop-bot-token" name="shopBotToken" type="password" autoComplete="new-password" placeholder={secretPlaceholder(status.telegram.hasShopBotToken)} />
+            {status.telegram.hasShopBotToken && <label className="admin-integration-clear"><input type="checkbox" name="clearShopBotToken" /> {t("clearCurrentValue")}</label>}
+          </div>
+          <div className="form-row">
+            <div className="field">
+              <label htmlFor="shop-bot-username">{staffBot.shopUsername}</label>
+              <input id="shop-bot-username" name="shopBotUsername" defaultValue={status.telegram.shopBotUsername} maxLength={100} placeholder="@botname" />
+              {status.telegram.shopBotUsername && <label className="admin-integration-clear"><input type="checkbox" name="clearShopBotUsername" /> {t("clearCurrentValue")}</label>}
+            </div>
+            <div className="field">
+              <label htmlFor="shop-bot-secret">{staffBot.shopSecret}</label>
+              <input id="shop-bot-secret" name="shopWebhookSecret" type="password" autoComplete="new-password" placeholder={secretPlaceholder(status.telegram.hasShopWebhookSecret)} />
+              {status.telegram.hasShopWebhookSecret && <label className="admin-integration-clear"><input type="checkbox" name="clearShopWebhookSecret" /> {t("clearCurrentValue")}</label>}
             </div>
           </div>
           <div className="admin-integration-actions">

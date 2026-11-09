@@ -1,6 +1,9 @@
 import { randomBytes } from "node:crypto";
 import { getCurrentUser, isResponse, requireModuleApi } from "@/lib/auth";
-import { mergeItems, orderSchema, paymentMethodLabels, prepaidMethods } from "@/lib/orders";
+import { deliveryMethodLabels, mergeItems, orderSchema, paymentMethodLabels, prepaidMethods } from "@/lib/orders";
+import { deliveryOptions, regionNames, vatPart } from "@/lib/delivery";
+import { getCheckoutSettings } from "@/lib/delivery-server";
+import { getExchangeRates, toUzsMinor } from "@/lib/exchange";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { escapeTelegramHtml, notifyTelegramAdmins } from "@/lib/telegram";
@@ -50,33 +53,51 @@ export async function POST(request: Request) {
     return Response.json({ error: "Narx yoki mavjudlik o‘zgargan. Savatni yangilab, qayta tekshiring.", code: "CATALOG_CHANGED" }, { status: 409 });
   }
 
-  // Prices always come from the database, never from the client.
+  // Prices always come from the database, never from the client. Every order is settled in so'm:
+  // a price listed in dollars or roubles is converted at today's Central Bank rate, which the order keeps.
+  const settings = await getCheckoutSettings();
+  const rates = products.some((product) => product.currency !== "UZS") ? await getExchangeRates() : null;
   const lines = merged.map((item) => {
     const product = byId.get(item.productId)!;
-    return { product, quantity: item.quantity, unitPriceMinor: product.priceMinor };
+    const unitPriceMinor = product.priceMinor === null ? null : toUzsMinor(product.priceMinor, product.currency, rates);
+    return { product, quantity: item.quantity, unitPriceMinor };
   });
-  const allPriced = lines.every((line) => line.unitPriceMinor !== null);
-  const currencies = new Set(lines.map((line) => line.product.currency));
-  const totalMinor = allPriced && currencies.size === 1
+  const itemsTotalMinor = lines.every((line) => line.unitPriceMinor !== null)
     ? lines.reduce((sum, line) => sum + (line.unitPriceMinor as number) * line.quantity, 0)
     : null;
 
+  // Delivery is priced here from the saved tariffs; where none covers the region it is agreed by phone.
+  const region = parsed.data.region ?? null;
+  let deliveryMethod = "AGREED";
+  let deliveryFeeMinor: number | null = null;
+  if (region) {
+    const options = deliveryOptions(settings.tariffs, region, itemsTotalMinor);
+    if (options.length > 0) {
+      const option = options.find((item) => item.method === parsed.data.deliveryMethod);
+      if (!option) return Response.json({ error: "Bu manzilga tanlangan yetkazish usuli mavjud emas.", code: "DELIVERY_UNAVAILABLE" }, { status: 400 });
+      deliveryMethod = option.method;
+      deliveryFeeMinor = option.feeMinor;
+    }
+  }
+  const totalMinor = itemsTotalMinor === null ? null : itemsTotalMinor + (deliveryFeeMinor ?? 0);
+  if ((parsed.data.expectedDeliveryFeeMinor !== undefined && parsed.data.expectedDeliveryFeeMinor !== deliveryFeeMinor)
+    || (parsed.data.expectedTotalMinor !== undefined && parsed.data.expectedTotalMinor !== totalMinor)) {
+    return Response.json({ error: "Yetkazish narxi yoki valyuta kursi yangilandi. Yangi summani tekshiring.", code: "TOTAL_CHANGED" }, { status: 409 });
+  }
   if (totalMinor !== null && !Number.isSafeInteger(totalMinor)) {
     return Response.json({ error: "Buyurtma summasi juda katta. Biz bilan bog‘laning." }, { status: 400 });
   }
+  const vatMinor = settings.vat === "INCLUDED" && totalMinor !== null ? vatPart(totalMinor) : null;
 
   const { paymentMethod } = parsed.data;
   if (prepaidMethods.includes(paymentMethod) && totalMinor === null) {
     return Response.json({ error: "Narxi kelishiladigan mahsulot uchun to‘lovni qabul qilganda amalga oshiring.", code: "PREPAID_NEEDS_PRICE" }, { status: 400 });
   }
-  if (paymentMethod === "ONLINE_PAYME" && (!paymeConfigured() || [...currencies][0] !== "UZS")) {
+  if (paymentMethod === "ONLINE_PAYME" && !paymeConfigured()) {
     return Response.json({ error: "Onlayn to‘lov hozircha mavjud emas.", code: "ONLINE_UNAVAILABLE" }, { status: 400 });
   }
   if (paymentMethod === "BANK_TRANSFER" && !(await getCompanyRequisites())) {
     return Response.json({ error: "Bank o‘tkazmasi hozircha mavjud emas.", code: "BANK_UNAVAILABLE" }, { status: 400 });
-  }
-  if (paymentMethod === "WALLET" && [...currencies][0] !== "UZS") {
-    return Response.json({ error: "Hamyondan faqat so‘mdagi buyurtmani to‘lash mumkin.", code: "WALLET_CURRENCY" }, { status: 400 });
   }
   if (parsed.data.paymentProofMediaId) {
     const proof = await prisma.mediaAsset.findUnique({ where: { id: parsed.data.paymentProofMediaId }, select: { ownerId: true, mimeType: true } });
@@ -118,14 +139,21 @@ export async function POST(request: Request) {
           paymentReference: parsed.data.paymentReference || null,
           paymentProofMediaId: parsed.data.paymentProofMediaId ?? null,
           totalMinor,
-          currency: totalMinor === null ? "UZS" : [...currencies][0],
+          currency: "UZS",
+          region,
+          deliveryMethod,
+          deliveryFeeMinor,
+          itemsTotalMinor,
+          vatMinor,
+          ...(rates ? { exchangeRates: { USD: rates.rates.USD, RUB: rates.rates.RUB, date: rates.date } } : {}),
           items: {
             create: lines.map((line) => ({
               productId: line.product.id,
               name: line.product.name,
               sku: line.product.sku,
               quantity: line.quantity,
-              unitPriceMinor: line.unitPriceMinor
+              unitPriceMinor: line.unitPriceMinor,
+              ...(line.product.currency !== "UZS" ? { listPriceMinor: line.product.priceMinor, listCurrency: line.product.currency } : {})
             }))
           },
           history: { create: { toStatus: "NEW", actorId: user.id } }
@@ -147,7 +175,8 @@ export async function POST(request: Request) {
               sender: "CUSTOMER",
               body: [
                 `Mahsulotlar: ${lines.map((line) => `${line.product.name} × ${line.quantity}`).join(", ")}`,
-                `Yetkazish: ${parsed.data.city}${parsed.data.address ? `, ${parsed.data.address}` : ""}`,
+                `Yetkazish: ${deliveryMethodLabels[deliveryMethod]}${deliveryFeeMinor !== null ? ` (${formatMinor(deliveryFeeMinor, "UZS")})` : ""}`,
+                `Manzil: ${[region ? regionNames.uz[region] : "", parsed.data.city, parsed.data.address].filter(Boolean).join(", ")}`,
                 `To‘lov: ${paymentMethodLabels[paymentMethod]}`,
                 parsed.data.note ? `Izoh: ${parsed.data.note}` : ""
               ].filter(Boolean).join("\n")
@@ -177,9 +206,10 @@ export async function POST(request: Request) {
       `Raqam: <code>${escapeTelegramHtml(order.reference)}</code>`,
       `Qabul qiluvchi: ${escapeTelegramHtml(parsed.data.recipientName)}`,
       `Telefon: ${escapeTelegramHtml(parsed.data.phone)}`,
-      `Manzil: ${escapeTelegramHtml(`${parsed.data.city}, ${parsed.data.address}`)}`,
+      `Manzil: ${escapeTelegramHtml([region ? regionNames.uz[region] : "", parsed.data.city, parsed.data.address].filter(Boolean).join(", "))}`,
       `Mahsulotlar: ${escapeTelegramHtml(lines.map((line) => `${line.product.name} × ${line.quantity}`).join(", "))}`,
-      totalMinor !== null ? `Jami: <b>${formatMinor(totalMinor, [...currencies][0])}</b>` : "Jami: kelishiladi",
+      `Yetkazish: ${escapeTelegramHtml(deliveryMethodLabels[deliveryMethod])}${deliveryFeeMinor !== null ? ` — ${formatMinor(deliveryFeeMinor, "UZS")}` : ""}`,
+      totalMinor !== null ? `Jami: <b>${formatMinor(totalMinor, "UZS")}</b>` : "Jami: kelishiladi",
       `To‘lov: ${escapeTelegramHtml(paymentMethodLabels[paymentMethod])}${paymentMethod === "CARD_TRANSFER" ? " — chekni admin panelda tekshiring" : ""}`,
       parsed.data.customerType === "COMPANY" ? `Kompaniya: ${escapeTelegramHtml(parsed.data.companyName ?? "")} (STIR ${escapeTelegramHtml(parsed.data.companyTin ?? "")})` : "",
       "",

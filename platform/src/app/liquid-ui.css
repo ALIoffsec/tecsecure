@@ -124,6 +124,8 @@ html[data-sheet-open] { overflow: hidden; }
 #app-shell .pay-method-text { display: grid; flex: 1; gap: 2px; min-width: 0; }
 #app-shell .pay-method-text strong { font-size: .96rem; }
 #app-shell .pay-method-text span { color: var(--muted); font-size: .8rem; line-height: 1.35; }
+#app-shell .delivery-fee { flex: none; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+#app-shell .checkout-vat { margin: -4px 0 0; text-align: right; }
 #app-shell .pay-method-dot { flex: none; width: 22px; height: 22px; border: 2px solid var(--muted); border-radius: 50%; transition: border-color var(--t-quick) linear, box-shadow var(--t-base) var(--ease-water); }
 #app-shell .pay-method[data-selected="true"] .pay-method-dot { border-color: var(--accent); box-shadow: inset 0 0 0 4px var(--bg), inset 0 0 0 12px var(--accent); }
 #app-shell .pay-method-soon { flex: none; padding: 3px 10px; color: var(--muted); font-size: .72rem; font-weight: 600; border: 1px solid var(--glass-edge); border-radius: 999px; }
@@ -292,3 +294,28 @@ html { scroll-padding-top: 90px; }
   #app-shell .customer-sidebar-nav { display: flex; flex-direction: row; gap: 6px; padding-bottom: 2px; overflow-x: auto; scrollbar-width: none; }
   #app-shell .customer-sidebar-item { flex: none; width: auto; min-height: 44px; padding: 6px 12px 6px 6px; white-space: nowrap; border-radius: 999px; }
 }
+/* Admin delivery tariffs: one row per region; on a phone each row becomes a small card. */
+#app-shell .admin-delivery-table { display: grid; gap: 6px; }
+#app-shell .admin-delivery-row { display: grid; grid-template-columns: minmax(150px, 1.3fr) minmax(90px, 1fr) minmax(120px, 1fr) minmax(90px, 1fr) minmax(120px, 1fr); gap: 8px; align-items: center; }
+#app-shell .admin-delivery-head { font-size: .78rem; color: var(--muted); font-weight: 600; }
+#app-shell .admin-delivery-row input, #app-shell .admin-delivery-row select { min-width: 0; width: 100%; }
+#app-shell .admin-delivery-row strong { font-size: .9rem; font-weight: 600; }
+@media (max-width: 760px) {
+  #app-shell .admin-delivery-head { display: none; }
+  #app-shell .admin-delivery-row { grid-template-columns: 1fr 1fr; padding: 10px; border: 1px solid var(--glass-edge); border-radius: 14px; }
+  #app-shell .admin-delivery-row strong { grid-column: 1 / -1; }
+}
+/* Seller cabinet */
+#app-shell .seller-intro { max-width: 70ch; }
+#app-shell .seller-points { display: grid; gap: 8px; margin: 14px 0 20px; padding: 0; list-style: none; }
+#app-shell .seller-points li { position: relative; padding: 10px 14px 10px 38px; border: 1px solid var(--glass-edge); border-radius: 14px; background: var(--glass-control); }
+#app-shell .seller-points li::before { content: "\2713"; position: absolute; left: 14px; top: 10px; color: var(--accent); font-weight: 700; }
+#app-shell .seller-status { display: grid; gap: 4px; margin-bottom: 14px; border-left: 4px solid var(--accent); }
+#app-shell .seller-status.is-rejected, #app-shell .seller-status.is-suspended { border-left-color: #e5484d; }
+#app-shell .seller-status.is-active { border-left-color: #30a46c; }
+#app-shell .seller-status p { margin: 0; }
+#app-shell .seller-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 14px; }
+#app-shell .seller-stats .panel-card { display: grid; gap: 4px; }
+#app-shell .seller-stats strong { font-size: 1.35rem; font-variant-numeric: tabular-nums; }
+#app-shell .seller-stats .seller-link { font-size: .95rem; overflow-wrap: anywhere; }
+#app-shell .admin-shop-rates { max-width: 420px; }
