@@ -18,7 +18,10 @@ import { PortalMessageForm } from "@/components/portal-message-form";
 import { ToastMessage } from "@/components/toast-provider";
 import type { ProfilePractice } from "@/lib/learning-profile-types";
 import type { Locale } from "@/lib/messages";
-import { formatDate, formatDateTime, formatNumber } from "@/lib/format";
+import { formatDate, formatDateTime, formatMinor, formatNumber } from "@/lib/format";
+import { OrderLines } from "@/components/order-views";
+import type { OrderLineProduct } from "@/lib/order-lines";
+import { siteCopy } from "@/lib/site-copy";
 
 type RequestRecord = {
   id: string; reference: string; name: string; serviceId: string | null; service: { name: string } | null;
@@ -27,7 +30,8 @@ type RequestRecord = {
 };
 type OrderRecord = {
   id: string; reference: string; status: string; recipientName: string; city: string; address: string; createdAt: Date;
-  items: { id: string; name: string; quantity: number }[];
+  totalMinor: number | null; currency: string;
+  items: { id: string; name: string; sku: string | null; quantity: number; unitPriceMinor: number | null; product: OrderLineProduct }[];
   history: { id: string; fromStatus: string | null; toStatus: string; note: string | null; createdAt: Date }[];
 };
 type ConversationRecord = {
@@ -142,6 +146,7 @@ export function CustomerDashboard({ paymentCard = null, user, requests, orders, 
 }) {
   const router = useRouter();
   const { locale, t } = useSitePreferences();
+  const orderCopy = siteCopy[locale].orders;
   const copy = portalCopy[locale];
   const [error, setError] = useState("");
   const searchParams = useSearchParams();
@@ -295,10 +300,11 @@ export function CustomerDashboard({ paymentCard = null, user, requests, orders, 
           <div className="portal-section-heading"><div><span className="eyebrow">{t("customerPortal")}</span><h2>{copy.orders}</h2></div><Link className="button ghost" href="/products">{t("allProducts")}</Link></div>
           {orders.length ? <div className="list">{orders.map((order) => <article className="portal-order-card" key={order.id}>
             <div className="portal-order-heading">
-              <div><strong>{order.reference}</strong><p>{formatDate(order.createdAt)} · {order.items.map((item) => `${item.name} × ${item.quantity}`).join(", ")}</p></div>
-              <span className={`status ${order.status}`}>{order.status}</span>
+              <div><strong>{order.reference}</strong><p>{formatDate(order.createdAt)}{order.totalMinor !== null ? <> · <strong>{formatMinor(order.totalMinor, order.currency, locale)}</strong></> : null}</p></div>
+              <span className={`status ${order.status}`}>{orderCopy.status[order.status] ?? order.status}</span>
             </div>
-            <p className="small muted">{copy.orderStatus}: {order.history.map((item) => `${item.toStatus}${item.note ? ` — ${item.note}` : ""}`).join(" → ")}</p>
+            <OrderLines items={order.items} currency={order.currency} />
+            <p className="small muted">{copy.orderStatus}: {order.history.map((item) => `${orderCopy.status[item.toStatus] ?? item.toStatus}${item.note ? ` — ${item.note}` : ""}`).join(" → ")}</p>
             <p className="small muted">{order.city}{order.address ? ` · ${order.address}` : ""}</p>
           </article>)}</div> : <div className="empty-state"><p>{copy.emptyOrders}</p><Link className="button" href="/products">{t("allProducts")}</Link></div>}
         </section>}

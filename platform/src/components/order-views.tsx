@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
@@ -9,8 +10,9 @@ import { siteCopy } from "@/lib/site-copy";
 import { growthCopy } from "@/lib/growth-copy";
 import { formatDateTime, formatMinor } from "@/lib/format";
 import { nextStatuses, orderStatuses, type OrderStatusValue } from "@/lib/orders";
+import type { OrderLineProduct } from "@/lib/order-lines";
 
-type OrderItem = { id: string; name: string; sku?: string | null; quantity: number; unitPriceMinor?: number | null };
+type OrderItem = { id: string; name: string; sku?: string | null; quantity: number; unitPriceMinor?: number | null; product?: OrderLineProduct };
 type OrderBase = {
   id: string; reference: string; status: string; recipientName: string; phone: string; city: string; address: string;
   latitude: number | null; longitude: number | null; note: string | null; totalMinor: number | null; currency: string; createdAt: Date | string;
@@ -20,6 +22,35 @@ type OrderBase = {
 };
 export type CustomerOrder = OrderBase & { history: { id: string; toStatus: string; createdAt: Date | string; note: string | null }[] };
 export type AdminOrder = OrderBase & { customer: { name: string; email: string } };
+
+/** What was bought, as the shop showed it: photo, name, how many, and what each line costs. */
+export function OrderLines({ items, currency }: { items: OrderItem[]; currency: string }) {
+  const { locale } = useSitePreferences();
+  const c = siteCopy[locale].orders;
+  return <ul className="order-lines" aria-label={c.items}>
+    {items.map((item) => {
+      const href = item.product?.href ?? null;
+      const photo = item.product?.imageId
+        ? <Image src={`/api/media/${item.product.imageId}`} alt="" width={64} height={64} sizes="64px" />
+        : <span aria-hidden="true">{item.name.trim().charAt(0).toUpperCase()}</span>;
+      const unit = item.unitPriceMinor ?? null;
+      return <li className="order-line" key={item.id}>
+        {href ? <Link className="order-line-photo" href={href} tabIndex={-1} aria-hidden="true">{photo}</Link> : <span className="order-line-photo">{photo}</span>}
+        <div className="order-line-text">
+          {href ? <Link className="order-line-name" href={href}>{item.name}</Link> : <span className="order-line-name">{item.name}</span>}
+          <span className="small muted">{[item.sku, item.product && !href ? c.unavailable : null].filter(Boolean).join(" · ")}</span>
+        </div>
+        <div className="order-line-numbers">
+          <span className="order-line-qty"><span className="sr-only">{c.quantity}: </span>× {item.quantity}</span>
+          {unit !== null && <>
+            {item.quantity > 1 && <span className="small muted">{formatMinor(unit, currency, locale)} {c.each}</span>}
+            <strong>{formatMinor(unit * item.quantity, currency, locale)}</strong>
+          </>}
+        </div>
+      </li>;
+    })}
+  </ul>;
+}
 
 const flow: OrderStatusValue[] = ["NEW", "CONFIRMED", "PREPARING", "SHIPPED", "DELIVERED"];
 
@@ -76,7 +107,7 @@ export function CustomerOrders({ orders }: { orders: CustomerOrder[] }) {
                 {order.paymentMethod === "BANK_TRANSFER" && <Link className="small text-link order-invoice" href={`/portal/orders/${order.id}/invoice`}>{g.invoice}</Link>}
               </div>
             </div>
-            <ul className="order-items">{order.items.map((item) => <li key={item.id}><span>{item.name}</span><strong>× {item.quantity}</strong></li>)}</ul>
+            <OrderLines items={order.items} currency={order.currency} />
             <details>
               <summary className="small">{c.history}</summary>
               <ul className="stack small" style={{ marginTop: 8 }}>{order.history.map((entry) => <li key={entry.id}>{formatDateTime(entry.createdAt)} — <strong>{c.status[entry.toStatus] ?? entry.toStatus}</strong>{entry.note ? ` · ${entry.note}` : ""}</li>)}</ul>
@@ -123,7 +154,7 @@ export function AdminOrders({ orders, counts, total, status }: { orders: AdminOr
   const visible = useMemo(() => {
     const needle = query.trim().toLocaleLowerCase();
     if (!needle) return orders;
-    return orders.filter(order => [order.reference, order.recipientName, order.phone, order.customer.name, order.customer.email].join(" ").toLocaleLowerCase().includes(needle));
+    return orders.filter(order => [order.reference, order.recipientName, order.phone, order.customer.name, order.customer.email, ...order.items.flatMap(item => [item.name, item.sku ?? ""])].join(" ").toLocaleLowerCase().includes(needle));
   }, [orders, query]);
   return <div className="container page-shell admin-orders">
     <Link className="small text-link" href="/admin">← {copy.admin.back}</Link>
@@ -151,10 +182,7 @@ export function AdminOrders({ orders, counts, total, status }: { orders: AdminOr
             {order.companyName && <><br /><span className="small">{order.companyName} · STIR {order.companyTin}</span></>}
           </p>
           {order.latitude !== null && order.longitude !== null && <a className="small text-link" href={`https://yandex.uz/maps/?pt=${order.longitude},${order.latitude}&z=16&l=map`} target="_blank" rel="noreferrer">{c.map}</a>}
-          <ul className="order-items">{order.items.map((item) => <li key={item.id}>
-            <span>{item.name}{item.sku ? <span className="small muted"> · {item.sku}</span> : null}</span>
-            <strong>× {item.quantity}{item.unitPriceMinor != null ? ` · ${formatMinor(item.unitPriceMinor, order.currency, locale)}` : ""}</strong>
-          </li>)}</ul>
+          <OrderLines items={order.items} currency={order.currency} />
           <p className="order-total">{order.totalMinor !== null ? <>{c.total}: <strong>{formatMinor(order.totalMinor, order.currency, locale)}</strong></> : <span className="muted">{c.totalPending}</span>}</p>
           <div className="order-payment">
             <PaymentBadge order={order} />

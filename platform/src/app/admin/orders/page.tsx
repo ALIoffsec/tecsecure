@@ -3,6 +3,7 @@ import { requireAdminPage } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { orderStatuses } from "@/lib/orders";
 import { AdminOrders } from "@/components/order-views";
+import { orderItemsWithProduct, withLineProducts } from "@/lib/order-lines";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +16,7 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
   const [orders, groups] = await Promise.all([
     prisma.order.findMany({
       where: status ? { status } : {},
-      include: { items: true, customer: { select: { name: true, email: true } } },
+      include: { items: orderItemsWithProduct, customer: { select: { name: true, email: true } } },
       orderBy: { createdAt: "desc" },
       take: 200
     }),
@@ -23,5 +24,5 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
   ]);
   const counts = Object.fromEntries(groups.map((group) => [group.status, group._count._all]));
   const total = groups.reduce((sum, group) => sum + group._count._all, 0);
-  return <AdminOrders orders={orders} counts={counts} total={total} status={status} />;
+  return <AdminOrders orders={await withLineProducts(orders)} counts={counts} total={total} status={status} />;
 }
