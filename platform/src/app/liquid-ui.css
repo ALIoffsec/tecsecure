@@ -319,3 +319,8 @@ html { scroll-padding-top: 90px; }
 #app-shell .seller-stats strong { font-size: 1.35rem; font-variant-numeric: tabular-nums; }
 #app-shell .seller-stats .seller-link { font-size: .95rem; overflow-wrap: anywhere; }
 #app-shell .admin-shop-rates { max-width: 420px; }
+/* Lesson video: full width of the lesson, 16:9 while the poster loads, black letterbox in both themes. */
+#app-shell .learn-video { margin: 4px 0 18px; }
+#app-shell .learn-video video { display: block; width: 100%; aspect-ratio: 16 / 9; height: auto; border-radius: 16px; border: 1px solid var(--glass-edge); background: #000; object-fit: contain; }
+#app-shell .learn-video video::cue { font-size: 1.05em; line-height: 1.35; background: rgb(0 0 0 / .72); color: #fff; }
+@media (max-width: 640px) { #app-shell .learn-video { margin-inline: -4px; } #app-shell .learn-video video { border-radius: 12px; } }

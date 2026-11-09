@@ -66,8 +66,15 @@ const interactivePracticeSchema = z.object({
     output: localizedSchema
   }).strict()).min(1).max(100)
 }).strict();
+const videoSchema = z.object({
+  src: z.string().trim().min(1).max(1000),
+  poster: z.string().trim().min(1).max(1000).optional(),
+  captions: z.array(z.object({ src: z.string().trim().min(1).max(1000), srclang: z.enum(["uz", "ru", "en"]), label: z.string().trim().min(1).max(60) }).strict()).max(3).optional(),
+  durationSec: z.number().int().positive().max(36000).optional()
+}).strict();
 const sectionSchema = z.object({
   title: localizedSchema,
+  video: videoSchema.optional(),
   content: localizedSchema.optional(),
   example: localizedSchema.optional(),
   exampleExplanation: localizedSchema.optional(),

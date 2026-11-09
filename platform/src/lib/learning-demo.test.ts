@@ -139,7 +139,7 @@ test("Linux fundamentals publishes its command catalog, full lessons, visuals, a
   assert.equal(Object.keys(linuxFundamentalsDetails).length, module.sections.length);
   assert.ok((module.references?.length ?? 0) >= 3);
   assert.ok(module.references?.every((source) => source.href.startsWith("https://")));
-  assert.ok(linuxFundamentalsCommandCatalog.length >= 30 && linuxFundamentalsCommandCatalog.length <= 45, "the course focuses on frequently used commands");
+  assert.ok(linuxFundamentalsCommandCatalog.length >= 30 && linuxFundamentalsCommandCatalog.length <= 55, "the course focuses on frequently used commands (52 after the enriched lessons added history, echo, less, file, tar, chown, groups, sudo, kill, ss and ssh)");
 
   for (const [index, section] of module.sections.entries()) {
     const details = linuxFundamentalsDetails[index];

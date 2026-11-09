@@ -27,8 +27,20 @@ export type LearningReference = {
   href: string;
 };
 
+/**
+ * A lesson video served by /api/learning/media/<module>/<file>, from a folder outside git
+ * (LEARNING_MEDIA_DIR). The lesson API drops it while the file is not on the server yet.
+ */
+export type LearningVideo = {
+  src: string;
+  poster?: string;
+  captions?: { src: string; srclang: "uz" | "ru" | "en"; label: string }[];
+  durationSec?: number;
+};
+
 export type LearningSection = {
   title: Localized;
+  video?: LearningVideo;
   content?: Localized;
   example?: Localized;
   exampleExplanation?: Localized;

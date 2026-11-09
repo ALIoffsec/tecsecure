@@ -14,6 +14,7 @@ import { sectionPriceTec } from "@/lib/learning-pricing";
 import { isPreviewMode } from "@/lib/preview-mode";
 import { prisma } from "@/lib/prisma";
 import { hasLearningModuleAccess } from "@/lib/learning-subscriptions";
+import { availableVideo } from "@/lib/learning-media";
 
 export const runtime = "nodejs";
 
@@ -45,10 +46,13 @@ export async function GET(_request: Request, { params }: { params: Promise<{ slu
   const terminalExample = firewallKerioTerminalExamples[module.slug]?.[index];
   const supplementalExample = supplementalLessonExamples[module.slug]?.[index];
   const question = getLearningSectionQuestion(module, index);
+  // A video is announced only once its file is on the server, so lessons without one look as before.
+  const video = await availableVideo(section.video);
   if (!question) return Response.json({ error: "Bu dars uchun bilim tekshiruvi tayyorlanmagan." }, { status: 409 });
   return Response.json({
     lesson: {
       ...section,
+      video: video ?? undefined,
       expandedContent: extendedLessons[module.slug]?.[index],
       diagram: section.diagram ?? learningTeachingVisuals[module.slug]?.[index] ?? careerTeachingVisuals[module.slug]?.[index],
       question: { prompt: question.prompt, options: question.options },

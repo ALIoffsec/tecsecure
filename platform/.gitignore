@@ -9,3 +9,5 @@ npm-debug.log*
 tmp-*.ts
 *.tsbuildinfo
 next-env.d.ts
+# Lesson videos are large and live on the server, not in git (see LEARNING_MEDIA_DIR).
+learning-media/

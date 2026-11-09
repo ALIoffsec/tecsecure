@@ -7,13 +7,24 @@ import { ProgressBar, TecAmount, useLearningProgress, useLearningPurchases, useL
 import { LinuxVirtualTerminal } from "@/components/linux-virtual-terminal";
 import { GuidedPracticeTerminal } from "@/components/guided-practice-terminal";
 import { ToastMessage } from "@/components/toast-provider";
-import type { LearningDiagram, LearningImage, LearningSection, Localized } from "@/lib/learning-demo";
+import type { LearningDiagram, LearningImage, LearningSection, LearningVideo, Localized } from "@/lib/learning-demo";
 import type { LearningModulePreview } from "@/lib/learning-catalog-types";
 
 type LinuxPracticeProgress = {
   tasksBySection: Record<number, string[]>;
   completedSections: number[];
 };
+
+/** The lesson's video above its text. preload="none": nothing downloads until the learner presses play. */
+function LessonVideo({ video, title }: { video: LearningVideo; title: string }) {
+  return <figure className="learn-video">
+    <video controls playsInline preload="none" poster={video.poster} aria-label={title}>
+      <source src={video.src} type={video.src.endsWith(".webm") ? "video/webm" : "video/mp4"} />
+      {/* Off by default: the lesson videos carry their subtitles burned in, so the track is for those who switch it on. */}
+      {video.captions?.map(track => <track key={track.src} kind="subtitles" src={track.src} srcLang={track.srclang} label={track.label} />)}
+    </video>
+  </figure>;
+}
 
 type LearningLessonData = Omit<LearningSection, "question"> & {
   expandedContent?: string;
@@ -558,6 +569,7 @@ export function LearningModuleView({ module, nickname }: { module: LearningModul
           ) : !lesson ? (
             <p className="muted" role="status">{tx.purchasing}</p>
           ) : <>
+          {lesson.video && <LessonVideo key={lesson.video.src} video={lesson.video} title={pick(section.title)} />}
           {lesson.content ? (
             <div className="learn-section-copy">
               {pick(lesson.content).split("\n\n").map((paragraph, index) => (
