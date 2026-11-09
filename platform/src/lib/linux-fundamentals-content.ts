@@ -498,7 +498,7 @@ const lessons: Lesson[] = [
 ];
 
 /** Video lengths in seconds, as the producer reports them; unknown ones are simply left out. */
-const videoSeconds: Record<number, number> = { 0: 257, 1: 201, 2: 188, 3: 169, 4: 165, 5: 155, 6: 156, 7: 151 };
+const videoSeconds: Record<number, number> = { 0: 258, 1: 202, 2: 188, 3: 172, 4: 166, 5: 156, 6: 159, 7: 151 };
 
 export const linuxFundamentalsSections: LearningSection[] = lessons.map((item, index) => ({
   title: l(item.title),

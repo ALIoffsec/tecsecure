@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
-import sharp from "sharp";
 import { getCurrentUser, isResponse, requireModuleApi, type AdminModule } from "@/lib/auth";
 import { clientIp } from "@/lib/client-ip";
+import { cleanImage, deleteOrphanedProofs } from "@/lib/media-maintenance";
 import { sniffMediaType } from "@/lib/media-validate";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -14,29 +14,6 @@ const VIDEO_LIMIT = 32 * 1024 * 1024;
 /** The multipart envelope adds a little around the file itself. */
 const REQUEST_LIMIT = VIDEO_LIMIT + 256 * 1024;
 const PROOF_REQUEST_LIMIT = IMAGE_LIMIT + 256 * 1024;
-/** 50 megapixels: any real photo fits; a tiny file that unpacks into a gigantic bitmap does not. */
-const PIXEL_LIMIT = 50_000_000;
-
-/**
- * Decodes and re-encodes an uploaded picture. The copy that is stored carries no EXIF data (phone photos
- * otherwise publish their GPS position and device), cannot smuggle a second file inside it, and is proven
- * to be a real image. Animated GIFs are only checked, not re-encoded, so they keep moving.
- */
-async function cleanImage(data: Buffer, mimeType: string): Promise<{ data: Buffer; mimeType: string } | null> {
-  try {
-    const image = sharp(data, { limitInputPixels: PIXEL_LIMIT, failOn: "error", animated: mimeType === "image/gif" });
-    const meta = await image.metadata();
-    if (!meta.width || !meta.height) return null;
-    if (mimeType === "image/gif") return { data, mimeType };
-    const oriented = image.rotate();
-    if (mimeType === "image/png") return { data: await oriented.png({ compressionLevel: 9 }).toBuffer(), mimeType };
-    if (mimeType === "image/webp") return { data: await oriented.webp({ quality: 88 }).toBuffer(), mimeType };
-    return { data: await oriented.jpeg({ quality: 88, mozjpeg: true }).toBuffer(), mimeType: "image/jpeg" };
-  } catch {
-    return null;
-  }
-}
-
 export async function POST(request: Request) {
   // Size is judged from the header before anything is read, so an oversized body never fills the memory.
   const declared = Number(request.headers.get("content-length"));
@@ -67,6 +44,8 @@ export async function POST(request: Request) {
       || !(await checkRateLimit("wallet-proof-ip", clientIp(request), 40, 60 * 60 * 1000))) {
       return Response.json({ error: "Yuklash limiti oshdi. Keyinroq urinib ko‘ring." }, { status: 429 });
     }
+    // Receipts this customer picked but never sent are removed as they upload new ones.
+    await deleteOrphanedProofs({ ownerId: actor.id, limit: 50 }).catch(error => console.error("Orphan proof cleanup failed", error instanceof Error ? error.message : "UnknownError"));
   }
   if (!(file instanceof File) || file.size === 0) {
     return Response.json({ error: "Yuklash uchun fayl tanlang." }, { status: 400 });

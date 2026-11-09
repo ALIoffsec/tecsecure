@@ -3,7 +3,7 @@ import { stat } from "node:fs/promises";
 import { Readable } from "node:stream";
 import { getCurrentUser } from "@/lib/auth";
 import { getLearningModule } from "@/lib/learning-content";
-import { parseLearningMediaFile } from "@/lib/learning-media";
+import { mediaRequestAllowed, parseLearningMediaFile, verifyMediaSignature } from "@/lib/learning-media";
 import { sectionPriceTec } from "@/lib/learning-pricing";
 import { hasLearningModuleAccess } from "@/lib/learning-subscriptions";
 import { parseByteRange } from "@/lib/media-validate";
@@ -15,13 +15,17 @@ type Context = { params: Promise<{ slug: string; file: string }> };
 
 /**
  * Lesson videos, posters and subtitles from LEARNING_MEDIA_DIR. Byte ranges are honoured so players can
- * seek (Safari will not play without them). A paid section's video goes only to people who opened it;
- * posters are a preview and stay public.
+ * seek (Safari will not play without them). Every file needs the expiring signature the lesson API put in
+ * its URL and must be loaded by our own page's player, not opened directly; a paid section's video goes
+ * only to people who opened it. None of this makes copying impossible, it removes the easy ways.
  */
 async function serve(request: Request, context: Context, head: boolean): Promise<Response> {
   const { slug, file } = await context.params;
   const media = parseLearningMediaFile(slug, file);
   if (!media) return new Response("Not found", { status: 404 });
+  const url = new URL(request.url);
+  if (!verifyMediaSignature(slug, file, url.searchParams.get("e"), url.searchParams.get("s"))) return new Response("Forbidden", { status: 403 });
+  if (!mediaRequestAllowed(request.headers, media.poster ? "poster" : file.endsWith(".vtt") ? "track" : "video")) return new Response("Forbidden", { status: 403 });
   const module = await getLearningModule(slug);
   if (!module || media.section >= module.sections.length) return new Response("Not found", { status: 404 });
   const paid = sectionPriceTec(module, media.section) > 0;
@@ -40,8 +44,13 @@ async function serve(request: Request, context: Context, head: boolean): Promise
   const headers: Record<string, string> = {
     "Content-Type": media.type,
     "Accept-Ranges": "bytes",
-    "Cache-Control": paid && !media.poster ? "private, max-age=3600" : "public, max-age=86400",
-    "X-Content-Type-Options": "nosniff"
+    // Only this person's browser may keep a copy, and no longer than the link lives.
+    "Cache-Control": "private, max-age=3600",
+    "Content-Disposition": "inline",
+    "X-Content-Type-Options": "nosniff",
+    "Cross-Origin-Resource-Policy": "same-origin",
+    // A copy cached for the player must not be handed to a tab that opens the URL directly.
+    "Vary": "Sec-Fetch-Dest, Sec-Fetch-Site"
   };
   const range = parseByteRange(request.headers.get("range"), size);
   if (range === "invalid") return new Response(null, { status: 416, headers: { ...headers, "Content-Range": `bytes */${size}` } });

@@ -17,8 +17,10 @@ type LinuxPracticeProgress = {
 
 /** The lesson's video above its text. preload="none": nothing downloads until the learner presses play. */
 function LessonVideo({ video, title }: { video: LearningVideo; title: string }) {
-  return <figure className="learn-video">
-    <video controls playsInline preload="none" poster={video.poster} aria-label={title}>
+  return <figure className="learn-video" onContextMenu={event => event.preventDefault()}>
+    {/* No download button, no "Save video as", no picture-in-picture. Copying stays possible for the determined,
+        but the easy ways are closed; the server also refuses the file outside this player. */}
+    <video controls playsInline preload="none" poster={video.poster} aria-label={title} controlsList="nodownload noremoteplayback" disablePictureInPicture disableRemotePlayback onContextMenu={event => event.preventDefault()}>
       <source src={video.src} type={video.src.endsWith(".webm") ? "video/webm" : "video/mp4"} />
       {/* Off by default: the lesson videos carry their subtitles burned in, so the track is for those who switch it on. */}
       {video.captions?.map(track => <track key={track.src} kind="subtitles" src={track.src} srcLang={track.srclang} label={track.label} />)}

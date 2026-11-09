@@ -14,6 +14,7 @@
     "db:seed-news": "node prisma/seed-news.mjs",
     "db:seed-catalog": "node prisma/seed-catalog.mjs",
     "db:dev": "prisma migrate dev",
+    "media:maintenance": "tsx --tsconfig tsconfig.json scripts/media-maintenance.ts",
     "admin:create": "tsx scripts/create-admin.ts",
     "admin:password-reset": "tsx scripts/reset-admin-password.ts",
     "founder:claim": "tsx scripts/claim-founder.ts",
