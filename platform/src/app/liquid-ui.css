@@ -324,3 +324,18 @@ html { scroll-padding-top: 90px; }
 #app-shell .learn-video video { display: block; width: 100%; aspect-ratio: 16 / 9; height: auto; border-radius: 16px; border: 1px solid var(--glass-edge); background: #000; object-fit: contain; }
 #app-shell .learn-video video::cue { font-size: 1.05em; line-height: 1.35; background: rgb(0 0 0 / .72); color: #fff; }
 @media (max-width: 640px) { #app-shell .learn-video { margin-inline: -4px; } #app-shell .learn-video video { border-radius: 12px; } }
+/* Code sign-in steps and two-factor */
+#app-shell .code-steps { display: flex; gap: 6px; margin: 4px 0 14px; padding: 0; list-style: none; counter-reset: code-step; }
+#app-shell .code-steps li { flex: 1; padding: 6px 10px; border-radius: 999px; border: 1px solid var(--glass-edge); font-size: .8rem; color: var(--muted); text-align: center; counter-increment: code-step; }
+#app-shell .code-steps li::before { content: counter(code-step) ". "; }
+#app-shell .code-steps li.is-current { border-color: var(--accent); color: inherit; font-weight: 700; }
+#app-shell .code-steps li.is-done { color: inherit; }
+#app-shell .code-or { display: block; text-align: center; color: var(--muted); font-size: .85rem; }
+#app-shell .code-change { justify-self: start; background: none; border: 0; padding: 0; cursor: pointer; }
+#app-shell .two-factor-card { display: grid; gap: 12px; margin-top: 14px; }
+#app-shell .two-factor-setup, #app-shell .two-factor-backup { display: grid; gap: 10px; justify-items: start; }
+#app-shell .two-factor-qr { width: 200px; height: 200px; padding: 8px; border-radius: 12px; background: #fff; }
+#app-shell .two-factor-secret { padding: 8px 12px; border-radius: 10px; border: 1px solid var(--glass-edge); background: var(--glass-control); font: 600 1rem/1.4 ui-monospace, Consolas, monospace; letter-spacing: 1px; overflow-wrap: anywhere; user-select: all; }
+#app-shell .two-factor-codes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 18px; margin: 0; padding-left: 22px; font: 600 1rem/1.5 ui-monospace, Consolas, monospace; }
+#app-shell .two-factor-panel { max-width: 460px; margin: 40px auto; }
+#app-shell .two-factor-step { display: grid; gap: 10px; }

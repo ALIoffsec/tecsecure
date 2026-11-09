@@ -1,6 +1,7 @@
 import { requireAdminApi } from "@/lib/auth";
 import {
   getIntegrationStatus,
+  getMailCredentials,
   getOAuthCredentials,
   getSmsCredentials,
   getTelegramCredentials,
@@ -47,6 +48,14 @@ const oauthUpdateSchema = z.object({
   clearTenantId: z.boolean().optional()
 }).strict();
 const integrationsUpdateSchema = z.object({
+  mail: z.object({
+    address: z.string().trim().email().max(254).or(z.literal("")).optional(),
+    password: z.string().max(512).optional(),
+    host: z.string().trim().max(200).optional(),
+    port: z.number().int().min(1).max(65535).optional(),
+    senderName: z.string().trim().max(80).optional(),
+    clearPassword: z.boolean().optional()
+  }).strict().optional(),
   sms: z.object({
     eskizEmail: z.string().max(254).optional(),
     eskizPassword: z.string().max(512).optional(),
@@ -108,6 +117,17 @@ export async function PATCH(request: Request) {
   try {
     const updates: IntegrationCredentialUpdates = {};
     const requested = parsed.data;
+    if (requested.mail) {
+      const current = await getMailCredentials();
+      updates.mail = {
+        address: updateValue(requested.mail.address?.toLowerCase(), false, current.address),
+        // Google shows app passwords in groups of four; the spaces are not part of it.
+        password: updateValue(requested.mail.password?.replace(/\s+/g, ""), requested.mail.clearPassword, current.password),
+        host: updateValue(requested.mail.host, false, current.host) || "smtp.gmail.com",
+        port: requested.mail.port ?? current.port,
+        senderName: updateValue(requested.mail.senderName, false, current.senderName) || "Tecsecure"
+      };
+    }
     if (requested.sms) {
       const current = await getSmsCredentials();
       updates.sms = {

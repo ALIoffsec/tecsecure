@@ -6,6 +6,7 @@ import { type FormEvent, useEffect, useRef, useState } from "react";
 import { useSitePreferences } from "./site-preferences";
 import { ToastMessage } from "./toast-provider";
 import { OAuthSignIn } from "./oauth-sign-in";
+import { TwoFactorStep } from "./two-factor";
 import { featureCopy } from "@/lib/feature-copy";
 import { growthCopy } from "@/lib/growth-copy";
 
@@ -20,6 +21,7 @@ export function AuthForm({ mode, audience = "customer", redirectTo }: Props) {
   const [active, setActive] = useState<Mode>(mode);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [ticket, setTicket] = useState<string | null>(null);
   const root = useRef<HTMLElement>(null);
   useEffect(() => {
     const sync = () => { if (audience === "customer") { setActive(location.pathname === "/register" ? "register" : "login"); setError(""); } };
@@ -46,11 +48,17 @@ export function AuthForm({ mode, audience = "customer", redirectTo }: Props) {
       });
       const result = await response.json();
       if (!response.ok) { setError(result.error ?? t("requestFailed")); return; }
+      // Two-factor on: the password was right, now the authenticator code.
+      if (typeof result.twoFactor === "string") { setTicket(result.twoFactor); return; }
       router.replace(audience === "staff" ? "/admin" : redirectTo ?? "/portal");
       router.refresh();
     } catch { setError(t("serverUnavailable")); }
     finally { setBusy(false); }
   }
+
+  if (ticket) return <section className="panel-card code-card two-factor-panel">
+    <TwoFactorStep ticket={ticket} onRestart={() => setTicket(null)} onDone={next => { router.replace(audience === "staff" ? next : redirectTo ?? next); router.refresh(); }} />
+  </section>;
 
   return <section ref={root} className="original-auth" data-mode={active} data-audience={audience}>
     <div className="curved-shape" aria-hidden="true" /><div className="curved-shape2" aria-hidden="true" />

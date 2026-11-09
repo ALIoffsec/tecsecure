@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import { createHash } from "node:crypto";
-import { createSession } from "@/lib/auth";
+import { beginSignIn } from "@/lib/two-factor";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { loginSchema } from "@/lib/validation";
@@ -39,7 +39,9 @@ export async function POST(request: Request) {
     if ((parsed.data.audience === "staff" && !staffRole) || (parsed.data.audience === "customer" && staffRole)) {
       return Response.json({ error: "Bu kirish turi uchun ruxsat yo‘q." }, { status: 403 });
     }
-    await createSession(user.id, staffRole);
+    // With two-factor on, the password only earns a ticket; the session waits for the authenticator code.
+    const started = await beginSignIn(user.id, staffRole);
+    if ("twoFactor" in started) return Response.json({ twoFactor: started.twoFactor });
     return Response.json({ user: { id: user.id, name: user.name, email: user.email, role: user.role } });
   } catch (error) {
     console.error("Login failed", error);

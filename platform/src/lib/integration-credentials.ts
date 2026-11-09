@@ -25,6 +25,8 @@ export type OAuthCredentials = {
 export type YandexMapsCredentials = { apiKey: string };
 /** Eskiz (notify.eskiz.uz) account that sends sign-in and reset codes by SMS. */
 export type SmsCredentials = { eskizEmail: string; eskizPassword: string; eskizFrom: string };
+/** The mailbox that sends codes and notices: Gmail by default (smtp.gmail.com with an app password). */
+export type MailCredentials = { address: string; password: string; host: string; port: number; senderName: string };
 
 const telegramSchema = z.object({
   botToken: z.string().max(512),
@@ -50,7 +52,16 @@ const smsSchema = z.object({
   eskizFrom: z.string().max(32)
 }).strict();
 
+const mailSchema = z.object({
+  address: z.string().max(254),
+  password: z.string().max(512),
+  host: z.string().max(200),
+  port: z.number().int().min(1).max(65535),
+  senderName: z.string().max(80)
+}).strict();
+
 const credentialStorageKeys = {
+  mail: "integration:mail",
   telegram: "integration:telegram",
   yandexMaps: "integration:yandex-maps",
   sms: "integration:sms",
@@ -176,7 +187,18 @@ export async function getSmsCredentials(): Promise<SmsCredentials> {
   );
 }
 
+export async function getMailCredentials(): Promise<MailCredentials> {
+  return readStoredConfig(credentialStorageKeys.mail, mailSchema, {
+    address: process.env.SMTP_USER ?? "",
+    password: process.env.SMTP_PASSWORD ?? "",
+    host: process.env.SMTP_HOST || "smtp.gmail.com",
+    port: Number(process.env.SMTP_PORT) || 465,
+    senderName: process.env.SMTP_SENDER_NAME || "Tecsecure"
+  });
+}
+
 export type IntegrationStatus = {
+  mail: { address: string; host: string; port: number; senderName: string; hasPassword: boolean; configured: boolean };
   sms: { eskizEmail: string; eskizFrom: string; hasPassword: boolean; configured: boolean };
   telegram: {
     botUsername: string;
@@ -200,7 +222,8 @@ export type IntegrationStatus = {
 };
 
 export async function getIntegrationStatus(): Promise<IntegrationStatus> {
-  const [sms, telegram, yandexMaps, google, github, yandex, microsoft] = await Promise.all([
+  const [mail, sms, telegram, yandexMaps, google, github, yandex, microsoft] = await Promise.all([
+    getMailCredentials(),
     getSmsCredentials(),
     getTelegramCredentials(),
     getYandexMapsCredentials(),
@@ -211,6 +234,7 @@ export async function getIntegrationStatus(): Promise<IntegrationStatus> {
   ]);
   const oauth = { google, github, yandex, microsoft };
   return {
+    mail: { address: mail.address, host: mail.host, port: mail.port, senderName: mail.senderName, hasPassword: Boolean(mail.password), configured: Boolean(mail.address && mail.password && mail.host) },
     sms: {
       eskizEmail: sms.eskizEmail,
       eskizFrom: sms.eskizFrom,
@@ -243,6 +267,7 @@ export async function getIntegrationStatus(): Promise<IntegrationStatus> {
 }
 
 export type IntegrationCredentialUpdates = {
+  mail?: MailCredentials;
   sms?: SmsCredentials;
   telegram?: TelegramCredentials;
   yandexMaps?: YandexMapsCredentials;
@@ -254,6 +279,11 @@ export async function saveIntegrationCredentials(
   actorId: string
 ): Promise<void> {
   const records: { key: string; value: string }[] = [];
+  if (updates.mail) {
+    const config = mailSchema.parse(updates.mail);
+    const key = credentialStorageKeys.mail;
+    records.push({ key, value: encryptIntegrationCredential(JSON.stringify(config), key, getMasterSecret()) });
+  }
   if (updates.sms) {
     const config = smsSchema.parse(updates.sms);
     const key = credentialStorageKeys.sms;

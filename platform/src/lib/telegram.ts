@@ -33,7 +33,9 @@ type TelegramInlineKeyboardButton = {
 };
 export type TelegramReplyMarkup =
   | { inline_keyboard: TelegramInlineKeyboardButton[][] }
-  | { force_reply: true; input_field_placeholder?: string };
+  | { force_reply: true; input_field_placeholder?: string }
+  | { keyboard: { text: string; request_contact?: boolean }[][]; resize_keyboard?: boolean; one_time_keyboard?: boolean }
+  | { remove_keyboard: true };
 export type TelegramAdminAction = "reply" | "progress" | "done";
 export type TelegramAdminMessageStatus = "new" | "in_progress" | "done";
 export type TelegramAdminCallback = { action: TelegramAdminAction; reference: string };

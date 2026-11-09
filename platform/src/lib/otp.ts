@@ -2,6 +2,7 @@ import { createHash, randomInt, timingSafeEqual } from "node:crypto";
 import { prisma } from "@/lib/prisma";
 import { getSmsCredentials, getTelegramCredentials, type SmsCredentials } from "@/lib/integration-credentials";
 import { notifyTelegramUser } from "@/lib/telegram";
+import { mailConfigured, sendMail } from "@/lib/mailer";
 import { otpSmsText, type OtpPurpose } from "@/lib/otp-text";
 
 export { otpSmsText, type OtpPurpose };
@@ -26,7 +27,7 @@ export function normalizeIdentifier(input: string): { kind: "phone" | "email"; v
   return phone ? { kind: "phone", value: phone } : null;
 }
 
-function hashCode(code: string, target: string): string {
+export function hashCode(code: string, target: string): string {
   const pepper = process.env.INTEGRATION_CREDENTIALS_KEY || process.env.NEXTAUTH_SECRET || "development-only";
   return createHash("sha256").update(`${pepper}:${target}:${code}`).digest("hex");
 }
@@ -46,7 +47,7 @@ export async function otpChannels() {
   return {
     consoleMode,
     sms: Boolean(await smsCredentials()) || consoleMode,
-    email: Boolean(process.env.RESEND_API_KEY && process.env.MAIL_FROM) || consoleMode
+    email: (await mailConfigured()) || consoleMode
   };
 }
 
@@ -131,15 +132,6 @@ export async function sendSms(phone: string, text: string): Promise<string> {
   return String(body.id ?? "");
 }
 
-async function sendEmail(to: string, subject: string, text: string): Promise<void> {
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ from: process.env.MAIL_FROM, to, subject, text }),
-    signal: AbortSignal.timeout(15000)
-  });
-  if (!response.ok) throw new Error(`Email send failed: ${response.status}`);
-}
 
 /** "recent": a code went out less than a minute ago and is still valid. "none": nothing can reach this person. */
 export type OtpDelivery = "telegram" | "sms" | "email" | "recent" | "none";
@@ -161,7 +153,10 @@ export async function issueOtp(purpose: OtpPurpose, target: string, kind: "phone
     if (user?.telegramChatId && await notifyTelegramUser(user.id, `🔐 <b>Tecsecure</b>\nTasdiqlash kodi: <code>${code}</code>\nKod 5 daqiqa amal qiladi. Uni hech kimga bermang.`)) return "telegram";
     if (channels.consoleMode) return kind === "phone" ? "sms" : "email";
     if (kind === "phone" && channels.sms) { await sendSms(target, otpSmsText(purpose, code)); return "sms"; }
-    if (kind === "email" && channels.email) { await sendEmail(target, "Tecsecure tasdiqlash kodi", `${otpSmsText(purpose, code)} Kod 5 daqiqa amal qiladi.`); return "email"; }
+    if (kind === "email" && channels.email) {
+      await sendMail(target, purpose === "RESET" ? "Tecsecure: parolni tiklash kodi" : "Tecsecure: kirish kodi", `${otpSmsText(purpose, code)}\nKod 5 daqiqa amal qiladi.`, code);
+      return "email";
+    }
   } catch (error) {
     await discard();
     throw error;
@@ -171,7 +166,7 @@ export async function issueOtp(purpose: OtpPurpose, target: string, kind: "phone
 }
 
 /** True once, for the right code, within its time and attempt limits. */
-export async function verifyOtp(purpose: OtpPurpose, target: string, code: string): Promise<boolean> {
+export async function verifyOtp(purpose: OtpPurpose | "RESET_TICKET", target: string, code: string): Promise<boolean> {
   const record = await prisma.otpCode.findFirst({ where: { target, purpose, consumedAt: null, expiresAt: { gt: new Date() } }, orderBy: { createdAt: "desc" } });
   if (!record || record.attempts >= MAX_ATTEMPTS) return false;
   await prisma.otpCode.update({ where: { id: record.id }, data: { attempts: { increment: 1 } } });

@@ -9,6 +9,7 @@ import type { OAuthProviderId } from "@/lib/integration-credentials";
 import { otpSmsText } from "@/lib/otp-text";
 
 type IntegrationStatus = {
+  mail: { address: string; host: string; port: number; senderName: string; hasPassword: boolean; configured: boolean };
   sms: { eskizEmail: string; eskizFrom: string; hasPassword: boolean; configured: boolean };
   telegram: {
     botUsername: string;
@@ -96,6 +97,22 @@ export function AdminIntegrations() {
   const statusLabel = (configured: boolean) => configured ? t("integrationConfigured") : t("integrationNotConfigured");
   const secretPlaceholder = (saved: boolean) => saved ? t("secretAlreadySet") : t("secretNotSet");
 
+  async function testMail(to: string) {
+    setBusy(true);
+    setError("");
+    setNotice("");
+    try {
+      const response = await fetch("/api/admin/integrations/test", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ channel: "mail", to }) });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error ?? t("requestFailed"));
+      setNotice(staffBot.mailTestSent);
+    } catch (issue) {
+      setError(issue instanceof Error ? issue.message : t("requestFailed"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function testSms(phone: string) {
     setBusy(true);
     setError("");
@@ -142,6 +159,53 @@ export function AdminIntegrations() {
     <p className="small muted">{t("integrationsEncryptionNotice")}</p>
 
     {!status ? <p className="small muted" aria-live="polite">{error || t("loading")}</p> : <>
+      <details className="admin-records-accordion" open={!status.mail.configured}>
+        <summary>{staffBot.mailTitle} · {statusLabel(status.mail.configured)}</summary>
+        <form className="form admin-integration-form" key={`mail-${formVersion}`} onSubmit={(event) => void save(event, (data) => ({
+          mail: {
+            address: fieldValue(data, "mailAddress"),
+            password: fieldValue(data, "mailPassword"),
+            senderName: fieldValue(data, "mailSender"),
+            host: fieldValue(data, "mailHost"),
+            port: Number(fieldValue(data, "mailPort")) || 465,
+            clearPassword: checked(data, "clearMailPassword")
+          }
+        }))}>
+          <p className="small muted">{staffBot.mailHint}</p>
+          <div className="form-row">
+            <div className="field">
+              <label htmlFor="mail-address">{staffBot.mailAddress}</label>
+              <input id="mail-address" name="mailAddress" type="email" defaultValue={status.mail.address} maxLength={254} placeholder="tecsecure.uz@gmail.com" autoComplete="off" />
+            </div>
+            <div className="field">
+              <label htmlFor="mail-sender">{staffBot.mailSender}</label>
+              <input id="mail-sender" name="mailSender" defaultValue={status.mail.senderName} maxLength={80} placeholder="Tecsecure" />
+            </div>
+          </div>
+          <div className="field">
+            <label htmlFor="mail-password">{staffBot.mailPassword}</label>
+            <input id="mail-password" name="mailPassword" type="password" autoComplete="new-password" maxLength={512} placeholder={secretPlaceholder(status.mail.hasPassword)} />
+            <small className="muted">{staffBot.mailPasswordHint}</small>
+            {status.mail.hasPassword && <label className="admin-integration-clear"><input type="checkbox" name="clearMailPassword" /> {t("clearCurrentValue")}</label>}
+          </div>
+          <details>
+            <summary className="small">{staffBot.mailServer}</summary>
+            <div className="form-row">
+              <div className="field"><label htmlFor="mail-host">Host</label><input id="mail-host" name="mailHost" defaultValue={status.mail.host} maxLength={200} /></div>
+              <div className="field"><label htmlFor="mail-port">Port</label><input id="mail-port" name="mailPort" inputMode="numeric" defaultValue={String(status.mail.port)} maxLength={5} /></div>
+            </div>
+          </details>
+          <div className="field">
+            <label htmlFor="mail-test-to">{staffBot.mailTestTo}</label>
+            <input id="mail-test-to" name="mailTestTo" type="email" autoComplete="off" />
+          </div>
+          <div className="admin-integration-actions">
+            <button className="button" disabled={busy}>{busy ? t("saving") : t("saveIntegration")}</button>
+            <button className="button secondary" type="button" disabled={busy || !status.mail.configured} onClick={(event) => void testMail(String(new FormData(event.currentTarget.form ?? undefined).get("mailTestTo") ?? ""))}>{staffBot.mailTest}</button>
+          </div>
+        </form>
+      </details>
+
       <details className="admin-records-accordion" open={!status.sms.configured}>
         <summary>{staffBot.smsTitle} · {statusLabel(status.sms.configured)}</summary>
         <form className="form admin-integration-form" key={`sms-${formVersion}`} onSubmit={(event) => void save(event, (data) => ({

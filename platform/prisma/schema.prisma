@@ -107,6 +107,13 @@ model User {
   role                 UserRole               @default(CUSTOMER)
   permissions          Json                   @default("[]")
   walletBalanceMinor   Int                    @default(0)
+  /// Authenticator-app secret, encrypted; set while setting up, active once twoFactorEnabledAt is set.
+  twoFactorSecret      String?
+  twoFactorEnabledAt   DateTime?
+  /// sha256 hashes of the one-time backup codes still unused.
+  twoFactorBackupCodes Json?
+  /// The last 30-second step accepted, so one code cannot be used twice.
+  twoFactorLastStep    Int?
   rewardPoints         Int                    @default(0)
   active               Boolean                @default(true)
   deletedAt            DateTime?
@@ -975,6 +982,22 @@ model ProductQuestion {
   createdAt  DateTime  @default(now())
 
   @@index([productId, createdAt])
+}
+
+/// A phone number proved through the Telegram bot: the person shares their own contact and it must match.
+model PhoneVerification {
+  id        String   @id @default(cuid())
+  /// sha256 of the token carried in the bot link.
+  tokenHash String   @unique
+  phone     String
+  purpose   String
+  chatId    String?
+  /// PENDING until the contact arrives, then SENT or MISMATCH.
+  status    String   @default("PENDING")
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([chatId, createdAt])
 }
 
 model OtpCode {

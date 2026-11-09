@@ -1,3 +1,4 @@
+import { beginSignIn } from "@/lib/two-factor";
 import { randomBytes } from "node:crypto";
 import { hash } from "bcryptjs";
 import AzureAD from "next-auth/providers/azure-ad";
@@ -67,8 +68,9 @@ export async function getAuthOptions(): Promise<NextAuthOptions> {
         });
         if (identity) {
           if (!identity.user.active || identity.user.role !== "CUSTOMER") return false;
-          await createSession(identity.user.id);
-          return true;
+          // Returning a path sends the person on to the authenticator step instead of signing them in.
+          const started = await beginSignIn(identity.user.id);
+          return "twoFactor" in started ? `/login/2fa?ticket=${encodeURIComponent(started.twoFactor)}` : true;
         }
 
         const claims = profile && typeof profile === "object" ? profile as Record<string, unknown> : {};

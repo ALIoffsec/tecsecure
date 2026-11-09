@@ -10,6 +10,7 @@ import { DeviceRegisterForm } from "@/components/device-register-form";
 import { SubscriptionManager } from "@/components/subscription-manager";
 import { AccountSessionActions } from "@/components/account-session-actions";
 import { ProfileDetails } from "@/components/profile-details";
+import { TwoFactorSettings } from "@/components/two-factor";
 import { WalletPanel } from "@/components/wallet-panel";
 import type { PaymentCard } from "@/components/cart-checkout";
 import { TecGiftNotifications } from "@/components/tec-gift-notifications";
@@ -272,6 +273,7 @@ export function CustomerDashboard({ paymentCard = null, user, requests, orders, 
           <h2>{t("profile")}</h2><p className="muted">{copy.profileIntro}</p>
           <ProfileDetails user={{ name: user.name, email: user.email, phone: user.phone, role: user.role }} />
         </section>}
+        {activeSection === "profile" && <TwoFactorSettings />}
         {activeSection === "wallet" && <WalletPanel paymentCard={paymentCard} initialBalance={wallet.walletBalanceMinor} initialPoints={wallet.rewardPoints} transactions={wallet.walletTransactions} />}
         {activeSection === "learning" && <ProfileHero name={user.name} email={user.email} rewardPoints={wallet.rewardPoints} practice={practice} />}
         {activeSection === "store" && <section className="panel-card">

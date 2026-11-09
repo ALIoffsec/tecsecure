@@ -16,11 +16,14 @@ import {
   sendTelegramMessage
 } from "@/lib/telegram";
 import { getTelegramCredentials } from "@/lib/integration-credentials";
+import { onPhoneCheckStart, onSharedContact, PHONE_START_PREFIX } from "@/lib/phone-telegram";
 
 export const runtime = "nodejs";
 
 type TelegramMessageBody = {
   text?: string;
+  from?: { id: number };
+  contact?: { phone_number: string; user_id?: number };
   message_id: number;
   chat: { id: number; type: string };
   reply_to_message?: { text?: string };
@@ -290,10 +293,27 @@ async function handleUpdate(request: Request, bot: "customer" | "staff" | "shop"
     return Response.json({ ok: true });
   }
   const message = update.message;
+  // A shared contact answers the phone check that a "Kodni Telegram orqali olish" link started.
+  if (message?.contact && message.chat.type === "private" && bot === "customer") {
+    try {
+      await onSharedContact(String(message.chat.id), message.from?.id, message.contact);
+    } catch (error) {
+      console.error("Telegram phone check failed", error instanceof Error ? error.message : "UnknownError");
+    }
+    return Response.json({ ok: true });
+  }
   if (!message?.text || message.chat.type !== "private") return Response.json({ ok: true });
 
   const text = message.text.trim();
   const start = text.match(/^\/start(?:@\w+)?(?:\s+([A-Za-z0-9_-]{20,80}))?$/);
+  if (start?.[1]?.startsWith(PHONE_START_PREFIX) && bot === "customer") {
+    try {
+      await onPhoneCheckStart(start[1].slice(PHONE_START_PREFIX.length), String(message.chat.id));
+    } catch (error) {
+      console.error("Telegram phone check start failed", error instanceof Error ? error.message : "UnknownError");
+    }
+    return Response.json({ ok: true });
+  }
   if (start?.[1]) {
     await handleStart(update, start[1]);
     return Response.json({ ok: true });
