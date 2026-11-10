@@ -57,6 +57,8 @@ async function testGateway(actorId: string, phoneInput: unknown): Promise<Respon
   } catch (error) {
     const detail = error instanceof GatewayError ? error.code : error instanceof Error ? error.message : "UnknownError";
     console.error("Gateway test failed", detail);
+    if (detail.startsWith("ACCESS_TOKEN")) return Response.json({ error: `Telegram Gateway tokenni qabul qilmadi (${detail}). Tokenni gateway.telegram.org → API bo‘limidan qayta nusxalang.` }, { status: 502 });
+    if (detail.startsWith("BALANCE")) return Response.json({ error: `Telegram Gateway hisobida mablag‘ yetarli emas (${detail}).` }, { status: 502 });
     return Response.json({ error: `Telegram Gateway kod yubormadi: ${detail}` }, { status: 502 });
   }
 }

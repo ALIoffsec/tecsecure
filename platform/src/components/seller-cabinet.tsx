@@ -15,7 +15,7 @@ export type SellerShop = {
 };
 
 /** The application, and later the profile: the same fields, so a rejected application is fixed in place. */
-function ShopForm({ shop, onSaved }: { shop: SellerShop | null; onSaved: () => void }) {
+export function ShopForm({ shop, onSaved }: { shop: SellerShop | null; onSaved: () => void }) {
   const { locale } = useSitePreferences();
   const c = sellerCopy[locale];
   const [busy, setBusy] = useState(false);

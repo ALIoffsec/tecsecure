@@ -38,12 +38,12 @@ export async function POST(request: Request) {
   if (parsed.data.app === "staff") {
     if (!user || !isStaff) return Response.json({ error: "Avval admin paneldan Telegram'ni xodim hisobingizga ulang.", code: "NOT_LINKED" }, { status: 403 });
     await createSession(user.id, true);
-    return Response.json({ ok: true, next: "/admin/app" });
+    return Response.json({ ok: true, next: "/tg/staff" });
   }
 
   if (isStaff) return Response.json({ error: "Xodim hisobi uchun xodimlar botini oching.", code: "USE_STAFF_BOT" }, { status: 403 });
-  // The shop app lands in the shop cabinet, where a new seller fills in the application.
-  const next = parsed.data.app === "shop" ? "/shop" : "/products";
+  // The shop app stays in its own shell, where a new seller fills in the application.
+  const next = parsed.data.app === "shop" ? "/tg/shop" : "/products";
   if (user) {
     await createSession(user.id);
     return Response.json({ ok: true, next });

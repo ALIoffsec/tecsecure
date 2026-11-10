@@ -77,7 +77,7 @@ export function CodeSignIn({ purpose }: { purpose: "LOGIN" | "RESET" }) {
       setIsNew(Boolean(data.isNew));
       setTelegramLink(null);
       setNote(login
-        ? data.via === "sms" ? c.sentSms : data.via === "telegram" ? c.sentTelegram : data.via === "recent" ? c.recent : c.sentLogin
+        ? data.via === "gateway" ? c.sentGateway : data.via === "sms" ? c.sentSms : data.via === "telegram" ? c.sentTelegram : data.via === "recent" ? c.recent : c.sentLogin
         : !phone && channels?.email ? c.sentEmail : c.sent);
       setWait(RESEND_SECONDS);
       setStep("code");

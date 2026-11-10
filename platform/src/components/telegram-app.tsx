@@ -53,14 +53,14 @@ export function TelegramEntry({ app }: { app: "customer" | "staff" | "shop" }) {
     }
   }, [app, c.failed, locale, router]);
 
-  return <div className="container page-shell tma-entry">
+  return <div className="tma-shell tma-entry" data-app={app}>
     <Script src={SCRIPT_URL} strategy="afterInteractive" onReady={() => void signIn()} onError={() => setState("outside")} />
-    <section className="panel-card tma-card">
+    <section className="tma-card">
       <img src="/icon-192.png" width="72" height="72" alt="" />
       {state === "loading" && <p role="status">{c.loading}</p>}
-      {state === "outside" && <><p>{c.outside}</p><Link className="button secondary" href="/">{c.openSite}</Link></>}
-      {state === "account" && <><h1>{c.welcome}</h1><p className="muted">{c.welcomeHint}</p><button className="button" type="button" onClick={() => void signIn(true)}>{c.create}</button></>}
-      {state === "failed" && <><p role="alert">{error}</p><button className="button secondary" type="button" onClick={() => void signIn()}>{c.retry}</button></>}
+      {state === "outside" && <><p>{c.outside}</p><Link className="tma-button secondary" href="/">{c.openSite}</Link></>}
+      {state === "account" && <><h1>{c.welcome}</h1><p className="tma-hint">{c.welcomeHint}</p><button className="tma-button" type="button" onClick={() => void signIn(true)}>{c.create}</button></>}
+      {state === "failed" && <><p role="alert">{error}</p><button className="tma-button secondary" type="button" onClick={() => void signIn()}>{c.retry}</button></>}
     </section>
   </div>;
 }

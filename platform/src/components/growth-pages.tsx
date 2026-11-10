@@ -20,6 +20,8 @@ export function EstimateView() {
   const { locale } = useSitePreferences();
   const c = growthCopy[locale].estimate;
   const [tab, setTab] = useState<"network" | "cctv">("network");
+  // Links from the home and services pages open the surveillance tab directly.
+  useEffect(() => { if (new URLSearchParams(window.location.search).get("tab") === "cctv") setTab("cctv"); }, []);
   const [estimate, setEstimate] = useState<ReturnType<typeof buildNetworkEstimate> | null>(null);
 
   function calculate(event: FormEvent<HTMLFormElement>) {

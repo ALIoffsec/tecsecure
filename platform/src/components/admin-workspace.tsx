@@ -19,6 +19,7 @@ import { TecGiftManager } from "@/components/tec-gift-manager";
 import { SystemStatus } from "@/components/system-status";
 import { AdminIntegrations } from "@/components/admin-integrations";
 import { AdminDeliverySettings } from "@/components/admin-delivery-settings";
+import { AdminHomeFacts } from "@/components/admin-home-facts";
 import { sellerCopy } from "@/lib/seller-copy";
 import { MediaGallery, MediaUploader } from "@/components/media-uploader";
 import { AdminProductManager, type AdminCategory } from "@/components/admin-product-manager";
@@ -735,7 +736,7 @@ export function AdminWorkspace({ overview, newOrderCount, pendingShopCount = 0, 
           ))}</div> : <div className="empty-state">{t("noPendingPayments")}</div>}
           <p className="small muted">{t("paymentProviderWarning")}</p>
         </section>}
-        {availableSections.includes("content") && <div className={`admin-panel-section ${selectedSection === "content" ? "active" : ""}`}><SiteBlockManager blocks={siteBlocks} /></div>}
+        {availableSections.includes("content") && <div className={`admin-panel-section ${selectedSection === "content" ? "active" : ""}`}><AdminHomeFacts /><SiteBlockManager blocks={siteBlocks} /></div>}
         {availableSections.includes("portfolio") && <div className={`admin-panel-section ${selectedSection === "portfolio" ? "active" : ""}`}><PortfolioManager posts={portfolioPosts} /></div>}
         {availableSections.includes("wallet") && <div className={`admin-panel-section ${selectedSection === "wallet" ? "active" : ""}`}>
           {isPrivileged && <TecGiftManager users={users} actorId={actorId} />}

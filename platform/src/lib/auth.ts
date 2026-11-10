@@ -115,6 +115,16 @@ export async function requireAdminPage(): Promise<AuthUser> {
   return user;
 }
 
+/**
+ * The staff member behind the staff Mini App, or null when there is no staff session or its 30-minute admin
+ * access has lapsed. Unlike requireAdminPage it does not redirect: the app signs in again from Telegram.
+ */
+export async function getStaffAppUser(): Promise<AuthUser | null> {
+  const user = await getCurrentUser();
+  if (!user || user.role === "CUSTOMER") return null;
+  return (await hasAdminAccess()) ? user : null;
+}
+
 async function hasAdminAccess(): Promise<boolean> {
   const cookieStore = await cookies();
   const adminToken = cookieStore.get(ADMIN_ACCESS_COOKIE)?.value;

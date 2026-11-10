@@ -1,0 +1,182 @@
+/*
+ * Telegram Mini Apps (/tg). Colours come from Telegram's theme (telegram-web-app.js writes --tg-theme-* onto
+ * <html> and updates them when the user switches theme); the fallbacks are for a plain browser.
+ * Nothing from the site's liquid/water look applies here.
+ */
+.tma-shell {
+  --tma-fb-bg: #0f131c;
+  --tma-fb-section: #181e2b;
+  --tma-fb-text: #f1f4fa;
+  --tma-fb-hint: #8b96ab;
+  --tma-fb-link: #5aa6ff;
+  --tma-fb-button: #2f80ed;
+  --tma-fb-separator: rgba(255, 255, 255, .08);
+  --tma-bg: var(--tg-theme-secondary-bg-color, var(--tma-fb-bg));
+  --tma-section: var(--tg-theme-section-bg-color, var(--tg-theme-bg-color, var(--tma-fb-section)));
+  --tma-text: var(--tg-theme-text-color, var(--tma-fb-text));
+  --tma-hint: var(--tg-theme-hint-color, var(--tma-fb-hint));
+  --tma-link: var(--tg-theme-link-color, var(--tma-fb-link));
+  --tma-accent: var(--tg-theme-button-color, var(--tma-fb-button));
+  --tma-accent-text: var(--tg-theme-button-text-color, #fff);
+  --tma-accent-text-soft: var(--tg-theme-accent-text-color, var(--tma-accent));
+  --tma-header: var(--tg-theme-section-header-text-color, var(--tma-hint));
+  --tma-separator: var(--tg-theme-section-separator-color, var(--tma-fb-separator));
+  --tma-danger: var(--tg-theme-destructive-text-color, #e5484d);
+  --tma-bar: var(--tg-theme-bottom-bar-bg-color, var(--tma-section));
+  --tma-soft: rgba(127, 140, 160, .14);
+  --tma-top: max(calc(var(--tg-safe-area-inset-top, 0px) + var(--tg-content-safe-area-inset-top, 0px)), env(safe-area-inset-top, 0px));
+  --tma-bottom: max(var(--tg-safe-area-inset-bottom, 0px), env(safe-area-inset-bottom, 0px));
+  --tma-side: max(16px, calc(var(--tg-safe-area-inset-left, 0px) + 12px));
+  min-height: var(--tg-viewport-stable-height, 100dvh);
+  box-sizing: border-box;
+  padding: calc(var(--tma-top) + 14px) var(--tma-side) calc(var(--tma-bottom) + 24px);
+  background: var(--tma-bg);
+  color: var(--tma-text);
+  font: 400 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+@media (prefers-color-scheme: light) {
+  .tma-shell {
+    --tma-fb-bg: #f0f2f6;
+    --tma-fb-section: #ffffff;
+    --tma-fb-text: #10141c;
+    --tma-fb-hint: #6f7a8c;
+    --tma-fb-link: #1f6fd6;
+    --tma-fb-button: #2f80ed;
+    --tma-fb-separator: rgba(0, 0, 0, .08);
+  }
+}
+.tma-shell.has-tabs { padding-bottom: calc(var(--tma-bottom) + 84px); }
+.tma-shell *, .tma-shell *::before, .tma-shell *::after { box-sizing: border-box; }
+.tma-shell a { color: var(--tma-link); text-decoration: none; }
+.tma-shell button { font: inherit; color: inherit; }
+
+/* The site's background art and spacing stay out of the Mini App. */
+html[data-tma] body, body:has(.tma-shell) { background: var(--tg-theme-secondary-bg-color, #0f131c) !important; }
+body:has(.tma-shell)::before, body:has(.tma-shell)::after, #app-shell:has(.tma-shell)::before, #app-shell:has(.tma-shell)::after { display: none !important; }
+/* Only essential cookies are used inside Telegram, so the consent banner is not shown there. */
+body:has(.tma-shell) .cookie-consent { display: none !important; }
+#main-content:has(> .tma-shell) { padding: 0 !important; margin: 0 !important; min-height: 0; }
+@media (prefers-color-scheme: light) {
+  html[data-tma] body, body:has(.tma-shell) { background: var(--tg-theme-secondary-bg-color, #f0f2f6) !important; }
+}
+
+.tma-shell h1, .tma-shell h2 { margin: 0; font-weight: 700; letter-spacing: -.01em; }
+.tma-title { font-size: 1.6rem; margin: 4px 4px 14px !important; }
+.tma-eyebrow { display: block; color: var(--tma-hint); font-size: .8rem; letter-spacing: .02em; }
+.tma-hint { color: var(--tma-hint); font-size: .9rem; margin: 6px 4px 14px; }
+.tma-empty { color: var(--tma-hint); text-align: center; padding: 28px 12px; margin: 0; background: var(--tma-section); border-radius: 14px; }
+.tma-text { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+.tma-hello { margin: 4px 4px 16px; }
+.tma-hello h1 { font-size: 1.7rem; margin-top: 2px; }
+.tma-section-title { font-size: .8rem !important; font-weight: 600 !important; text-transform: uppercase; letter-spacing: .04em; color: var(--tma-header); margin: 22px 16px 8px !important; }
+.tma-section { background: var(--tma-section); border-radius: 14px; padding: 12px 16px; margin-bottom: 12px; overflow: hidden; }
+.tma-section.tma-list { padding: 0; }
+
+.tma-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 12px; }
+.tma-stat { display: grid; gap: 2px; text-align: left; padding: 14px 16px; border: 0; border-radius: 14px; background: var(--tma-section); cursor: pointer; min-width: 0; }
+.tma-stat strong { font-size: 1.5rem; line-height: 1.15; overflow-wrap: anywhere; }
+.tma-stat span { color: var(--tma-hint); font-size: .85rem; }
+.tma-stat:not(button) { cursor: default; }
+.tma-today-line { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 16px; color: var(--tma-hint); font-size: .9rem; }
+.tma-today-line strong { color: var(--tma-text); }
+
+.tma-item { display: grid; gap: 3px; width: 100%; padding: 12px 16px; border: 0; background: transparent; text-align: left; cursor: pointer; min-width: 0; }
+.tma-item + .tma-item, .tma-line + .tma-line, .tma-row-button + .tma-row-button, .tma-row-static + .tma-row-button { border-top: 1px solid var(--tma-separator); }
+.tma-item:active, .tma-row-button:active { background: var(--tma-soft); }
+.tma-item.is-static { cursor: default; }
+.tma-item.is-static:active { background: transparent; }
+.tma-item-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-width: 0; }
+.tma-item-top strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tma-item-sub { color: var(--tma-hint); font-size: .88rem; overflow-wrap: anywhere; }
+.tma-item-text { font-size: .9rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+.tma-item-meta { color: var(--tma-hint); font-size: .8rem; white-space: nowrap; }
+.tma-item-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 8px; }
+
+.tma-pill { flex: none; display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: .75rem; font-weight: 600; background: var(--tma-soft); color: var(--tma-text); white-space: nowrap; }
+.tma-pill.is-new { background: var(--tma-accent); color: var(--tma-accent-text); }
+.tma-pill:is(.is-completed, .is-delivered, .is-approved) { background: rgba(48, 164, 108, .18); color: #30a46c; }
+.tma-pill:is(.is-cancelled, .is-rejected) { background: rgba(229, 72, 77, .15); color: var(--tma-danger); }
+
+.tma-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.tma-chip { display: inline-flex; align-items: center; min-height: 34px; padding: 6px 14px; border: 0; border-radius: 10px; background: var(--tma-soft); color: var(--tma-text) !important; font-size: .88rem; font-weight: 600; cursor: pointer; }
+.tma-chip.is-primary { background: var(--tma-accent); color: var(--tma-accent-text) !important; }
+.tma-chip.is-danger { color: var(--tma-danger) !important; }
+
+.tma-segmented { display: flex; gap: 4px; padding: 3px; margin-bottom: 12px; border-radius: 11px; background: var(--tma-soft); overflow-x: auto; scrollbar-width: none; }
+.tma-segmented button { flex: 1 0 auto; padding: 7px 10px; border: 0; border-radius: 9px; background: transparent; font-size: .85rem; font-weight: 600; color: var(--tma-hint); cursor: pointer; white-space: nowrap; }
+.tma-segmented button[aria-selected="true"] { background: var(--tma-section); color: var(--tma-text); box-shadow: 0 1px 3px rgba(0, 0, 0, .12); }
+
+.tma-detail-head { display: grid; justify-items: start; gap: 6px; margin: 4px 4px 16px; }
+.tma-detail-head h1 { font-size: 1.45rem; overflow-wrap: anywhere; }
+.tma-rows { margin: 0; display: grid; }
+.tma-rows > div { display: grid; grid-template-columns: minmax(84px, 34%) 1fr; gap: 12px; padding: 9px 0; }
+.tma-rows > div + div { border-top: 1px solid var(--tma-separator); }
+.tma-rows dt { color: var(--tma-hint); font-size: .88rem; }
+.tma-rows dd { margin: 0; overflow-wrap: anywhere; }
+
+.tma-line { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: baseline; padding: 11px 16px; }
+.tma-line-name { overflow-wrap: anywhere; }
+.tma-line-qty { color: var(--tma-hint); white-space: nowrap; }
+.tma-line-sum { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.tma-line.is-sub { grid-template-columns: 1fr auto; color: var(--tma-hint); font-size: .9rem; }
+.tma-line.is-total { grid-template-columns: 1fr auto; font-weight: 700; }
+
+.tma-row-button, .tma-row-static { display: block; width: 100%; padding: 13px 16px; border: 0; background: transparent; text-align: left; color: var(--tma-link) !important; font-weight: 500; cursor: pointer; }
+.tma-row-static { color: var(--tma-text) !important; cursor: default; }
+.tma-row-button.is-danger { color: var(--tma-danger) !important; }
+.tma-row-button:disabled { opacity: .5; }
+
+.tma-profile { display: grid; justify-items: center; gap: 6px; text-align: center; margin: 8px 0 8px; }
+.tma-profile h1 { font-size: 1.4rem; }
+.tma-avatar { display: grid; place-items: center; width: 76px; height: 76px; border-radius: 50%; background: var(--tma-accent); color: var(--tma-accent-text); font-size: 1.6rem; font-weight: 700; }
+
+.tma-status { display: grid; gap: 4px; border-left: 4px solid var(--tma-hint); }
+.tma-status p { margin: 0; color: var(--tma-hint); font-size: .9rem; }
+.tma-status.is-active { border-left-color: #30a46c; }
+.tma-status.is-pending { border-left-color: #f5a524; }
+.tma-status:is(.is-rejected, .is-suspended) { border-left-color: var(--tma-danger); }
+.tma-balance { display: grid; gap: 4px; padding: 18px 16px; }
+.tma-balance strong { font-size: 2rem; line-height: 1.1; overflow-wrap: anywhere; }
+.tma-balance .tma-hint { margin: 4px 0 0; }
+.tma-points { margin: 0 4px 14px; padding-left: 18px; color: var(--tma-hint); font-size: .9rem; display: grid; gap: 4px; }
+
+/* The shop form reuses the site's form markup; here it takes Telegram's colours. */
+.tma-form summary { cursor: pointer; font-weight: 600; padding: 2px 0; }
+.tma-form[open] summary { margin-bottom: 12px; }
+.tma-form :is(.form, .seller-form) { display: grid; gap: 12px; }
+.tma-form .form-row { display: grid; gap: 12px; grid-template-columns: 1fr; }
+.tma-form .field { display: grid; gap: 5px; }
+.tma-form label { font-size: .85rem; color: var(--tma-hint); }
+.tma-form :is(input, select, textarea) { width: 100%; padding: 11px 12px; border: 1px solid var(--tma-separator); border-radius: 10px; background: var(--tma-bg); color: var(--tma-text); font: inherit; font-size: 16px; }
+.tma-form :is(input, select, textarea):focus { outline: 2px solid var(--tma-accent); outline-offset: 0; border-color: transparent; }
+.tma-form .small, .tma-form .muted { color: var(--tma-hint); font-size: .85rem; margin: 0; }
+.tma-form .button, .tma-button { display: inline-flex; align-items: center; justify-content: center; width: 100%; min-height: 48px; padding: 12px 16px; border: 0; border-radius: 12px; background: var(--tma-accent); color: var(--tma-accent-text) !important; font-weight: 600; font-size: 1rem; cursor: pointer; box-shadow: none; text-decoration: none; }
+.tma-button.secondary { background: var(--tma-soft); color: var(--tma-link) !important; }
+.tma-button.danger { background: var(--tma-danger); color: #fff !important; }
+.tma-form .button:disabled, .tma-button:disabled { opacity: .55; cursor: default; }
+
+/* Outside Telegram (or on old clients) the Main/Secondary buttons become this bar. */
+.tma-bottom-actions { position: sticky; bottom: calc(var(--tma-bottom) + 8px); display: flex; gap: 10px; margin-top: 18px; padding: 10px; border-radius: 16px; background: var(--tma-bar); box-shadow: 0 6px 24px rgba(0, 0, 0, .18); z-index: 20; }
+.tma-bottom-actions .tma-button { flex: 1; }
+
+.tma-tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); padding: 6px max(6px, var(--tg-safe-area-inset-left, 0px)) calc(var(--tma-bottom) + 6px); background: var(--tma-bar); border-top: 1px solid var(--tma-separator); }
+.tma-tabs button { display: grid; justify-items: center; gap: 2px; padding: 6px 2px; border: 0; background: transparent; color: var(--tma-hint); font-size: .72rem; font-weight: 600; cursor: pointer; min-width: 0; }
+.tma-tabs button > span:last-child { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tma-tabs button[aria-current="page"] { color: var(--tma-accent-text-soft); }
+.tma-tab-icon { position: relative; display: block; width: 26px; height: 26px; }
+.tma-tab-icon svg { width: 26px; height: 26px; }
+.tma-badge { position: absolute; top: -4px; left: 16px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--tma-danger); color: #fff; font-size: .68rem; line-height: 18px; text-align: center; }
+
+/* Sign-in screen before the app opens. */
+.tma-entry { display: grid; place-items: center; }
+.tma-card { display: grid; justify-items: center; gap: 14px; width: min(100%, 380px); padding: 28px 20px; border-radius: 18px; background: var(--tma-section); text-align: center; }
+.tma-card img { border-radius: 18px; }
+.tma-card h1 { font-size: 1.35rem; }
+.tma-card p { margin: 0; }
+
+@media (min-width: 640px) {
+  .tma-shell > :not(.tma-tabs):not(script) { max-width: 560px; margin-left: auto; margin-right: auto; }
+  .tma-form .form-row { grid-template-columns: 1fr 1fr; }
+}

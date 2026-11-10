@@ -13,12 +13,15 @@ const baseScripts = ["'self'", "'unsafe-inline'", "blob:", "https://mc.yandex.ru
 /** Yandex Maps 2.1 (checkout only) loads further scripts from its own hosts and needs eval for its templates. */
 const mapScripts = [...baseScripts, "https://api-maps.yandex.ru", "https://yandex.ru", "https://*.yandex.ru", "https://*.yandex.net", ...(isDev ? [] : ["'unsafe-eval'"])];
 
-const csp = (scripts: string[]) => [
+/** Telegram Web (web.telegram.org) shows Mini Apps in a frame; the phone apps use their own view. */
+const telegramFrames = ["'self'", "https://web.telegram.org", "https://*.telegram.org"];
+
+const csp = (scripts: string[], frames: string[] = ["'self'"]) => [
   `script-src ${scripts.join(" ")}`,
   "worker-src 'self' blob:",
   "object-src 'none'",
   "base-uri 'self'",
-  "frame-ancestors 'self'",
+  `frame-ancestors ${frames.join(" ")}`,
   ...(isDev ? [] : ["upgrade-insecure-requests"])
 ].join("; ");
 
@@ -46,7 +49,9 @@ const nextConfig: NextConfig = {
         ]
       },
       // Later rules win for the same header: the checkout map gets the wider script list.
-      { source: "/cart", headers: [{ key: "Content-Security-Policy", value: csp(mapScripts) }] }
+      { source: "/cart", headers: [{ key: "Content-Security-Policy", value: csp(mapScripts) }] },
+      // The Mini Apps may be framed by Telegram Web. frame-ancestors overrides X-Frame-Options in browsers that know it.
+      { source: "/tg/:path*", headers: [{ key: "Content-Security-Policy", value: csp(baseScripts, telegramFrames) }] },
     ];
   }
 };

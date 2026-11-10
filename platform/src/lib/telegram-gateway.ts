@@ -41,6 +41,10 @@ export async function callGateway<T>(token: string, method: string, params: Reco
   return body.result as T;
 }
 
+export function isAccountProblem(code: string): boolean {
+  return /^(ACCESS_TOKEN|BALANCE|HTTP_)|FLOOD|TIMEOUT|INTERNAL/.test(code);
+}
+
 /**
  * Sends our own code to the Telegram account of `phone` (E.164 with +). checkSendAbility first: when the
  * number cannot get it there is no charge and the caller falls back to SMS; when it can, its request_id
@@ -52,7 +56,8 @@ export async function sendGatewayCode(token: string, phone: string, code: string
   try {
     ability = await callGateway<RequestStatus>(token, "checkSendAbility", { phone_number: phone }, fetcher);
   } catch (error) {
-    if (error instanceof GatewayError) {
+    // A bad token, an empty balance or Telegram being down is our problem, not the number's: report it.
+    if (error instanceof GatewayError && !isAccountProblem(error.code)) {
       console.info("Telegram Gateway cannot reach this number:", error.code);
       return null;
     }

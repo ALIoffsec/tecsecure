@@ -4,12 +4,17 @@ import Link from "next/link";
 import { useSitePreferences } from "./site-preferences";
 import { journeyCopy, inquiryHref } from "@/lib/journey-copy";
 import { serviceJourneys, serviceGuideCopy } from "@/lib/service-journeys";
+import { mainServices, type MainServiceId } from "@/lib/home-facts";
 import type { ReactNode } from "react";
 
-export function ServiceJourneys() {
+/** Which of the four main services each problem card leads to; the rest stay a plain inquiry. */
+const needService: Record<string, MainServiceId> = { cctv: "cctv", wifi: "network", office: "network", support: "support" };
+
+export function ServiceJourneys({ priceAnswer }: { priceAnswer?: string }) {
   const { locale, t } = useSitePreferences();
   const c = journeyCopy[locale];
   const guide = serviceGuideCopy[locale];
+  const faq = priceAnswer ? guide.faq.map(([q, a], index) => [q, index === 0 ? priceAnswer : a] as const) : guide.faq;
   return <section className="service-journeys" id="needs">
     <h2>{guide.title}</h2><p className="page-intro">{guide.intro}</p>
     <div className="need-grid">
@@ -18,13 +23,16 @@ export function ServiceJourneys() {
         <div className="need-body">
           <dl>{[[guide.scope, item.scope], [guide.result, item.result], [guide.factors, item.factors], [guide.prepare, item.prepare]].map(([label, text]) => <div key={label}><dt>{label}</dt><dd>{text}</dd></div>)}</dl>
           <p className="small muted">{guide.exclusions}</p>
-          <Link className="button" href={inquiryHref(item.title)}>{c.discuss}</Link>
+          <div className="journey-actions">
+            {needService[item.id] && (() => { const service = mainServices[locale].find(entry => entry.id === needService[item.id]); return service ? <Link className="button" href={service.href}>{service.title} →</Link> : null; })()}
+            <Link className={needService[item.id] ? "button secondary" : "button"} href={inquiryHref(item.title)}>{c.discuss}</Link>
+          </div>
         </div>
       </details>)}
     </div>
     <ol className="journey-steps">{guide.steps.map((step, index) => <li key={step}><span>0{index + 1}</span><strong>{step}</strong></li>)}</ol>
     <p className="muted">{guide.after}</p>
-    <div className="journey-faq"><h2>{c.faq}</h2>{guide.faq.map(([q, a]) => <details key={q}><summary>{q}</summary><p>{a}</p></details>)}</div>
+    <div className="journey-faq"><h2>{c.faq}</h2>{faq.map(([q, a], index) => <details key={q} open={Boolean(priceAnswer) && index === 0}><summary>{q}</summary><p>{a}</p></details>)}</div>
     <div className="journey-actions">
       <Link href="/products" className="button secondary">{c.shopAction}</Link>
       <Link href="/learning" className="button secondary">{c.learningLink}</Link>

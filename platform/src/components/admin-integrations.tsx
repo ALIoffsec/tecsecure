@@ -10,6 +10,7 @@ import { otpSmsText } from "@/lib/otp-text";
 import { AdminBotStatus } from "./admin-bot-status";
 
 type IntegrationStatus = {
+  gateway: { configured: boolean };
   mail: { address: string; host: string; port: number; senderName: string; hasPassword: boolean; configured: boolean };
   sms: { eskizEmail: string; eskizFrom: string; hasPassword: boolean; configured: boolean };
   telegram: {
@@ -98,6 +99,22 @@ export function AdminIntegrations() {
   const statusLabel = (configured: boolean) => configured ? t("integrationConfigured") : t("integrationNotConfigured");
   const secretPlaceholder = (saved: boolean) => saved ? t("secretAlreadySet") : t("secretNotSet");
 
+  async function testGateway(phone: string) {
+    setBusy(true);
+    setError("");
+    setNotice("");
+    try {
+      const response = await fetch("/api/admin/integrations/test", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ channel: "gateway", phone }) });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error ?? t("requestFailed"));
+      setNotice(staffBot.gatewayTestSent);
+    } catch (issue) {
+      setError(issue instanceof Error ? issue.message : t("requestFailed"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function testMail(to: string) {
     setBusy(true);
     setError("");
@@ -163,6 +180,28 @@ export function AdminIntegrations() {
     <p className="small muted">{t("integrationsEncryptionNotice")}</p>
 
     {!status ? <p className="small muted" aria-live="polite">{error || t("loading")}</p> : <>
+      <details className="admin-records-accordion" open={!status.gateway.configured}>
+        <summary>{staffBot.gatewayTitle} · {statusLabel(status.gateway.configured)}</summary>
+        <form className="form admin-integration-form" key={`gateway-${formVersion}`} onSubmit={(event) => void save(event, (data) => ({
+          gateway: { token: fieldValue(data, "gatewayToken"), clearToken: checked(data, "clearGatewayToken") }
+        }))}>
+          <p className="small muted">{staffBot.gatewayHint}</p>
+          <div className="field">
+            <label htmlFor="gateway-token">{staffBot.gatewayToken}</label>
+            <input id="gateway-token" name="gatewayToken" type="password" autoComplete="new-password" maxLength={1024} placeholder={secretPlaceholder(status.gateway.configured)} />
+            {status.gateway.configured && <label className="admin-integration-clear"><input type="checkbox" name="clearGatewayToken" /> {t("clearCurrentValue")}</label>}
+          </div>
+          <div className="field">
+            <label htmlFor="gateway-test-phone">{staffBot.gatewayTestPhone}</label>
+            <input id="gateway-test-phone" name="gatewayTestPhone" inputMode="tel" autoComplete="off" placeholder="+998 90 123 45 67" />
+          </div>
+          <div className="admin-integration-actions">
+            <button className="button" disabled={busy}>{busy ? t("saving") : t("saveIntegration")}</button>
+            <button className="button secondary" type="button" disabled={busy || !status.gateway.configured} onClick={(event) => void testGateway(String(new FormData(event.currentTarget.form ?? undefined).get("gatewayTestPhone") ?? ""))}>{staffBot.gatewayTest}</button>
+          </div>
+        </form>
+      </details>
+
       <details className="admin-records-accordion" open={!status.mail.configured}>
         <summary>{staffBot.mailTitle} · {statusLabel(status.mail.configured)}</summary>
         <form className="form admin-integration-form" key={`mail-${formVersion}`} onSubmit={(event) => void save(event, (data) => ({
