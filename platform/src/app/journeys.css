@@ -296,3 +296,25 @@
   .hub-path-art > svg { transition: none; }
   :root .brand-track, :root .media-marquee-track { animation: none !important; }
 }
+
+/* Home additions built from the cards above: four main services, door evidence, figures staff entered. */
+.hub-paths.hub-paths-four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.hub-path-proof { display: grid; gap: 3px; }
+.hub-path-proof > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hub-path-proof .currency-price, .hub-path-proof .currency-price > span { display: inline; }
+.hub-path-proof .currency-price small { display: none; }
+.hub-path-facts { display: grid; gap: 2px; }
+.hub-path-facts b { color: var(--text); }
+.home-trust-card { display: block; }
+.home-trust-value { display: block; font-size: clamp(1.8rem, 3vw, 2.5rem); line-height: 1.1; letter-spacing: -.03em; color: var(--accent); }
+.home-more-link { margin: 18px 0 0; }
+@media (max-width: 1080px) { .hub-paths.hub-paths-four { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 640px) {
+  .hub-paths.hub-paths-four { grid-template-columns: minmax(0, 1fr); }
+  .home-trust .hub-paths { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .home-trust-card.hub-path { display: block; }
+  .home-trust-card p { margin: 4px 0 0; }
+}
+.services-calculator { margin: 28px 0 8px; }
+.brand-hero-copy > .journey-actions { margin-top: 20px; }
+.services-unified .hub-paths-four { margin-top: 28px; }

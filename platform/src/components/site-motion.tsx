@@ -6,7 +6,6 @@ import { usePathname } from "next/navigation";
 
 const CONTROLS = ".button, .shop-add-to-cart, .auth-submit, .shop-chip, .shop-quick-view, .shop-compare-button, .portal-icon-link, .portal-account, .preference-button, .account-button, .service-category-tab, .admin-management-category, .feature-hero-selector button, .work-arrow, .feature-wallet-flip";
 const SURFACES = ".panel-card, .card, .shop-card, .hub-path, .feature-tile, .shop-summary, .product-buybox, .admin-sidebar, .customer-sidebar, .metric, .order-card, .need-card, .managed-service-card, .learn-module-card, .learn-path-card, .original-auth";
-const REVEAL_ON_SCROLL = false;
 const REVEAL = "main :is(.section-head, .hub-path, .shop-card, .need-card, .managed-service-card, .learn-module-card, .learn-path-card, .work-carousel, .feature-tile, .home-contact-section .hub-contact)";
 
 /** Backdrop refraction only renders in Chromium, and only desktops can afford it. */
@@ -32,10 +31,9 @@ export function SiteMotion() {
     return () => { animation.cancel(); preference.removeEventListener("change", stop); };
   }, [pathname]);
 
-  // Blocks below the fold used to fade in on scroll; that left dark empty gaps and faint text while
-  // scrolling, so content now shows at once. Kept switchable for a later, lighter effect.
+  // Blocks below the fold surface as they scroll in. Marked from script, so nothing hides without it.
   useEffect(() => {
-    if (!REVEAL_ON_SCROLL || motionPreference().matches) return;
+    if (motionPreference().matches) return;
     const observer = new IntersectionObserver(entries => {
       for (const entry of entries) {
         if (!entry.isIntersecting) continue;

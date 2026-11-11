@@ -3,7 +3,7 @@ import type { Locale } from "./messages";
 /** Words for the home page, the services page top and the admin "home page figures" form. */
 const uz = {
   eyebrow: "Tecsecure",
-  title: "IT va kiberxavfsizlik: o‘rnatib beramiz, o‘rgatamiz, uskunasini topamiz.",
+  title: "IT va kiberxavfsizlik:", highlight: "o‘rnatib beramiz, o‘rgatamiz, uskunasini topamiz.",
   lead: "Ofisingiz uchun kamera va tarmoq, brauzerda amaliy darslar va mos uskunalar — bitta joyda.",
   inspect: "Bepul ko‘rikka yozilish", inspectTopic: "Bepul ko‘rik", calculate: "Smetani hisoblash",
   doors: {
@@ -13,7 +13,7 @@ const uz = {
   },
   servicesTitle: "Asosiy xizmatlar", servicesNote: "Har birida ish tarkibi va natija oldindan yoziladi.", price: "Narx", from: "dan boshlab", duration: "Muddat", warranty: "Kafolat", more: "Batafsil",
   academyTitle: "Akademiya", academyNote: "Har bir dars — tushuntirish, misol va brauzerdagi terminalda amaliyot.", courses: "kurs", lessons: "dars", hours: "soat", free: "Bepul", allCourses: "Barcha kurslar",
-  shopTitle: "Do‘kondan", shopNote: "Narxlar so‘mda, mavjudligi katalogda ko‘rsatiladi.", allProducts: "Katalogga o‘tish",
+  shopTitle: "Do‘kondan", shopNote: "Turli toifadagi uskunalar; narx tanlangan valyutada, mavjudligi kartochkada.", allProducts: "Katalogga o‘tish",
   howTitle: "Qanday ishlaymiz", workTitle: "Bajarilgan ishlar",
   trustTitle: "Raqamlarda", projects: "bajarilgan loyiha", years: "yil tajriba", clients: "mijoz", warrantyLabel: "kafolat",
   brandsTitle: "Ishlaydigan uskunalarimiz brendlari", brandsNote: "Shu brendlarning uskunalarini o‘rnatamiz, sozlaymiz va xizmat ko‘rsatamiz.",
@@ -33,7 +33,7 @@ type HomeCopy = typeof uz;
 
 const ru: HomeCopy = {
   eyebrow: "Tecsecure",
-  title: "IT и кибербезопасность: установим, научим, подберём оборудование.",
+  title: "IT и кибербезопасность:", highlight: "установим, научим, подберём оборудование.",
   lead: "Камеры и сеть для офиса, практические уроки в браузере и совместимое оборудование — в одном месте.",
   inspect: "Записаться на бесплатный осмотр", inspectTopic: "Бесплатный осмотр", calculate: "Рассчитать смету",
   doors: {
@@ -43,7 +43,7 @@ const ru: HomeCopy = {
   },
   servicesTitle: "Основные услуги", servicesNote: "Для каждой заранее описаны состав работ и результат.", price: "Цена", from: "от", duration: "Срок", warranty: "Гарантия", more: "Подробнее",
   academyTitle: "Академия", academyNote: "Каждый урок — объяснение, пример и практика в терминале в браузере.", courses: "курсов", lessons: "уроков", hours: "ч", free: "Бесплатно", allCourses: "Все курсы",
-  shopTitle: "Из магазина", shopNote: "Цены в сумах, наличие указано в каталоге.", allProducts: "Перейти в каталог",
+  shopTitle: "Из магазина", shopNote: "Оборудование разных категорий; цена в выбранной валюте, наличие на карточке.", allProducts: "Перейти в каталог",
   howTitle: "Как мы работаем", workTitle: "Выполненные работы",
   trustTitle: "В цифрах", projects: "выполненных проектов", years: "лет опыта", clients: "клиентов", warrantyLabel: "гарантия",
   brandsTitle: "Бренды оборудования, с которым работаем", brandsNote: "Устанавливаем, настраиваем и обслуживаем оборудование этих брендов.",
@@ -61,7 +61,7 @@ const ru: HomeCopy = {
 
 const en: HomeCopy = {
   eyebrow: "Tecsecure",
-  title: "IT and cybersecurity: we install it, teach it and find the right equipment.",
+  title: "IT and cybersecurity:", highlight: "we install it, teach it and find the right equipment.",
   lead: "Cameras and networks for your office, hands-on lessons in the browser and compatible equipment — in one place.",
   inspect: "Book a free site visit", inspectTopic: "Free site visit", calculate: "Build an estimate",
   doors: {
@@ -71,7 +71,7 @@ const en: HomeCopy = {
   },
   servicesTitle: "Main services", servicesNote: "Each one states the scope of work and the result up front.", price: "Price", from: "from", duration: "Duration", warranty: "Warranty", more: "Details",
   academyTitle: "Academy", academyNote: "Every lesson: an explanation, an example and practice in a browser terminal.", courses: "courses", lessons: "lessons", hours: "h", free: "Free", allCourses: "All courses",
-  shopTitle: "From the shop", shopNote: "Prices in so‘m; availability is shown in the catalogue.", allProducts: "Go to the catalogue",
+  shopTitle: "From the shop", shopNote: "Equipment from different categories; prices in your chosen currency, availability on each card.", allProducts: "Go to the catalogue",
   howTitle: "How we work", workTitle: "Completed work",
   trustTitle: "In numbers", projects: "completed projects", years: "years of experience", clients: "clients", warrantyLabel: "warranty",
   brandsTitle: "Equipment brands we work with", brandsNote: "We install, configure and service equipment from these brands.",

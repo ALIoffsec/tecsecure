@@ -1,12 +1,11 @@
 import { LocalizedText } from "@/components/site-preferences";
 import { ServicesShowcase } from "@/components/services-showcase";
 import { ManagedServices } from "@/components/managed-services";
-import { ServicesTop } from "@/components/services-top";
-import { ServicesFaq } from "@/components/services-faq";
 import { prisma } from "@/lib/prisma";
 import { isPreviewMode } from "@/lib/preview-mode";
-import { HOME_FACTS_KEY, parseHomeFacts } from "@/lib/home-facts";
 import { TechnicalServices } from "@/components/service-journeys";
+import { ServicesGuide, ServicesTop } from "@/components/services-top";
+import { HOME_FACTS_KEY, parseHomeFacts } from "@/lib/home-facts";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +23,7 @@ export default async function ServicesPage() {
         <p className="page-intro"><LocalizedText id="serviceScope" /></p>
       </div>
       <ServicesTop facts={facts} />
-      <ServicesFaq facts={facts} />
+      <ServicesGuide facts={facts} />
       <TechnicalServices><ServicesShowcase />
       <ManagedServices services={services.map(({ id, name, description, media }) => ({ id, name, description, media }))} />
       </TechnicalServices>

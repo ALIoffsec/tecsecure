@@ -11,7 +11,6 @@ import "./liquid-water.css";
 import "./liquid-ui.css";
 import "./liquid-search.css";
 import "./growth.css";
-import "./home.css";
 import "./tma.css";
 import { SiteNav } from "@/components/site-nav";
 import { PageBackLink } from "@/components/page-back-link";
@@ -33,6 +32,8 @@ import { SiteMotion } from "@/components/site-motion";
 import { ContactDock } from "@/components/shop-extras";
 import { TelegramBridge } from "@/components/telegram-app";
 import { SiteChrome } from "@/components/site-chrome";
+import { SiteIntro } from "@/components/site-intro";
+import { introBootstrapScript } from "@/lib/burning-intro";
 import { siteOrigin } from "@/lib/site-origin";
 
 export const metadata: Metadata = {
@@ -83,6 +84,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <script dangerouslySetInnerHTML={{ __html: preferenceBootstrapScript }} />
+        <script dangerouslySetInnerHTML={{ __html: introBootstrapScript }} />
         <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&family=Playfair+Display:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" /></noscript>
       </head>
       <body id="app-shell">
@@ -90,6 +92,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         <FontLoader />
         <SiteChrome><SiteMotion /></SiteChrome>
         <SitePreferencesProvider overrides={overrides}>
+          <SiteChrome><SiteIntro /></SiteChrome>
           <CurrencyProvider>
             <ToastProvider>
               <LearningCatalogProvider data={learningCatalog}>
