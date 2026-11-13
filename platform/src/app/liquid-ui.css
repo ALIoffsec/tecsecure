@@ -288,11 +288,29 @@ html { scroll-padding-top: 90px; }
   #app-shell .shop-steps { gap: 6px; }
   #app-shell .shop-steps li { flex-direction: row; gap: 6px; min-width: 0; padding: 8px; font-size: .74rem; }
   #app-shell .shop-steps li::before { width: 20px; height: 20px; font-size: .72rem; }
-  /* Account sections become a swipeable row, so the content is not pushed a screen down. */
-  #app-shell .customer-sidebar { position: static; padding: 8px; }
-  #app-shell .customer-sidebar-head { display: none; }
-  #app-shell .customer-sidebar-nav { display: flex; flex-direction: row; gap: 6px; padding-bottom: 2px; overflow-x: auto; scrollbar-width: none; }
-  #app-shell .customer-sidebar-item { flex: none; width: auto; min-height: 44px; padding: 6px 12px 6px 6px; white-space: nowrap; border-radius: 999px; }
+  /* Account and admin sections: a full-width vertical list that folds to one "current section" row
+     after a choice, so the content is not pushed a screen down. The row or the menu button opens it again. */
+  #app-shell .customer-sidebar, #app-shell .customer-sidebar.is-collapsed { position: static; width: auto; gap: 6px; margin-bottom: 10px; padding: 8px; }
+  #app-shell .customer-sidebar-head, #app-shell .customer-sidebar.is-collapsed .customer-sidebar-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 44px; padding: 0 2px 6px 4px; }
+  #app-shell .customer-sidebar.is-collapsed .customer-sidebar-head { padding-bottom: 0; border-bottom: 0; }
+  #app-shell .customer-sidebar-nav { display: grid; gap: 4px; }
+  #app-shell .customer-sidebar.is-collapsed .customer-sidebar-nav { display: none; }
+  #app-shell .customer-sidebar-item, #app-shell .customer-sidebar.is-collapsed .customer-sidebar-item { grid-template-columns: 27px minmax(0, 1fr) auto; justify-items: stretch; width: 100%; min-height: 48px; padding: 8px 12px; border-radius: 12px; white-space: normal; }
+  #app-shell .customer-sidebar-item .customer-sidebar-label { white-space: normal; font-size: .92rem; }
+  #app-shell :is(.customer-sidebar-current, .admin-sidebar-current) { display: flex; flex: 1; align-items: center; gap: 10px; min-width: 0; min-height: 44px; padding: 6px 10px; border: 0; border-radius: 12px; background: transparent; color: var(--text); font: inherit; font-weight: 700; text-align: left; cursor: pointer; }
+  #app-shell :is(.customer-sidebar-current, .admin-sidebar-current) > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #app-shell .customer-sidebar.is-collapsed .customer-sidebar-current .customer-sidebar-label { display: block; font-size: .95rem; color: var(--text); }
+  #app-shell .admin-sidebar, #app-shell .admin-sidebar.collapsed { width: auto; gap: 6px; padding: 8px; }
+  #app-shell .admin-sidebar-head { display: flex; align-items: center; gap: 8px; }
+  #app-shell .admin-sidebar-head .admin-sidebar-toggle { order: 2; margin-left: auto; min-height: 44px; min-width: 44px; }
+  #app-shell .admin-sidebar-nav { display: grid; gap: 4px; overflow: visible; padding: 0; scroll-snap-type: none; }
+  #app-shell .admin-sidebar.collapsed .admin-sidebar-nav { display: none; }
+  #app-shell .admin-sidebar-item, #app-shell .admin-sidebar.collapsed .admin-sidebar-item { width: 100%; min-height: 48px; padding: 8px 12px; justify-content: flex-start; font-size: .92rem; }
+}
+/* Outside phones the "current section" row is not used; the admin menu button keeps its place in the grid. */
+@media (min-width: 761px) {
+  #app-shell :is(.customer-sidebar-current, .admin-sidebar-current) { display: none; }
+  #app-shell .admin-sidebar-head { display: contents; }
 }
 /* Admin delivery tariffs: one row per region; on a phone each row becomes a small card. */
 #app-shell .admin-delivery-table { display: grid; gap: 6px; }

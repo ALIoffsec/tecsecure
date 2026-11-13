@@ -8,6 +8,7 @@ import { UiIcon } from "./ui-icon";
 import { useLearningCatalog } from "./learning-catalog-context";
 import { ModuleCard } from "./learning-catalog";
 import { ProductCard } from "./product-card";
+import { ShowcaseCarousel } from "./showcase-carousel";
 import { journeyCopy } from "@/lib/journey-copy";
 import { defaultContact } from "@/lib/site-contact";
 import { homeCopy } from "@/lib/home-copy";
@@ -27,11 +28,10 @@ export function serviceFactRows(facts: HomeFacts["services"][keyof HomeFacts["se
 }
 
 /** The four main services as the same 01–04 cards the home page uses for its three directions. */
-export function MainServiceCards({ facts }: { facts: HomeFacts }) {
+export function MainServiceCards({ facts, carousel = false }: { facts: HomeFacts; carousel?: boolean }) {
   const { locale } = useSitePreferences();
   const h = homeCopy[locale];
-  return <nav className="hub-paths hub-paths-four" aria-label={h.servicesTitle}>
-    {mainServices[locale].map((service, index) => {
+  const cards = mainServices[locale].map((service, index) => {
       const rows = serviceFactRows(facts.services[service.id], h, locale);
       return <Link className="hub-path hub-path-services" href={service.href} key={service.id}>
         <div className="hub-path-top"><span className="hub-icon"><UiIcon name={serviceIcons[index]} size={28} /></span><span className="hub-number">0{index + 1}</span></div>
@@ -40,8 +40,10 @@ export function MainServiceCards({ facts }: { facts: HomeFacts }) {
         {rows.length > 0 && <p className="hub-path-facts">{rows.map(([label, value]) => <span key={label}>{label}: <b>{value}</b></span>)}</p>}
         <span className="hub-path-action">{h.more}<span aria-hidden="true">→</span></span>
       </Link>;
-    })}
-  </nav>;
+    });
+  return carousel
+    ? <ShowcaseCarousel kind="services" label={h.servicesTitle}>{cards}</ShowcaseCarousel>
+    : <nav className="hub-paths hub-paths-four" aria-label={h.servicesTitle}>{cards}</nav>;
 }
 
 export function HomeContent({ contact, work, products, facts }: {
@@ -58,7 +60,7 @@ export function HomeContent({ contact, work, products, facts }: {
   const modules = catalog.modules;
   const lessonTotal = modules.reduce((total, module) => total + module.sections.length, 0);
   const freeCourse = modules.find(module => module.slug === FREE_COURSE) ?? modules.find(module => module.modulePriceTec === 0) ?? null;
-  const featuredCourses = [...modules].sort((a, b) => Number(b.modulePriceTec === 0) - Number(a.modulePriceTec === 0)).slice(0, 3);
+  const featuredCourses = [...modules].sort((a, b) => Number(b.modulePriceTec === 0) - Number(a.modulePriceTec === 0)).slice(0, 8);
   const trust = ([[facts.trust.projects, h.projects], [facts.trust.years, h.years], [facts.trust.clients, h.clients], [facts.trust.warranty, h.warrantyLabel]] as [string, string][]).filter(([value]) => value);
   const proof = {
     course: freeCourse ? { title: freeCourse.title[locale], lessons: freeCourse.sections.length, free: freeCourse.modulePriceTec === 0 } : null,
@@ -70,18 +72,18 @@ export function HomeContent({ contact, work, products, facts }: {
 
     <section className="section home-main-services"><div className="container">
       <div className="section-head"><div><span className="eyebrow">{c.services}</span><h2>{h.servicesTitle}</h2></div><p>{h.servicesNote}</p></div>
-      <MainServiceCards facts={facts} />
+      <MainServiceCards facts={facts} carousel />
     </div></section>
 
     {featuredCourses.length > 0 && <section className="section home-academy"><div className="container">
       <div className="section-head"><div><span className="eyebrow">{h.academyTitle}</span><h2>{modules.length} {h.courses} · {lessonTotal} {h.lessons}</h2></div><p>{h.academyNote}</p></div>
-      <div className="learn-module-grid">{featuredCourses.map(module => <ModuleCard key={module.slug} module={module} percent={0} />)}</div>
+      <ShowcaseCarousel kind="courses" label={h.academyTitle}>{featuredCourses.map(module => <ModuleCard key={module.slug} module={module} percent={0} />)}</ShowcaseCarousel>
       <p className="home-more-link"><Link className="text-link" href="/learning">{h.allCourses} →</Link></p>
     </div></section>}
 
     {products.length > 0 && <section className="section home-shop"><div className="container">
       <div className="section-head"><div><span className="eyebrow">{c.shop}</span><h2>{h.shopTitle}</h2></div><p>{h.shopNote}</p></div>
-      <div className="shop-grid">{products.map(({ assets, ...product }) => <ProductCard key={product.id} product={product} assets={assets} />)}</div>
+      <ShowcaseCarousel kind="products" label={h.shopTitle}>{products.map(({ assets, ...product }) => <ProductCard key={product.id} product={product} assets={assets} />)}</ShowcaseCarousel>
       <p className="home-more-link"><Link className="text-link" href="/products">{h.allProducts} →</Link></p>
     </div></section>}
 

@@ -32,7 +32,7 @@ export function ProductCard({ product, assets }: { product: ProductCardRecord; a
   const text = productVariants(product);
   const href = `/products/${product.slug}`;
   const eyebrow = perLocale(locale => [product.brand, product.category ? categoryName(product.category.name, locale) : null].filter(Boolean).join(" · ") || "Tecsecure");
-  return <article className="shop-card">
+  return <article className="shop-card is-clickable-card">
     <div className="shop-card-stage">
       <Link className="shop-card-media" href={href} aria-label={product.name} tabIndex={-1}>
         <ProductMedia assets={assets} title={product.name} slug={product.slug} categorySlug={product.category?.slug} />
@@ -44,7 +44,7 @@ export function ProductCard({ product, assets }: { product: ProductCardRecord; a
     </div>
     <div className="shop-card-body">
       <span className="shop-card-cat"><Localized values={eyebrow} /></span>
-      <h2><Link href={href}><Localized values={perLocale(locale => text[locale].name)} /></Link></h2>
+      <h2><Link className="card-link" href={href}><Localized values={perLocale(locale => text[locale].name)} /></Link></h2>
       {product.model && <span className="shop-card-model">{product.model}</span>}
       <Localized values={perLocale(locale => {
         const specs = detailRows(text[locale].specifications);

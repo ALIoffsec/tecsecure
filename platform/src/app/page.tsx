@@ -19,7 +19,7 @@ export default async function HomePage() {
     }),
     prisma.siteSetting.findUnique({ where: { key: HOME_FACTS_KEY }, select: { value: true } })
   ]);
-  const picked = pickShowcase(candidates, 4).map(product => product.id);
+  const picked = pickShowcase(candidates, 8).map(product => product.id);
   const cards = picked.length ? await loadProductCards({ id: { in: picked } }, "new", 0, picked.length) : [];
   return <HomeContent
     contact={Object.fromEntries(settings.map(({ key, value }) => [key, value]))}

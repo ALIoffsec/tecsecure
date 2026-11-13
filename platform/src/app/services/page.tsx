@@ -25,7 +25,7 @@ export default async function ServicesPage() {
       <ServicesTop facts={facts} />
       <ServicesGuide facts={facts} />
       <TechnicalServices><ServicesShowcase />
-      <ManagedServices services={services.map(({ id, name, description, media }) => ({ id, name, description, media }))} />
+      <ManagedServices services={services.map(({ id, slug, name, description, media }) => ({ id, slug, name, description, media }))} />
       </TechnicalServices>
     </section>
   </div>;

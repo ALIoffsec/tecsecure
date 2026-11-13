@@ -1,7 +1,7 @@
 "use client";
 
 import { growthCopy } from "@/lib/growth-copy";
-import { FormEvent, useMemo, useRef, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import type { RequestStatus } from "@prisma/client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -182,6 +182,9 @@ export function AdminWorkspace({ overview, newOrderCount, pendingShopCount = 0, 
   const [activeSection, setActiveSection] = useState<AdminSection>("requests");
   const [managementGroup, setManagementGroup] = useState<ManagementGroup>("catalog");
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  // On a phone the section list is a vertical list that folds to the current section once one is picked.
+  const closeSidebarOnPhone = () => { if (window.matchMedia("(max-width: 760px)").matches) setSidebarOpen(false); };
+  useEffect(() => { closeSidebarOnPhone(); }, []);
   const [requestFilter, setRequestFilter] = useState("");
   const [requestSearch, setRequestSearch] = useState("");
   const [additionalRequests, setAdditionalRequests] = useState<RequestRecord[]>([]);
@@ -223,6 +226,8 @@ export function AdminWorkspace({ overview, newOrderCount, pendingShopCount = 0, 
     ? activeSection
     : availableManagementSections[0] ?? availableSections[0] ?? "requests";
   const selectedNavigation: AdminNavigationSection = managementSections.includes(selectedSection) ? "management" : selectedSection;
+  const currentSectionLabel = showOverview ? overviewLabel : selectedNavigation === "management" ? t("managementSection") : t(sectionLabelKeys[selectedNavigation]);
+  const currentSectionIcon = showOverview ? "home" : selectedNavigation === "management" ? "layout" : sectionIcons[selectedNavigation];
   function selectManagementGroup(group: ManagementGroup) {
     setManagementGroup(group);
     const firstSection = managementGroupSections[group].find((section) => availableManagementSections.includes(section));
@@ -470,14 +475,19 @@ export function AdminWorkspace({ overview, newOrderCount, pendingShopCount = 0, 
       <ToastMessage message={error || notice} variant={error ? "error" : "success"} />
       <div className="admin-workspace-layout">
         <aside className={`admin-sidebar ${sidebarOpen ? "" : "collapsed"}`} aria-label={t("adminSections")}>
+          <div className="admin-sidebar-head">
           <button className="admin-sidebar-toggle button ghost" type="button" aria-expanded={sidebarOpen} onClick={() => setSidebarOpen(!sidebarOpen)} title={t("toggleSidebar")}>☰</button>
+          {!sidebarOpen && <button className="admin-sidebar-current" type="button" aria-expanded="false" onClick={() => setSidebarOpen(true)}>
+            <span className="admin-sidebar-marker"><UiIcon name={currentSectionIcon} size={17} /></span><span>{currentSectionLabel}</span>
+          </button>}
+          </div>
           <nav className="admin-sidebar-nav">
-            <button className={`admin-sidebar-item ${showOverview ? "active" : ""}`} type="button" aria-label={overviewLabel} title={overviewLabel} onClick={() => setShowOverview(true)}>
+            <button className={`admin-sidebar-item ${showOverview ? "active" : ""}`} type="button" aria-label={overviewLabel} title={overviewLabel} onClick={() => { setShowOverview(true); closeSidebarOnPhone(); }}>
               <span className="admin-sidebar-marker"><UiIcon name="home" size={17} /></span>
               {sidebarOpen && <span>{overviewLabel}</span>}
             </button>
             {visibleSections.map((section) => (
-              <button key={section} className={`admin-sidebar-item ${!showOverview && selectedNavigation === section ? "active" : ""}`} type="button" aria-label={section === "management" ? t("managementSection") : t(sectionLabelKeys[section])} title={section === "management" ? t("managementSection") : t(sectionLabelKeys[section])} onClick={() => { setShowOverview(false); { if (section === "management" && selectedManagementGroup) selectManagementGroup(selectedManagementGroup); else if (section !== "management") setActiveSection(section); setRequestFilter(""); }; }}>
+              <button key={section} className={`admin-sidebar-item ${!showOverview && selectedNavigation === section ? "active" : ""}`} type="button" aria-label={section === "management" ? t("managementSection") : t(sectionLabelKeys[section])} title={section === "management" ? t("managementSection") : t(sectionLabelKeys[section])} onClick={() => { setShowOverview(false); { if (section === "management" && selectedManagementGroup) selectManagementGroup(selectedManagementGroup); else if (section !== "management") setActiveSection(section); setRequestFilter(""); }; closeSidebarOnPhone(); }}>
                 <span className="admin-sidebar-marker"><UiIcon name={section === "management" ? "layout" : sectionIcons[section]} size={17} /></span>
                 {sidebarOpen && <span>{section === "management" ? t("managementSection") : t(sectionLabelKeys[section])}</span>}
                 {sidebarOpen && section === "requests" && <span className="admin-sidebar-count">{requestTotal}</span>}

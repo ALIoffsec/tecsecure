@@ -30,15 +30,15 @@ export function PracticeHub({ view, tecBalance, planKey, labs, exams, certificat
     {view !== "overview" && <p><Link className="button secondary" href="/learning">{tx.practiceBackToCatalog}</Link></p>}
 
     {view === "overview" && <div className="practice-overview-grid">
-      <article className="practice-card">
+      <article className="practice-card is-clickable-card">
         <span className="eyebrow">{tx.catalogLabs}</span>
-        <h2>{tx.practiceLabsTitle}</h2>
+        <h2><Link className="card-link" href="/learning/practice/labs">{tx.practiceLabsTitle}</Link></h2>
         <p>{tx.practiceLabsIntro}</p>
         <div className="practice-foot"><span>{labs.length} · {tx.catalogLabs.toLowerCase()}</span><Link href="/learning/practice/labs" className="button">{tx.practiceOpenLabs}</Link></div>
       </article>
-      <article className="practice-card">
+      <article className="practice-card is-clickable-card">
         <span className="eyebrow">{tx.catalogExams}</span>
-        <h2>{tx.practiceExamsTitle}</h2>
+        <h2><Link className="card-link" href="/learning/practice/exams">{tx.practiceExamsTitle}</Link></h2>
         <p>{tx.practiceExamsIntro}</p>
         <div className="practice-foot"><span>{exams.length} · {tx.catalogExams.toLowerCase()}</span><Link href="/learning/practice/exams" className="button">{tx.practiceOpenExams}</Link></div>
       </article>
@@ -50,9 +50,9 @@ export function PracticeHub({ view, tecBalance, planKey, labs, exams, certificat
     <div className="practice-grid">
       {labs.map((lab) => {
         const price = labPriceFor(planKey, lab.priceTec);
-        return <article key={lab.slug} className={`practice-card${lab.completed ? " is-done" : ""}`}>
+        return <article key={lab.slug} className={`practice-card is-clickable-card${lab.completed ? " is-done" : ""}`}>
           <div className="practice-tags"><span>{lab.level}</span><span>~{lab.minutes} daqiqa</span><span>{lab.taskCount} topshiriq</span></div>
-          <h3>{lab.title}</h3>
+          <h3><Link className="card-link" href={`/learning/labs/${lab.slug}`}>{lab.title}</Link></h3>
           <p>{lab.summary}</p>
           <div className="practice-foot">
             <span className="practice-price">{lab.unlocked ? (lab.completed ? "Yakunlandi ✓" : `${lab.solved}/${lab.taskCount} yechildi`) : price === 0 ? "Bepul (Expert)" : `${price} TEC`}{!lab.unlocked && price !== lab.priceTec && price > 0 && <s>{lab.priceTec}</s>}</span>
@@ -69,9 +69,9 @@ export function PracticeHub({ view, tecBalance, planKey, labs, exams, certificat
       {exams.map((exam) => {
         const price = examPriceFor(planKey, exam.feeTec);
         const ready = exam.modules.every((item) => item.done) && exam.labs.every((item) => item.done);
-        return <article key={exam.slug} className={`practice-card${exam.passed ? " is-done" : ""}`}>
+        return <article key={exam.slug} className={`practice-card is-clickable-card${exam.passed ? " is-done" : ""}`}>
           <div className="practice-tags"><span>{exam.questionCount} savol</span><span>{exam.minutes} daqiqa</span><span>O‘tish: {exam.passPercent}%</span></div>
-          <h3>{exam.title}</h3>
+          <h3><Link className="card-link" href={`/learning/exams/${exam.slug}`}>{exam.title}</Link></h3>
           <p>{exam.summary}</p>
           <ul className="practice-reqs">
             {exam.modules.map((item) => <li key={item.slug} className={item.done ? "ok" : ""}>{item.done ? "✓" : "○"} Modul: {item.title}</li>)}
@@ -87,8 +87,8 @@ export function PracticeHub({ view, tecBalance, planKey, labs, exams, certificat
 
     <h2>Sertifikatlarim</h2>
     {certificates.length === 0 ? <p className="muted">Hali sertifikat yo‘q. Imtihondan {exams[0]?.passPercent ?? 70}% va undan yuqori ball olsangiz, tekshiriladigan sertifikat beriladi.</p> :
-      <div className="practice-grid">{certificates.map((cert) => <article key={cert.code} className="practice-card is-done">
-        <h3>{cert.title}</h3>
+      <div className="practice-grid">{certificates.map((cert) => <article key={cert.code} className="practice-card is-clickable-card is-done">
+        <h3><Link className="card-link" href={`/verify/${cert.code}`}>{cert.title}</Link></h3>
         <p>Ball: {cert.scorePercent}% · {formatDate(cert.issuedAt)}</p>
         <div className="practice-foot"><code>{cert.code}</code><Link href={`/verify/${cert.code}`} className="button secondary">Ochish</Link></div>
       </article>)}</div>}

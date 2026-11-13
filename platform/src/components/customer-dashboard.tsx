@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSitePreferences } from "@/components/site-preferences";
 import { ProjectRequestForm } from "@/components/project-request-form";
@@ -167,6 +167,9 @@ export function CustomerDashboard({ paymentCard = null, user, requests, orders, 
     { id: "messages", label: copy.messages, count: conversations.length }
   ];
   const activeSection = sectionChoices.find(item => item.id === searchParams.get("section"))?.id ?? "overview";
+  const activeChoice = sectionChoices.find(item => item.id === activeSection) ?? sectionChoices[0];
+  // On a phone the list starts folded to one "current section" row, so the content is not pushed down.
+  useEffect(() => { if (window.matchMedia("(max-width: 760px)").matches) setSidebarCollapsed(true); }, []);
   function setActiveSection(section: string) {
     router.push(`/portal/profile?section=${encodeURIComponent(section)}`, { scroll: false });
   }
@@ -230,6 +233,9 @@ export function CustomerDashboard({ paymentCard = null, user, requests, orders, 
         <aside className={`customer-sidebar${sidebarCollapsed ? " is-collapsed" : ""}`} aria-label={copy.menu}>
           <div className="customer-sidebar-head">
             {!sidebarCollapsed && <strong>{copy.menu}</strong>}
+            {sidebarCollapsed && <button className="customer-sidebar-current" type="button" aria-expanded="false" onClick={() => setSidebarCollapsed(false)}>
+              <CustomerSidebarIcon sectionId={activeChoice.id} /><span className="customer-sidebar-label">{activeChoice.label}</span>
+            </button>}
             <button
               className="customer-sidebar-toggle"
               type="button"

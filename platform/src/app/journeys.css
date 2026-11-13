@@ -318,3 +318,43 @@
 .services-calculator { margin: 28px 0 8px; }
 .brand-hero-copy > .journey-actions { margin-top: 20px; }
 .services-unified .hub-paths-four { margin-top: 28px; }
+
+/* Showcase carousels on the home page (services, courses, products). The cards keep their own look. */
+.showcase-carousel { --per: 3; --gap: 20px; position: relative; }
+.showcase-carousel.is-products { --per: 4; --gap: 16px; }
+.showcase-track {
+  display: grid; grid-auto-flow: column; gap: var(--gap);
+  grid-auto-columns: calc((100% - (var(--per) - 1) * var(--gap)) / var(--per));
+  overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scrollbar-width: none;
+  /* Room for the cards' hover lift and shadow, which a scrolling box would otherwise cut off. */
+  padding: 12px 6px 22px; margin: -12px -6px -10px;
+}
+.showcase-track::-webkit-scrollbar { display: none; }
+.showcase-slide { display: flex; min-width: 0; scroll-snap-align: start; }
+.showcase-slide > * { flex: 1 1 auto; width: 100%; min-width: 0; margin: 0; }
+.showcase-controls { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 14px; }
+.showcase-dots { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.showcase-dot { position: relative; width: 10px; height: 10px; padding: 0; overflow: hidden; border: 0; border-radius: 999px; background: color-mix(in srgb, var(--muted) 45%, transparent); cursor: pointer; transition: width .25s ease, background-color .25s ease; }
+.showcase-dot::before { content: ""; position: absolute; inset: -12px -4px; }
+.showcase-dot[aria-current="true"] { width: 34px; background: color-mix(in srgb, var(--accent) 35%, transparent); }
+.showcase-dot-fill { position: absolute; inset: 0; transform-origin: left center; background: var(--accent); animation: showcase-fill linear forwards; }
+.showcase-dot[aria-current="true"]:not(:has(.showcase-dot-fill)) { background: var(--accent); }
+@keyframes showcase-fill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+html[data-motion="off"] .showcase-dot, html[data-motion="off"] .showcase-dot-fill { transition: none; animation: none; }
+@media (max-width: 900px) { .showcase-carousel, .showcase-carousel.is-products { --per: 2; --gap: 14px; } }
+@media (max-width: 560px) {
+  .showcase-track { grid-auto-columns: 84%; }
+  .showcase-carousel.is-products .showcase-track { grid-auto-columns: 70%; }
+}
+
+/* Whole cards open their page: the title link stretches over the card, other controls stay on top of it. */
+#app-shell .is-clickable-card { position: relative; cursor: pointer; }
+#app-shell .is-clickable-card .card-link { position: static; }
+#app-shell .is-clickable-card .card-link::after { content: ""; position: absolute; inset: 0; z-index: 1; border-radius: inherit; }
+#app-shell .is-clickable-card .card-link:focus-visible { outline: none; }
+#app-shell .is-clickable-card:has(.card-link:focus-visible) { outline: 2px solid var(--accent); outline-offset: 3px; }
+#app-shell .is-clickable-card :is(.shop-card-stage, .shop-cart-action, .text-link:not(.card-link), .button:not(.card-link), code) { position: relative; z-index: 2; }
+#app-shell .card-media-static { pointer-events: none; }
+#app-shell .is-clickable-card:has(.card-link:active), #app-shell .hub-path:active, #app-shell .learn-module-card:has(.learn-module-card-link:active) { transform: scale(.985); }
+#app-shell :is(.hub-path, .learn-module-card-link) { cursor: pointer; }
+#app-shell :is(.hub-path, .learn-module-card-link):focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }

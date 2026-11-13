@@ -44,6 +44,8 @@ export function SiteMotion() {
     const marked: Element[] = [];
     document.querySelectorAll(REVEAL).forEach(element => {
       if (element.getBoundingClientRect().top < window.innerHeight) return;
+      // Cards inside a showcase carousel sit beside the screen, not below it; they would never reveal.
+      if (element.closest(".showcase-track")) return;
       element.setAttribute("data-reveal", "");
       observer.observe(element);
       marked.push(element);
