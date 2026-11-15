@@ -299,10 +299,6 @@
 
 /* Home additions built from the cards above: four main services, door evidence, figures staff entered. */
 .hub-paths.hub-paths-four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-.hub-path-proof { display: grid; gap: 3px; }
-.hub-path-proof > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.hub-path-proof .currency-price, .hub-path-proof .currency-price > span { display: inline; }
-.hub-path-proof .currency-price small { display: none; }
 .hub-path-facts { display: grid; gap: 2px; }
 .hub-path-facts b { color: var(--text); }
 .home-trust-card { display: block; }
@@ -358,3 +354,30 @@ html[data-motion="off"] .showcase-dot, html[data-motion="off"] .showcase-dot-fil
 #app-shell .is-clickable-card:has(.card-link:active), #app-shell .hub-path:active, #app-shell .learn-module-card:has(.learn-module-card-link:active) { transform: scale(.985); }
 #app-shell :is(.hub-path, .learn-module-card-link) { cursor: pointer; }
 #app-shell :is(.hub-path, .learn-module-card-link):focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+/* Brand logo rows on the home page: the second row runs the other way; hovering stops a row. */
+.brand-strip .brand-strip-heading h2.eyebrow { font-size: .78rem; }
+.brand-strip .brand-marquee + .brand-marquee { margin-top: 4px; }
+.brand-track { animation-duration: var(--brand-duration, 38s); }
+.brand-track.is-reverse { animation-direction: reverse; }
+:root .brand-track.is-reverse { animation-direction: reverse !important; }
+.brand-marquee:hover .brand-track { animation-play-state: paused; }
+
+/* Admin: brand strip editor */
+.admin-partner-text, .admin-partner-row { display: grid; gap: 10px; margin: 0 0 14px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 14px; }
+.admin-partner-text legend, .admin-partner-row legend { padding: 0 6px; font-weight: 700; }
+.admin-partner-text { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.admin-partner-text > p { grid-column: 1 / -1; margin: 0; }
+.admin-partner-list { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.admin-partner-item { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 10px 14px; align-items: start; padding: 10px; border: 1px solid var(--line); border-radius: 12px; }
+.admin-partner-logo { display: grid; place-items: center; width: 64px; height: 64px; border-radius: 10px; background: #fff; overflow: hidden; }
+.admin-partner-logo img { max-width: 52px; max-height: 52px; object-fit: contain; }
+.admin-partner-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.admin-partner-actions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px; }
+.admin-partner-actions .button { min-height: 36px; padding: 6px 12px; font-size: .85rem; }
+.admin-partner-upload { position: relative; cursor: pointer; }
+.admin-partner-upload input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.admin-partner-save { display: flex; flex-wrap: wrap; gap: 10px; }
+@media (max-width: 640px) {
+  .admin-partner-text, .admin-partner-fields { grid-template-columns: 1fr; }
+}

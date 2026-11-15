@@ -9,16 +9,15 @@ import { useLearningCatalog } from "./learning-catalog-context";
 import { ModuleCard } from "./learning-catalog";
 import { ProductCard } from "./product-card";
 import { ShowcaseCarousel } from "./showcase-carousel";
+import { BrandMarquee } from "./brand-marquee";
+import type { PartnerBrands } from "@/lib/partner-brands";
 import { journeyCopy } from "@/lib/journey-copy";
 import { defaultContact } from "@/lib/site-contact";
 import { homeCopy } from "@/lib/home-copy";
 import { mainServices, type HomeFacts } from "@/lib/home-facts";
 import { serviceGuideCopy } from "@/lib/service-journeys";
-import { productVariants } from "@/lib/product-i18n";
 import type { ProductCardData } from "@/lib/product-listing";
 
-const brands = ["Cisco", "MikroTik", "TP-Link", "Ubiquiti", "Hikvision", "Huawei"];
-const FREE_COURSE = "linux-fundamentals";
 const serviceIcons = ["camera", "network", "shield", "toolbox"] as const;
 
 /** What staff entered for one service, as label/value rows; empty values are left out. */
@@ -46,11 +45,12 @@ export function MainServiceCards({ facts, carousel = false }: { facts: HomeFacts
     : <nav className="hub-paths hub-paths-four" aria-label={h.servicesTitle}>{cards}</nav>;
 }
 
-export function HomeContent({ contact, work, products, facts }: {
+export function HomeContent({ contact, work, products, facts, brands }: {
   contact: Record<string, string>;
   work: { id: string; title: string; description: string; media: unknown }[];
   products: ProductCardData[];
   facts: HomeFacts;
+  brands: PartnerBrands;
 }) {
   const { locale, t } = useSitePreferences();
   const c = journeyCopy[locale];
@@ -59,16 +59,10 @@ export function HomeContent({ contact, work, products, facts }: {
   const phone = (contact.phone || defaultContact.phone).split(/[\n,;|]+/)[0].trim();
   const modules = catalog.modules;
   const lessonTotal = modules.reduce((total, module) => total + module.sections.length, 0);
-  const freeCourse = modules.find(module => module.slug === FREE_COURSE) ?? modules.find(module => module.modulePriceTec === 0) ?? null;
   const featuredCourses = [...modules].sort((a, b) => Number(b.modulePriceTec === 0) - Number(a.modulePriceTec === 0)).slice(0, 8);
   const trust = ([[facts.trust.projects, h.projects], [facts.trust.years, h.years], [facts.trust.clients, h.clients], [facts.trust.warranty, h.warrantyLabel]] as [string, string][]).filter(([value]) => value);
-  const proof = {
-    course: freeCourse ? { title: freeCourse.title[locale], lessons: freeCourse.sections.length, free: freeCourse.modulePriceTec === 0 } : null,
-    products: products.filter(product => product.priceMinor !== null)
-      .map(product => ({ id: product.id, name: productVariants(product)[locale].name, priceMinor: product.priceMinor as number, currency: product.currency }))
-  };
   return <div className="home-page">
-    <HomeHero proof={proof} />
+    <HomeHero />
 
     <section className="section home-main-services"><div className="container">
       <div className="section-head"><div><span className="eyebrow">{c.services}</span><h2>{h.servicesTitle}</h2></div><p>{h.servicesNote}</p></div>
@@ -102,10 +96,7 @@ export function HomeContent({ contact, work, products, facts }: {
       <div className="hub-paths">{trust.map(([value, label]) => <div className="hub-path home-trust-card" key={label}><strong className="home-trust-value">{value}</strong><p>{label}</p></div>)}</div>
     </div></section>}
 
-    <section className="section hub-brands"><div className="container">
-      <h2>{h.brandsTitle}</h2><p className="small muted">{h.brandsNote}</p>
-      <ul>{brands.map(brand => <li key={brand}>{brand}</li>)}</ul>
-    </div></section>
+    <BrandMarquee brands={brands} />
     <section className="section home-contact-section"><div className="container"><div className="hub-contact">
       <div><span className="eyebrow">TECSECURE / {c.details}</span><h2>{c.contactTitle}</h2><p className="muted">{c.contactText}</p></div>
       <div className="journey-actions">
