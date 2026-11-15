@@ -8,8 +8,9 @@ import { pickShowcase } from "@/lib/home-showcase";
 
 export const dynamic = "force-dynamic";
 
-export default async function HomePage() {
-  if (isPreviewMode) return <HomeContent contact={{}} work={[]} products={[]} facts={parseHomeFacts(null)} brands={parsePartnerBrands(null)} />;
+export default async function HomePage({ searchParams }: { searchParams: Promise<{ demo?: string | string[] }> }) {
+  const explodedDemo = (await searchParams).demo === "exploded"; // DEMO: remove together with components/exploded-demo.tsx
+  if (isPreviewMode) return <HomeContent contact={{}} work={[]} products={[]} facts={parseHomeFacts(null)} brands={parsePartnerBrands(null)} explodedDemo={explodedDemo} />;
   const [settings, work, candidates, factsRecord, brandsRecord] = await Promise.all([
     prisma.siteSetting.findMany({ where: { key: { in: ["phone", "email", "telegram", "instagram"] } } }),
     prisma.portfolioPost.findMany({ where: { published: true }, orderBy: { updatedAt: "desc" }, take: 6 }),
@@ -28,5 +29,6 @@ export default async function HomePage() {
     work={work}
     products={picked.flatMap(id => cards.filter(card => card.id === id))}
     facts={parseHomeFacts(factsRecord?.value)}
-    brands={parsePartnerBrands(brandsRecord?.value)} />;
+    brands={parsePartnerBrands(brandsRecord?.value)}
+    explodedDemo={explodedDemo} />;
 }

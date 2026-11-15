@@ -109,16 +109,22 @@ export function ExplodedDemo() {
       <div className="exploded-demo-head">
         <span className="eyebrow">{c.eyebrow}</span>
         <h2 id="exploded-demo-title">{c.title}</h2>
-        {!still && <p className="exploded-demo-hint">{c.hint}</p>}
+        <div className="exploded-demo-cue">
+          {!still && <p className="exploded-demo-hint">{c.hint}</p>}
+          <div className="exploded-demo-done">
+            <p>{c.doneTitle}</p>
+            <Link className="button" href="/xizmat/toshkentda-videokuzatuv-ornatish" tabIndex={done ? undefined : -1}>{c.cta}</Link>
+          </div>
+        </div>
       </div>
 
       <div className="exploded-demo-stage" aria-hidden="true">
         <div className="exploded-demo-rig">
           {c.parts.map(part => {
-            const at = layout[part.id];
-            return <div key={part.id} className={`exploded-demo-layer is-${part.id}`} style={{ "--z0": `${at.z0}px`, "--z1": `${at.z1}px`, "--s": at.start } as CSSProperties}>
+            const place = layout[part.id];
+            return <div key={part.id} className={`exploded-demo-layer is-${part.id}`} style={{ "--z0": `${place.z0}px`, "--z1": `${place.z1}px`, "--s": place.start } as CSSProperties}>
               <PartArt id={part.id} />
-              <div className={`exploded-demo-tag is-${at.side}`}>
+              <div className={`exploded-demo-tag is-${place.side}`}>
                 <span className="exploded-demo-label"><strong>{part.name}</strong><span>{part.note}</span></span>
               </div>
             </div>;
@@ -130,13 +136,12 @@ export function ExplodedDemo() {
         {c.parts.map(part => <li key={part.id} style={{ "--s": layout[part.id].start } as CSSProperties}><strong>{part.name}</strong><span>{part.note}</span></li>)}
       </ol>
 
-      <div className="exploded-demo-done">
-        <p>{c.doneTitle}</p>
-        <Link className="button" href="/xizmat/toshkentda-videokuzatuv-ornatish" tabIndex={done ? undefined : -1}>{c.cta}</Link>
-      </div>
     </div>
   </section>;
 }
+
+/** Rounded so the server and the browser print the same SVG numbers (no hydration mismatch). */
+const at = (angle: number, radius: number, axis: "x" | "y") => Math.round((100 + (axis === "x" ? Math.cos(angle) : Math.sin(angle)) * radius) * 100) / 100;
 
 /** Each part drawn face-on in a 200×200 box; the 3D comes from where the layer sits on the axis. */
 function PartArt({ id }: { id: string }) {
@@ -147,8 +152,8 @@ function PartArt({ id }: { id: string }) {
         <defs>
           <radialGradient id={g} cx="38%" cy="30%" r="80%"><stop offset="0" stopColor="#ffffff" stopOpacity=".55" /><stop offset=".45" stopColor="#bfe9ff" stopOpacity=".16" /><stop offset="1" stopColor="#6fb6d6" stopOpacity=".28" /></radialGradient>
         </defs>
-        <circle cx="100" cy="100" r="90" fill={`url(#${g})`} stroke="#d9f3ff" strokeOpacity=".75" strokeWidth="3" />
-        <circle cx="100" cy="100" r="80" fill="none" stroke="#ffffff" strokeOpacity=".22" strokeWidth="1.5" />
+        <circle cx="100" cy="100" r="90" fill={`url(#${g})`} stroke="#7fb6d2" strokeOpacity=".9" strokeWidth="3" />
+        <circle cx="100" cy="100" r="80" fill="none" stroke="#5f9fbf" strokeOpacity=".35" strokeWidth="1.5" />
         <path d="M48 70 A60 60 0 0 1 104 38" fill="none" stroke="#ffffff" strokeOpacity=".8" strokeWidth="5" strokeLinecap="round" />
         <path d="M150 128 A56 56 0 0 1 128 152" fill="none" stroke="#ffffff" strokeOpacity=".35" strokeWidth="3" strokeLinecap="round" />
       </svg>;
@@ -162,8 +167,8 @@ function PartArt({ id }: { id: string }) {
         {Array.from({ length: 10 }, (_, i) => {
           const a = (i / 10) * Math.PI * 2;
           return <g key={i}>
-            <circle cx={100 + Math.cos(a) * 70} cy={100 + Math.sin(a) * 70} r="9" fill="#05070a" />
-            <circle cx={100 + Math.cos(a) * 70} cy={100 + Math.sin(a) * 70} r="6.5" fill={`url(#${g}-led)`} className="exploded-demo-led" />
+            <circle cx={at(a, 70, "x")} cy={at(a, 70, "y")} r="9" fill="#05070a" />
+            <circle cx={at(a, 70, "x")} cy={at(a, 70, "y")} r="6.5" fill={`url(#${g}-led)`} className="exploded-demo-led" />
           </g>;
         })}
       </svg>;
@@ -174,7 +179,7 @@ function PartArt({ id }: { id: string }) {
           <linearGradient id={`${g}-barrel`} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#4a5566" /><stop offset="1" stopColor="#141a22" /></linearGradient>
         </defs>
         <circle cx="100" cy="100" r="58" fill={`url(#${g}-barrel)`} stroke="#6b7a8f" strokeWidth="2" />
-        {Array.from({ length: 24 }, (_, i) => { const a = (i / 24) * Math.PI * 2; return <line key={i} x1={100 + Math.cos(a) * 52} y1={100 + Math.sin(a) * 52} x2={100 + Math.cos(a) * 58} y2={100 + Math.sin(a) * 58} stroke="#0a0d12" strokeWidth="2" />; })}
+        {Array.from({ length: 24 }, (_, i) => { const a = (i / 24) * Math.PI * 2; return <line key={i} x1={at(a, 52, "x")} y1={at(a, 52, "y")} x2={at(a, 58, "x")} y2={at(a, 58, "y")} stroke="#0a0d12" strokeWidth="2" />; })}
         <circle cx="100" cy="100" r="44" fill="#0b0f15" stroke="var(--accent)" strokeOpacity=".7" strokeWidth="2" />
         <circle cx="100" cy="100" r="34" fill={`url(#${g})`} />
         <ellipse cx="88" cy="86" rx="11" ry="7" fill="#ffffff" fillOpacity=".55" transform="rotate(-30 88 86)" />
