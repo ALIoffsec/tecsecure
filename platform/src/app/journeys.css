@@ -415,3 +415,51 @@ html[data-motion="off"] .showcase-dot, html[data-motion="off"] .showcase-dot-fil
   #app-shell .brand-strip .brand-tile { min-width: 128px; height: 54px; }
   #app-shell .brand-strip .brand-tile img { width: 38px; height: 38px; flex-basis: 38px; }
 }
+
+/* Marketplace on product cards: the advertising mark and the seller's name (a link of its own above the card link). */
+#app-shell .shop-card-ad { position: absolute; top: 10px; left: 10px; z-index: 3; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--glass-edge); background: color-mix(in srgb, var(--surface) 70%, transparent); color: var(--muted); font-size: .68rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+#app-shell .shop-card-seller { position: relative; z-index: 2; align-self: flex-start; color: var(--muted); font-size: .78rem; text-decoration: none; }
+#app-shell .shop-card-seller:hover { color: var(--accent); text-decoration: underline; }
+#app-shell .shop-stock-left { color: #f5a524; font-size: .85rem; font-weight: 600; }
+#app-shell .shop-seller-box { display: grid; gap: 2px; padding: 10px 12px; border: 1px solid var(--glass-edge); border-radius: 14px; background: var(--glass-control, transparent); }
+#app-shell .shop-seller-box a { color: var(--text); text-decoration: none; }
+#app-shell .shop-seller-box a:hover strong { color: var(--accent); }
+
+/* Shop storefront (/s/<slug>) */
+#app-shell .storefront-head { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 20px; align-items: start; margin-bottom: 22px; padding: clamp(18px, 3vw, 28px); }
+#app-shell .storefront-logo { display: grid; place-items: center; width: 96px; height: 96px; border-radius: 24px; overflow: hidden; background: #fff; color: #0b1c33; font: 800 2.4rem/1 var(--design-font-heading, inherit); box-shadow: inset 0 0 0 1px #ffffffaa; }
+#app-shell .storefront-logo img { width: 100%; height: 100%; object-fit: contain; }
+#app-shell .storefront-about h1 { margin: 4px 0 6px; }
+#app-shell .storefront-about > p { margin: 0 0 8px; }
+#app-shell .storefront-text { max-width: 760px; color: var(--text); white-space: pre-wrap; }
+@media (max-width: 560px) { #app-shell .storefront-head { grid-template-columns: 64px minmax(0, 1fr); gap: 14px; } #app-shell .storefront-logo { width: 64px; height: 64px; border-radius: 18px; font-size: 1.6rem; } }
+
+/* Printable shop visit card: 90×50 mm, black on white whatever the site theme. */
+#app-shell .visit-card-sheet { display: grid; gap: 8mm; justify-content: start; margin-top: 18px; }
+#app-shell .visit-card { box-sizing: border-box; display: grid; grid-template-columns: 1fr 34mm; gap: 3mm; width: 90mm; height: 50mm; padding: 4mm; border: 0.2mm solid #c9d3df; border-radius: 3mm; background: #fff; color: #0b1c33; font-family: Manrope, "DM Sans", Arial, sans-serif; overflow: hidden; }
+#app-shell .visit-card-info { display: grid; align-content: center; gap: 0.8mm; min-width: 0; font-size: 2.9mm; line-height: 1.25; }
+#app-shell .visit-card-info span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #33465f; }
+#app-shell .visit-card-logo { width: 10mm; height: 10mm; object-fit: contain; margin-bottom: 1mm; }
+#app-shell .visit-card-name { font-size: 4.6mm; line-height: 1.1; font-weight: 800; color: #0b1c33; }
+#app-shell .visit-card-link { margin-top: 1mm; font-weight: 700; color: #0b5cad !important; }
+#app-shell .visit-card-qr { display: grid; justify-items: center; align-content: center; gap: 1mm; text-align: center; }
+#app-shell .visit-card-qr img { width: 32mm; height: 32mm; }
+#app-shell .visit-card-qr small { font-size: 2.2mm; color: #33465f; }
+@media print {
+  @page { margin: 10mm; }
+  html, body, #app-shell { background: #fff !important; }
+  #app-shell :is(.portal-nav, .mobile-dock, .feature-footer, .contact-dock, .page-back-link, .cookie-consent, .visit-card-tools) { display: none !important; }
+  #app-shell .visit-card-page { padding: 0 !important; }
+  #app-shell .visit-card { break-inside: avoid; border-color: #9aa8b8; }
+}
+
+/* Admin: marketplace moderation and payouts */
+#app-shell .admin-marketplace-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0 18px; }
+#app-shell .admin-moderation-photos { display: flex; gap: 8px; overflow-x: auto; padding: 4px 0 8px; }
+#app-shell .admin-moderation-photos img { width: 120px; height: 120px; object-fit: contain; border-radius: 12px; background: #fff; }
+#app-shell .admin-moderation-text { white-space: pre-wrap; margin: 6px 0; }
+#app-shell .admin-moderation-specs { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 6px 14px; margin: 8px 0; }
+#app-shell .admin-moderation-specs dt { color: var(--muted); font-size: .8rem; }
+#app-shell .admin-moderation-specs dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+#app-shell .order-shipments { display: grid; gap: 6px; margin: 8px 0; padding: 10px 12px; border: 1px solid var(--glass-edge, var(--line)); border-radius: 14px; }
+#app-shell .order-shipment { display: grid; gap: 2px; }

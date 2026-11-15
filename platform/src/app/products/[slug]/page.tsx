@@ -21,6 +21,7 @@ import { formatDate } from "@/lib/format";
 import { Localized, LocalizedSpecs, LocalizedText } from "@/components/localized";
 import { categoryName, perLocale, productVariants } from "@/lib/product-i18n";
 import type { Locale } from "@/lib/messages";
+import { LOW_STOCK } from "@/lib/marketplace";
 
 export const dynamic = "force-dynamic";
 type Props = { params: Promise<{ slug: string }> };
@@ -57,8 +58,10 @@ function Stars({ value }: { value: number }) {
 
 export default async function ProductDetailPage({ params }: Props) {
   const { slug } = await params;
-  const product = await prisma.product.findFirst({ where: { slug, status: "PUBLISHED" }, include: { category: true } });
+  const product = await prisma.product.findFirst({ where: { slug, status: "PUBLISHED" }, include: { category: true, shop: { select: { name: true, slug: true, city: true } } } });
   if (!product) notFound();
+  // Views feed the shop's statistics; counting never holds up the page.
+  void prisma.product.updateMany({ where: { id: product.id }, data: { viewCount: { increment: 1 } } }).catch(() => undefined);
   const user = await getCurrentUser();
   const isCustomer = user?.role === "CUSTOMER";
   const canAnswer = Boolean(user && (user.role === "FOUNDER" || user.role === "ADMIN" || (user.role === "STAFF" && user.permissions.includes("PRODUCTS"))));
@@ -152,6 +155,12 @@ export default async function ProductDetailPage({ params }: Props) {
           {priced ? <CurrencyPrice amountMinor={product.priceMinor!} currency={product.currency} /> : <S id="priceRequest" />}
         </div>
         <span className={`shop-stock ${stockKey === "IN_STOCK" ? "in" : stockKey === "OUT_OF_STOCK" ? "out" : stockKey === "ON_REQUEST" ? "req" : ""}`}><S id={stockKey} /></span>
+        {product.stockQuantity !== null && product.stockQuantity > 0 && product.stockQuantity <= LOW_STOCK && <span className="shop-stock-left"><Localized values={{ uz: `Faqat ${product.stockQuantity} dona qoldi`, ru: `Осталось ${product.stockQuantity} шт.`, en: `Only ${product.stockQuantity} left` }} /></span>}
+        {product.shop && <div className="shop-seller-box">
+          <span className="muted"><Localized values={{ uz: "Sotuvchi", ru: "Продавец", en: "Seller" }} /></span>
+          <Link href={`/s/${product.shop.slug}`}><strong>{product.shop.name}</strong></Link>{product.shop.city ? <span className="muted"> · {product.shop.city}</span> : null}
+          <small className="muted"><Localized values={{ uz: "Do‘kon o‘zi jo‘natadi. To‘lov oldindan, Tecsecure orqali.", ru: "Магазин отправляет сам. Оплата заранее, через Tecsecure.", en: "The shop ships it. Paid in advance, through Tecsecure." }} /></small>
+        </div>}
         <AddToCartButton product={{ productId: product.id, name: product.name, slug: product.slug, categorySlug: product.category?.slug ?? null }} disabled={stockKey === "OUT_OF_STOCK"} />
         <ProductTrust />
         <Link className="button secondary" href={inquiryHref(product.name)}><S id="quote" /></Link>

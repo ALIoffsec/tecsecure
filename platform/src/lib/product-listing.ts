@@ -65,12 +65,27 @@ export async function listingWhere({ sp, stock, hasPriceRange, currency, min, ma
 
 const cardFields = {
   id: true, name: true, slug: true, brand: true, model: true, description: true, priceMinor: true, currency: true,
-  stockStatus: true, specifications: true, translations: true, media: true, category: { select: { name: true, slug: true } }
+  stockStatus: true, specifications: true, translations: true, media: true, category: { select: { name: true, slug: true } },
+  promotedUntil: true, shop: { select: { name: true, slug: true } }
 } satisfies Prisma.ProductSelect;
+
+let promotionsCheckedAt = 0;
+/** Paid placements that ran out stop counting; checked at most once a minute per server process. */
+async function expirePromotions() {
+  if (Date.now() - promotionsCheckedAt < 60_000) return;
+  promotionsCheckedAt = Date.now();
+  await prisma.product.updateMany({ where: { promotedUntil: { lt: new Date() } }, data: { promotedUntil: null } }).catch(() => undefined);
+}
+
+/** Advertised listings lead the default and name orders; price orders stay strictly by price. */
+function orderFor(sort: SortKey): Prisma.ProductOrderByWithRelationInput[] {
+  return sort === "priceAsc" || sort === "priceDesc" ? sorts[sort] : [{ promotedUntil: { sort: "desc", nulls: "last" } }, ...sorts[sort]];
+}
 
 /** Only what a product card shows, because the "show more" response is public. */
 export async function loadProductCards(where: Prisma.ProductWhereInput, sort: SortKey, skip: number, take: number) {
-  const products = await prisma.product.findMany({ where, select: cardFields, orderBy: sorts[sort], skip, take });
+  await expirePromotions();
+  const products = await prisma.product.findMany({ where, select: cardFields, orderBy: orderFor(sort), skip, take });
   const getMedia = await catalogMedia(products);
   return products.map(({ media, ...product }) => ({ ...product, assets: getMedia(media) as CatalogMedia[] }));
 }

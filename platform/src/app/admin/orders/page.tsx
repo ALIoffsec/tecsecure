@@ -16,7 +16,7 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
   const [orders, groups] = await Promise.all([
     prisma.order.findMany({
       where: status ? { status } : {},
-      include: { items: orderItemsWithProduct, customer: { select: { name: true, email: true } } },
+      include: { items: orderItemsWithProduct, customer: { select: { name: true, email: true } }, shipments: { select: { shopId: true, status: true, sellerNote: true, shop: { select: { name: true, slug: true } } } } },
       orderBy: { createdAt: "desc" },
       take: 200
     }),

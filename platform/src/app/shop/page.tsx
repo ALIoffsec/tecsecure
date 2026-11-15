@@ -1,13 +1,14 @@
-import { SellerCabinet } from "@/components/seller-cabinet";
+import { SellerApp } from "@/components/seller/seller-app";
 import { requireUser } from "@/lib/auth";
 import { loadShop } from "@/lib/shop-server";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Do‘kon kabineti | Tecsecure", robots: { index: false, follow: false } };
 
-export default async function ShopCabinetPage() {
+/** The same seller app as in the shop bot, opened in a browser: its own screen, without the site's menus. */
+export default async function ShopCabinetPage({ searchParams }: { searchParams: Promise<{ open?: string }> }) {
   const user = await requireUser("/shop");
   const staff = user.role !== "CUSTOMER";
-  const shop = staff ? null : await loadShop(user.id);
-  return <SellerCabinet shop={shop} staff={staff} siteUrl={process.env.NEXT_PUBLIC_APP_URL || "https://tecsecure.uz"} />;
+  const open = (await searchParams).open;
+  return <SellerApp shop={staff ? null : await loadShop(user.id)} staff={staff} variant="web" initialOpen={typeof open === "string" ? open.slice(0, 80) : null} />;
 }

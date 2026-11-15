@@ -2,6 +2,7 @@ import { reviewWalletTransaction, WalletReviewError, walletReviewMessages } from
 import { timingSafeEqual } from "node:crypto";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { handleShopBotUpdate } from "@/lib/shop-bot";
 import {
   answerTelegramCallbackQuery,
   createTelegramAdminKeyboard,
@@ -251,20 +252,6 @@ async function sendWelcome(chatId: string, bot: "customer" | "staff"): Promise<v
   await sendTelegramMessage(chatId, text, button);
 }
 
-/** The shop bot only opens the shop cabinet; selling, orders and money all live in its Mini App. */
-async function handleShopMessage(update: TelegramUpdateBody): Promise<void> {
-  const message = update.message;
-  if (!message || message.chat.type !== "private") return;
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "";
-  const open = appUrl.startsWith("https://") ? { inline_keyboard: [[{ text: "Do‘kon kabinetini ochish", web_app: { url: new URL("/tg/shop", appUrl).toString() } }]] } : undefined;
-  await sendTelegramMessage(String(message.chat.id), [
-    "<b>Tecsecure do‘konlar boti</b>",
-    "Mahsulotlaringizni Tecsecure’da o‘z do‘koningiz nomi bilan soting.",
-    "Kabinetda ariza berasiz, mahsulot va narx qo‘shasiz, buyurtmalarni jo‘natasiz va balansingizni ko‘rasiz.",
-    "Yangi buyurtma va to‘lov xabarlari shu yerga keladi."
-  ].join("\n"), open ? { replyMarkup: open } : {});
-}
-
 async function handleUpdate(request: Request, bot: "customer" | "staff" | "shop"): Promise<Response> {
   let webhookSecret: string;
   let adminChatId: string;
@@ -293,7 +280,7 @@ async function handleUpdate(request: Request, bot: "customer" | "staff" | "shop"
   }
   if (bot === "shop") {
     try {
-      await handleShopMessage(update);
+      await handleShopBotUpdate(update);
     } catch (error) {
       console.error("Shop bot message failed", error instanceof Error ? error.message : "UnknownError");
     }

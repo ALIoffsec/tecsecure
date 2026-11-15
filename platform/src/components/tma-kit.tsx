@@ -99,8 +99,10 @@ export const useTelegram = () => useContext(ShellContext).telegram;
  * <html>), safe areas, and a bottom tab bar. No site header, footer or effects: the root layout leaves them
  * out on /tg.
  */
-export function TmaShell({ app, children, tabs, active, onTab }: {
+export function TmaShell({ app, children, tabs, active, onTab, variant = "telegram" }: {
   app: MiniApp;
+  /** "web": the same app opened in a browser, drawn in the site's glass look instead of Telegram's colours. */
+  variant?: "telegram" | "web";
   children: ReactNode;
   tabs?: { id: string; label: string; icon: ReactNode; badge?: number }[];
   active?: string;
@@ -111,6 +113,7 @@ export function TmaShell({ app, children, tabs, active, onTab }: {
   const start = useCallback(() => {
     const webApp = telegramApp();
     document.documentElement.dataset.tma = app;
+    document.documentElement.dataset.tmaVariant = variant;
     if (!webApp) return;
     webApp.ready();
     webApp.expand();
@@ -121,14 +124,17 @@ export function TmaShell({ app, children, tabs, active, onTab }: {
     if (atLeast(webApp, "7.7")) webApp.disableVerticalSwipes?.();
     if (atLeast(webApp, "7.10")) webApp.setBottomBarColor?.("bottom_bar_bg_color");
     setTelegram(webApp);
-  }, [app]);
+  }, [app, variant]);
 
   // The script may already be on the page (the entry screen loaded it before a refresh).
-  useEffect(() => { if (telegramApp()) start(); else document.documentElement.dataset.tma = app; }, [app, start]);
+  useEffect(() => {
+    if (telegramApp()) start();
+    else { document.documentElement.dataset.tma = app; document.documentElement.dataset.tmaVariant = variant; }
+  }, [app, variant, start]);
 
   return <ShellContext.Provider value={{ telegram }}>
     <Script src={TELEGRAM_SCRIPT} strategy="afterInteractive" onReady={start} />
-    <div className={`tma-shell${tabs ? " has-tabs" : ""}`} data-app={app} data-in-telegram={telegram ? "" : undefined}>
+    <div className={`tma-shell${tabs ? " has-tabs" : ""}${variant === "web" ? " is-web" : ""}`} data-app={app} data-in-telegram={telegram ? "" : undefined}>
       {children}
       {tabs && <nav className="tma-tabs" aria-label="Menu">
         {tabs.map(tab => <button key={tab.id} type="button" aria-current={tab.id === active ? "page" : undefined} onClick={() => { if (tab.id !== active) { haptic.select(); onTab?.(tab.id); } }}>

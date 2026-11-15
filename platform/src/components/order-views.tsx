@@ -14,7 +14,14 @@ import type { OrderLineProduct } from "@/lib/order-lines";
 import { checkoutCopy } from "@/lib/checkout-copy";
 import { regionCodes, regionNames, type RegionCode } from "@/lib/delivery";
 
-type OrderItem = { id: string; name: string; sku?: string | null; quantity: number; unitPriceMinor?: number | null; product?: OrderLineProduct };
+type OrderItem = { id: string; name: string; sku?: string | null; quantity: number; unitPriceMinor?: number | null; product?: OrderLineProduct; shopId?: string | null };
+type Shipment = { shopId: string; status: string; sellerNote: string | null; shop: { name: string; slug: string } };
+
+const shipmentWords = {
+  uz: { title: "Do‘konlar jo‘natmasi", seller: "Sotuvchi", note: "Sotuvchi izohi" },
+  ru: { title: "Отправления магазинов", seller: "Продавец", note: "Комментарий продавца" },
+  en: { title: "Shop shipments", seller: "Seller", note: "Seller's note" }
+};
 type OrderBase = {
   id: string; reference: string; status: string; recipientName: string; phone: string; city: string; address: string;
   latitude: number | null; longitude: number | null; note: string | null; totalMinor: number | null; currency: string; createdAt: Date | string;
@@ -22,14 +29,16 @@ type OrderBase = {
   companyName: string | null; companyTin: string | null;
   region?: string | null; deliveryMethod?: string | null; deliveryFeeMinor?: number | null; itemsTotalMinor?: number | null; vatMinor?: number | null;
   items: OrderItem[];
+  shipments?: Shipment[];
 };
 export type CustomerOrder = OrderBase & { history: { id: string; toStatus: string; createdAt: Date | string; note: string | null }[] };
 export type AdminOrder = OrderBase & { customer: { name: string; email: string } };
 
 /** What was bought, as the shop showed it: photo, name, how many, and what each line costs. */
-export function OrderLines({ items, currency }: { items: OrderItem[]; currency: string }) {
+export function OrderLines({ items, currency, shipments }: { items: OrderItem[]; currency: string; shipments?: Shipment[] }) {
   const { locale } = useSitePreferences();
   const c = siteCopy[locale].orders;
+  const sellerOf = (shopId?: string | null) => shopId ? shipments?.find(part => part.shopId === shopId)?.shop ?? null : null;
   return <ul className="order-lines" aria-label={c.items}>
     {items.map((item) => {
       const href = item.product?.href ?? null;
@@ -42,6 +51,7 @@ export function OrderLines({ items, currency }: { items: OrderItem[]; currency: 
         <div className="order-line-text">
           {href ? <Link className="order-line-name" href={href}>{item.name}</Link> : <span className="order-line-name">{item.name}</span>}
           <span className="small muted">{[item.sku, item.product && !href ? c.unavailable : null].filter(Boolean).join(" · ")}</span>
+          {sellerOf(item.shopId) && <span className="small muted">{shipmentWords[locale].seller}: <Link href={`/s/${sellerOf(item.shopId)!.slug}`}>{sellerOf(item.shopId)!.name}</Link></span>}
         </div>
         <div className="order-line-numbers">
           <span className="order-line-qty"><span className="sr-only">{c.quantity}: </span>× {item.quantity}</span>
@@ -53,6 +63,21 @@ export function OrderLines({ items, currency }: { items: OrderItem[]; currency: 
       </li>;
     })}
   </ul>;
+}
+
+/** Each shop's own parcel: who ships it, where it stands, and the shop's note (a tracking number). */
+export function ShopShipments({ shipments }: { shipments?: Shipment[] }) {
+  const { locale } = useSitePreferences();
+  const c = siteCopy[locale].orders;
+  const w = shipmentWords[locale];
+  if (!shipments?.length) return null;
+  return <div className="order-shipments">
+    <strong className="small">{w.title}</strong>
+    {shipments.map(part => <div className="order-shipment" key={part.shopId}>
+      <span><Link href={`/s/${part.shop.slug}`}>{part.shop.name}</Link> · <span className="order-status">{c.status[part.status] ?? part.status}</span></span>
+      {part.sellerNote && <span className="small muted">{w.note}: {part.sellerNote}</span>}
+    </div>)}
+  </div>;
 }
 
 /** Where it goes and how: region and address, the delivery method and its price. */
@@ -135,7 +160,7 @@ export function CustomerOrders({ orders }: { orders: CustomerOrder[] }) {
                 {order.paymentMethod === "BANK_TRANSFER" && <Link className="small text-link order-invoice" href={`/portal/orders/${order.id}/invoice`}>{g.invoice}</Link>}
               </div>
             </div>
-            <OrderLines items={order.items} currency={order.currency} />
+            <OrderLines items={order.items} currency={order.currency} shipments={order.shipments} /><ShopShipments shipments={order.shipments} />
             <details>
               <summary className="small">{c.history}</summary>
               <ul className="stack small" style={{ marginTop: 8 }}>{order.history.map((entry) => <li key={entry.id}>{formatDateTime(entry.createdAt)} — <strong>{c.status[entry.toStatus] ?? entry.toStatus}</strong>{entry.note ? ` · ${entry.note}` : ""}</li>)}</ul>
@@ -210,7 +235,7 @@ export function AdminOrders({ orders, counts, total, status }: { orders: AdminOr
             {order.companyName && <><br /><span className="small">{order.companyName} · STIR {order.companyTin}</span></>}
           </p>
           {order.latitude !== null && order.longitude !== null && <a className="small text-link" href={`https://yandex.uz/maps/?pt=${order.longitude},${order.latitude}&z=16&l=map`} target="_blank" rel="noreferrer">{c.map}</a>}
-          <OrderLines items={order.items} currency={order.currency} />
+          <OrderLines items={order.items} currency={order.currency} shipments={order.shipments} /><ShopShipments shipments={order.shipments} />
           <p className="order-total">{c.total}: <OrderTotals order={order} /></p>
           <div className="order-payment">
             <PaymentBadge order={order} />

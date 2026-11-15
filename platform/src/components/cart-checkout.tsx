@@ -26,7 +26,14 @@ import { deliveryOptions, deliveryTime, regionCodes, regionNames, tariffsConfigu
 import { toUzsMinor, type CurrencyRates } from "@/lib/currency";
 import { formatNumber } from "@/lib/format";
 
-type PreviewProduct = QuotedProduct & { name: string; description: string; translations?: unknown; slug: string; category: { slug: string } | null; assets: CatalogMedia[] };
+type PreviewProduct = QuotedProduct & { name: string; description: string; translations?: unknown; slug: string; category: { slug: string } | null; assets: CatalogMedia[]; stockQuantity?: number | null; shop?: { name: string; slug: string } | null };
+
+/** Shops ship their own goods and are paid through Tecsecure, so those goods are paid in advance. */
+const shopWords = {
+  uz: { seller: "Sotuvchi", prepay: "Do‘kon mahsulotlari uchun oldindan to‘lov kerak", prepayNote: "Savatda do‘kon mahsulotlari bor: ularni do‘kon o‘zi jo‘natadi, to‘lov esa oldindan Tecsecure orqali o‘tadi va do‘konga faqat siz olganingizdan keyin beriladi.", left: (n: number) => `Omborda ${n} dona` },
+  ru: { seller: "Продавец", prepay: "Товары магазинов оплачиваются заранее", prepayNote: "В корзине есть товары магазинов: их отправляет сам магазин, а оплата заранее проходит через Tecsecure и переводится магазину только после получения.", left: (n: number) => `На складе ${n} шт.` },
+  en: { seller: "Seller", prepay: "Shop goods are paid in advance", prepayNote: "Your cart has goods from shops: the shop ships them, and payment goes through Tecsecure in advance, reaching the shop only after you receive the order.", left: (n: number) => `${n} in stock` }
+};
 type Method = "CASH" | "CARD_ON_DELIVERY" | "CARD_TRANSFER" | "WALLET" | "BANK_TRANSFER" | "ONLINE_PAYME";
 type CheckoutConfig = { tariffs: DeliveryTariffs; vat: "NONE" | "INCLUDED"; pickupAddress: string; rates: CurrencyRates | null };
 const deliveryIcons: Record<DeliveryMethod, IconName> = { EXPRESS: "truck", COURIER: "box", PICKUP: "building" };
@@ -153,12 +160,19 @@ export function CartCheckout({ canOrder = false, signedIn = false, customer, wal
     setDelivery(current => !regionChanged && current && available.includes(current) ? current : available[0] ?? null);
   }, [optionKey, region]);
 
-  // A method can stop being valid when the cart changes while the customer is on the last step.
+  const hasShopGoods = Boolean(preview?.some(product => product.shop));
+  // A method can stop being valid when the cart changes while the customer is on the last step;
+  // with shop goods in the cart the fallback is the first way to pay in advance, not cash.
   useEffect(() => {
-    if ((method === "CARD_TRANSFER" && (!canPrepay || !paymentCard)) || (method === "WALLET" && !walletEnough)
-      || (method === "BANK_TRANSFER" && (!bankEnabled || buyer.type !== "COMPANY" || !canPrepay))
-      || (method === "ONLINE_PAYME" && (!paymeEnabled || walletTotal === null))) setMethod("CASH");
-  }, [method, canPrepay, paymentCard, walletEnough, bankEnabled, paymeEnabled, buyer.type, walletTotal]);
+    const prepaidOk: Record<string, boolean> = {
+      CARD_TRANSFER: canPrepay && Boolean(paymentCard), WALLET: walletEnough, ONLINE_PAYME: paymeEnabled && walletTotal !== null,
+      BANK_TRANSFER: bankEnabled && buyer.type === "COMPANY" && canPrepay
+    };
+    const invalid = (method in prepaidOk && !prepaidOk[method]) || (hasShopGoods && (method === "CASH" || method === "CARD_ON_DELIVERY"));
+    if (!invalid) return;
+    const fallback = hasShopGoods ? (Object.keys(prepaidOk).find(key => prepaidOk[key]) as Method | undefined) : "CASH";
+    if (fallback && fallback !== method) setMethod(fallback);
+  }, [method, canPrepay, paymentCard, walletEnough, bankEnabled, paymeEnabled, buyer.type, walletTotal, hasShopGoods]);
 
   function goTo(next: 1 | 2 | 3) {
     setError("");
@@ -265,8 +279,8 @@ export function CartCheckout({ canOrder = false, signedIn = false, customer, wal
   }
 
   const methods: { id: Method; icon: IconName; title: string; hint: string; disabled?: boolean; note?: string }[] = [
-    { id: "CASH", icon: "wallet", title: d.methods.cash.title, hint: d.methods.cash.hint },
-    { id: "CARD_ON_DELIVERY", icon: "creditCard", title: d.methods.terminal.title, hint: d.methods.terminal.hint },
+    { id: "CASH", icon: "wallet", title: d.methods.cash.title, hint: d.methods.cash.hint, disabled: hasShopGoods, note: hasShopGoods ? shopWords[locale].prepay : undefined },
+    { id: "CARD_ON_DELIVERY", icon: "creditCard", title: d.methods.terminal.title, hint: d.methods.terminal.hint, disabled: hasShopGoods, note: hasShopGoods ? shopWords[locale].prepay : undefined },
     { id: "CARD_TRANSFER", icon: "send", title: d.methods.transfer.title, hint: d.methods.transfer.hint, disabled: !canPrepay || !paymentCard, note: !paymentCard ? d.transferOff : !canPrepay ? d.prepayNeedsPrice : undefined },
     { id: "WALLET", icon: "wallet", title: d.methods.wallet.title, hint: `${d.balance}: ${formatMinor(walletBalance, "UZS", locale)}`, disabled: !walletEnough, note: walletTotal === null ? d.prepayNeedsPrice : !walletEnough ? d.walletShort : undefined },
     ...(paymeEnabled ? [{ id: "ONLINE_PAYME" as Method, icon: "creditCard" as IconName, title: g.online.title, hint: g.online.hint, disabled: walletTotal === null, note: walletTotal === null ? d.prepayNeedsPrice : undefined }] : []),
@@ -289,6 +303,8 @@ export function CartCheckout({ canOrder = false, signedIn = false, customer, wal
             <div>
               <Link href={`/products/${line.slug}`}>{byId.get(line.productId) ? productVariants(byId.get(line.productId)!)[locale].name : line.name}</Link>
               <div className="small muted">{byId.get(line.productId)?.priceMinor != null ? <CurrencyPrice amountMinor={byId.get(line.productId)!.priceMinor! * line.quantity} currency={byId.get(line.productId)!.currency} /> : c.priceRequest}</div>
+              {byId.get(line.productId)?.shop && <div className="small muted">{shopWords[locale].seller}: <Link href={`/s/${byId.get(line.productId)!.shop!.slug}`}>{byId.get(line.productId)!.shop!.name}</Link></div>}
+              {(() => { const left = byId.get(line.productId)?.stockQuantity; return left !== null && left !== undefined && line.quantity > left ? <p role="status">{shopWords[locale].left(left)}</p> : null; })()}
               {preview && (!byId.has(line.productId) || byId.get(line.productId)?.stockStatus === "OUT_OF_STOCK") && <p role="status">{c.OUT_OF_STOCK}</p>}
               <button type="button" className="small cart-remove" onClick={() => setQuantity(line.productId, 0)}>{c.remove}</button>
             </div>
@@ -359,7 +375,7 @@ export function CartCheckout({ canOrder = false, signedIn = false, customer, wal
         </>}
 
         {step === 3 && <section className="panel-card stack checkout-payment">
-          <div><h2>{d.paymentTitle}</h2><p className="small muted">{d.paymentHint}</p></div>
+          <div><h2>{d.paymentTitle}</h2><p className="small muted">{d.paymentHint}</p>{hasShopGoods && <p className="small shop-price-notice">{shopWords[locale].prepayNote}</p>}</div>
           <div className="pay-methods" role="radiogroup" aria-label={d.paymentTitle}>
             {methods.map(item => <label className="pay-method" key={item.id} data-selected={method === item.id} data-disabled={item.disabled ? "true" : undefined}>
               <input type="radio" name="paymentMethod" value={item.id} checked={method === item.id} disabled={item.disabled} onChange={() => { setMethod(item.id); setError(""); }} />

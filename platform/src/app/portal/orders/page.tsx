@@ -9,7 +9,7 @@ export default async function PortalOrdersPage() {
   const user = await requireUser("/portal/orders");
   const orders = await prisma.order.findMany({
     where: { customerId: user.id },
-    include: { items: orderItemsWithProduct, history: { orderBy: { createdAt: "asc" } } },
+    include: { items: orderItemsWithProduct, history: { orderBy: { createdAt: "asc" } }, shipments: { select: { shopId: true, status: true, sellerNote: true, shop: { select: { name: true, slug: true } } } } },
     orderBy: { createdAt: "desc" },
     take: 50
   });

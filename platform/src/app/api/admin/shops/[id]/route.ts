@@ -2,6 +2,7 @@ import { requireAdminApi } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { nextShopStatus, shopReviewSchema } from "@/lib/shops";
 import { notifyShopOwner } from "@/lib/shop-server";
+import { syncShopProducts } from "@/lib/marketplace-server";
 import { escapeTelegramHtml } from "@/lib/telegram";
 
 export const runtime = "nodejs";
@@ -42,6 +43,8 @@ export async function PATCH(request: Request, context: Context) {
         ...(referralCommissionPercent !== undefined ? { referralCommissionPercent } : {})
       }
     });
+    // Suspending hides every listing; reactivating brings back the approved ones the shop has switched on.
+    if (status !== shop.status) await syncShopProducts(tx, { shopId: id });
     await tx.auditLog.create({
       data: { actorId: actor.id, action: `SHOP_${action}`, entity: "Shop", entityId: id, metadata: { from: shop.status, to: status, commissionPercent, referralCommissionPercent, note: note ?? null } }
     });

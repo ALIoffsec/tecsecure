@@ -10,6 +10,14 @@ import { siteCopy } from "@/lib/site-copy";
 import { regionCodes, regionNames, type RegionCode } from "@/lib/delivery";
 import { formatDateTime, formatMinor } from "@/lib/format";
 import { shopStatuses } from "@/lib/shops";
+import { AdminModeration, AdminPayouts, AdminPromotion } from "./admin-marketplace";
+
+export type MarketplaceView = "shops" | "moderation" | "payouts" | "promotion";
+const viewNames: Record<string, Record<MarketplaceView, string>> = {
+  uz: { shops: "Do‘konlar", moderation: "Moderatsiya", payouts: "To‘lovlar", promotion: "Reklama narxi" },
+  ru: { shops: "Магазины", moderation: "Модерация", payouts: "Выплаты", promotion: "Цена рекламы" },
+  en: { shops: "Shops", moderation: "Moderation", payouts: "Payouts", promotion: "Ad price" }
+};
 
 export type AdminShop = {
   id: string; slug: string; name: string; status: string; phone: string; telegram: string | null; instagram: string | null;
@@ -85,18 +93,28 @@ function ShopCard({ shop }: { shop: AdminShop }) {
   </article>;
 }
 
-export function AdminShops({ shops, counts, status }: { shops: AdminShop[]; counts: Record<string, number>; status?: string }) {
+export function AdminShops({ shops, counts, status, view = "shops", waiting }: { shops: AdminShop[]; counts: Record<string, number>; status?: string; view?: MarketplaceView; waiting: { moderation: number; payouts: number } }) {
   const { locale } = useSitePreferences();
   const c = sellerCopy[locale];
   const total = Object.values(counts).reduce((sum, value) => sum + value, 0);
+  const names = viewNames[locale] ?? viewNames.uz;
+  const badge = (key: MarketplaceView) => key === "moderation" && waiting.moderation ? ` · ${waiting.moderation}` : key === "payouts" && waiting.payouts ? ` · ${waiting.payouts}` : "";
   return <div className="container page-shell admin-orders admin-shops">
     <Link className="small text-link" href="/admin">← {siteCopy[locale].admin.back}</Link>
     <h1 className="page-title">{c.admin.title}</h1>
+    <nav className="admin-management-tabs admin-marketplace-tabs" aria-label={c.admin.title}>
+      {(Object.keys(names) as MarketplaceView[]).map(key => <Link key={key} className={`admin-management-category${view === key ? " active" : ""}`} href={key === "shops" ? "/admin/shops" : `/admin/shops?view=${key}`}>{names[key]}{badge(key)}</Link>)}
+    </nav>
+    {view === "moderation" && <AdminModeration />}
+    {view === "payouts" && <AdminPayouts />}
+    {view === "promotion" && <AdminPromotion />}
+    {view === "shops" && <>
     <nav className="shop-cats" aria-label={c.admin.title}>
       <Link className={`shop-chip${!status ? " is-active" : ""}`} href="/admin/shops">{c.admin.all} · {total}</Link>
       {shopStatuses.map(value => <Link className={`shop-chip${status === value ? " is-active" : ""}`} key={value} href={`/admin/shops?status=${value}`}>{c.status[value].title} · {counts[value] ?? 0}</Link>)}
     </nav>
     {shops.length === 0 && <div className="empty-state">{c.admin.empty}</div>}
     <div className="stack">{shops.map(shop => <ShopCard key={shop.id} shop={shop} />)}</div>
+    </>}
   </div>;
 }

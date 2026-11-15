@@ -20,7 +20,7 @@ import { ToastMessage } from "@/components/toast-provider";
 import type { ProfilePractice } from "@/lib/learning-profile-types";
 import type { Locale } from "@/lib/messages";
 import { formatDate, formatDateTime, formatMinor, formatNumber } from "@/lib/format";
-import { OrderLines } from "@/components/order-views";
+import { OrderLines, ShopShipments } from "@/components/order-views";
 import type { OrderLineProduct } from "@/lib/order-lines";
 import { siteCopy } from "@/lib/site-copy";
 
@@ -32,7 +32,8 @@ type RequestRecord = {
 type OrderRecord = {
   id: string; reference: string; status: string; recipientName: string; city: string; address: string; createdAt: Date;
   totalMinor: number | null; currency: string;
-  items: { id: string; name: string; sku: string | null; quantity: number; unitPriceMinor: number | null; product: OrderLineProduct }[];
+  items: { id: string; name: string; sku: string | null; quantity: number; unitPriceMinor: number | null; product: OrderLineProduct; shopId?: string | null }[];
+  shipments?: { shopId: string; status: string; sellerNote: string | null; shop: { name: string; slug: string } }[];
   history: { id: string; fromStatus: string | null; toStatus: string; note: string | null; createdAt: Date }[];
 };
 type ConversationRecord = {
@@ -311,7 +312,7 @@ export function CustomerDashboard({ paymentCard = null, user, requests, orders, 
               <div><strong>{order.reference}</strong><p>{formatDate(order.createdAt)}{order.totalMinor !== null ? <> · <strong>{formatMinor(order.totalMinor, order.currency, locale)}</strong></> : null}</p></div>
               <span className={`status ${order.status}`}>{orderCopy.status[order.status] ?? order.status}</span>
             </div>
-            <OrderLines items={order.items} currency={order.currency} />
+            <OrderLines items={order.items} currency={order.currency} shipments={order.shipments} /><ShopShipments shipments={order.shipments} />
             <p className="small muted">{copy.orderStatus}: {order.history.map((item) => `${orderCopy.status[item.toStatus] ?? item.toStatus}${item.note ? ` — ${item.note}` : ""}`).join(" → ")}</p>
             <p className="small muted">{order.city}{order.address ? ` · ${order.address}` : ""}</p>
           </article>)}</div> : <div className="empty-state"><p>{copy.emptyOrders}</p><Link className="button" href="/products">{t("allProducts")}</Link></div>}

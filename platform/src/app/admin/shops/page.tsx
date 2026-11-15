@@ -11,9 +11,10 @@ export const metadata = { title: "Do‘konlar | Tecsecure admin", robots: { inde
 export default async function AdminShopsPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const actor = await requireAdminPage();
   if (actor.role !== "ADMIN" && actor.role !== "FOUNDER") redirect("/admin");
-  const { status: rawStatus } = await searchParams;
+  const { status: rawStatus, view: rawView } = await searchParams;
   const status = shopStatuses.find(value => value === rawStatus);
-  const [shops, groups] = await Promise.all([
+  const view = (["moderation", "payouts", "promotion"] as const).find(value => value === rawView) ?? "shops";
+  const [shops, groups, moderation, payouts] = await Promise.all([
     prisma.shop.findMany({
       where: status ? { status } : {},
       include: { owner: { select: { name: true, email: true, phone: true } } },
@@ -21,9 +22,11 @@ export default async function AdminShopsPage({ searchParams }: { searchParams: P
       orderBy: [{ status: "asc" }, { createdAt: "desc" }],
       take: 200
     }),
-    prisma.shop.groupBy({ by: ["status"], _count: { _all: true } })
+    prisma.shop.groupBy({ by: ["status"], _count: { _all: true } }),
+    prisma.product.count({ where: { shopId: { not: null }, moderation: "PENDING", status: { not: "ARCHIVED" } } }),
+    prisma.shopPayout.count({ where: { status: "REQUESTED" } })
   ]);
   const order = { PENDING: 0, ACTIVE: 1, SUSPENDED: 2, REJECTED: 3 } as Record<string, number>;
   shops.sort((a, b) => (order[a.status] ?? 9) - (order[b.status] ?? 9));
-  return <AdminShops shops={shops} counts={Object.fromEntries(groups.map(group => [group.status, group._count._all]))} status={status} />;
+  return <AdminShops shops={shops} counts={Object.fromEntries(groups.map(group => [group.status, group._count._all]))} status={status} view={view} waiting={{ moderation, payouts }} />;
 }

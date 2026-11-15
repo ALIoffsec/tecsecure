@@ -1,4 +1,5 @@
 import { timingSafeEqual } from "node:crypto";
+import { afterOrderPaid } from "./marketplace-server";
 import { prisma } from "@/lib/prisma";
 
 /**
@@ -113,6 +114,8 @@ export async function handlePaymeMethod(method: string, params: Params): Promise
         await db.auditLog.create({ data: { action: "ORDER_PAYMENT_PAYME_PERFORMED", entity: "Order", entityId: tx.orderId } });
         return done;
       });
+      // Shops hear the money arrived and delivered parts are credited, without holding up Payme's answer.
+      void afterOrderPaid(tx.orderId);
       const { transaction, state, perform_time } = view(updated);
       return { transaction, state, perform_time };
     }

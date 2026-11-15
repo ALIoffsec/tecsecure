@@ -1,12 +1,10 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { ToastMessage } from "./toast-provider";
 import { useSitePreferences } from "./site-preferences";
 import { sellerCopy } from "@/lib/seller-copy";
 import { regionCodes, regionNames } from "@/lib/delivery";
-import { formatMinor } from "@/lib/format";
 
 export type SellerShop = {
   id: string; slug: string; name: string; status: string; phone: string; telegram: string | null; instagram: string | null;
@@ -70,42 +68,4 @@ export function ShopForm({ shop, onSaved }: { shop: SellerShop | null; onSaved: 
     </div>
     <div><button className="button" disabled={busy}>{busy ? (shop ? c.saving : c.applying) : shop?.status === "REJECTED" ? c.resubmit : shop ? c.save : c.apply}</button></div>
   </form>;
-}
-
-export function SellerCabinet({ shop, staff = false, siteUrl }: { shop: SellerShop | null; staff?: boolean; siteUrl: string }) {
-  const { locale } = useSitePreferences();
-  const c = sellerCopy[locale];
-  const router = useRouter();
-  const refresh = () => router.refresh();
-
-  if (staff) return <div className="container page-shell seller-page"><h1 className="page-title">{c.title}</h1><p className="empty-state">{c.staffAccount}</p></div>;
-
-  if (!shop) return <div className="container page-shell seller-page">
-    <span className="eyebrow">{c.title}</span>
-    <h1 className="page-title">{c.introTitle}</h1>
-    <p className="muted seller-intro">{c.intro}</p>
-    <ul className="seller-points">{c.points.map(point => <li key={point}>{point}</li>)}</ul>
-    <section className="panel-card"><ShopForm shop={null} onSaved={refresh} /></section>
-  </div>;
-
-  const status = c.status[shop.status] ?? c.status.PENDING;
-  const link = `${siteUrl.replace(/\/$/, "")}/s/${shop.slug}`;
-  return <div className="container page-shell seller-page">
-    <span className="eyebrow">{c.title}</span>
-    <h1 className="page-title">{shop.name}</h1>
-    <section className={`panel-card seller-status is-${shop.status.toLowerCase()}`} role="status">
-      <strong>{status.title}</strong>
-      <p>{status.text}</p>
-      {shop.reviewNote && (shop.status === "REJECTED" || shop.status === "SUSPENDED") && <p><strong>{c.reason}:</strong> {shop.reviewNote}</p>}
-    </section>
-    {shop.status === "ACTIVE" && <div className="seller-stats">
-      <div className="panel-card"><span className="small muted">{c.balance}</span><strong>{formatMinor(shop.balanceMinor, "UZS", locale)}</strong><span className="small muted">{c.balanceHint}</span></div>
-      <div className="panel-card"><span className="small muted">{c.commission}</span><strong>{shop.commissionPercent}%</strong><span className="small muted">{c.referral}: {shop.referralCommissionPercent}%</span></div>
-      <div className="panel-card"><span className="small muted">{c.link}</span><strong className="seller-link">{link.replace(/^https?:\/\//, "")}</strong></div>
-    </div>}
-    {shop.status !== "SUSPENDED" && <details className="admin-records-accordion" open={shop.status === "REJECTED"}>
-      <summary>{c.profile}</summary>
-      <ShopForm shop={shop} onSaved={refresh} />
-    </details>}
-  </div>;
 }

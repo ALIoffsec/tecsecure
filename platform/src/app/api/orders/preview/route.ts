@@ -20,7 +20,7 @@ export async function POST(request: Request) {
     const [products, settings] = await Promise.all([
       prisma.product.findMany({
         where: { id: { in: parsed.data.ids }, status: "PUBLISHED" },
-        select: { id: true, name: true, slug: true, translations: true, description: true, priceMinor: true, currency: true, stockStatus: true, media: true, category: { select: { slug: true } } }
+        select: { id: true, name: true, slug: true, translations: true, description: true, priceMinor: true, currency: true, stockStatus: true, stockQuantity: true, media: true, category: { select: { slug: true } }, shop: { select: { name: true, slug: true } } }
       }),
       getCheckoutSettings()
     ]);

@@ -25,15 +25,24 @@ export type ProductCardRecord = {
   specifications: unknown;
   translations?: unknown;
   category: { name: string; slug: string } | null;
+  /** A paid placement still running: the card is marked as advertising. */
+  promotedUntil?: Date | string | null;
+  /** The shop that sells it; Tecsecure's own products have none. */
+  shop?: { name: string; slug: string } | null;
 };
+
+const adLabel = { uz: "Reklama", ru: "Реклама", en: "Ad" };
+const sellerLabel = { uz: "Sotuvchi", ru: "Продавец", en: "Seller" };
 
 export function ProductCard({ product, assets }: { product: ProductCardRecord; assets: CatalogMedia[] }) {
   const stock = stockValues.find(value => value === product.stockStatus) ?? "UNKNOWN";
   const text = productVariants(product);
   const href = `/products/${product.slug}`;
   const eyebrow = perLocale(locale => [product.brand, product.category ? categoryName(product.category.name, locale) : null].filter(Boolean).join(" · ") || "Tecsecure");
-  return <article className="shop-card is-clickable-card">
+  const advertised = Boolean(product.promotedUntil && new Date(product.promotedUntil) > new Date());
+  return <article className={`shop-card is-clickable-card${advertised ? " is-advertised" : ""}`}>
     <div className="shop-card-stage">
+      {advertised && <span className="shop-card-ad"><Localized values={adLabel} /></span>}
       <Link className="shop-card-media" href={href} aria-label={product.name} tabIndex={-1}>
         <ProductMedia assets={assets} title={product.name} slug={product.slug} categorySlug={product.category?.slug} />
       </Link>
@@ -44,6 +53,7 @@ export function ProductCard({ product, assets }: { product: ProductCardRecord; a
     </div>
     <div className="shop-card-body">
       <span className="shop-card-cat"><Localized values={eyebrow} /></span>
+      {product.shop && <Link className="shop-card-seller" href={`/s/${product.shop.slug}`}><Localized values={sellerLabel} />: {product.shop.name}</Link>}
       <h2><Link className="card-link" href={href}><Localized values={perLocale(locale => text[locale].name)} /></Link></h2>
       {product.model && <span className="shop-card-model">{product.model}</span>}
       <Localized values={perLocale(locale => {

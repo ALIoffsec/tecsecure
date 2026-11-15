@@ -173,8 +173,19 @@ model Shop {
   balanceMinor              Float     @default(0)
   reviewNote                String?
   approvedAt                DateTime?
+  /// Where payouts go: the shop's business bank account (never a card number).
+  payoutBankName            String?
+  payoutAccount             String?
+  payoutMfo                 String?
+  payoutRecipient           String?
+  /// Telegram messages about new orders and low stock; the shop can mute them.
+  notifyOrders              Boolean   @default(true)
   createdAt                 DateTime  @default(now())
   updatedAt                 DateTime  @updatedAt
+  products                  Product[]
+  shopOrders                ShopOrder[]
+  ledger                    ShopLedgerEntry[]
+  payouts                   ShopPayout[]
 
   @@index([status, createdAt])
 }
@@ -318,6 +329,19 @@ model Product {
   media               Json?
   translations        Json?
   status              PublicationStatus @default(DRAFT)
+  /// Set for a product a shop sells; null for Tecsecure's own catalogue.
+  shopId              String?
+  shop                Shop?             @relation(fields: [shopId], references: [id], onDelete: SetNull)
+  /// Staff review of shop listings: PENDING, APPROVED or REJECTED. Tecsecure's own products are APPROVED.
+  moderation          String            @default("APPROVED")
+  moderationNote      String?
+  /// The shop took the listing off sale itself.
+  sellerHidden        Boolean           @default(false)
+  /// Units in stock when the seller counts them; null means not counted.
+  stockQuantity       Int?
+  /// Paid placement at the top of the catalogue until this moment.
+  promotedUntil       DateTime?
+  viewCount           Int               @default(0)
   createdAt           DateTime          @default(now())
   updatedAt           DateTime          @updatedAt
   projectItems        ProjectItem[]
@@ -327,6 +351,9 @@ model Product {
   questions           ProductQuestion[]
 
   @@index([status, categoryId])
+  @@index([shopId, createdAt])
+  @@index([moderation, createdAt])
+  @@index([promotedUntil])
 }
 
 enum OrderStatus {
@@ -376,6 +403,9 @@ model Order {
   updatedAt       DateTime             @updatedAt
   items           OrderItem[]
   history         OrderStatusHistory[]
+  shipments       ShopOrder[]
+  /// The shop whose QR or page brought this customer (lower commission for that shop).
+  referralShopId  String?
 
   @@index([customerId, createdAt])
   @@index([status, createdAt])
@@ -394,8 +424,83 @@ model OrderItem {
   /// The catalogue price before conversion to so'm, when it was in another currency.
   listPriceMinor Float?
   listCurrency   String?
+  /// The shop that sells this line; null when Tecsecure sells it.
+  shopId         String?
 
   @@index([orderId])
+  @@index([shopId])
+}
+
+/// One shop's part of a customer order: the shop ships it and moves it through its own statuses.
+model ShopOrder {
+  id                 String      @id @default(cuid())
+  orderId            String
+  order              Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  shopId             String
+  shop               Shop        @relation(fields: [shopId], references: [id], onDelete: Restrict)
+  status             OrderStatus @default(NEW)
+  /// The shop's goods in so'm, the commission kept, the share of the delivery fee and what the shop earns.
+  itemsTotalMinor    Float?
+  commissionPercent  Float
+  commissionMinor    Float?
+  deliveryShareMinor Float?
+  payoutMinor        Float?
+  /// What the shop tells the customer: a tracking number or a delivery note.
+  sellerNote         String?
+  /// Set once the earnings reach the shop's balance (delivered and paid).
+  creditedAt         DateTime?
+  confirmedAt        DateTime?
+  shippedAt          DateTime?
+  deliveredAt        DateTime?
+  cancelledAt        DateTime?
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+
+  @@unique([orderId, shopId])
+  @@index([shopId, status, createdAt])
+}
+
+/// Every change to a shop's balance, so the balance can always be explained line by line.
+model ShopLedgerEntry {
+  id                String   @id @default(cuid())
+  shopId            String
+  shop              Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  /// SALE, PROMOTION, PAYOUT, PAYOUT_RETURNED or ADJUSTMENT.
+  kind              String
+  /// Positive adds to the balance, negative takes from it.
+  amountMinor       Float
+  balanceAfterMinor Float
+  shopOrderId       String?
+  payoutId          String?
+  productId         String?
+  note              String?
+  actorId           String?
+  createdAt         DateTime @default(now())
+
+  @@index([shopId, createdAt])
+}
+
+/// A shop asks for its balance; staff pay it by bank transfer and mark it paid, or return it with a reason.
+model ShopPayout {
+  id               String    @id @default(cuid())
+  shopId           String
+  shop             Shop      @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  amountMinor      Float
+  /// REQUESTED, PAID or REJECTED.
+  status           String    @default("REQUESTED")
+  bankName         String
+  account          String
+  mfo              String
+  recipient        String
+  reviewNote       String?
+  paymentReference String?
+  reviewedById     String?
+  reviewedAt       DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([shopId, createdAt])
+  @@index([status, createdAt])
 }
 
 model OrderStatusHistory {

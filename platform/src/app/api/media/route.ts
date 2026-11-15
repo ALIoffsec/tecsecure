@@ -5,6 +5,10 @@ import { cleanImage, deleteOrphanedProofs } from "@/lib/media-maintenance";
 import { sniffMediaType } from "@/lib/media-validate";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/rate-limit";
+import sharp from "sharp";
+
+/** Shop photos must be sharp enough for a product card; smaller ones look blurred next to the rest. */
+const SHOP_MIN_SIDE = 600;
 
 export const runtime = "nodejs";
 
@@ -29,13 +33,25 @@ export async function POST(request: Request) {
   const scope = form.get("scope");
   const file = form.get("file");
   const isProof = scope === "WALLET";
-  if (!isProof && (typeof scope !== "string" || !staffScopes.has(scope as AdminModule))) {
+  // Shop owners upload their own product photos and logo; they are public but tied to the owner.
+  const isShop = scope === "SHOP";
+  if (!isProof && !isShop && (typeof scope !== "string" || !staffScopes.has(scope as AdminModule))) {
     return Response.json({ error: "Media uchun bo‘lim ko‘rsatilmagan." }, { status: 400 });
   }
   // Wallet deposits are submitted by customers, so proof uploads are owner-scoped rather than staff-only.
-  const actor = isProof ? await getCurrentUser() : await requireModuleApi(scope as AdminModule);
+  const actor = isProof || isShop ? await getCurrentUser() : await requireModuleApi(scope as AdminModule);
   if (!actor) return Response.json({ error: "Kirish talab qilinadi." }, { status: 401 });
   if (isResponse(actor)) return actor;
+  if (isShop) {
+    if (declared > PROOF_REQUEST_LIMIT) return Response.json({ error: "Rasm hajmi 8 MB dan oshmasligi kerak." }, { status: 413 });
+    const shop = actor.role === "CUSTOMER" ? await prisma.shop.findUnique({ where: { ownerId: actor.id }, select: { status: true } }) : null;
+    if (!shop || shop.status === "SUSPENDED") return Response.json({ error: "Rasm yuklash faqat do‘kon egasiga ochiq." }, { status: 403 });
+    if (!(await checkRateLimit("shop-media", actor.id, 120, 60 * 60 * 1000))
+      || !(await checkRateLimit("shop-media-day", actor.id, 600, 24 * 60 * 60 * 1000))
+      || !(await checkRateLimit("shop-media-ip", clientIp(request), 200, 60 * 60 * 1000))) {
+      return Response.json({ error: "Yuklash limiti oshdi. Keyinroq urinib ko‘ring." }, { status: 429 });
+    }
+  }
   if (isProof) {
     if (declared > PROOF_REQUEST_LIMIT) return Response.json({ error: "Rasm hajmi 8 MB dan oshmasligi kerak." }, { status: 413 });
     // Accounts are free to open, so the address and the day are limited too, not only the account.
@@ -53,14 +69,20 @@ export async function POST(request: Request) {
   if (file.size > VIDEO_LIMIT) return Response.json({ error: "Video hajmi 32 MB dan oshmasligi kerak." }, { status: 413 });
   let data = Buffer.from(await file.arrayBuffer());
   let mimeType = sniffMediaType(data);
-  if (!mimeType || (isProof && !mimeType.startsWith("image/"))) {
-    return Response.json({ error: isProof ? "To‘lov tasdig‘i uchun JPG, PNG yoki WebP rasm yuklang." : "Faqat JPG, PNG, WebP, GIF, MP4 yoki WebM fayllar qabul qilinadi." }, { status: 415 });
+  if (!mimeType || ((isProof || isShop) && !mimeType.startsWith("image/")) || (isShop && mimeType === "image/gif")) {
+    return Response.json({ error: isProof ? "To‘lov tasdig‘i uchun JPG, PNG yoki WebP rasm yuklang." : isShop ? "Mahsulot rasmi uchun JPG, PNG yoki WebP yuklang." : "Faqat JPG, PNG, WebP, GIF, MP4 yoki WebM fayllar qabul qilinadi." }, { status: 415 });
   }
   if (mimeType.startsWith("image/")) {
     if (file.size > IMAGE_LIMIT) return Response.json({ error: "Rasm hajmi 8 MB dan oshmasligi kerak." }, { status: 413 });
     const cleaned = await cleanImage(data, mimeType);
     if (!cleaned) return Response.json({ error: "Rasmni o‘qib bo‘lmadi yoki u juda katta (50 megapikseldan oshmasin)." }, { status: 415 });
     ({ data, mimeType } = cleaned);
+    if (isShop) {
+      const { width = 0, height = 0 } = await sharp(data).metadata();
+      if (Math.min(width, height) < SHOP_MIN_SIDE) {
+        return Response.json({ error: `Rasm juda kichik (${width}×${height}). Kamida ${SHOP_MIN_SIDE}×${SHOP_MIN_SIDE} piksel bo‘lsin, aks holda kartochkada xira ko‘rinadi.`, code: "IMAGE_TOO_SMALL" }, { status: 422 });
+      }
+    }
   }
 
   const asset = await prisma.mediaAsset.create({
@@ -70,7 +92,7 @@ export async function POST(request: Request) {
       sizeBytes: data.length,
       data,
       private: isProof,
-      ownerId: isProof ? actor.id : null
+      ownerId: isProof || isShop ? actor.id : null
     },
     select: { id: true, name: true, mimeType: true, sizeBytes: true }
   });

@@ -302,7 +302,7 @@ export async function connectTelegramBot(): Promise<TelegramConnection> {
   const plan = [
     { bot: "customer" as const, token: botToken, secret: webhookSecret, param: "", menu: "/tg", text: "Tecsecure", commands: [{ command: "start", description: "Tecsecure'ni ochish" }] },
     { bot: "staff" as const, token: staffBotToken, secret: staffWebhookSecret, param: "?bot=staff", menu: "/tg/staff", text: "Ish oynasi", commands: [{ command: "hisobot", description: "Bugungi hisobot" }] },
-    { bot: "shop" as const, token: shopBotToken, secret: shopWebhookSecret, param: "?bot=shop", menu: "/tg/shop", text: "Do'kon kabineti", commands: [{ command: "start", description: "Do'kon kabinetini ochish" }] }
+    { bot: "shop" as const, token: shopBotToken, secret: shopWebhookSecret, param: "?bot=shop", menu: "/tg/shop", text: "Do'kon kabineti", commands: [{ command: "start", description: "Do'kon holati va kabinet" }, { command: "buyurtmalar", description: "Kutayotgan buyurtmalar" }, { command: "balans", description: "Balans va pul yechish" }] }
   ].filter(item => item.token);
   const bots: TelegramConnection["bots"] = [];
   for (const item of plan) {

@@ -11,6 +11,11 @@ import { pricesMatch } from "@/lib/catalog-utils";
 import { formatMinor } from "@/lib/format";
 import { paymeConfigured } from "@/lib/payme";
 import { getCompanyRequisites } from "@/lib/payment-card";
+import { cookies } from "next/headers";
+import { commissionFor, LOW_STOCK, shopOrderMoney, splitDelivery } from "@/lib/marketplace";
+import { shopAppUrl } from "@/lib/marketplace-server";
+import { notifyShopOwner } from "@/lib/shop-server";
+import { REFERRAL_COOKIE } from "@/lib/referral";
 
 export const runtime = "nodejs";
 
@@ -49,6 +54,21 @@ export async function POST(request: Request) {
   if (merged.some((item) => byId.get(item.productId)?.stockStatus === "OUT_OF_STOCK")) {
     return Response.json({ error: "Savatdagi ba’zi mahsulotlar omborda yo‘q." }, { status: 400 });
   }
+  // A counted stock is a hard limit: nobody can order more units than the seller has.
+  const short = merged.find((item) => { const left = byId.get(item.productId)?.stockQuantity; return left !== null && left !== undefined && item.quantity > left; });
+  if (short) {
+    const product = byId.get(short.productId)!;
+    return Response.json({ error: `“${product.name}” omborda faqat ${product.stockQuantity} dona qoldi.`, code: "STOCK_LIMIT", productId: product.id, available: product.stockQuantity }, { status: 409 });
+  }
+  // Shops ship their own goods, and the buyer's money must reach Tecsecure first, so their goods are paid in advance.
+  const shopIds = [...new Set(products.map((product) => product.shopId).filter((id): id is string => Boolean(id)))];
+  const shops = shopIds.length ? await prisma.shop.findMany({ where: { id: { in: shopIds }, status: "ACTIVE" }, select: { id: true, name: true, ownerId: true, commissionPercent: true, referralCommissionPercent: true } }) : [];
+  if (shops.length !== shopIds.length) return Response.json({ error: "Savatdagi ba’zi do‘konlar hozir sotmayapti. Savatni yangilang.", code: "CATALOG_CHANGED" }, { status: 409 });
+  if (shopIds.length > 0 && !prepaidMethods.includes(parsed.data.paymentMethod)) {
+    return Response.json({ error: "Do‘konlar mahsulotini oldindan to‘lash kerak: kartaga o‘tkazma, hamyon, bank yoki Payme.", code: "SHOP_NEEDS_PREPAY" }, { status: 400 });
+  }
+  const referralId = (await cookies()).get(REFERRAL_COOKIE)?.value ?? null;
+  const referralShopId = referralId && (await prisma.shop.findFirst({ where: { id: referralId, status: "ACTIVE" }, select: { id: true } }))?.id || null;
   if (parsed.data.expectedProducts && !pricesMatch(parsed.data.expectedProducts, products)) {
     return Response.json({ error: "Narx yoki mavjudlik o‘zgargan. Savatni yangilab, qayta tekshiring.", code: "CATALOG_CHANGED" }, { status: 409 });
   }
@@ -89,6 +109,22 @@ export async function POST(request: Request) {
   }
   const vatMinor = settings.vat === "INCLUDED" && totalMinor !== null ? vatPart(totalMinor) : null;
 
+  // Each shop's part of the order: its goods, commission, its share of the delivery fee and what it earns.
+  const groupTotal = (shopId: string | null) => lines.every((line) => line.unitPriceMinor !== null)
+    ? lines.filter((line) => line.product.shopId === shopId).reduce((sum, line) => sum + (line.unitPriceMinor as number) * line.quantity, 0)
+    : null;
+  const hasOwnGoods = lines.some((line) => !line.product.shopId);
+  const deliveryShares = splitDelivery(deliveryFeeMinor, [
+    ...(hasOwnGoods ? [{ key: "tecsecure", itemsMinor: groupTotal(null) ?? 0 }] : []),
+    ...shops.map((shop) => ({ key: shop.id, itemsMinor: groupTotal(shop.id) ?? 0 }))
+  ]);
+  const shipments = shops.map((shop) => {
+    const itemsMinor = groupTotal(shop.id);
+    const commissionPercent = commissionFor(shop, referralShopId);
+    const deliveryShareMinor = deliveryShares.get(shop.id) ?? null;
+    return { shop, itemsMinor, commissionPercent, deliveryShareMinor, ...shopOrderMoney(itemsMinor, commissionPercent, deliveryShareMinor) };
+  });
+
   const { paymentMethod } = parsed.data;
   if (prepaidMethods.includes(paymentMethod) && totalMinor === null) {
     return Response.json({ error: "Narxi kelishiladigan mahsulot uchun to‘lovni qabul qilganda amalga oshiring.", code: "PREPAID_NEEDS_PRICE" }, { status: 400 });
@@ -109,6 +145,13 @@ export async function POST(request: Request) {
   try {
     const reference = `ORD-${new Date().getUTCFullYear()}-${randomBytes(5).toString("hex").toUpperCase()}`;
     const order = await prisma.$transaction(async (tx) => {
+      // Counted stock is taken inside the transaction; a parallel order that took the last unit wins.
+      for (const line of lines) {
+        if (line.product.stockQuantity === null) continue;
+        const taken = await tx.product.updateMany({ where: { id: line.product.id, stockQuantity: { gte: line.quantity } }, data: { stockQuantity: { decrement: line.quantity } } });
+        if (taken.count === 0) throw new Error("STOCK_LIMIT");
+        await tx.product.updateMany({ where: { id: line.product.id, stockQuantity: 0 }, data: { stockStatus: "OUT_OF_STOCK" } });
+      }
       if (paymentMethod === "WALLET") {
         // The conditional update is the balance check: two parallel orders cannot both spend the same money.
         const charged = await tx.user.updateMany({
@@ -153,7 +196,19 @@ export async function POST(request: Request) {
               sku: line.product.sku,
               quantity: line.quantity,
               unitPriceMinor: line.unitPriceMinor,
+              shopId: line.product.shopId,
               ...(line.product.currency !== "UZS" ? { listPriceMinor: line.product.priceMinor, listCurrency: line.product.currency } : {})
+            }))
+          },
+          referralShopId,
+          shipments: {
+            create: shipments.map((part) => ({
+              shopId: part.shop.id,
+              itemsTotalMinor: part.itemsMinor,
+              commissionPercent: part.commissionPercent,
+              commissionMinor: part.commissionMinor,
+              deliveryShareMinor: part.deliveryShareMinor,
+              payoutMinor: part.payoutMinor
             }))
           },
           history: { create: { toStatus: "NEW", actorId: user.id } }
@@ -216,8 +271,12 @@ export async function POST(request: Request) {
       `Javob: <code>/reply ${escapeTelegramHtml(order.reference)} matn</code>`
     ].filter((line, index, lines) => line !== "" || index === lines.length - 2).join("\n");
     await notifyTelegramAdmins(telegramBody, order.reference);
+    await notifyShopsOfOrder(order, shipments, lines, { recipientName: parsed.data.recipientName, address: [region ? regionNames.uz[region] : "", parsed.data.city, parsed.data.address].filter(Boolean).join(", "), deliveryMethod });
     return Response.json({ order }, { status: 201 });
   } catch (error) {
+    if (error instanceof Error && error.message === "STOCK_LIMIT") {
+      return Response.json({ error: "Kimdir hozirgina oxirgi donalarni sotib oldi. Savatni yangilang.", code: "STOCK_LIMIT" }, { status: 409 });
+    }
     if (error instanceof Error && error.message === "WALLET_BALANCE_TOO_LOW") {
       return Response.json({ error: "Hamyonda mablag‘ yetarli emas. Boshqa to‘lov usulini tanlang yoki hisobni to‘ldiring.", code: "WALLET_BALANCE_TOO_LOW" }, { status: 409 });
     }
@@ -238,4 +297,33 @@ export async function GET() {
   if (isResponse(authorized)) return authorized;
   const orders = await prisma.order.findMany({ include, orderBy: { createdAt: "desc" }, take: 200 });
   return Response.json({ orders });
+}
+
+type ShipmentPart = { shop: { id: string; name: string; ownerId: string }; payoutMinor: number | null };
+type Line = { product: { id: string; name: string; shopId: string | null; stockQuantity: number | null }; quantity: number; unitPriceMinor: number | null };
+
+/** Each shop hears about its own part only, with a button that opens the order in its app; low stock follows. */
+async function notifyShopsOfOrder(order: { id: string; reference: string }, shipments: ShipmentPart[], lines: Line[], details: { recipientName: string; address: string; deliveryMethod: string }) {
+  for (const part of shipments) {
+    const own = lines.filter((line) => line.product.shopId === part.shop.id);
+    const open = shopAppUrl(`order:${order.id}`);
+    await notifyShopOwner(part.shop.ownerId, [
+      "🛒 <b>Yangi buyurtma</b>",
+      `Raqam: <code>${escapeTelegramHtml(order.reference)}</code>`,
+      ...own.map((line) => `• ${escapeTelegramHtml(line.product.name)} × ${line.quantity}${line.unitPriceMinor !== null ? ` — ${escapeTelegramHtml(formatMinor(line.unitPriceMinor * line.quantity, "UZS"))}` : ""}`),
+      `Qabul qiluvchi: ${escapeTelegramHtml(details.recipientName)}`,
+      `Manzil: ${escapeTelegramHtml(details.address)}`,
+      `Yetkazish: ${escapeTelegramHtml(deliveryMethodLabels[details.deliveryMethod] ?? details.deliveryMethod)}`,
+      part.payoutMinor !== null ? `Sizga tushadi: <b>${escapeTelegramHtml(formatMinor(part.payoutMinor, "UZS"))}</b> (to‘lov tasdiqlangach va yetkazilgach)` : "",
+      "",
+      "To‘lov tasdiqlanganini kabinetda ko‘ring, keyin qabul qilib jo‘nating."
+    ].filter((line, index, all) => line !== "" || index === all.length - 2).join("\n"), {
+      orderNews: true,
+      replyMarkup: { inline_keyboard: [[{ text: "✅ Qabul qildim", callback_data: `so:confirm:${order.id}` }], ...(open ? [[{ text: "Buyurtmani ochish", web_app: { url: open } }]] : [])] }
+    });
+    const low = own.filter((line) => line.product.stockQuantity !== null && line.product.stockQuantity - line.quantity <= LOW_STOCK);
+    if (low.length) {
+      await notifyShopOwner(part.shop.ownerId, `📦 <b>Qoldiq kam qoldi</b>\n${low.map((line) => `• ${escapeTelegramHtml(line.product.name)}: ${(line.product.stockQuantity as number) - line.quantity} dona`).join("\n")}\nKabinetda qoldiqni yangilang.`, { orderNews: true });
+    }
+  }
 }
