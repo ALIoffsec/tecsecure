@@ -20,7 +20,9 @@ export async function GET(_request: Request, context: Context) {
   if (seller instanceof Response) return seller;
   const product = await ownListing((await context.params).id, seller.shop.id);
   if (!product) return Response.json({ error: "Mahsulot topilmadi." }, { status: 404 });
-  return Response.json({ product }, { headers: noStore });
+  // Units sold in orders that were not cancelled, the same count the listing shows.
+  const sold = await prisma.orderItem.aggregate({ where: { productId: product.id, shopId: seller.shop.id, order: { status: { not: "CANCELLED" } } }, _sum: { quantity: true } });
+  return Response.json({ product: { ...product, sold: sold._sum.quantity ?? 0 } }, { headers: noStore });
 }
 
 /**

@@ -453,6 +453,12 @@ model ShopOrder {
   shippedAt          DateTime?
   deliveredAt        DateTime?
   cancelledAt        DateTime?
+  /// The buyer said something is wrong (nothing arrived, wrong item): the money waits for staff.
+  disputedAt         DateTime?
+  disputeNote        String?
+  /// RELEASED (paid to the shop) or REFUNDED (returned to the buyer), set when staff decide.
+  disputeResolution  String?
+  disputeResolvedAt  DateTime?
   createdAt          DateTime    @default(now())
   updatedAt          DateTime    @updatedAt
 

@@ -39,6 +39,7 @@ export function SellerHome({ nav }: { nav: SellerNav }) {
     </header>
 
     <h2 className="tma-section-title">{c.home.todo}</h2>
+    {(data.orders.disputes ?? 0) > 0 && <button type="button" className="tma-notice is-warning tma-notice-button" onClick={() => nav.tab("orders")}>⚠️ {c.home.disputes(data.orders.disputes ?? 0)}</button>}
     <div className="tma-stats">
       {todo.map(item => <button type="button" key={item.label} className={`tma-stat${item.urgent && item.value > 0 ? " is-urgent" : ""}`} onClick={() => nav.tab("orders")}>
         <strong>{item.value}</strong><span>{item.label}</span>
@@ -61,7 +62,7 @@ export function SellerHome({ nav }: { nav: SellerNav }) {
       <button type="button" className={`tma-stat${data.products.rejected > 0 ? " is-urgent" : ""}`} onClick={() => nav.tab("products")}><strong>{data.products.rejected}</strong><span>{c.home.rejected}</span></button>
       <div className="tma-stat"><strong>{data.products.views}</strong><span>{c.home.views}</span></div>
       <div className="tma-stat"><strong>{data.products.advertised}</strong><span>{c.home.advertised}</span></div>
-      <div className="tma-stat"><strong>{data.orders.delivered}</strong><span>{c.orders.status.DELIVERED}</span></div>
+      <div className="tma-stat"><strong>{data.orders.delivered}</strong><span>{c.home.delivered}</span></div>
     </div>
 
     {(data.products.lowStock.length > 0 || data.products.outOfStock.length > 0) && <>

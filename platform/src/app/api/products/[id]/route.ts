@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { isResponse, requireModuleApi } from "@/lib/auth";
+import { syncShopProducts } from "@/lib/marketplace-server";
 import { prisma } from "@/lib/prisma";
 import { onlyProvided, productSchema } from "@/lib/validation";
 
@@ -39,6 +40,12 @@ export async function PATCH(request: Request, context: Context) {
         }
       });
       await tx.auditLog.create({ data: { actorId: actor.id, action: "PRODUCT_UPDATED", entity: "Product", entityId: id } });
+      // A shop's listing is public only by moderation, the seller's own switch and the shop's state, so a
+      // status set here is recomputed (staff hide one by rejecting it in moderation, or archive it).
+      if (updated.shopId && updated.status !== "ARCHIVED") {
+        await syncShopProducts(tx, { productIds: [id] });
+        return tx.product.findUniqueOrThrow({ where: { id } });
+      }
       return updated;
     });
     return Response.json({ product });

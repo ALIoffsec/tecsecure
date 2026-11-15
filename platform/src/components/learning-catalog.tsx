@@ -228,13 +228,13 @@ export function LearningCatalog(props: LearningCatalogProps) {
         {labs.length === 0 ? <p className="muted">{tx.labsEmpty}</p> : (
           <div className="learn-lab-preview-grid">
             {labs.map((lab) => (
-              <article className="learn-lab-preview card" key={lab.slug}>
+              <article className="learn-lab-preview card is-clickable-card" key={lab.slug}>
                 <div className="learn-tags">
                   <span className="tag">{labLevelLabel(lab.level)}</span>
                   <span className="tag">{lab.minutes} {tx.labMinutes}</span>
                   <span className="tag">{lab.taskCount} {tx.labTasks}</span>
                 </div>
-                <h3>{lab.title}</h3>
+                <h3><Link className="card-link" href={`/learning/labs/${lab.slug}`}>{lab.title}</Link></h3>
                 <p>{lab.summary}</p>
                 <Link className="button secondary learn-catalog-item-action" href={`/learning/labs/${lab.slug}`}>{tx.catalogOpenItem}</Link>
               </article>
@@ -252,13 +252,13 @@ export function LearningCatalog(props: LearningCatalogProps) {
         {exams.length === 0 ? <p className="muted">{tx.examsEmpty}</p> : (
           <div className="learn-exam-preview-grid">
             {exams.map((exam) => (
-              <article className="learn-exam-preview card" key={exam.slug}>
+              <article className="learn-exam-preview card is-clickable-card" key={exam.slug}>
                 <div className="learn-tags">
                   <span className="tag">{exam.questionCount} {tx.examQuestions}</span>
                   <span className="tag">{exam.minutes} {tx.labMinutes}</span>
                   <span className="tag">{tx.examPassRate}: {exam.passPercent}%</span>
                 </div>
-                <h3>{exam.title}</h3>
+                <h3><Link className="card-link" href={`/learning/exams/${exam.slug}`}>{exam.title}</Link></h3>
                 <p>{exam.summary}</p>
                 {exam.topics.length > 0 && <p className="learn-meta">{exam.topics.join(" · ")}</p>}
                 <Link className="button secondary learn-catalog-item-action" href={`/learning/exams/${exam.slug}`}>{tx.catalogStartExam}</Link>
@@ -313,13 +313,13 @@ export function LearningCatalog(props: LearningCatalogProps) {
               <div className="learn-ctf-grid">
                 {visibleMachines.map((machine) => {
                   const retired = machine.status?.toLowerCase() === "retired";
-                  return <article className="learn-ctf-card card" key={machine.slug}>
+                  return <article className="learn-ctf-card card is-clickable-card" key={machine.slug}>
                     <div className="learn-tags">
                       <span className="tag">{machine.os}</span>
                       <span className="tag">{difficultyLabel(machine.difficulty)}</span>
                       {machine.status && <span className={`tag${retired ? " learn-ctf-retired" : ""}`}>{retired ? tx.ctfRetired : machine.status}</span>}
                     </div>
-                    <h3>{machine.name}</h3>
+                    <h3><a className="card-link" href={machine.downloadUrl} rel="noopener noreferrer" target="_blank">{machine.name}</a></h3>
                     <p className="learn-meta">{tx.ctfCreator}: {machine.creator}</p>
                     <div className="learn-ctf-details">
                       {machine.size && <span>{tx.ctfSize}: {machine.size}</span>}

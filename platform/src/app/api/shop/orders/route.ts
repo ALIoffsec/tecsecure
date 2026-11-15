@@ -1,5 +1,6 @@
 import { noStore, requireSellingShop } from "@/lib/shop-products-server";
 import { shopOrdersFor } from "@/lib/shop-orders-server";
+import { loadPayoutHold } from "@/lib/marketplace-server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -8,5 +9,6 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   const seller = await requireSellingShop();
   if (seller instanceof Response) return seller;
-  return Response.json({ orders: await shopOrdersFor(seller.shop.id) }, { headers: noStore });
+  const [orders, payoutHoldDays] = await Promise.all([shopOrdersFor(seller.shop.id), loadPayoutHold()]);
+  return Response.json({ orders, payoutHoldDays }, { headers: noStore });
 }

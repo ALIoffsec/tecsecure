@@ -102,8 +102,59 @@ export function shopOrderMoney(itemsMinor: number | null, commissionPercent: num
 }
 
 /** Earnings reach the balance once: the shop delivered and the customer's money is in. */
-export function canCredit(shipment: { status: string; creditedAt: Date | null; payoutMinor: number | null }, paymentStatus: string): boolean {
-  return shipment.status === "DELIVERED" && shipment.creditedAt === null && shipment.payoutMinor !== null && paymentStatus === "PAID";
+/**
+ * Whether a shop's part can reach its balance now: delivered, paid, not yet credited, and past the hold
+ * staff set (if any) so a buyer still has time to say nothing arrived.
+ */
+export function canCredit(
+  shipment: { status: string; creditedAt: Date | null; payoutMinor: number | null; deliveredAt?: Date | null; disputedAt?: Date | null; disputeResolvedAt?: Date | null },
+  paymentStatus: string,
+  holdDays: number | null = null,
+  now: Date = new Date()
+): boolean {
+  if (shipment.status !== "DELIVERED" || shipment.creditedAt !== null || shipment.payoutMinor === null || paymentStatus !== "PAID") return false;
+  if (isDisputeOpen(shipment)) return false;
+  const due = creditDueAt(shipment.deliveredAt ?? null, holdDays);
+  return due === null || due <= now;
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** A buyer's complaint that staff have not decided yet; its money waits. */
+export function isDisputeOpen(part: { disputedAt?: Date | string | null; disputeResolvedAt?: Date | string | null }): boolean {
+  return Boolean(part.disputedAt) && !part.disputeResolvedAt;
+}
+
+/**
+ * Whether the buyer can still report a problem with a shop's part: it is on the way or marked delivered,
+ * its money has not reached the shop, and no complaint was made before.
+ */
+export function canDispute(part: { status: string; creditedAt?: Date | string | null; disputedAt?: Date | string | null }): boolean {
+  return (part.status === "SHIPPED" || part.status === "DELIVERED") && !part.creditedAt && !part.disputedAt;
+}
+
+export const disputeSchema = z.object({ shopId: z.string().min(1).max(40), note: z.string().trim().min(5).max(500) }).strict();
+export const disputeDecisionSchema = z.object({ action: z.enum(["RELEASE", "REFUND"]), note: z.string().trim().min(3).max(500) }).strict();
+
+/** When a delivered part's money reaches the balance; null when there is no hold. */
+export function creditDueAt(deliveredAt: Date | null, holdDays: number | null): Date | null {
+  if (!holdDays) return null;
+  return new Date((deliveredAt ?? new Date(0)).getTime() + holdDays * DAY_MS);
+}
+
+/** Days staff hold a delivered order's money before it reaches the shop; null pays out on delivery. */
+export const PAYOUT_HOLD_KEY = "shopPayoutHold";
+export const payoutHoldSchema = z.object({ days: z.number().int().min(1).max(60).nullable() }).strict();
+export type PayoutHold = z.infer<typeof payoutHoldSchema>;
+
+export function parsePayoutHold(raw: string | null | undefined): PayoutHold {
+  if (!raw) return { days: null };
+  try {
+    const parsed = payoutHoldSchema.safeParse(JSON.parse(raw));
+    return parsed.success ? parsed.data : { days: null };
+  } catch {
+    return { days: null };
+  }
 }
 
 /** The commission for a shop's part: the lower rate when the shop's own QR or page brought the buyer. */

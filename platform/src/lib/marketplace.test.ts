@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { canCredit, commissionFor, editNeedsReview, parsePromotion, payoutDetailsSchema, promotionCost, promotionEnd, sellerProductSchema, shopOrderMoney, shopProductIsPublic, splitDelivery, stockStatusFor } from "./marketplace";
+import { canCredit, canDispute, commissionFor, creditDueAt, isDisputeOpen, editNeedsReview, parsePayoutHold, parsePromotion, payoutDetailsSchema, promotionCost, promotionEnd, sellerProductSchema, shopOrderMoney, shopProductIsPublic, splitDelivery, stockStatusFor } from "./marketplace";
 
 test("a shop's listing is public only when approved, not hidden by the shop, and the shop is active", () => {
   assert.equal(shopProductIsPublic("APPROVED", false, "ACTIVE"), true);
@@ -62,6 +62,34 @@ test("earnings are credited once, only when delivered and paid", () => {
   assert.equal(canCredit({ status: "SHIPPED", creditedAt: null, payoutMinor: 100 }, "PAID"), false);
   assert.equal(canCredit({ status: "DELIVERED", creditedAt: null, payoutMinor: 100 }, "PENDING"), false);
   assert.equal(canCredit({ status: "DELIVERED", creditedAt: null, payoutMinor: null }, "PAID"), false);
+});
+
+test("a buyer's open complaint keeps the money back until staff decide; one complaint per part", () => {
+  const part = { status: "DELIVERED", creditedAt: null, payoutMinor: 100, deliveredAt: new Date("2026-11-01T00:00:00Z") };
+  const disputedAt = new Date("2026-11-02T00:00:00Z");
+  assert.equal(canCredit({ ...part, disputedAt }, "PAID"), false);
+  assert.equal(canCredit({ ...part, disputedAt, disputeResolvedAt: new Date() }, "PAID"), true);
+  assert.equal(isDisputeOpen({ disputedAt: null }), false);
+  assert.equal(isDisputeOpen({ disputedAt }), true);
+  assert.equal(canDispute({ status: "DELIVERED", creditedAt: null, disputedAt: null }), true);
+  assert.equal(canDispute({ status: "SHIPPED" }), true);
+  assert.equal(canDispute({ status: "CONFIRMED" }), false);
+  assert.equal(canDispute({ status: "DELIVERED", creditedAt: new Date() }), false);
+  assert.equal(canDispute({ status: "DELIVERED", disputedAt }), false);
+});
+
+test("a hold set by staff keeps delivered money back until it passes; no hold pays on delivery", () => {
+  assert.deepEqual(parsePayoutHold(null), { days: null });
+  assert.deepEqual(parsePayoutHold("{\"days\":0}"), { days: null });
+  assert.deepEqual(parsePayoutHold("{\"days\":3}"), { days: 3 });
+  const deliveredAt = new Date("2026-11-10T12:00:00Z");
+  const part = { status: "DELIVERED", creditedAt: null, payoutMinor: 100, deliveredAt };
+  assert.equal(creditDueAt(deliveredAt, null), null);
+  assert.equal(creditDueAt(deliveredAt, 3)?.toISOString(), "2026-11-13T12:00:00.000Z");
+  assert.equal(canCredit(part, "PAID", null, new Date("2026-11-10T12:00:01Z")), true);
+  assert.equal(canCredit(part, "PAID", 3, new Date("2026-11-13T11:59:59Z")), false);
+  assert.equal(canCredit(part, "PAID", 3, new Date("2026-11-13T12:00:00Z")), true);
+  assert.equal(canCredit(part, "PENDING", 3, new Date("2026-12-01T00:00:00Z")), false);
 });
 
 test("paid placement costs nothing until staff set a price, and stays within the day limit", () => {

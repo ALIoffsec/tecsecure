@@ -10,17 +10,18 @@ import { siteCopy } from "@/lib/site-copy";
 import { growthCopy } from "@/lib/growth-copy";
 import { formatDateTime, formatMinor } from "@/lib/format";
 import { nextStatuses, orderStatuses, type OrderStatusValue } from "@/lib/orders";
+import { canDispute, isDisputeOpen } from "@/lib/marketplace";
 import type { OrderLineProduct } from "@/lib/order-lines";
 import { checkoutCopy } from "@/lib/checkout-copy";
 import { regionCodes, regionNames, type RegionCode } from "@/lib/delivery";
 
 type OrderItem = { id: string; name: string; sku?: string | null; quantity: number; unitPriceMinor?: number | null; product?: OrderLineProduct; shopId?: string | null };
-type Shipment = { shopId: string; status: string; sellerNote: string | null; shop: { name: string; slug: string } };
+type Shipment = { shopId: string; status: string; sellerNote: string | null; creditedAt?: string | Date | null; disputedAt?: string | Date | null; disputeResolution?: string | null; disputeResolvedAt?: string | Date | null; shop: { name: string; slug: string } };
 
 const shipmentWords = {
-  uz: { title: "Do‘konlar jo‘natmasi", seller: "Sotuvchi", note: "Sotuvchi izohi" },
-  ru: { title: "Отправления магазинов", seller: "Продавец", note: "Комментарий продавца" },
-  en: { title: "Shop shipments", seller: "Seller", note: "Seller's note" }
+  uz: { title: "Do‘konlar jo‘natmasi", seller: "Sotuvchi", note: "Sotuvchi izohi", problem: "Muammo bor", problemHint: "Nima bo‘ldi? Masalan: kelmadi, boshqa mahsulot keldi, singan.", send: "Yuborish", cancel: "Bekor", tooShort: "Kamida 5 belgi yozing.", sent: "Murojaatingiz qabul qilindi. Xodimimiz bog‘lanadi; hal bo‘lguncha sotuvchiga pul o‘tkazilmaydi.", open: "Murojaat ko‘rib chiqilmoqda", failed: "Yuborilmadi. Qayta urinib ko‘ring.", RELEASED: "Murojaat ko‘rib chiqildi", REFUNDED: "Pul qaytarildi" } as Record<string, string>,
+  ru: { title: "Отправления магазинов", seller: "Продавец", note: "Комментарий продавца", problem: "Есть проблема", problemHint: "Что случилось? Например: не пришло, пришёл другой товар, сломано.", send: "Отправить", cancel: "Отмена", tooShort: "Напишите хотя бы 5 символов.", sent: "Обращение принято. Сотрудник свяжется с вами; пока вопрос не решён, продавец денег не получит.", open: "Обращение рассматривается", failed: "Не отправлено. Попробуйте ещё раз.", RELEASED: "Обращение рассмотрено", REFUNDED: "Деньги возвращены" } as Record<string, string>,
+  en: { title: "Shop shipments", seller: "Seller", note: "Seller's note", problem: "Report a problem", problemHint: "What happened? For example: it did not arrive, wrong item, broken.", send: "Send", cancel: "Cancel", tooShort: "Write at least 5 characters.", sent: "We got your report. Our staff will contact you; the seller is not paid until it is settled.", open: "Report under review", failed: "Not sent. Please try again.", RELEASED: "Report reviewed", REFUNDED: "Money returned" } as Record<string, string>
 };
 type OrderBase = {
   id: string; reference: string; status: string; recipientName: string; phone: string; city: string; address: string;
@@ -66,7 +67,7 @@ export function OrderLines({ items, currency, shipments }: { items: OrderItem[];
 }
 
 /** Each shop's own parcel: who ships it, where it stands, and the shop's note (a tracking number). */
-export function ShopShipments({ shipments }: { shipments?: Shipment[] }) {
+export function ShopShipments({ shipments, orderId }: { shipments?: Shipment[]; orderId?: string }) {
   const { locale } = useSitePreferences();
   const c = siteCopy[locale].orders;
   const w = shipmentWords[locale];
@@ -76,7 +77,43 @@ export function ShopShipments({ shipments }: { shipments?: Shipment[] }) {
     {shipments.map(part => <div className="order-shipment" key={part.shopId}>
       <span><Link href={`/s/${part.shop.slug}`}>{part.shop.name}</Link> · <span className="order-status">{c.status[part.status] ?? part.status}</span></span>
       {part.sellerNote && <span className="small muted">{w.note}: {part.sellerNote}</span>}
+      {isDisputeOpen(part) && <span className="small order-shipment-dispute">⚠️ {w.open}</span>}
+      {part.disputeResolution && <span className="small muted">{w[part.disputeResolution] ?? part.disputeResolution}</span>}
+      {orderId && canDispute(part) && <ShipmentProblem orderId={orderId} shopId={part.shopId} />}
     </div>)}
+  </div>;
+}
+
+/** The buyer's "something is wrong" with one shop's parcel: it holds the shop's money until staff decide. */
+function ShipmentProblem({ orderId, shopId }: { orderId: string; shopId: string }) {
+  const { locale } = useSitePreferences();
+  const w = shipmentWords[locale];
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [sent, setSent] = useState(false);
+  async function send() {
+    if (note.trim().length < 5) { setError(w.tooShort); return; }
+    setBusy(true); setError("");
+    const response = await fetch(`/api/orders/${orderId}/dispute`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ shopId, note: note.trim() }) }).catch(() => null);
+    const data = await response?.json().catch(() => ({})) ?? {};
+    setBusy(false);
+    if (!response?.ok) { setError(data.error || w.failed); return; }
+    setSent(true);
+    router.refresh();
+  }
+  if (sent) return <p className="small" role="status">{w.sent}</p>;
+  if (!open) return <button type="button" className="text-link small order-shipment-problem" onClick={() => setOpen(true)}>{w.problem}</button>;
+  return <div className="order-shipment-form">
+    <ToastMessage message={error} variant="error" />
+    <label className="small" htmlFor={`problem-${orderId}-${shopId}`}>{w.problemHint}</label>
+    <textarea id={`problem-${orderId}-${shopId}`} rows={2} maxLength={500} value={note} onChange={event => setNote(event.target.value)} />
+    <div className="order-actions">
+      <button type="button" className="button small" disabled={busy} onClick={() => void send()}>{w.send}</button>
+      <button type="button" className="button ghost small" disabled={busy} onClick={() => setOpen(false)}>{w.cancel}</button>
+    </div>
   </div>;
 }
 
@@ -160,7 +197,7 @@ export function CustomerOrders({ orders }: { orders: CustomerOrder[] }) {
                 {order.paymentMethod === "BANK_TRANSFER" && <Link className="small text-link order-invoice" href={`/portal/orders/${order.id}/invoice`}>{g.invoice}</Link>}
               </div>
             </div>
-            <OrderLines items={order.items} currency={order.currency} shipments={order.shipments} /><ShopShipments shipments={order.shipments} />
+            <OrderLines items={order.items} currency={order.currency} shipments={order.shipments} /><ShopShipments shipments={order.shipments} orderId={order.id} />
             <details>
               <summary className="small">{c.history}</summary>
               <ul className="stack small" style={{ marginTop: 8 }}>{order.history.map((entry) => <li key={entry.id}>{formatDateTime(entry.createdAt)} — <strong>{c.status[entry.toStatus] ?? entry.toStatus}</strong>{entry.note ? ` · ${entry.note}` : ""}</li>)}</ul>

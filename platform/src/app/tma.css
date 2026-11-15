@@ -123,7 +123,7 @@ body:has(.tma-shell) .cookie-consent { display: none !important; }
 .tma-line.is-sub { grid-template-columns: 1fr auto; color: var(--tma-hint); font-size: .9rem; }
 .tma-line.is-total { grid-template-columns: 1fr auto; font-weight: 700; }
 
-.tma-row-button, .tma-row-static { display: block; width: 100%; padding: 13px 16px; border: 0; background: transparent; text-align: left; color: var(--tma-link) !important; font-weight: 500; cursor: pointer; }
+.tma-row-button, .tma-row-static { display: block; width: 100%; padding: 13px 16px; border: 0; background: transparent; text-align: left; color: var(--tma-link) !important; font: inherit; font-weight: 500 !important; text-decoration: none; cursor: pointer; }
 .tma-row-static { color: var(--tma-text) !important; cursor: default; }
 .tma-row-button.is-danger { color: var(--tma-danger) !important; }
 .tma-row-button:disabled { opacity: .5; }
@@ -178,6 +178,10 @@ body:has(.tma-shell) .cookie-consent { display: none !important; }
 
 @media (min-width: 640px) {
   .tma-shell > :not(.tma-tabs):not(script) { max-width: 560px; margin-left: auto; margin-right: auto; }
+  /* Section titles keep their inset but line up with the centred column. */
+  .tma-shell > .tma-section-title { margin-left: auto !important; margin-right: auto !important; padding-inline: 16px; box-sizing: border-box; }
+  /* In a browser the column is as wide as the tab bar. */
+  .tma-shell.is-web > :not(.tma-tabs):not(script) { max-width: 728px; }
   .tma-form .form-row { grid-template-columns: 1fr 1fr; }
 }
 
@@ -214,6 +218,7 @@ body:has(.tma-shell) .cookie-consent { display: none !important; }
 .tma-link-box { display: block; padding: 10px 12px; border-radius: 10px; background: var(--tma-soft); font: 600 .85rem ui-monospace, SFMono-Regular, Consolas, monospace; overflow-wrap: anywhere; user-select: all; }
 .tma-notice { margin: 0 0 12px; padding: 10px 14px; border-radius: 12px; background: var(--tma-soft); font-size: .9rem; }
 .tma-notice.is-warning { background: rgba(245, 165, 36, .16); }
+.tma-notice-button { display: block; width: 100%; margin: 0 0 12px; box-sizing: border-box; border: 0; color: inherit; font: inherit; text-align: left; cursor: pointer; }
 .tma-notice.is-danger { background: rgba(229, 72, 77, .14); }
 
 .tma-title-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 4px 4px 14px; }

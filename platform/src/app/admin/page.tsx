@@ -88,6 +88,12 @@ export default async function AdminPage() {
   }));
   const requestStats = Object.fromEntries(requestStatusGroups.map((item) => [item.status, item._count._all]));
   const requestTotal = requestStatusGroups.reduce((total, item) => total + item._count._all, 0);
-  const pendingShopCount = privileged ? await prisma.shop.count({ where: { status: "PENDING" } }) : 0;
+  // Everything on the shops page that waits for staff: applications, listings, payouts, buyers' complaints.
+  const pendingShopCount = privileged ? (await Promise.all([
+    prisma.shop.count({ where: { status: "PENDING" } }),
+    prisma.product.count({ where: { shopId: { not: null }, moderation: "PENDING", status: { not: "ARCHIVED" } } }),
+    prisma.shopPayout.count({ where: { status: "REQUESTED" } }),
+    prisma.shopOrder.count({ where: { disputedAt: { not: null }, disputeResolvedAt: null } })
+  ])).reduce((sum, count) => sum + count, 0) : 0;
   return <><AdminSecurityBoundary /><AdminWorkspace overview={overview} newOrderCount={newOrderCount} pendingShopCount={pendingShopCount} services={services} requests={requests} requestStats={requestStats} requestTotal={requestTotal} productCategories={productCategories} articles={articles} settings={Object.fromEntries(settings.map((item) => [item.key, item.value]))} notifications={notifications} projects={projects} quotations={quotations} pendingPayments={pendingPayments} plans={managedPlans} users={managedUsers} siteBlocks={siteBlocks} portfolioPosts={portfolioPosts} walletRequests={walletRequests} metrics={{ users: managedUsers.length, projects: projectCount, invoices }} role={actor.role} permissions={actor.permissions} actorId={actor.id} /></>;
 }

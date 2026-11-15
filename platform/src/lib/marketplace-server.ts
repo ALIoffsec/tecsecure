@@ -1,6 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "./prisma";
-import { canCredit, shopProductIsPublic, stockStatusFor } from "./marketplace";
+import { PAYOUT_HOLD_KEY, canCredit, parsePayoutHold, shopProductIsPublic, stockStatusFor } from "./marketplace";
 import { notifyShopOwner } from "./shop-server";
 import { escapeTelegramHtml } from "./telegram";
 import { formatMinor } from "./format";
@@ -46,14 +46,22 @@ export async function changeShopBalance(tx: Tx, shopId: string, amountMinor: num
  * Credits every shop part of an order that is delivered and paid and not credited yet. Safe to call from
  * any place that delivers or confirms payment: each part is credited at most once.
  */
+/** The hold staff set on delivered money (admin → shops → settings). */
+export async function loadPayoutHold(): Promise<number | null> {
+  const record = await prisma.siteSetting.findUnique({ where: { key: PAYOUT_HOLD_KEY }, select: { value: true } });
+  return parsePayoutHold(record?.value).days;
+}
+
 export async function creditOrderShipments(orderId: string, actorId?: string): Promise<void> {
-  const order = await prisma.order.findUnique({
+  const [order, holdDays] = await Promise.all([prisma.order.findUnique({
     where: { id: orderId },
-    select: { reference: true, paymentStatus: true, shipments: { select: { id: true, shopId: true, status: true, creditedAt: true, payoutMinor: true, shop: { select: { ownerId: true } } } } }
-  });
+    select: { reference: true, paymentStatus: true, shipments: { select: { id: true, shopId: true, status: true, creditedAt: true, payoutMinor: true, deliveredAt: true, updatedAt: true, disputedAt: true, disputeResolvedAt: true, shop: { select: { ownerId: true, status: true } } } } }
+  }), loadPayoutHold()]);
   if (!order) return;
   for (const shipment of order.shipments) {
-    if (!canCredit(shipment, order.paymentStatus)) continue;
+    // A suspended shop's money waits: staff suspend a shop when buyers complain.
+    if (shipment.shop.status !== "ACTIVE") continue;
+    if (!canCredit({ ...shipment, deliveredAt: shipment.deliveredAt ?? shipment.updatedAt }, order.paymentStatus, holdDays)) continue;
     const credited = await prisma.$transaction(async (tx) => {
       const claim = await tx.shopOrder.updateMany({ where: { id: shipment.id, creditedAt: null }, data: { creditedAt: new Date() } });
       if (claim.count === 0) return null;
@@ -63,6 +71,29 @@ export async function creditOrderShipments(orderId: string, actorId?: string): P
       await notifyShopOwner(shipment.shop.ownerId, `💰 <b>Balansga yozildi: ${escapeTelegramHtml(formatMinor(shipment.payoutMinor as number, "UZS"))}</b>\nBuyurtma <code>${escapeTelegramHtml(order.reference)}</code> yetkazildi va to‘langan. Joriy balans: ${escapeTelegramHtml(formatMinor(credited, "UZS"))}.`);
     }
   }
+}
+
+/**
+ * Credits a shop's delivered parts whose hold has passed. There is no scheduler, so this runs whenever the
+ * shop looks at its money (app, bot) or asks for a payout; it is cheap when nothing is due.
+ */
+export async function releaseDueCredits(shopId: string): Promise<number> {
+  const holdDays = await loadPayoutHold();
+  const cutoff = new Date(Date.now() - (holdDays ?? 0) * 24 * 60 * 60 * 1000);
+  const due = await prisma.shopOrder.findMany({
+    where: {
+      shopId, status: "DELIVERED", creditedAt: null, payoutMinor: { not: null }, order: { paymentStatus: "PAID" },
+      AND: [
+        { OR: [{ deliveredAt: { lte: cutoff } }, { deliveredAt: null, updatedAt: { lte: cutoff } }] },
+        { OR: [{ disputedAt: null }, { disputeResolvedAt: { not: null } }] }
+      ]
+    },
+    select: { orderId: true },
+    take: 50
+  });
+  const orders = [...new Set(due.map(row => row.orderId))];
+  for (const orderId of orders) await creditOrderShipments(orderId);
+  return orders.length;
 }
 
 /** Puts back the stock that cancelled lines had taken, and marks counted products in stock again. */

@@ -463,3 +463,14 @@ html[data-motion="off"] .showcase-dot, html[data-motion="off"] .showcase-dot-fil
 #app-shell .admin-moderation-specs dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
 #app-shell .order-shipments { display: grid; gap: 6px; margin: 8px 0; padding: 10px 12px; border: 1px solid var(--glass-edge, var(--line)); border-radius: 14px; }
 #app-shell .order-shipment { display: grid; gap: 2px; }
+
+/* Admin → shops → settings: the ad price and the payout hold side by side. */
+.admin-marketplace-settings { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); align-items: start; }
+.admin-marketplace-settings .panel-card { display: grid; gap: 12px; }
+.admin-marketplace-settings h2 { margin: 0; font-size: 1.1rem; }
+
+/* Buyer's "report a problem" on a shop parcel. */
+.order-shipment-dispute { color: var(--warning, #f5a524); }
+.order-shipment-problem { justify-self: start; padding: 0; border: 0; background: none; cursor: pointer; }
+.order-shipment-form { display: grid; gap: 8px; margin-top: 6px; }
+.order-shipment-form textarea { width: 100%; }

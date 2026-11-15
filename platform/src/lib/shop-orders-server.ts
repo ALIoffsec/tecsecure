@@ -1,7 +1,7 @@
 import type { OrderStatus } from "@prisma/client";
 import { prisma } from "./prisma";
 import { canTransition, type OrderStatusValue } from "./orders";
-import { applyOrderStatus, isWholeOrder, shipmentStamp } from "./order-flow";
+import { applyOrderStatus, isWholeOrder, refundToWallet, shipmentStamp } from "./order-flow";
 import { creditOrderShipments, restoreStock } from "./marketplace-server";
 import { escapeTelegramHtml, notifyTelegramAdmins, notifyTelegramUser } from "./telegram";
 import { formatMinor } from "./format";
@@ -13,7 +13,8 @@ const statusWords: Record<string, string> = { CONFIRMED: "qabul qilindi", PREPAR
 /**
  * A shop moves its part of an order. It cannot accept before the buyer's money is in, cannot skip steps,
  * and must give a reason to cancel. When the part is the whole order, the order follows (with its refund
- * rules); in a mixed order a cancelled part is flagged to staff for a partial refund.
+ * rules); in a mixed order a cancelled part is refunded to the wallet when paid from it, and otherwise
+ * flagged to staff for a partial refund by hand.
  */
 export async function moveShopPart(shopId: string, orderId: string, to: OrderStatusValue, note: string | null, actorId: string): Promise<ShopMoveResult> {
   const part = await prisma.shopOrder.findUnique({
@@ -29,6 +30,7 @@ export async function moveShopPart(shopId: string, orderId: string, to: OrderSta
   if (to === "CANCELLED" && (!note || note.length < 3)) return { ok: false, status: 400, error: "Bekor qilish sababini yozing (mijozga ko‘rinadi).", code: "NOTE_REQUIRED" };
 
   let partial = false;
+  let walletRefund = 0;
   const moved = await prisma.$transaction(async (tx) => {
     const claim = await tx.shopOrder.updateMany({ where: { id: part.id, status: part.status }, data: { status: to, ...shipmentStamp(to), ...(note ? { sellerNote: note } : {}) } });
     if (claim.count === 0) return false;
@@ -42,7 +44,14 @@ export async function moveShopPart(shopId: string, orderId: string, to: OrderSta
     if (whole && canTransition(part.order.status, to)) {
       await applyOrderStatus(tx, part.order, to, actorId, note);
     } else if (to === "CANCELLED") {
-      await tx.orderStatusHistory.create({ data: { orderId, fromStatus: part.order.status, toStatus: part.order.status, note: `Do‘kon “${part.shop.name}” o‘z qismini bekor qildi: ${note}`, actorId } });
+      // A wallet payment for the cancelled part goes straight back; other payments are returned by staff.
+      const share = (part.itemsTotalMinor ?? 0) + (part.deliveryShareMinor ?? 0);
+      if (part.order.paymentMethod === "WALLET" && part.order.paymentStatus === "PAID" && share > 0) {
+        await refundToWallet(tx, part.order, share, actorId, `Do‘kon “${part.shop.name}” qismi bekor qilindi`);
+        walletRefund = share;
+      }
+      const refunded = walletRefund ? `. Hamyonga qaytarildi: ${formatMinor(walletRefund, "UZS")}` : "";
+      await tx.orderStatusHistory.create({ data: { orderId, fromStatus: part.order.status, toStatus: part.order.status, note: `Do‘kon “${part.shop.name}” o‘z qismini bekor qildi: ${note}${refunded}`, actorId } });
       partial = true;
     }
     await tx.auditLog.create({ data: { actorId, action: "SHOP_ORDER_STATUS_CHANGED", entity: "ShopOrder", entityId: part.id, metadata: { from: part.status, to } } });
@@ -50,8 +59,8 @@ export async function moveShopPart(shopId: string, orderId: string, to: OrderSta
   });
   if (!moved) return { ok: false, status: 409, error: "Holat allaqachon o‘zgargan. Ro‘yxatni yangilang." };
 
-  await notifyTelegramUser(part.order.customerId, `<b>Tecsecure: buyurtma ${escapeTelegramHtml(statusWords[to] ?? to)}</b>\nRaqam: <code>${escapeTelegramHtml(part.order.reference)}</code>\nSotuvchi: ${escapeTelegramHtml(part.shop.name)}${note ? `\nIzoh: ${escapeTelegramHtml(note)}` : ""}`);
-  if (partial && part.order.paymentStatus === "PAID") {
+  await notifyTelegramUser(part.order.customerId, `<b>Tecsecure: buyurtma ${escapeTelegramHtml(statusWords[to] ?? to)}</b>\nRaqam: <code>${escapeTelegramHtml(part.order.reference)}</code>\nSotuvchi: ${escapeTelegramHtml(part.shop.name)}${note ? `\nIzoh: ${escapeTelegramHtml(note)}` : ""}${walletRefund ? `\nHamyoningizga qaytarildi: <b>${escapeTelegramHtml(formatMinor(walletRefund, "UZS"))}</b>` : ""}`);
+  if (partial && part.order.paymentStatus === "PAID" && !walletRefund) {
     const refund = (part.itemsTotalMinor ?? 0) + (part.deliveryShareMinor ?? 0);
     await notifyTelegramAdmins(`<b>↩️ Qisman qaytarish kerak</b>\nBuyurtma <code>${escapeTelegramHtml(part.order.reference)}</code>: do‘kon “${escapeTelegramHtml(part.shop.name)}” o‘z qismini bekor qildi.\nMijozga qaytarish: <b>${escapeTelegramHtml(formatMinor(refund, "UZS"))}</b>\nSabab: ${escapeTelegramHtml(note ?? "")}`, part.order.reference);
   }
@@ -68,6 +77,7 @@ export async function shopOrdersFor(shopId: string, take = 100) {
     select: {
       id: true, status: true, itemsTotalMinor: true, commissionPercent: true, commissionMinor: true, deliveryShareMinor: true, payoutMinor: true, sellerNote: true,
       creditedAt: true, createdAt: true, confirmedAt: true, shippedAt: true, deliveredAt: true, cancelledAt: true,
+      disputedAt: true, disputeNote: true, disputeResolution: true, disputeResolvedAt: true,
       order: { select: { id: true, reference: true, status: true, paymentStatus: true, paymentMethod: true, recipientName: true, phone: true, city: true, address: true, region: true, deliveryMethod: true, note: true, latitude: true, longitude: true, createdAt: true,
         items: { where: { shopId }, select: { id: true, name: true, quantity: true, unitPriceMinor: true, productId: true } } } }
     }

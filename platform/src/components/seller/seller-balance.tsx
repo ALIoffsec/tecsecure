@@ -105,10 +105,8 @@ export function SellerBalance({ nav }: { nav: SellerNav }) {
       <p className="tma-hint tma-hint-flat">{b.detailsHint}</p>
       <div className="field"><label htmlFor="d-recipient">{b.recipient}</label><input id="d-recipient" value={details.payoutRecipient} maxLength={160} onChange={event => setDetails({ ...details, payoutRecipient: event.target.value })} /></div>
       <div className="field"><label htmlFor="d-bank">{b.bank}</label><input id="d-bank" value={details.payoutBankName} maxLength={120} onChange={event => setDetails({ ...details, payoutBankName: event.target.value })} /></div>
-      <div className="tma-form-row">
-        <div className="field"><label htmlFor="d-account">{b.account}</label><input id="d-account" inputMode="numeric" value={details.payoutAccount} maxLength={24} onChange={event => setDetails({ ...details, payoutAccount: event.target.value.replace(/[^\d ]/g, "") })} /></div>
+      <div className="field"><label htmlFor="d-account">{b.account}</label><input id="d-account" inputMode="numeric" value={details.payoutAccount} maxLength={24} onChange={event => setDetails({ ...details, payoutAccount: event.target.value.replace(/[^\d ]/g, "") })} /></div>
         <div className="field"><label htmlFor="d-mfo">{b.mfo}</label><input id="d-mfo" inputMode="numeric" value={details.payoutMfo} maxLength={5} onChange={event => setDetails({ ...details, payoutMfo: event.target.value.replace(/\D/g, "") })} /></div>
-      </div>
       <button type="button" className="tma-button secondary" disabled={busy} onClick={() => void saveDetails()}>{b.saveDetails}</button>
     </section>
   </>;

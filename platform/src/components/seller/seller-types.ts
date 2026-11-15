@@ -10,6 +10,7 @@ export type SellerProduct = {
 export type SellerOrder = {
   id: string; status: string; itemsTotalMinor: number | null; commissionPercent: number; commissionMinor: number | null; deliveryShareMinor: number | null; payoutMinor: number | null;
   sellerNote: string | null; creditedAt: string | null; createdAt: string; confirmedAt: string | null; shippedAt: string | null; deliveredAt: string | null; cancelledAt: string | null;
+  disputedAt: string | null; disputeNote: string | null; disputeResolution: string | null; disputeResolvedAt: string | null;
   order: {
     id: string; reference: string; status: string; paymentStatus: string; paymentMethod: string; recipientName: string; phone: string; city: string; address: string;
     region: string | null; deliveryMethod: string | null; note: string | null; latitude: number | null; longitude: number | null; createdAt: string;
@@ -19,7 +20,7 @@ export type SellerOrder = {
 
 export type SellerOverview = {
   shop: { name: string; slug: string; commissionPercent: number; referralCommissionPercent: number; notifyOrders: boolean };
-  orders: { toAccept: number; awaitingPayment: number; toShip: number; shipped: number; delivered: number };
+  orders: { toAccept: number; awaitingPayment: number; toShip: number; shipped: number; delivered: number; disputes?: number };
   money: { balanceMinor: number; pendingMinor: number; earned30Minor: number };
   products: {
     onSale: number; inReview: number; rejected: number; hidden: number; advertised: number; views: number;

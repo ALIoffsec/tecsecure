@@ -69,7 +69,7 @@ export default async function ProductDetailPage({ params }: Props) {
   const [related, reviews, questions, canReview, alreadyReviewed] = await Promise.all([
     product.categoryId ? prisma.product.findMany({
       where: { status: "PUBLISHED", id: { not: product.id }, categoryId: product.categoryId },
-      include: { category: { select: { name: true, slug: true } } },
+      include: { category: { select: { name: true, slug: true } }, shop: { select: { name: true, slug: true } } },
       take: 4
     }) : [],
     prisma.productReview.findMany({ where: { productId: product.id }, orderBy: { createdAt: "desc" }, take: 50, include: { user: { select: { name: true } } } }),

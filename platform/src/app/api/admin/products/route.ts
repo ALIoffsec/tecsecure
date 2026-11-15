@@ -37,7 +37,7 @@ export async function GET(request: Request) {
   const [products, total] = await Promise.all([
     prisma.product.findMany({
       where,
-      include: { category: { select: { name: true, slug: true } } },
+      include: { category: { select: { name: true, slug: true } }, shop: { select: { name: true, slug: true } } },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE

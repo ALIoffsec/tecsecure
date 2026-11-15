@@ -6,6 +6,7 @@ import { BottomActions, callNumber, confirmAction, haptic, useBackButton } from 
 import { sellerAppCopy } from "@/lib/seller-app-copy";
 import { siteCopy } from "@/lib/site-copy";
 import { formatDateTime, formatMinor } from "@/lib/format";
+import { creditDueAt, isDisputeOpen } from "@/lib/marketplace";
 import { nextStatuses, type OrderStatusValue } from "@/lib/orders";
 import { regionNames, type RegionCode } from "@/lib/delivery";
 import { sellerApi, useSellerData } from "./seller-api";
@@ -43,7 +44,7 @@ export function SellerOrders({ nav }: { nav: SellerNav }) {
         <span className="tma-item-top"><strong>{order.order.reference}</strong><span className={`tma-pill is-${order.status.toLowerCase()}`}>{c.orders.status[order.status]}</span></span>
         <span className="tma-item-text">{order.order.items.map(item => `${item.name} × ${item.quantity}`).join(", ")}</span>
         <span className="tma-item-sub">{order.order.recipientName} · {order.order.city}{order.payoutMinor !== null ? ` · ${formatMinor(order.payoutMinor, "UZS", locale)}` : ""}</span>
-        <span className="tma-item-meta">{formatDateTime(order.createdAt)}{order.status === "NEW" && order.order.paymentStatus !== "PAID" ? ` · ${c.home.awaitingPayment}` : ""}</span>
+        <span className="tma-item-meta">{formatDateTime(order.createdAt)}{order.status === "NEW" && order.order.paymentStatus !== "PAID" ? ` · ${c.home.awaitingPayment}` : ""}{isDisputeOpen(order) ? ` · ⚠️ ${c.orders.disputeShort}` : ""}</span>
       </button>)}
     </section>}
   </>;
@@ -53,7 +54,7 @@ export function SellerOrderDetail({ id, nav }: { id: string; nav: SellerNav }) {
   const { locale } = useSitePreferences();
   const c = sellerAppCopy[locale];
   const site = siteCopy[locale];
-  const { data, failed, reload } = useSellerData<{ orders: SellerOrder[] }>("/api/shop/orders");
+  const { data, failed, reload } = useSellerData<{ orders: SellerOrder[]; payoutHoldDays?: number | null }>("/api/shop/orders");
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState(false);
@@ -101,6 +102,8 @@ export function SellerOrderDetail({ id, nav }: { id: string; nav: SellerNav }) {
       <span className={`tma-pill is-${part.status.toLowerCase()}`}>{c.orders.status[part.status]}</span>
     </header>
     {part.status === "NEW" && !paid && <p className="tma-notice is-warning">{c.orders.notPaid}</p>}
+    {isDisputeOpen(part) && <p className="tma-notice is-warning"><b>{c.orders.disputeTitle}</b> {part.disputeNote}<br />{c.orders.disputeHint}</p>}
+    {part.disputeResolution && <p className="tma-notice">{c.orders.disputeDone[part.disputeResolution] ?? part.disputeResolution}</p>}
 
     <h2 className="tma-section-title">{c.orders.items}</h2>
     <section className="tma-section tma-list">
@@ -129,7 +132,9 @@ export function SellerOrderDetail({ id, nav }: { id: string; nav: SellerNav }) {
       <div className="tma-line is-sub"><span className="tma-line-name">{c.orders.commission} ({part.commissionPercent}%)</span><span className="tma-line-sum">−{money(part.commissionMinor)}</span></div>
       {part.deliveryShareMinor !== null && part.deliveryShareMinor > 0 && <div className="tma-line is-sub"><span className="tma-line-name">{c.orders.deliveryShare}</span><span className="tma-line-sum">+{money(part.deliveryShareMinor)}</span></div>}
       <div className="tma-line is-total"><span className="tma-line-name">{c.orders.youGet}</span><span className="tma-line-sum">{money(part.payoutMinor)}</span></div>
-      <p className="tma-hint tma-hint-pad">{part.creditedAt ? `${c.orders.credited} · ${formatDateTime(part.creditedAt)}` : c.orders.notCredited}</p>
+      <p className="tma-hint tma-hint-pad">{part.creditedAt ? `${c.orders.credited} · ${formatDateTime(part.creditedAt)}`
+        : part.status === "DELIVERED" && part.deliveredAt && data?.payoutHoldDays ? `${c.orders.creditOn} ${formatDateTime(creditDueAt(new Date(part.deliveredAt), data.payoutHoldDays) as Date)}`
+        : data?.payoutHoldDays ? `${c.orders.notCredited} ${c.orders.holdNote(data.payoutHoldDays)}` : c.orders.notCredited}</p>
     </section>
 
     <h2 className="tma-section-title">{c.orders.timeline}</h2>

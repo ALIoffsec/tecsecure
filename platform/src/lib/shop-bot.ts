@@ -2,7 +2,7 @@ import { prisma } from "./prisma";
 import { answerTelegramCallbackQuery, escapeTelegramHtml, sendTelegramMessage, withTelegramBot, type TelegramReplyMarkup } from "./telegram";
 import { moveShopPart } from "./shop-orders-server";
 import { formatMinor } from "./format";
-import { shopAppUrl } from "./marketplace-server";
+import { releaseDueCredits, shopAppUrl } from "./marketplace-server";
 
 /**
  * The shop bot: a short summary on /start, the orders waiting on /buyurtmalar, the balance on /balans,
@@ -19,10 +19,14 @@ const openButton = (label: string, screen?: string): TelegramReplyMarkup | undef
 };
 
 async function shopOf(telegramId: number) {
-  return prisma.user.findFirst({
+  const find = () => prisma.user.findFirst({
     where: { telegramChatId: String(telegramId), active: true, role: "CUSTOMER" },
     select: { id: true, shop: { select: { id: true, name: true, status: true, balanceMinor: true } } }
   });
+  const owner = await find();
+  // Money whose hold has passed lands before the bot quotes the balance.
+  if (owner?.shop?.status === "ACTIVE" && await releaseDueCredits(owner.shop.id)) return find();
+  return owner;
 }
 
 const waitingStatuses = ["NEW", "CONFIRMED", "PREPARING"] as const;

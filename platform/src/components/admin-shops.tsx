@@ -10,13 +10,13 @@ import { siteCopy } from "@/lib/site-copy";
 import { regionCodes, regionNames, type RegionCode } from "@/lib/delivery";
 import { formatDateTime, formatMinor } from "@/lib/format";
 import { shopStatuses } from "@/lib/shops";
-import { AdminModeration, AdminPayouts, AdminPromotion } from "./admin-marketplace";
+import { AdminDisputes, AdminModeration, AdminPayoutHold, AdminPayouts, AdminPromotion } from "./admin-marketplace";
 
-export type MarketplaceView = "shops" | "moderation" | "payouts" | "promotion";
+export type MarketplaceView = "shops" | "moderation" | "payouts" | "disputes" | "promotion";
 const viewNames: Record<string, Record<MarketplaceView, string>> = {
-  uz: { shops: "Do‘konlar", moderation: "Moderatsiya", payouts: "To‘lovlar", promotion: "Reklama narxi" },
-  ru: { shops: "Магазины", moderation: "Модерация", payouts: "Выплаты", promotion: "Цена рекламы" },
-  en: { shops: "Shops", moderation: "Moderation", payouts: "Payouts", promotion: "Ad price" }
+  uz: { shops: "Do‘konlar", moderation: "Moderatsiya", payouts: "To‘lovlar", disputes: "Murojaatlar", promotion: "Sozlamalar" },
+  ru: { shops: "Магазины", moderation: "Модерация", payouts: "Выплаты", disputes: "Претензии", promotion: "Настройки" },
+  en: { shops: "Shops", moderation: "Moderation", payouts: "Payouts", disputes: "Complaints", promotion: "Settings" }
 };
 
 export type AdminShop = {
@@ -93,12 +93,15 @@ function ShopCard({ shop }: { shop: AdminShop }) {
   </article>;
 }
 
-export function AdminShops({ shops, counts, status, view = "shops", waiting }: { shops: AdminShop[]; counts: Record<string, number>; status?: string; view?: MarketplaceView; waiting: { moderation: number; payouts: number } }) {
+export function AdminShops({ shops, counts, status, view = "shops", waiting }: { shops: AdminShop[]; counts: Record<string, number>; status?: string; view?: MarketplaceView; waiting: { moderation: number; payouts: number; disputes: number } }) {
   const { locale } = useSitePreferences();
   const c = sellerCopy[locale];
   const total = Object.values(counts).reduce((sum, value) => sum + value, 0);
   const names = viewNames[locale] ?? viewNames.uz;
-  const badge = (key: MarketplaceView) => key === "moderation" && waiting.moderation ? ` · ${waiting.moderation}` : key === "payouts" && waiting.payouts ? ` · ${waiting.payouts}` : "";
+  const badge = (key: MarketplaceView) => {
+    const count = key === "moderation" || key === "payouts" || key === "disputes" ? waiting[key] : 0;
+    return count ? ` · ${count}` : "";
+  };
   return <div className="container page-shell admin-orders admin-shops">
     <Link className="small text-link" href="/admin">← {siteCopy[locale].admin.back}</Link>
     <h1 className="page-title">{c.admin.title}</h1>
@@ -107,7 +110,8 @@ export function AdminShops({ shops, counts, status, view = "shops", waiting }: {
     </nav>
     {view === "moderation" && <AdminModeration />}
     {view === "payouts" && <AdminPayouts />}
-    {view === "promotion" && <AdminPromotion />}
+    {view === "disputes" && <AdminDisputes />}
+    {view === "promotion" && <div className="admin-marketplace-settings"><AdminPromotion /><AdminPayoutHold /></div>}
     {view === "shops" && <>
     <nav className="shop-cats" aria-label={c.admin.title}>
       <Link className={`shop-chip${!status ? " is-active" : ""}`} href="/admin/shops">{c.admin.all} · {total}</Link>

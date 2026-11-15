@@ -1,6 +1,7 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "./prisma";
 import { currentShopOwner } from "./shop-server";
+import { releaseDueCredits } from "./marketplace-server";
 import type { AuthUser } from "./auth";
 import type { SellerProductInput } from "./marketplace";
 
@@ -14,6 +15,11 @@ export async function requireSellingShop(): Promise<ActiveShop | Response> {
   if (owner instanceof Response) return owner;
   if (!owner.shop) return Response.json({ error: "Avval do‘kon arizasini yuboring.", code: "NO_SHOP" }, { status: 404 });
   if (owner.shop.status !== "ACTIVE") return Response.json({ error: "Do‘kon faol emas: mahsulot va buyurtmalar tasdiqlangandan keyin ochiladi.", code: "SHOP_NOT_ACTIVE" }, { status: 403 });
+  // Money whose hold has passed lands before anything reads the balance.
+  if (await releaseDueCredits(owner.shop.id)) {
+    const shop = await prisma.shop.findUnique({ where: { id: owner.shop.id } });
+    if (shop) return { user: owner.user, shop };
+  }
   return { user: owner.user, shop: owner.shop };
 }
 

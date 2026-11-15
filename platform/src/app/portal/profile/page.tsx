@@ -26,7 +26,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
     }),
     prisma.order.findMany({
       where: { customerId: user.id },
-      include: { items: orderItemsWithProduct, history: { orderBy: { createdAt: "asc" } }, shipments: { select: { shopId: true, status: true, sellerNote: true, shop: { select: { name: true, slug: true } } } } },
+      include: { items: orderItemsWithProduct, history: { orderBy: { createdAt: "asc" } }, shipments: { select: { shopId: true, status: true, sellerNote: true, creditedAt: true, disputedAt: true, disputeResolution: true, disputeResolvedAt: true, shop: { select: { name: true, slug: true } } } } },
       orderBy: { createdAt: "desc" },
       take: 100
     }),

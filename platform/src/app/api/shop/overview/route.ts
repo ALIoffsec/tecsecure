@@ -11,7 +11,7 @@ export async function GET() {
   if (seller instanceof Response) return seller;
   const shopId = seller.shop.id;
   const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-  const [toAccept, awaitingPayment, toShip, shipped, earned30, pending, products, top, promotion, ordersDelivered] = await Promise.all([
+  const [toAccept, awaitingPayment, toShip, shipped, earned30, pending, products, top, promotion, ordersDelivered, disputes] = await Promise.all([
     prisma.shopOrder.count({ where: { shopId, status: "NEW", order: { paymentStatus: "PAID" } } }),
     prisma.shopOrder.count({ where: { shopId, status: "NEW", order: { paymentStatus: { not: "PAID" } } } }),
     prisma.shopOrder.count({ where: { shopId, status: { in: ["CONFIRMED", "PREPARING"] } } }),
@@ -21,16 +21,18 @@ export async function GET() {
     prisma.product.findMany({ where: { shopId, status: { not: "ARCHIVED" } }, select: { id: true, name: true, status: true, moderation: true, sellerHidden: true, stockQuantity: true, stockStatus: true, viewCount: true, promotedUntil: true } }),
     prisma.orderItem.groupBy({ by: ["productId"], where: { shopId, order: { status: { not: "CANCELLED" }, createdAt: { gte: since } } }, _sum: { quantity: true }, orderBy: { _sum: { quantity: "desc" } }, take: 5 }),
     prisma.siteSetting.findUnique({ where: { key: PROMOTION_KEY }, select: { value: true } }),
-    prisma.shopOrder.count({ where: { shopId, status: "DELIVERED" } })
+    prisma.shopOrder.count({ where: { shopId, status: "DELIVERED" } }),
+    prisma.shopOrder.count({ where: { shopId, disputedAt: { not: null }, disputeResolvedAt: null } })
   ]);
   const now = new Date();
   const names = new Map(products.map(product => [product.id, product.name]));
   return Response.json({
     shop: { name: seller.shop.name, slug: seller.shop.slug, commissionPercent: seller.shop.commissionPercent, referralCommissionPercent: seller.shop.referralCommissionPercent, notifyOrders: seller.shop.notifyOrders },
-    orders: { toAccept, awaitingPayment, toShip, shipped, delivered: ordersDelivered },
+    orders: { toAccept, awaitingPayment, toShip, shipped, delivered: ordersDelivered, disputes },
     money: { balanceMinor: seller.shop.balanceMinor, pendingMinor: pending._sum.payoutMinor ?? 0, earned30Minor: earned30._sum.amountMinor ?? 0 },
     products: {
-      onSale: products.filter(product => product.status === "PUBLISHED").length,
+      // Same rule as the products list: a sold-out listing counts as sold out, not on sale.
+      onSale: products.filter(product => product.status === "PUBLISHED" && product.stockStatus !== "OUT_OF_STOCK").length,
       inReview: products.filter(product => product.moderation === "PENDING").length,
       rejected: products.filter(product => product.moderation === "REJECTED").length,
       hidden: products.filter(product => product.sellerHidden && product.moderation === "APPROVED").length,

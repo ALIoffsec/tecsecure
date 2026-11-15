@@ -18,6 +18,8 @@ export type AdminProduct = {
   categoryId: string | null; category: { name: string; slug: string } | null;
   specifications: unknown; compatibility: unknown; warrantyDescription: string | null;
   status: string; priceMinor: number | null; currency: string; stockStatus: string; description: string; media: unknown; translations?: unknown;
+  /** Set for a shop's listing: it goes on and off the site by moderation and the seller, not from here. */
+  shop?: { name: string; slug: string } | null;
 };
 export type AdminCategory = { id: string; name: string; _count: { products: number } };
 
@@ -26,7 +28,7 @@ const copy = {
     add: "Mahsulot qo‘shish", search: "Nomi, brend, model yoki SKU", allStatus: "Barcha holatlar", allCategories: "Barcha kategoriyalar", attention: "Faqat to‘ldirilmaganlar",
     PUBLISHED: "Saytda", DRAFT: "Qoralama", ARCHIVED: "Arxivda", IN_STOCK: "Omborda bor", OUT_OF_STOCK: "Omborda yo‘q", ON_REQUEST: "Buyurtma asosida", UNKNOWN: "Noma’lum",
     noPhoto: "Rasm yo‘q", noPrice: "Narx yo‘q", noSpecs: "Xususiyat yo‘q", noCategory: "Kategoriya yo‘q", noResults: "Mos mahsulot topilmadi.", empty: "Hali mahsulot qo‘shilmagan.",
-    edit: "Tahrirlash", view: "Saytda ko‘rish", archive: "Arxivlash", restore: "Qoralamaga qaytarish", publish: "Nashr qilish", unpublish: "Saytdan olish", confirmArchive: "Arxivlansinmi",
+    edit: "Tahrirlash", view: "Saytda ko‘rish", archive: "Arxivlash", restore: "Qoralamaga qaytarish", publish: "Nashr qilish", unpublish: "Saytdan olish", seller: "Do‘kon", sellerHint: "Do‘kon mahsuloti: saytga chiqishini moderatsiya va sotuvchi boshqaradi.", confirmArchive: "Arxivlansinmi",
     name: "Nomi", sku: "SKU (ixtiyoriy)", brand: "Brend", model: "Model", category: "Kategoriya", noneCategory: "Kategoriya tanlanmagan", description: "Tavsif",
     specs: "Xususiyatlar", specsHint: "Har qatorda «Nomi: qiymati». Birinchi 3 tasi kartochkada ko‘rinadi.", compat: "Moslik (ixtiyoriy)", compatHint: "Har bir platforma alohida qatorda.",
     warranty: "Kafolat", price: "Narx", priceHint: "Oddiy summa, masalan 1 250 000. Bo‘sh qolsa, saytda «Narx so‘rov bo‘yicha» ko‘rinadi.", currency: "Valyuta", stock: "Ombor holati", status: "Nashr holati",
@@ -38,7 +40,7 @@ const copy = {
     add: "Добавить товар", search: "Название, бренд, модель или SKU", allStatus: "Все статусы", allCategories: "Все категории", attention: "Только незаполненные",
     PUBLISHED: "На сайте", DRAFT: "Черновик", ARCHIVED: "В архиве", IN_STOCK: "В наличии", OUT_OF_STOCK: "Нет в наличии", ON_REQUEST: "Под заказ", UNKNOWN: "Неизвестно",
     noPhoto: "Нет фото", noPrice: "Нет цены", noSpecs: "Нет характеристик", noCategory: "Нет категории", noResults: "Подходящих товаров нет.", empty: "Товары ещё не добавлены.",
-    edit: "Изменить", view: "На сайте", archive: "В архив", restore: "Вернуть в черновик", publish: "Опубликовать", unpublish: "Снять с сайта", confirmArchive: "Отправить в архив",
+    edit: "Изменить", view: "На сайте", archive: "В архив", restore: "Вернуть в черновик", publish: "Опубликовать", unpublish: "Снять с сайта", seller: "Магазин", sellerHint: "Товар магазина: публикацией управляют модерация и продавец.", confirmArchive: "Отправить в архив",
     name: "Название", sku: "SKU (необязательно)", brand: "Бренд", model: "Модель", category: "Категория", noneCategory: "Без категории", description: "Описание",
     specs: "Характеристики", specsHint: "В каждой строке «Название: значение». Первые 3 видны на карточке.", compat: "Совместимость (необязательно)", compatHint: "Каждая платформа с новой строки.",
     warranty: "Гарантия", price: "Цена", priceHint: "Обычная сумма, например 1 250 000. Если пусто, на сайте будет «Цена по запросу».", currency: "Валюта", stock: "Наличие", status: "Статус публикации",
@@ -50,7 +52,7 @@ const copy = {
     add: "Add product", search: "Name, brand, model or SKU", allStatus: "All statuses", allCategories: "All categories", attention: "Incomplete only",
     PUBLISHED: "Live", DRAFT: "Draft", ARCHIVED: "Archived", IN_STOCK: "In stock", OUT_OF_STOCK: "Out of stock", ON_REQUEST: "On request", UNKNOWN: "Unknown",
     noPhoto: "No photo", noPrice: "No price", noSpecs: "No specs", noCategory: "No category", noResults: "No matching products.", empty: "No products yet.",
-    edit: "Edit", view: "View on site", archive: "Archive", restore: "Restore to draft", publish: "Publish", unpublish: "Unpublish", confirmArchive: "Archive",
+    edit: "Edit", view: "View on site", archive: "Archive", restore: "Restore to draft", publish: "Publish", unpublish: "Unpublish", seller: "Shop", sellerHint: "A shop listing: moderation and the seller decide whether it is live.", confirmArchive: "Archive",
     name: "Name", sku: "SKU (optional)", brand: "Brand", model: "Model", category: "Category", noneCategory: "No category", description: "Description",
     specs: "Specifications", specsHint: "One “Name: value” per line. The first 3 show on the card.", compat: "Compatibility (optional)", compatHint: "One platform per line.",
     warranty: "Warranty", price: "Price", priceHint: "A plain amount, like 1 250 000. Leave empty to show “Price on request”.", currency: "Currency", stock: "Stock status", status: "Publication status",
@@ -187,6 +189,7 @@ export function AdminProductManager({ categories }: { categories: AdminCategory[
           <div className="admin-product-main">
             <strong>{product.name}</strong>
             <span className="small muted">{[product.brand, product.model, product.sku, product.category?.name].filter(Boolean).join(" · ") || "—"}</span>
+            {product.shop && <span className="small muted" title={c.sellerHint}>{c.seller}: <Link href={`/s/${product.shop.slug}`} target="_blank">{product.shop.name}</Link></span>}
             {missing.length > 0 && <span className="admin-product-gaps">{missing.map((item) => <i key={item}>{item}</i>)}</span>}
           </div>
           <div className="admin-product-facts">
@@ -197,9 +200,9 @@ export function AdminProductManager({ categories }: { categories: AdminCategory[
           <div className="admin-product-actions">
             <button className="button secondary small" type="button" onClick={() => setEditing(product)}>{c.edit}</button>
             {product.status === "PUBLISHED" && <Link className="button ghost small" href={`/products/${product.slug}`} target="_blank">{c.view}</Link>}
-            {product.status === "DRAFT" && <button className="button ghost small" type="button" disabled={busyId === product.id} onClick={() => void quickUpdate(product, "PUBLISHED")}>{c.publish}</button>}
-            {product.status === "PUBLISHED" && <button className="button ghost small" type="button" disabled={busyId === product.id} onClick={() => void quickUpdate(product, "DRAFT")}>{c.unpublish}</button>}
-            {product.status === "ARCHIVED"
+            {product.status === "DRAFT" && !product.shop && <button className="button ghost small" type="button" disabled={busyId === product.id} onClick={() => void quickUpdate(product, "PUBLISHED")}>{c.publish}</button>}
+            {product.status === "PUBLISHED" && !product.shop && <button className="button ghost small" type="button" disabled={busyId === product.id} onClick={() => void quickUpdate(product, "DRAFT")}>{c.unpublish}</button>}
+            {product.status === "ARCHIVED" && product.shop ? null : product.status === "ARCHIVED"
               ? <button className="button ghost small" type="button" disabled={busyId === product.id} onClick={() => void quickUpdate(product, "DRAFT")}>{c.restore}</button>
               : <button className="button danger small" type="button" disabled={busyId === product.id} onClick={() => void quickUpdate(product, "ARCHIVED")}>{c.archive}</button>}
           </div>
@@ -261,6 +264,7 @@ function ProductEditor({ product, categories, c, onClose, onSaved }: { product: 
       <div className="form-row admin-form-price"><div className="field"><label>{c.price}</label><input name="price" inputMode="decimal" autoComplete="off" defaultValue={minorToMajorInput(product?.priceMinor)} placeholder="1250000" /></div><div className="field"><label>{c.currency}</label><select name="currency" defaultValue={product?.currency ?? "UZS"}>{product && !supportedCurrencies.some((code) => code === product.currency) && <option value={product.currency}>{product.currency}</option>}{supportedCurrencies.map((code) => <option key={code} value={code}>{code}</option>)}</select></div></div>
       <p className="small muted">{c.priceHint}</p>
       <div className="form-row"><div className="field"><label>{c.stock}</label><select name="stockStatus" defaultValue={product?.stockStatus ?? "IN_STOCK"}>{stockOptions.map((value) => <option key={value} value={value}>{c[value]}</option>)}</select></div><div className="field"><label>{c.status}</label><select name="status" defaultValue={product?.status ?? "DRAFT"}>{statusOptions.map((value) => <option key={value} value={value}>{c[value]}</option>)}</select></div></div>
+      {product?.shop && <p className="small muted">{c.sellerHint} {c.seller}: {product.shop.name}</p>}
       <div className="field"><label>{c.description}</label><textarea name="description" rows={4} defaultValue={product?.description ?? ""} required minLength={5} maxLength={5000} /></div>
       <div className="form-row"><div className="field"><label>{c.specs}</label><textarea name="specifications" rows={5} defaultValue={formatProductDetails(product?.specifications)} placeholder={"Portlar: 8\nTezlik: 1 Gbit/s"} /><small className="muted">{c.specsHint}</small></div><div className="field"><label>{c.compat}</label><textarea name="compatibility" rows={5} defaultValue={formatProductDetails(product?.compatibility)} placeholder={"Windows\nLinux"} /><small className="muted">{c.compatHint}</small></div></div>
       <details className="admin-records-accordion admin-product-languages">

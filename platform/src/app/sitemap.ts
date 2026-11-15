@@ -10,11 +10,13 @@ const staticPaths = ["", "/services", "/products", "/learning", "/news", "/conta
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const origin = siteOrigin();
-  const [products, services, news, work] = await Promise.all([
+  const [products, services, news, work, shops] = await Promise.all([
     prisma.product.findMany({ where: { status: "PUBLISHED" }, select: { slug: true, updatedAt: true }, take: 5000 }),
     prisma.service.findMany({ where: { status: "PUBLISHED", availability: true }, select: { slug: true, updatedAt: true }, take: 1000 }),
     prisma.newsArticle.findMany({ where: { status: "PUBLISHED" }, select: { slug: true, updatedAt: true }, take: 5000 }),
-    prisma.portfolioPost.findMany({ where: { published: true }, select: { slug: true, updatedAt: true }, take: 1000 })
+    prisma.portfolioPost.findMany({ where: { published: true }, select: { slug: true, updatedAt: true }, take: 1000 }),
+    // Storefronts of working shops; a suspended shop's page is gone, so it is left out.
+    prisma.shop.findMany({ where: { status: "ACTIVE" }, select: { slug: true, updatedAt: true }, take: 2000 })
   ]);
   return [
     ...staticPaths.map((path) => ({ url: `${origin}${path}` })),
@@ -23,6 +25,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...work.map((item) => ({ url: `${origin}/work/${item.slug}`, lastModified: item.updatedAt })),
     ...products.map((item) => ({ url: `${origin}/products/${item.slug}`, lastModified: item.updatedAt })),
     ...services.map((item) => ({ url: `${origin}/services/${item.slug}`, lastModified: item.updatedAt })),
-    ...news.map((item) => ({ url: `${origin}/news/${item.slug}`, lastModified: item.updatedAt }))
+    ...news.map((item) => ({ url: `${origin}/news/${item.slug}`, lastModified: item.updatedAt })),
+    ...shops.map((item) => ({ url: `${origin}/s/${item.slug}`, lastModified: item.updatedAt }))
   ];
 }

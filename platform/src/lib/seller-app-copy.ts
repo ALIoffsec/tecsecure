@@ -11,7 +11,7 @@ const uz = {
     listings: "Mahsulotlar", onSale: "Sotuvda", inReview: "Tekshiruvda", rejected: "Rad etilgan", advertised: "Reklamada", views: "Ko‘rishlar",
     lowStock: "Qoldiq kam", outOfStock: "Tugagan", topSold: "30 kunda ko‘p sotilgan", topViewed: "Ko‘p ko‘rilgan",
     addProduct: "Mahsulot qo‘shish", storefront: "Do‘kon sahifasi", visitCard: "Vizitka va QR", settings: "Do‘kon sozlamalari",
-    share: "Do‘kon havolasi", shareHint: "Havola va QR orqali kelgan mijozlardan komissiya kamroq:", commission: "Komissiya"
+    delivered: "Yetkazilgan buyurtmalar", disputes: (n: number) => `${n} ta buyurtma bo‘yicha mijoz muammo bildirdi. Xodimimiz bog‘lanadi; hal bo‘lguncha ularning puli balansga yozilmaydi.`, share: "Do‘kon havolasi", shareHint: "Havola va QR orqali kelgan mijozlardan komissiya kamroq:", commission: "Komissiya"
   },
   orders: {
     title: "Buyurtmalar", empty: "Bu bo‘limda buyurtma yo‘q.",
@@ -20,7 +20,8 @@ const uz = {
     action: { CONFIRMED: "Qabul qilish", PREPARING: "Tayyorlashni boshlash", SHIPPED: "Jo‘natildi deb belgilash", DELIVERED: "Yetkazildi deb belgilash", CANCELLED: "Bekor qilish" } as Record<string, string>,
     paid: "To‘langan", notPaid: "To‘lov hali tasdiqlanmagan — tasdiqlangach xabar keladi, keyin qabul qiling.",
     items: "Mahsulotlar", buyer: "Qabul qiluvchi", call: "Qo‘ng‘iroq", address: "Manzil", map: "Xaritada", delivery: "Yetkazish", note: "Mijoz izohi",
-    money: "Hisob", goods: "Mahsulotlar", commission: "Komissiya", deliveryShare: "Yetkazish ulushi", youGet: "Sizga tushadi", credited: "Balansga yozildi", notCredited: "Yetkazilgach va to‘lov tasdiqlangach balansga yoziladi",
+    money: "Hisob", goods: "Mahsulotlar", commission: "Komissiya", deliveryShare: "Yetkazish ulushi", youGet: "Sizga tushadi", credited: "Balansga yozildi", notCredited: "Yetkazilgach va to‘lov tasdiqlangach balansga yoziladi", disputeShort: "Mijoz muammo bildirdi", disputeTitle: "Mijoz muammo bildirdi:", disputeHint: "Tecsecure xodimi siz va mijoz bilan bog‘lanadi. Hal bo‘lguncha bu buyurtma puli balansga yozilmaydi.", disputeDone: { RELEASED: "Murojaat yopildi: pul balansingizga yoziladi.", REFUNDED: "Murojaat mijoz foydasiga hal qilindi: buyurtma bekor, pul mijozga qaytarildi." } as Record<string, string>,
+    creditOn: "Mijoz e’tirozi uchun ushlab turiladi, balansga yoziladi:", holdNote: (days: number) => `(yetkazilgandan ${days} kun o‘tib).`,
     sellerNote: "Mijozga izoh (trek raqami, kuryer telefoni…)", sellerNoteSaved: "Izoh", cancelReason: "Bekor qilish sababi (mijozga ko‘rinadi)", reasonNeeded: "Sababini yozing.",
     methods: { EXPRESS: "Shahar ichida kuryer", COURIER: "Viloyatga kuryer yoki pochta", PICKUP: "Mijoz olib ketadi", AGREED: "Telefonda kelishiladi" } as Record<string, string>,
     timeline: "Bosqichlar", referral: "QR orqali kelgan mijoz — kamaytirilgan komissiya"
@@ -49,7 +50,7 @@ const uz = {
     submitNew: "Tekshiruvga yuborish", submitEdit: "Saqlash", saved: "Saqlandi", sentToReview: "Tekshiruvga yuborildi", required: "Majburiy maydonlarni to‘ldiring: rasm, nom, kategoriya, narx va tavsif."
   },
   balance: {
-    title: "Balans", available: "Yechib olish mumkin", pending: "Yo‘lda", pendingHint: "Qabul qilingan, lekin hali yetkazilmagan yoki to‘lovi tasdiqlanmagan buyurtmalardan.",
+    title: "Balans", available: "Yechib olish mumkin", pending: "Yo‘lda", pendingHint: "Qabul qilingan, lekin hali yetkazilmagan, to‘lovi tasdiqlanmagan yoki ushlab turish muddati tugamagan buyurtmalardan.",
     commission: "Komissiya", referral: "QR orqali", history: "Tarix", noHistory: "Hali harakat yo‘q.",
     kinds: { SALE: "Sotuv", PROMOTION: "Reklama", PAYOUT: "Pul yechish", PAYOUT_RETURNED: "Qaytarildi", ADJUSTMENT: "Tuzatish" } as Record<string, string>,
     payout: "Pul yechish", payoutHint: "Pul do‘kon bank hisobiga o‘tkaziladi. So‘ralgan summa ko‘rib chiqilguncha balansdan ushlab turiladi.",
@@ -77,7 +78,7 @@ const ru: SellerAppCopy = {
     listings: "Товары", onSale: "В продаже", inReview: "На проверке", rejected: "Отклонены", advertised: "В рекламе", views: "Просмотры",
     lowStock: "Мало на складе", outOfStock: "Закончились", topSold: "Продаются лучше всего (30 дней)", topViewed: "Чаще смотрят",
     addProduct: "Добавить товар", storefront: "Страница магазина", visitCard: "Визитка и QR", settings: "Настройки магазина",
-    share: "Ссылка на магазин", shareHint: "С покупателей по ссылке и QR комиссия ниже:", commission: "Комиссия"
+    delivered: "Доставленные заказы", disputes: (n: number) => `Покупатели сообщили о проблеме по заказам: ${n}. Сотрудник свяжется с вами; пока вопрос не решён, деньги не поступят на баланс.`, share: "Ссылка на магазин", shareHint: "С покупателей по ссылке и QR комиссия ниже:", commission: "Комиссия"
   },
   orders: {
     title: "Заказы", empty: "Здесь заказов нет.",
@@ -86,7 +87,8 @@ const ru: SellerAppCopy = {
     action: { CONFIRMED: "Принять", PREPARING: "Начать подготовку", SHIPPED: "Отметить отправленным", DELIVERED: "Отметить доставленным", CANCELLED: "Отменить" },
     paid: "Оплачен", notPaid: "Оплата ещё не подтверждена — после подтверждения придёт сообщение, тогда принимайте.",
     items: "Товары", buyer: "Получатель", call: "Позвонить", address: "Адрес", map: "На карте", delivery: "Доставка", note: "Комментарий покупателя",
-    money: "Расчёт", goods: "Товары", commission: "Комиссия", deliveryShare: "Доля доставки", youGet: "Вам поступит", credited: "Зачислено на баланс", notCredited: "Зачисляется после доставки и подтверждения оплаты",
+    money: "Расчёт", goods: "Товары", commission: "Комиссия", deliveryShare: "Доля доставки", youGet: "Вам поступит", credited: "Зачислено на баланс", notCredited: "Зачисляется после доставки и подтверждения оплаты", disputeShort: "Претензия покупателя", disputeTitle: "Покупатель сообщил о проблеме:", disputeHint: "Сотрудник Tecsecure свяжется с вами и покупателем. Пока вопрос не решён, деньги за заказ не поступят на баланс.", disputeDone: { RELEASED: "Претензия закрыта: деньги поступят на ваш баланс.", REFUNDED: "Претензия решена в пользу покупателя: заказ отменён, деньги возвращены." } as Record<string, string>,
+    creditOn: "Удерживается на случай претензии покупателя, поступит на баланс:", holdNote: (days: number) => `(через ${days} дн. после доставки).`,
     sellerNote: "Комментарий покупателю (трек-номер, телефон курьера…)", sellerNoteSaved: "Комментарий", cancelReason: "Причина отмены (видна покупателю)", reasonNeeded: "Укажите причину.",
     methods: { EXPRESS: "Курьер по городу", COURIER: "Курьер или почта в регион", PICKUP: "Самовывоз", AGREED: "Договоримся по телефону" },
     timeline: "Этапы", referral: "Покупатель пришёл по QR — сниженная комиссия"
@@ -115,7 +117,7 @@ const ru: SellerAppCopy = {
     submitNew: "Отправить на проверку", submitEdit: "Сохранить", saved: "Сохранено", sentToReview: "Отправлено на проверку", required: "Заполните обязательные поля: фото, название, категория, цена и описание."
   },
   balance: {
-    title: "Баланс", available: "Можно вывести", pending: "В пути", pendingHint: "Из принятых заказов, ещё не доставленных или без подтверждённой оплаты.",
+    title: "Баланс", available: "Можно вывести", pending: "В пути", pendingHint: "Из принятых заказов: ещё не доставлены, без подтверждённой оплаты или срок удержания не истёк.",
     commission: "Комиссия", referral: "Через QR", history: "История", noHistory: "Движений пока нет.",
     kinds: { SALE: "Продажа", PROMOTION: "Реклама", PAYOUT: "Вывод", PAYOUT_RETURNED: "Возвращено", ADJUSTMENT: "Корректировка" },
     payout: "Вывод денег", payoutHint: "Деньги переводятся на банковский счёт магазина. Сумма удерживается с баланса до рассмотрения.",
@@ -141,7 +143,7 @@ const en: SellerAppCopy = {
     listings: "Products", onSale: "On sale", inReview: "In review", rejected: "Rejected", advertised: "Advertised", views: "Views",
     lowStock: "Low stock", outOfStock: "Out of stock", topSold: "Best sellers (30 days)", topViewed: "Most viewed",
     addProduct: "Add product", storefront: "Shop page", visitCard: "Visit card and QR", settings: "Shop settings",
-    share: "Shop link", shareHint: "Buyers who come through the link and QR cost you less commission:", commission: "Commission"
+    delivered: "Orders delivered", disputes: (n: number) => `Buyers reported a problem with ${n} order(s). Our staff will contact you; until settled, that money does not reach your balance.`, share: "Shop link", shareHint: "Buyers who come through the link and QR cost you less commission:", commission: "Commission"
   },
   orders: {
     title: "Orders", empty: "No orders here.",
@@ -150,7 +152,8 @@ const en: SellerAppCopy = {
     action: { CONFIRMED: "Accept", PREPARING: "Start preparing", SHIPPED: "Mark shipped", DELIVERED: "Mark delivered", CANCELLED: "Cancel" },
     paid: "Paid", notPaid: "Payment not confirmed yet — you will get a message, then accept.",
     items: "Items", buyer: "Recipient", call: "Call", address: "Address", map: "On map", delivery: "Delivery", note: "Buyer's note",
-    money: "Settlement", goods: "Goods", commission: "Commission", deliveryShare: "Delivery share", youGet: "You get", credited: "Credited to balance", notCredited: "Credited after delivery and payment",
+    money: "Settlement", goods: "Goods", commission: "Commission", deliveryShare: "Delivery share", youGet: "You get", credited: "Credited to balance", notCredited: "Credited after delivery and payment", disputeShort: "Buyer complaint", disputeTitle: "The buyer reported a problem:", disputeHint: "Tecsecure staff will contact you and the buyer. Until it is settled, this order's money does not reach your balance.", disputeDone: { RELEASED: "Complaint closed: the money goes to your balance.", REFUNDED: "Settled for the buyer: the order is cancelled and the money returned." } as Record<string, string>,
+    creditOn: "Held in case the buyer complains, reaches your balance on", holdNote: (days: number) => `(${days} days after delivery).`,
     sellerNote: "Note to the buyer (tracking number, courier phone…)", sellerNoteSaved: "Note", cancelReason: "Reason for cancelling (the buyer sees it)", reasonNeeded: "Write a reason.",
     methods: { EXPRESS: "City courier", COURIER: "Regional courier or post", PICKUP: "Pickup", AGREED: "Agreed by phone" },
     timeline: "Steps", referral: "Buyer came through your QR — lower commission"
@@ -179,7 +182,7 @@ const en: SellerAppCopy = {
     submitNew: "Send for review", submitEdit: "Save", saved: "Saved", sentToReview: "Sent for review", required: "Fill in the required fields: photo, name, category, price and description."
   },
   balance: {
-    title: "Balance", available: "Available to withdraw", pending: "On the way", pendingHint: "From accepted orders not yet delivered or not yet paid.",
+    title: "Balance", available: "Available to withdraw", pending: "On the way", pendingHint: "From accepted orders not yet delivered, not yet paid, or still within the hold.",
     commission: "Commission", referral: "Through QR", history: "History", noHistory: "No movements yet.",
     kinds: { SALE: "Sale", PROMOTION: "Advertising", PAYOUT: "Payout", PAYOUT_RETURNED: "Returned", ADJUSTMENT: "Adjustment" },
     payout: "Withdraw", payoutHint: "Money goes to the shop's bank account. The amount is held from the balance until reviewed.",

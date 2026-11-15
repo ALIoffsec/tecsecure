@@ -9,6 +9,28 @@ const stamp: Partial<Record<OrderStatus, "confirmedAt" | "shippedAt" | "delivere
   CONFIRMED: "confirmedAt", SHIPPED: "shippedAt", DELIVERED: "deliveredAt", CANCELLED: "cancelledAt"
 };
 
+/** Puts money back on the buyer's wallet with its own ledger line (kind ORDER_REFUND, the order's reference). */
+export async function refundToWallet(tx: Tx, order: Pick<OrderForStatus, "customerId" | "reference">, amountMinor: number, actorId: string | null, details: string | null): Promise<void> {
+  if (!Number.isSafeInteger(amountMinor) || amountMinor <= 0) return;
+  await tx.user.update({ where: { id: order.customerId }, data: { walletBalanceMinor: { increment: amountMinor } } });
+  await tx.walletTransaction.create({
+    data: { userId: order.customerId, kind: "ORDER_REFUND", status: "APPROVED", amountMinor, reference: order.reference, details, reviewedById: actorId, reviewedAt: new Date() }
+  });
+}
+
+/**
+ * What a cancelled wallet order still owes the buyer: the total, less what was already refunded for parts
+ * a shop cancelled, less shop parts that were delivered (the buyer has those goods and the shop its money).
+ */
+export async function walletRefundDue(tx: Tx, order: OrderForStatus): Promise<{ amountMinor: number; deliveredMinor: number }> {
+  const [refunded, delivered] = await Promise.all([
+    tx.walletTransaction.aggregate({ where: { userId: order.customerId, kind: "ORDER_REFUND", reference: order.reference }, _sum: { amountMinor: true } }),
+    tx.shopOrder.findMany({ where: { orderId: order.id, status: "DELIVERED" }, select: { itemsTotalMinor: true, deliveryShareMinor: true } })
+  ]);
+  const deliveredMinor = delivered.reduce((sum, part) => sum + (part.itemsTotalMinor ?? 0) + (part.deliveryShareMinor ?? 0), 0);
+  return { amountMinor: Math.max(0, (order.totalMinor ?? 0) - (refunded._sum.amountMinor ?? 0) - deliveredMinor), deliveredMinor };
+}
+
 /** The timestamp a shop part records when it reaches a status. */
 export function shipmentStamp(to: OrderStatus): Record<string, Date> {
   const field = stamp[to];
@@ -28,11 +50,10 @@ export async function applyOrderStatus(tx: Tx, order: OrderForStatus, to: OrderS
   }
   if (to === "CANCELLED") {
     if (order.paymentMethod === "WALLET" && order.paymentStatus === "PAID" && order.totalMinor !== null) {
-      await tx.user.update({ where: { id: order.customerId }, data: { walletBalanceMinor: { increment: order.totalMinor } } });
-      await tx.walletTransaction.create({
-        data: { userId: order.customerId, kind: "ORDER_REFUND", status: "APPROVED", amountMinor: order.totalMinor, reference: order.reference, reviewedById: actorId, reviewedAt: new Date() }
-      });
-      await tx.order.update({ where: { id: order.id }, data: { paymentStatus: "REFUNDED" } });
+      const due = await walletRefundDue(tx, order);
+      await refundToWallet(tx, order, due.amountMinor, actorId, due.deliveredMinor ? "Yetkazilgan do‘kon qismlari qaytarilmadi" : null);
+      // With delivered shop parts kept, the order stays paid for those goods.
+      if (due.deliveredMinor === 0) await tx.order.update({ where: { id: order.id }, data: { paymentStatus: "REFUNDED" } });
     } else if (order.paymentStatus === "PAID") {
       // Money that came from outside the wallet has to be returned by hand, so the order must say so.
       await tx.order.update({ where: { id: order.id }, data: { paymentStatus: "REFUND_DUE" } });
