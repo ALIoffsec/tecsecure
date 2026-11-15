@@ -381,3 +381,37 @@ html[data-motion="off"] .showcase-dot, html[data-motion="off"] .showcase-dot-fil
 @media (max-width: 640px) {
   .admin-partner-text, .admin-partner-fields { grid-template-columns: 1fr; }
 }
+
+/* Brand strip in the site's liquid glass: one frosted band, slim glass pills that let it show through
+   (no blur per tile, so dozens of moving tiles stay smooth), soft fades at both edges. */
+#app-shell .brand-strip {
+  position: relative; padding: 22px 0 18px;
+  border-block: 1px solid var(--glass-edge);
+  background: var(--glass-fill);
+  box-shadow: inset 0 1px 0 var(--glass-shine), inset 0 -1px 0 #ffffff0d;
+  -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter);
+}
+#app-shell .brand-strip .brand-marquee {
+  height: 82px;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
+}
+#app-shell .brand-strip .brand-tile {
+  width: auto; min-width: 150px; height: 62px; flex: 0 0 auto; gap: 10px; padding: 0 16px 0 9px; justify-content: flex-start;
+  border: 1px solid var(--glass-edge); border-radius: 999px;
+  background: linear-gradient(135deg, #ffffff1f, #ffffff05 55%, #c3d5ff0d), color-mix(in srgb, var(--surface) 30%, transparent);
+  box-shadow: inset 0 1px 0 var(--glass-shine), inset 0 -1px 0 #ffffff0a, 0 8px 20px -14px #0208208c;
+  transition: border-color .3s var(--glass-ease), background-color .3s var(--glass-ease);
+}
+#app-shell .brand-strip .brand-tile:hover { border-color: color-mix(in srgb, var(--accent) 55%, var(--glass-edge)); }
+#app-shell .brand-strip .brand-tile img {
+  width: 44px; height: 44px; flex: 0 0 44px; padding: 5px; border-radius: 999px;
+  background: #fffffff2; box-shadow: inset 0 0 0 1px #ffffffaa, 0 2px 8px #0208201f;
+}
+#app-shell .brand-strip .brand-tile strong { white-space: nowrap; color: var(--text); font-weight: 700; letter-spacing: -.01em; }
+:root[data-theme="light"] #app-shell .brand-strip .brand-tile { background: linear-gradient(135deg, #ffffff8c, #ffffff33 55%, #ffffff59); box-shadow: inset 0 1px 0 var(--glass-shine), 0 8px 20px -14px #354a7a40; }
+@media (max-width: 640px) {
+  #app-shell .brand-strip .brand-marquee { height: 70px; }
+  #app-shell .brand-strip .brand-tile { min-width: 128px; height: 54px; }
+  #app-shell .brand-strip .brand-tile img { width: 38px; height: 38px; flex-basis: 38px; }
+}
