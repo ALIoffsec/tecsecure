@@ -22,9 +22,9 @@ async function activeShop(slug: string) {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const shop = await activeShop((await params).slug);
-  if (!shop) return { title: "Do‘kon topilmadi | Tecsecure" };
+  if (!shop) return { title: { absolute: "Do‘kon topilmadi | Tecsecure" } };
   return {
-    title: `${shop.name} — do‘kon | Tecsecure`,
+    title: { absolute: `${shop.name} — do‘kon | Tecsecure` },
     description: shop.description?.slice(0, 160) || `${shop.name} mahsulotlari Tecsecure’da: to‘lov Tecsecure orqali, do‘kon o‘zi yetkazadi.`,
     alternates: { canonical: `/s/${shop.slug}` }
   };

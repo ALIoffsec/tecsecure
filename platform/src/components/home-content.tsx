@@ -17,10 +17,6 @@ import { homeCopy } from "@/lib/home-copy";
 import { mainServices, type HomeFacts } from "@/lib/home-facts";
 import { serviceGuideCopy } from "@/lib/service-journeys";
 import type { ProductCardData } from "@/lib/product-listing";
-import dynamic from "next/dynamic";
-
-// DEMO (/?demo=exploded): its code and CSS load only when asked for. Remove with exploded-demo.tsx.
-const ExplodedDemo = dynamic(() => import("./exploded-demo").then(module => module.ExplodedDemo));
 
 const serviceIcons = ["camera", "network", "shield", "toolbox"] as const;
 
@@ -49,8 +45,7 @@ export function MainServiceCards({ facts, carousel = false }: { facts: HomeFacts
     : <nav className="hub-paths hub-paths-four" aria-label={h.servicesTitle}>{cards}</nav>;
 }
 
-export function HomeContent({ contact, work, products, facts, brands, explodedDemo }: {
-  explodedDemo?: boolean;
+export function HomeContent({ contact, work, products, facts, brands }: {
   contact: Record<string, string>;
   work: { id: string; title: string; description: string; media: unknown }[];
   products: ProductCardData[];
@@ -68,7 +63,6 @@ export function HomeContent({ contact, work, products, facts, brands, explodedDe
   const trust = ([[facts.trust.projects, h.projects], [facts.trust.years, h.years], [facts.trust.clients, h.clients], [facts.trust.warranty, h.warrantyLabel]] as [string, string][]).filter(([value]) => value);
   return <div className="home-page">
     <HomeHero />
-    {explodedDemo && <ExplodedDemo />}
 
     <section className="section home-main-services"><div className="container">
       <div className="section-head"><div><span className="eyebrow">{c.services}</span><h2>{h.servicesTitle}</h2></div><p>{h.servicesNote}</p></div>

@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { SEO_RU_BASE, SEO_UZ_BASE, seoPagesRu, seoPagesUz, type SeoPage } from "@/lib/seo-pages";
 import { defaultContact } from "@/lib/site-contact";
 import { siteOrigin } from "@/lib/site-origin";
+import { SITE_OG_IMAGE, businessAddress } from "@/lib/structured-data";
 import { SeoLocale } from "./growth-pages";
 
 type Language = "uz" | "ru";
@@ -17,10 +18,10 @@ export function seoMetadata(language: Language, slug: string): Metadata {
   const here = `${baseOf(language)}/${page.slug}`;
   const there = `${baseOf(otherOf(language))}/${page.twin}`;
   return {
-    title: page.title,
+    title: { absolute: page.title },
     description: page.description,
     alternates: { canonical: here, languages: { [language]: here, [otherOf(language)]: there } },
-    openGraph: { title: page.title, description: page.description, type: "website", locale: language === "uz" ? "uz_UZ" : "ru_RU", url: here }
+    openGraph: { title: page.title, description: page.description, type: "website", locale: language === "uz" ? "uz_UZ" : "ru_RU", url: here, images: [SITE_OG_IMAGE] }
   };
 }
 
@@ -30,7 +31,7 @@ export function SeoLanding({ language, slug }: { language: Language; slug: strin
   if (!page) notFound();
   const origin = siteOrigin();
   const structuredData = [
-    { "@context": "https://schema.org", "@type": "Service", name: page.serviceName, description: page.description, areaServed: { "@type": "City", name: language === "uz" ? "Toshkent" : "Ташкент" }, provider: { "@type": "LocalBusiness", name: "Tecsecure", url: origin, telephone: defaultContact.phone, address: { "@type": "PostalAddress", addressLocality: language === "uz" ? "Toshkent" : "Ташкент", addressCountry: "UZ" } } },
+    { "@context": "https://schema.org", "@type": "Service", name: page.serviceName, description: page.description, areaServed: { "@type": "City", name: language === "uz" ? "Toshkent" : "Ташкент" }, provider: { "@type": "LocalBusiness", name: "Tecsecure", url: origin, telephone: defaultContact.phone, address: businessAddress(language) } },
     { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: page.faq.map(item => ({ "@type": "Question", name: item.q, acceptedAnswer: { "@type": "Answer", text: item.a } })) }
   ];
   const others = pagesOf(language).filter(item => item.slug !== slug);

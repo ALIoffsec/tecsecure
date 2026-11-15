@@ -3,7 +3,7 @@ import { requireUser } from "@/lib/auth";
 import { loadShop } from "@/lib/shop-server";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Do‘kon kabineti | Tecsecure", robots: { index: false, follow: false } };
+export const metadata = { title: { absolute: "Do‘kon kabineti | Tecsecure" }, robots: { index: false, follow: false } };
 
 /** The same seller app as in the shop bot, opened in a browser: its own screen, without the site's menus. */
 export default async function ShopCabinetPage({ searchParams }: { searchParams: Promise<{ open?: string }> }) {

@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 import { prisma } from "@/lib/prisma";
 import { siteOrigin } from "@/lib/site-origin";
 import { SEO_RU_BASE, SEO_UZ_BASE, seoPagesRu, seoPagesUz } from "@/lib/seo-pages";
+import { getAdminLearningDocuments } from "@/lib/learning-content";
 
 // Generated on request: the catalog changes from the admin panel, without a redeploy.
 export const dynamic = "force-dynamic";
@@ -10,15 +11,17 @@ const staticPaths = ["", "/services", "/products", "/learning", "/news", "/conta
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const origin = siteOrigin();
-  const [products, services, news, work, shops] = await Promise.all([
+  const [products, services, news, work, shops, courses] = await Promise.all([
     prisma.product.findMany({ where: { status: "PUBLISHED" }, select: { slug: true, updatedAt: true }, take: 5000 }),
     prisma.service.findMany({ where: { status: "PUBLISHED", availability: true }, select: { slug: true, updatedAt: true }, take: 1000 }),
     prisma.newsArticle.findMany({ where: { status: "PUBLISHED" }, select: { slug: true, updatedAt: true }, take: 5000 }),
     prisma.portfolioPost.findMany({ where: { published: true }, select: { slug: true, updatedAt: true }, take: 1000 }),
-    // Storefronts of working shops; a suspended shop's page is gone, so it is left out.
-    prisma.shop.findMany({ where: { status: "ACTIVE" }, select: { slug: true, updatedAt: true }, take: 2000 })
+    // Storefronts of working shops with something on sale; an empty or test shop is left out.
+    prisma.shop.findMany({ where: { status: "ACTIVE", products: { some: { status: "PUBLISHED" } } }, select: { slug: true, updatedAt: true }, take: 2000 }),
+    // Courses from the same source the learning catalog reads, published ones only.
+    getAdminLearningDocuments("module").then(documents => documents.filter(document => document.status === "PUBLISHED"))
   ]);
-  return [
+  const entries: MetadataRoute.Sitemap = [
     ...staticPaths.map((path) => ({ url: `${origin}${path}` })),
     ...seoPagesUz.map((page) => ({ url: `${origin}${SEO_UZ_BASE}/${page.slug}`, alternates: { languages: { uz: `${origin}${SEO_UZ_BASE}/${page.slug}`, ru: `${origin}${SEO_RU_BASE}/${page.twin}` } } })),
     ...seoPagesRu.map((page) => ({ url: `${origin}${SEO_RU_BASE}/${page.slug}`, alternates: { languages: { ru: `${origin}${SEO_RU_BASE}/${page.slug}`, uz: `${origin}${SEO_UZ_BASE}/${page.twin}` } } })),
@@ -26,6 +29,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...products.map((item) => ({ url: `${origin}/products/${item.slug}`, lastModified: item.updatedAt })),
     ...services.map((item) => ({ url: `${origin}/services/${item.slug}`, lastModified: item.updatedAt })),
     ...news.map((item) => ({ url: `${origin}/news/${item.slug}`, lastModified: item.updatedAt })),
-    ...shops.map((item) => ({ url: `${origin}/s/${item.slug}`, lastModified: item.updatedAt }))
+    ...shops.map((item) => ({ url: `${origin}/s/${item.slug}`, lastModified: item.updatedAt })),
+    ...courses.map((item) => ({ url: `${origin}/learning/${item.slug}`, ...(item.updatedAt ? { lastModified: item.updatedAt } : {}) }))
   ];
+  // One entry per address: the first (static) one wins.
+  const seen = new Set<string>();
+  return entries.filter(entry => !seen.has(entry.url) && Boolean(seen.add(entry.url)));
 }

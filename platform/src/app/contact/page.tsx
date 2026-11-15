@@ -5,8 +5,15 @@ import { PreviewModeNotice } from "@/components/preview-mode-notice";
 import type { ServiceOption } from "@/components/service-request-form";
 import { isPreviewMode } from "@/lib/preview-mode";
 import { defaultContact } from "@/lib/site-contact";
+import { pageMetadata } from "@/lib/structured-data";
 
 export const dynamic = "force-dynamic";
+
+export const metadata = pageMetadata({
+  path: "/contact",
+  title: "Aloqa",
+  description: "Tecsecure bilan bog‘laning: telefon, Telegram, Instagram yoki so‘rov formasi. Videokuzatuv, tarmoq va IT xizmatlari bo‘yicha savollaringizga javob beramiz."
+});
 
 export default async function ContactPage({ searchParams }: { searchParams: Promise<{ topic?: string; mode?: string; service?: string }> }) {
   const params = await searchParams;

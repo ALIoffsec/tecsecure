@@ -38,7 +38,7 @@ import { siteOrigin } from "@/lib/site-origin";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteOrigin()),
-  title: "Tecsecure — IT va xavfsizlik yechimlari",
+  title: { default: "Tecsecure — IT va xavfsizlik yechimlari", template: "%s | Tecsecure" },
   description: "IT va xavfsizlik xizmatlari, amaliy ta’lim va uskunalar do‘koni — bitta Tecsecure platformasida.",
   robots: { index: true, follow: true },
   applicationName: "Tecsecure",

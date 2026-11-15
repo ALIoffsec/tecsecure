@@ -15,7 +15,7 @@ import { CurrencySelector } from "@/components/currency-context";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
-  title: "Uskunalar do‘koni — Tecsecure",
+  title: { absolute: "Uskunalar do‘koni — Tecsecure" },
   description: "Videokuzatuv, tarmoq va xavfsizlik uskunalari: narx, mavjudlik va xususiyatlar bilan.",
   alternates: { canonical: "/products" }
 };

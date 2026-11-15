@@ -3,7 +3,7 @@ import { isPreviewMode } from "@/lib/preview-mode";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Oylik IT yordam | Tecsecure", description: "Doimiy IT xodim o‘rniga oylik xizmat: tarmoq, kompyuter, server va xavfsizlik nazorati.", alternates: { canonical: "/support-plans" } };
+export const metadata = { title: { absolute: "Oylik IT yordam | Tecsecure" }, description: "Doimiy IT xodim o‘rniga oylik xizmat: tarmoq, kompyuter, server va xavfsizlik nazorati.", alternates: { canonical: "/support-plans" } };
 
 export default async function SupportPlansPage() {
   const plans = isPreviewMode ? [] : await prisma.subscriptionPlan.findMany({ where: { active: true }, orderBy: { name: "asc" } });

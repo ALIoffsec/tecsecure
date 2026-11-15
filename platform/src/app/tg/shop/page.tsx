@@ -4,7 +4,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { loadShop } from "@/lib/shop-server";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Tecsecure · Do‘kon kabineti", robots: { index: false, follow: false } };
+export const metadata = { title: { absolute: "Tecsecure · Do‘kon kabineti" }, robots: { index: false, follow: false } };
 
 /** The shop bot's own app. Without a session it signs in from Telegram first; ?open= lands on one screen. */
 export default async function TelegramShopApp({ searchParams }: { searchParams: Promise<{ open?: string }> }) {

@@ -6,8 +6,15 @@ import { isPreviewMode } from "@/lib/preview-mode";
 import { TechnicalServices } from "@/components/service-journeys";
 import { ServicesGuide, ServicesTop } from "@/components/services-top";
 import { HOME_FACTS_KEY, parseHomeFacts } from "@/lib/home-facts";
+import { pageMetadata } from "@/lib/structured-data";
 
 export const dynamic = "force-dynamic";
+
+export const metadata = pageMetadata({
+  path: "/services",
+  title: "IT va xavfsizlik xizmatlari: videokuzatuv, tarmoq, audit",
+  description: "Toshkentda videokuzatuv o‘rnatish, ofis tarmog‘i va Wi-Fi, kiberxavfsizlik auditi va oylik IT yordam. Obyektni ko‘rib, ishni loyihalab bajaramiz."
+});
 
 export default async function ServicesPage() {
   const [services, factsRecord] = isPreviewMode ? [[], null] as const : await Promise.all([

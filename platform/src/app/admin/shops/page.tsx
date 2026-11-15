@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { shopStatuses } from "@/lib/shops";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Do‘konlar | Tecsecure admin", robots: { index: false, follow: false } };
+export const metadata = { title: { absolute: "Do‘konlar | Tecsecure admin" }, robots: { index: false, follow: false } };
 
 /** Shops hold commission and money owed, so only founders and admins decide on them. */
 export default async function AdminShopsPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {

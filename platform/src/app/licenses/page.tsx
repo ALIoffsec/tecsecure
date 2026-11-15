@@ -4,7 +4,7 @@ import packageLock from "../../../package-lock.json";
 import { LocalizedText } from "@/components/site-preferences";
 
 export const metadata: Metadata = {
-  title: "Software licenses | Tecsecure",
+  title: { absolute: "Software licenses | Tecsecure" },
   description: "Third-party package versions and SPDX license identifiers used by the Tecsecure platform."
 };
 

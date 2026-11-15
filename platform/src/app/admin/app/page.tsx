@@ -4,7 +4,7 @@ import { requireAdminPage } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Xodimlar ilovasi | Tecsecure" };
+export const metadata = { title: { absolute: "Xodimlar ilovasi | Tecsecure" } };
 
 /** The phone-sized desk inside the staff bot: only what is waiting, and only what this person may touch. */
 export default async function StaffAppPage() {

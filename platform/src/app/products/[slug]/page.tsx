@@ -22,6 +22,7 @@ import { Localized, LocalizedSpecs, LocalizedText } from "@/components/localized
 import { categoryName, perLocale, productVariants } from "@/lib/product-i18n";
 import type { Locale } from "@/lib/messages";
 import { LOW_STOCK } from "@/lib/marketplace";
+import { SITE_OG_IMAGE } from "@/lib/structured-data";
 
 export const dynamic = "force-dynamic";
 type Props = { params: Promise<{ slug: string }> };
@@ -35,14 +36,14 @@ const schemaAvailability: Record<string, string> = {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const product = await prisma.product.findFirst({ where: { slug, status: "PUBLISHED" }, select: { name: true, description: true, media: true } });
-  if (!product) return { title: "Tecsecure" };
+  if (!product) return { title: { absolute: "Tecsecure" } };
   const cover = coverMedia((await catalogMedia([product]))(product.media));
   const description = product.description.slice(0, 160);
   return {
-    title: `${product.name} — Tecsecure`,
+    title: { absolute: `${product.name} — Tecsecure` },
     description,
     alternates: { canonical: `/products/${slug}` },
-    openGraph: { title: product.name, description, type: "website", images: cover?.mimeType.startsWith("image/") ? [`/api/media/${cover.id}`] : undefined }
+    openGraph: { title: product.name, description, type: "website", images: cover?.mimeType.startsWith("image/") ? [`/api/media/${cover.id}`] : [SITE_OG_IMAGE] }
   };
 }
 

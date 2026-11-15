@@ -5,7 +5,7 @@ import { getCompanyRequisites } from "@/lib/payment-card";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "To‘lov uchun hisob | Tecsecure", robots: { index: false, follow: false } };
+export const metadata = { title: { absolute: "To‘lov uchun hisob | Tecsecure" }, robots: { index: false, follow: false } };
 
 export default async function InvoicePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

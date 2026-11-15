@@ -11,7 +11,7 @@ const findPost = (slug: string) => prisma.portfolioPost.findFirst({ where: { slu
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const post = await findPost((await params).slug);
   if (!post) return {};
-  return { title: `${post.title} | Tecsecure`, description: post.description.slice(0, 160), alternates: { canonical: `/work/${post.slug}` } };
+  return { title: { absolute: `${post.title} | Tecsecure` }, description: post.description.slice(0, 160), alternates: { canonical: `/work/${post.slug}` } };
 }
 
 export default async function WorkStoryPage({ params }: Props) {

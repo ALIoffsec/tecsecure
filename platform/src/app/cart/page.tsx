@@ -5,7 +5,7 @@ import { getCompanyRequisites, getPaymentCard } from "@/lib/payment-card";
 import { paymeConfigured } from "@/lib/payme";
 import { ShopText } from "@/components/shop-text";
 
-export const metadata = { title: "Savat | Tecsecure" };
+export const metadata = { title: { absolute: "Savat | Tecsecure" } };
 
 export default async function CartPage() {
   const user = await getCurrentUser();

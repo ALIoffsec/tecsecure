@@ -4,7 +4,7 @@ import { siteOrigin } from "@/lib/site-origin";
 import { PrintButton } from "@/components/print-button";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Vizitka | Tecsecure", robots: { index: false, follow: false } };
+export const metadata = { title: { absolute: "Vizitka | Tecsecure" }, robots: { index: false, follow: false } };
 
 /** A 90×50 mm visit card for the shop, ready to print: the QR leads buyers to the shop's page. */
 export default async function ShopVisitCard({ params }: { params: Promise<{ slug: string }> }) {

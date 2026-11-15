@@ -8,7 +8,7 @@ import { prisma } from "@/lib/prisma";
 import { defaultContact } from "@/lib/site-contact";
 
 export const metadata: Metadata = {
-  title: "Karyera va vakansiyalar | Tecsecure",
+  title: { absolute: "Karyera va vakansiyalar | Tecsecure" },
   description: "Tecsecure jamoasidagi ochiq ish o‘rinlari va ishga qabul jarayoni."
 };
 

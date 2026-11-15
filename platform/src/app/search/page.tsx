@@ -1,7 +1,7 @@
 import { SearchResults } from "@/components/search-results";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Qidiruv | Tecsecure", robots: { index: false } };
+export const metadata = { title: { absolute: "Qidiruv | Tecsecure" }, robots: { index: false } };
 
 export default async function SearchPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   const raw = (await searchParams).q;

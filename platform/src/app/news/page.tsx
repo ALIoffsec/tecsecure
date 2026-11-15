@@ -4,8 +4,15 @@ import { LocalizedText } from "@/components/site-preferences";
 import { MediaGallery } from "@/components/media-uploader";
 import { isPreviewMode } from "@/lib/preview-mode";
 import { formatDate } from "@/lib/format";
+import { pageMetadata } from "@/lib/structured-data";
 
 export const dynamic = "force-dynamic";
+
+export const metadata = pageMetadata({
+  path: "/news",
+  title: "Yangiliklar va maqolalar",
+  description: "Tecsecure yangiliklari va maqolalari: videokuzatuv, tarmoq, kiberxavfsizlik va IT bo‘yicha foydali ma’lumotlar va maslahatlar."
+});
 
 export default async function NewsPage() {
   const articles = isPreviewMode ? [] : await prisma.newsArticle.findMany({
