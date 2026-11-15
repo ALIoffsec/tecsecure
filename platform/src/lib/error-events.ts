@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { prisma } from "@/lib/prisma";
 import { escapeTelegramHtml, notifyTelegramAdmins } from "@/lib/telegram";
+import { isErrorNoise } from "@/lib/error-noise";
 
 const ALERT_EVERY_MS = 60 * 60 * 1000;
 
@@ -10,12 +11,11 @@ function clean(text: string, length: number) {
 }
 
 /** Records a server error once per kind and tells the team on the first sighting. Never throws. */
-const VISITOR_LEFT = /destination stream errored|ResponseAborted|ERR_STREAM_PREMATURE_CLOSE|ECONNRESET|socket hang up|^AbortError/i;
 
 export async function recordError(source: string, error: unknown, path?: string): Promise<void> {
   try {
     const message = clean(error instanceof Error ? `${error.name}: ${error.message}` : String(error), 1000);
-    if (VISITOR_LEFT.test(message)) return;
+    if (isErrorNoise(message)) return;
     const fingerprint = createHash("sha256").update(`${source}|${message}|${path ?? ""}`).digest("hex");
     const event = await prisma.errorEvent.upsert({
       where: { fingerprint },

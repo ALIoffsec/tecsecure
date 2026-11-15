@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
-import { useSitePreferences } from "./site-preferences";
+import { useOptionalSitePreferences } from "./site-preferences";
 import { featureCopy } from "@/lib/feature-copy";
 
 /** Deterministic stand-in for the original Math.random() particles, so server and client markup agree. */
@@ -44,7 +44,7 @@ export function FooterGlow() {
 }
 
 export function NotFoundView() {
-  const { locale } = useSitePreferences();
+  const locale = useOptionalSitePreferences()?.locale ?? "uz";
   const c = featureCopy[locale];
   return <section className="feature-not-found">
     <div className="feature-lamp-stars" aria-hidden="true"><i /><i /><i /></div>

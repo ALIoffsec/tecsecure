@@ -166,6 +166,15 @@ export function useSitePreferences() {
   return value;
 }
 
+/**
+ * For the error and 404 screens, which Next can render without the root layout (for example the 404 it
+ * sends to a forged Server Action request). Null there instead of throwing, so the error page itself
+ * does not fail; callers fall back to Uzbek.
+ */
+export function useOptionalSitePreferences(): Preferences | null {
+  return useContext(PreferencesContext);
+}
+
 export function SiteFooter() {
   const { t, locale, openCookieSettings } = useSitePreferences();
   const c = journeyCopy[locale];

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect } from "react";
-import { useSitePreferences } from "@/components/site-preferences";
+import { useOptionalSitePreferences } from "@/components/site-preferences";
 
 const copy = {
   uz: { title: "Nimadir noto‘g‘ri ketdi", body: "Sahifani yuklab bo‘lmadi. Ma’lumotlaringiz saqlangan. Qayta urinib ko‘ring.", retry: "Qayta urinish", home: "Bosh sahifa" },
@@ -11,7 +11,7 @@ const copy = {
 };
 
 export default function ErrorPage({ error, retry }: { error: unknown; retry: () => void }) {
-  const { locale } = useSitePreferences();
+  const locale = useOptionalSitePreferences()?.locale ?? "uz";
   const c = copy[locale];
   useEffect(() => { console.error("Page render failed", error); }, [error]);
   return <div className="container page-shell">
