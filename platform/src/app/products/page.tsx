@@ -5,6 +5,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
+import { pageMetadata } from "@/lib/structured-data";
 import { listingWhere, loadProductCards, PAGE_SIZE, productQuery, productsHref as build, readListing, sortKeys, stocks } from "@/lib/product-listing";
 import { FilterPanel } from "@/components/filter-panel";
 import { ShopGrid } from "@/components/shop-more";
@@ -14,11 +15,29 @@ import { ShopText as S, ShopSearchInput, ShopSortSelect } from "@/components/sho
 import { CurrencySelector } from "@/components/currency-context";
 
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = {
-  title: { absolute: "Uskunalar do‘koni — Tecsecure" },
-  description: "Videokuzatuv, tarmoq va xavfsizlik uskunalari: narx, mavjudlik va xususiyatlar bilan.",
-  alternates: { canonical: "/products" }
-};
+const catalogDescription = "Videokuzatuv, tarmoq va xavfsizlik uskunalari: narx, mavjudlik va xususiyatlar bilan.";
+
+/**
+ * The catalog and each category are pages of their own in search. Any other mix (a search, sort, brand,
+ * price or page) is the same list in another order, so it points at its base page and stays unindexed.
+ */
+export async function generateMetadata({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }): Promise<Metadata> {
+  const raw = await searchParams;
+  const slug = typeof raw.category === "string" ? raw.category.trim() : "";
+  const filtered = Object.keys(raw).some(key => key !== "category");
+  const category = slug ? await prisma.productCategory.findFirst({ where: { slug, products: { some: { status: "PUBLISHED" } } }, select: { name: true, slug: true } }) : null;
+  if (category) {
+    const name = categoryName(category.name, "uz");
+    return {
+      ...pageMetadata({ path: `/products?category=${encodeURIComponent(category.slug)}`, title: `${name} — uskunalar do‘koni`, description: `${name}: narx, mavjudlik va xususiyatlar bilan. Tecsecure uskunalar do‘koni.` }),
+      ...(filtered ? { robots: { index: false, follow: true } } : {})
+    };
+  }
+  return {
+    ...pageMetadata({ path: "/products", title: "Uskunalar do‘koni — Tecsecure", description: catalogDescription, absoluteTitle: true }),
+    ...(filtered || slug ? { robots: { index: false, follow: true } } : {})
+  };
+}
 
 // A reload deep into the list opens this many batches at once, not every one before it.
 const MOST_PAGES_AT_ONCE = 8;

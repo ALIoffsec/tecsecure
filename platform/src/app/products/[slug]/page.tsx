@@ -22,7 +22,8 @@ import { Localized, LocalizedSpecs, LocalizedText } from "@/components/localized
 import { categoryName, perLocale, productVariants } from "@/lib/product-i18n";
 import type { Locale } from "@/lib/messages";
 import { LOW_STOCK } from "@/lib/marketplace";
-import { SITE_OG_IMAGE } from "@/lib/structured-data";
+import { SITE_OG_IMAGE, jsonLd } from "@/lib/structured-data";
+import { siteOrigin } from "@/lib/site-origin";
 
 export const dynamic = "force-dynamic";
 type Props = { params: Promise<{ slug: string }> };
@@ -103,20 +104,32 @@ export default async function ProductDetailPage({ params }: Props) {
   const distribution = [5, 4, 3, 2, 1].map((n) => ({ n, count: reviews.filter((r) => r.rating === n).length }));
   const stockKey = product.stockStatus === "IN_STOCK" || product.stockStatus === "ON_REQUEST" || product.stockStatus === "OUT_OF_STOCK" ? product.stockStatus : "UNKNOWN";
   const cover = coverMedia(assets);
-  const structuredData = {
+  const origin = siteOrigin();
+  const pageUrl = `${origin}/products/${product.slug}`;
+  const structuredData = [{
     "@context": "https://schema.org",
     "@type": "Product",
     name: product.name,
+    url: pageUrl,
     description: product.description,
     ...(product.sku ? { sku: product.sku } : {}),
     ...(product.brand ? { brand: { "@type": "Brand", name: product.brand } } : {}),
-    ...(cover?.mimeType.startsWith("image/") ? { image: `/api/media/${cover.id}` } : {}),
+    ...(cover?.mimeType.startsWith("image/") ? { image: `${origin}/api/media/${cover.id}` } : {}),
     ...(reviews.length ? { aggregateRating: { "@type": "AggregateRating", ratingValue: average.toFixed(1), reviewCount: reviews.length } } : {}),
-    ...(priced ? { offers: { "@type": "Offer", price: (product.priceMinor as number) / 100, priceCurrency: product.currency, ...(schemaAvailability[stockKey] ? { availability: schemaAvailability[stockKey] } : {}) } } : {})
-  };
+    ...(priced ? { offers: { "@type": "Offer", url: pageUrl, price: (product.priceMinor as number) / 100, priceCurrency: product.currency, ...(schemaAvailability[stockKey] ? { availability: schemaAvailability[stockKey] } : {}) } } : {})
+  }, {
+    // The same trail as the visible breadcrumb above the product.
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Uskunalar do‘koni", item: `${origin}/products` },
+      ...(product.category ? [{ "@type": "ListItem", position: 2, name: categoryName(product.category.name, "uz"), item: `${origin}/products?category=${product.category.slug}` }] : []),
+      { "@type": "ListItem", position: product.category ? 3 : 2, name: product.name, item: pageUrl }
+    ]
+  }];
   return <div className="container page-shell shop-page">
     {/* "<" is escaped so catalog text cannot close the script element. */}
-    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, "\\u003c") }} />
+    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(structuredData) }} />
     <nav className="shop-crumbs" aria-label="Breadcrumb">
       <Link href="/products"><S id="catalog" /></Link><span>/</span>
       {product.category && <><Link href={`/products?category=${product.category.slug}`}><Localized values={perLocale((locale) => categoryName(product.category!.name, locale))} /></Link><span>/</span></>}

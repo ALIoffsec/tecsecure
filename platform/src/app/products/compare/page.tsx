@@ -9,8 +9,16 @@ import { CompareTray } from "@/components/product-compare";
 import { AddToCartButton } from "@/components/cart";
 import { Localized } from "@/components/localized";
 import { perLocale, productVariants } from "@/lib/product-i18n";
+import { pageMetadata } from "@/lib/structured-data";
 
 export const dynamic = "force-dynamic";
+// Personal or sign-in page: reachable, but kept out of search results.
+export const metadata = { ...pageMetadata({
+    path: "/products/compare",
+    title: "Mahsulotlarni solishtirish",
+    description: "Tanlangan mahsulotlarni xususiyatlari bo‘yicha yonma-yon solishtiring."
+  }), robots: { index: false, follow: true } };
+
 export default async function ComparePage({ searchParams }: { searchParams: Promise<{ ids?: string }> }) {
   const raw = (await searchParams).ids;
   const ids = comparisonIds(typeof raw === "string" ? raw : undefined);

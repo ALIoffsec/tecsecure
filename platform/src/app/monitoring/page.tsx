@@ -1,5 +1,13 @@
 import Link from "next/link";
 import { LocalizedText } from "@/components/site-preferences";
+import { pageMetadata } from "@/lib/structured-data";
+
+// Personal or sign-in page: reachable, but kept out of search results.
+export const metadata = { ...pageMetadata({
+    path: "/monitoring",
+    title: "Monitoring",
+    description: "Administrator yoqqan qurilmalar uchun holat tekshiruvi."
+  }), robots: { index: false, follow: true } };
 
 export default function MonitoringPage() {
   return <div className="container page-shell" style={{ maxWidth: 900 }}>

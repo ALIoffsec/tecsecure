@@ -5,7 +5,8 @@ import { LocalizedText } from "@/components/site-preferences";
 
 export const metadata: Metadata = {
   title: { absolute: "Software licenses | Tecsecure" },
-  description: "Third-party package versions and SPDX license identifiers used by the Tecsecure platform."
+  description: "Third-party package versions and SPDX license identifiers used by the Tecsecure platform.",
+  alternates: { canonical: "/licenses" }
 };
 
 type LicenseRecord = {

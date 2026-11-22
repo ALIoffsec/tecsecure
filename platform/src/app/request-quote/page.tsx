@@ -6,8 +6,15 @@ import { AccountSessionActions } from "@/components/account-session-actions";
 import { LocalizedText } from "@/components/site-preferences";
 import { PreviewModeNotice } from "@/components/preview-mode-notice";
 import { isPreviewMode } from "@/lib/preview-mode";
+import { pageMetadata } from "@/lib/structured-data";
 
 export const dynamic = "force-dynamic";
+
+export const metadata = pageMetadata({
+  path: "/request-quote",
+  title: "Loyiha narxini so‘rash",
+  description: "Loyihangizni tavsiflab yuboring: ish ko‘lami, uskunalar va muddat bo‘yicha taklifni portal orqali olasiz."
+});
 
 export default async function RequestQuotePage() {
   if (isPreviewMode) return <div className="container page-shell"><h1 className="page-title"><LocalizedText id="requestProjectPriceTitle" /></h1><PreviewModeNotice /></div>;

@@ -1,7 +1,14 @@
 import { LearningCatalog } from "@/components/learning-catalog";
 import { getPublishedLearningDocuments } from "@/lib/learning-content";
+import { pageMetadata } from "@/lib/structured-data";
 
 export const dynamic = "force-dynamic";
+
+export const metadata = pageMetadata({
+  path: "/learning/exams",
+  title: "Imtihonlar katalogi",
+  description: "Tarmoq, Linux va kiberxavfsizlik bo‘yicha imtihonlar ro‘yxati: mavzulari, savollar soni va o‘tish bali bilan."
+});
 
 export default async function LearningExamsPage() {
   const exams = await getPublishedLearningDocuments("exam");

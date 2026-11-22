@@ -9,7 +9,8 @@ import { defaultContact } from "@/lib/site-contact";
 
 export const metadata: Metadata = {
   title: { absolute: "Karyera va vakansiyalar | Tecsecure" },
-  description: "Tecsecure jamoasidagi ochiq ish o‘rinlari va ishga qabul jarayoni."
+  description: "Tecsecure jamoasidagi ochiq ish o‘rinlari va ishga qabul jarayoni.",
+  alternates: { canonical: "/careers" }
 };
 
 export const dynamic = "force-dynamic";
