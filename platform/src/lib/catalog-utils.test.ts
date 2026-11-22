@@ -7,8 +7,6 @@ import { shopCopy } from "./shop-copy";
 import { requestSchema } from "./validation";
 import { isSiteDesign, siteDesigns } from "./site-designs";
 import { featureCopy } from "./feature-copy";
-import { runInNewContext } from "node:vm";
-import { introBootstrapScript } from "./burning-intro";
 
 const imageId = "cmvlh53hj0004ah44ymdya5v6";
 const videoId = "cmvlh53hn0006ah44cfksofgx";
@@ -20,50 +18,6 @@ test("adapted interface effects have complete Uzbek, Russian and English copy", 
     assert.deepEqual(Object.keys(featureCopy[locale]).sort(), Object.keys(featureCopy.uz).sort());
     for (const value of Object.values(featureCopy[locale])) assert.ok(value.trim().length > 0);
   }
-});
-
-test("cinematic opening replays every home page entry, honors the motion setting and cannot trap an unhydrated page", () => {
-  for (const [reduced, expected] of [[false, "pending"], [true, undefined], [false, "pending"]] as const) {
-    const dataset: Record<string, string> = reduced ? { motion: "off" } : {};
-    let safety: (() => void) | undefined;
-    runInNewContext(introBootstrapScript, {
-      location: { pathname: "/" },
-      document: { documentElement: { dataset }, querySelector: () => null, addEventListener: () => {} },
-      sessionStorage: { getItem: () => { throw new Error("Intro must not depend on session storage"); } },
-      setTimeout: (callback: () => void, delay: number) => { assert.equal(delay, 6000); safety = callback; },
-      console
-    });
-    assert.equal(dataset.tecIntro, expected);
-    safety?.();
-    assert.equal(dataset.tecIntro, undefined);
-  }
-});
-
-test("cinematic opening stays off every page except home", () => {
-  for (const pathname of ["/products", "/cart", "/staff/login", "/admin"]) {
-    const dataset: Record<string, string> = {};
-    runInNewContext(introBootstrapScript, {
-      location: { pathname },
-      document: { documentElement: { dataset }, querySelector: () => null, addEventListener: () => {} },
-      setTimeout: () => assert.fail("No safety timer is needed when the intro does not run"),
-      console
-    });
-    assert.equal(dataset.tecIntro, undefined);
-  }
-});
-
-test("hydrated intro owns its timeout so the bootstrap timer cannot close a later replay", () => {
-  let ready: (() => void) | undefined;
-  let cleared = false;
-  runInNewContext(introBootstrapScript, {
-      location: { pathname: "/" },
-    document: { documentElement: { dataset: {} }, addEventListener: (name: string, callback: () => void) => { assert.equal(name, "tecsecure:intro-ready"); ready = callback; } },
-    matchMedia: () => ({ matches: false }),
-    setTimeout: () => 42,
-    clearTimeout: (id: number) => { assert.equal(id, 42); cleared = true; }
-  });
-  ready?.();
-  assert.equal(cleared, true);
 });
 
 test("liquid glass is a valid design without dropping existing appearance profiles", () => {

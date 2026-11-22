@@ -348,6 +348,3 @@ html[data-refract] #app-shell .brand-glass-pane {
 #app-shell :is(.portal-avatar, .htb-avatar, .learn-avatar, .learn-badge, .htb-ach-item) { border: 1px solid var(--glass-edge); background: linear-gradient(160deg, #ffffff2b, #ffffff08 55%), color-mix(in srgb, var(--accent) 14%, transparent); box-shadow: inset 0 1px 1px var(--glass-shine), inset 0 -6px 10px -8px #ffffff66; }
 #app-shell :is(.customer-sidebar-item.active, .admin-sidebar-item.active) { border-color: color-mix(in srgb, var(--accent) 45%, var(--glass-edge)); background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 24%, transparent), color-mix(in srgb, var(--accent) 8%, transparent)); box-shadow: inset 0 1px 1px var(--glass-shine), inset 0 -6px 10px -8px #ffffff66; }
 
-/* The opening is a solid sheet from its first frame; no dialog fade may touch it. */
-#app-shell dialog.site-intro[open] { animation: none; }
-:root[data-tec-intro] #app-shell .cookie-consent { visibility: hidden; }
