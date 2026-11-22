@@ -1,7 +1,7 @@
 "use client";
 
 import { motionPreference } from "@/lib/motion";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 
 const CONTROLS = ".button, .shop-add-to-cart, .auth-submit, .shop-chip, .shop-quick-view, .shop-compare-button, .portal-icon-link, .portal-account, .preference-button, .account-button, .service-category-tab, .admin-management-category, .feature-hero-selector button, .work-arrow, .feature-wallet-flip";
@@ -18,8 +18,11 @@ function canRefract() {
 export function SiteMotion() {
   const pathname = usePathname();
 
-  // Page arrival: a short settle, never a wait.
+  // Page arrival: a short settle, never a wait. Only on in-app navigation: on the first load the server
+  // HTML is already painted, and fading it again after hydration pushed the largest paint back by seconds.
+  const firstPath = useRef(true);
   useEffect(() => {
+    if (firstPath.current) { firstPath.current = false; return; }
     const preference = motionPreference();
     const main = document.getElementById("main-content");
     if (!main || preference.matches) return;
@@ -42,7 +45,8 @@ export function SiteMotion() {
       }
     }, { rootMargin: "0px 0px -6% 0px" });
     const marked: Element[] = [];
-    document.querySelectorAll(REVEAL).forEach(element => {
+    // Measuring every block forces layout; do it once the browser is idle, not inside hydration.
+    const mark = () => document.querySelectorAll(REVEAL).forEach(element => {
       if (element.getBoundingClientRect().top < window.innerHeight) return;
       // Cards inside a showcase carousel sit beside the screen, not below it; they would never reveal.
       if (element.closest(".showcase-track")) return;
@@ -50,7 +54,14 @@ export function SiteMotion() {
       observer.observe(element);
       marked.push(element);
     });
-    return () => { observer.disconnect(); marked.forEach(element => element.removeAttribute("data-reveal")); };
+    const idle = typeof window.requestIdleCallback === "function"
+      ? window.requestIdleCallback(mark, { timeout: 600 })
+      : window.setTimeout(mark, 120);
+    return () => {
+      if (typeof window.cancelIdleCallback === "function") window.cancelIdleCallback(idle); else window.clearTimeout(idle);
+      observer.disconnect();
+      marked.forEach(element => element.removeAttribute("data-reveal"));
+    };
   }, [pathname]);
 
   // The light follows the pointer across glass; a press sends a ripple through it.

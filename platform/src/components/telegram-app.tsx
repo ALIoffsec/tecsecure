@@ -11,17 +11,9 @@ import { siteCopy } from "@/lib/site-copy";
 import { translateMessage } from "@/lib/server-messages";
 import { formatDateTime, formatMinor } from "@/lib/format";
 import { nextStatuses, type OrderStatusValue } from "@/lib/orders";
+import { SCRIPT_URL, SESSION_KEY, webApp } from "./telegram-bridge";
+export { TelegramBridge } from "./telegram-bridge";
 
-type TelegramWebApp = {
-  initData: string;
-  colorScheme?: "dark" | "light";
-  ready: () => void;
-  expand: () => void;
-  BackButton: { show: () => void; hide: () => void; onClick: (fn: () => void) => void; offClick: (fn: () => void) => void };
-};
-const SCRIPT_URL = "https://telegram.org/js/telegram-web-app.js";
-const SESSION_KEY = "tecsecure-tma";
-const webApp = () => (window as unknown as { Telegram?: { WebApp?: TelegramWebApp } }).Telegram?.WebApp;
 
 /** The Mini App's front door: proves who opened it, then hands over to the normal site. */
 export function TelegramEntry({ app }: { app: "customer" | "staff" | "shop" }) {
@@ -65,31 +57,6 @@ export function TelegramEntry({ app }: { app: "customer" | "staff" | "shop" }) {
   </div>;
 }
 
-/** Inside Telegram the system back button replaces the page's own, on every page after the first. */
-export function TelegramBridge() {
-  const pathname = usePathname();
-  const router = useRouter();
-  const [inApp, setInApp] = useState(false);
-  const [loaded, setLoaded] = useState(0);
-  const entry = pathname.startsWith("/tg");
-  useEffect(() => {
-    try { setInApp(sessionStorage.getItem(SESSION_KEY) !== null); } catch { /* an ordinary browser */ }
-  }, [pathname]);
-  useEffect(() => {
-    const telegram = webApp();
-    if (entry || !telegram?.initData) return;
-    document.documentElement.dataset.tma = pathname.startsWith("/admin") ? "staff" : "customer";
-    const back = () => router.back();
-    if (pathname === "/products" || pathname === "/admin/app" || pathname === "/shop") {
-      telegram.BackButton.hide();
-      return;
-    }
-    telegram.BackButton.show();
-    telegram.BackButton.onClick(back);
-    return () => telegram.BackButton.offClick(back);
-  }, [entry, loaded, pathname, router]);
-  return inApp && !entry ? <Script src={SCRIPT_URL} strategy="afterInteractive" onReady={() => setLoaded(value => value + 1)} /> : null;
-}
 
 export type StaffOrder = { id: string; reference: string; status: string; recipientName: string; phone: string; createdAt: Date | string; totalMinor: number | null; currency: string; paymentMethod: string; paymentStatus: string; paymentProofMediaId: string | null };
 export type StaffWallet = { id: string; kind: string; amountMinor: number; reference: string | null; details: string | null; proofMediaId: string | null; createdAt: Date | string; user: { name: string; email: string } };

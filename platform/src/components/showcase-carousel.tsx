@@ -126,7 +126,9 @@ export function ShowcaseCarousel({ kind, label, children }: { kind: "services" |
       <div className="showcase-dots">
         {Array.from({ length: positions }, (_, dot) => <button key={dot} type="button" className="showcase-dot" aria-current={dot === index ? "true" : undefined}
           aria-label={`${dot + 1} — ${c.carouselGo}`} onClick={() => goTo(dot)}>
-          {dot === index && running && <span className="showcase-dot-fill" key={`${index}-run`} style={{ animationDuration: `${STEP_MS}ms` }} />}
+          <span className="showcase-dot-pill" aria-hidden="true">
+            {dot === index && running && <span className="showcase-dot-fill" key={`${index}-run`} style={{ animationDuration: `${STEP_MS}ms` }} />}
+          </span>
         </button>)}
       </div>
       <button type="button" className="work-arrow showcase-arrow" aria-label={c.carouselNext} onClick={() => goTo(index + 1)}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8.25 4.5 7.5 7.5-7.5 7.5" /></svg></button>

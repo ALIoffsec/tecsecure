@@ -329,14 +329,16 @@
 .showcase-slide { display: flex; min-width: 0; scroll-snap-align: start; }
 .showcase-slide > * { flex: 1 1 auto; width: 100%; min-width: 0; margin: 0; }
 .showcase-controls { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 14px; }
-.showcase-dots { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
-.showcase-dot { position: relative; width: 10px; height: 10px; padding: 0; overflow: hidden; border: 0; border-radius: 999px; background: color-mix(in srgb, var(--muted) 45%, transparent); cursor: pointer; transition: width .25s ease, background-color .25s ease; }
-.showcase-dot::before { content: ""; position: absolute; inset: -12px -4px; }
-.showcase-dot[aria-current="true"] { width: 34px; background: color-mix(in srgb, var(--accent) 35%, transparent); }
+/* Each dot is a 24px touch target (WCAG 2.2 target size); the visible pill inside keeps its old size. */
+.showcase-dots { display: flex; flex-wrap: wrap; justify-content: center; gap: 0; }
+.showcase-dot { position: relative; display: grid; width: 24px; height: 24px; place-items: center; padding: 0; border: 0; background: transparent; cursor: pointer; transition: width .25s ease; }
+.showcase-dot[aria-current="true"] { width: 44px; }
+.showcase-dot-pill { position: relative; display: block; width: 10px; height: 10px; overflow: hidden; border-radius: 999px; background: color-mix(in srgb, var(--muted) 45%, transparent); transition: width .25s ease, background-color .25s ease; }
+.showcase-dot[aria-current="true"] .showcase-dot-pill { width: 34px; background: color-mix(in srgb, var(--accent) 35%, transparent); }
 .showcase-dot-fill { position: absolute; inset: 0; transform-origin: left center; background: var(--accent); animation: showcase-fill linear forwards; }
-.showcase-dot[aria-current="true"]:not(:has(.showcase-dot-fill)) { background: var(--accent); }
+.showcase-dot[aria-current="true"]:not(:has(.showcase-dot-fill)) .showcase-dot-pill { background: var(--accent); }
 @keyframes showcase-fill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
-html[data-motion="off"] .showcase-dot, html[data-motion="off"] .showcase-dot-fill { transition: none; animation: none; }
+html[data-motion="off"] :is(.showcase-dot, .showcase-dot-pill, .showcase-dot-fill) { transition: none; animation: none; }
 @media (max-width: 900px) { .showcase-carousel, .showcase-carousel.is-products { --per: 2; --gap: 14px; } }
 @media (max-width: 560px) {
   .showcase-track { grid-auto-columns: 84%; }

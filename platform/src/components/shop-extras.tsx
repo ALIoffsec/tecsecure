@@ -9,6 +9,7 @@ import { siteCopy } from "@/lib/site-copy";
 import { defaultContact } from "@/lib/site-contact";
 import { formatMinor } from "@/lib/format";
 import { AddToCartButton } from "./cart";
+import { mediaUrl } from "@/lib/media-url";
 
 const RECENT_KEY = "tecsecure-recent-products";
 const RECENT_LIMIT = 8;
@@ -45,7 +46,7 @@ export function RecentlyViewed({ exclude }: { exclude?: string }) {
     <div><h2 id="recent-products-title">{c.recent}</h2><p className="small muted">{c.recentHint}</p></div>
     <div className="recent-products-row">
       {items.map(item => <Link className="recent-product" href={`/products/${item.slug}`} key={item.slug}>
-        <span className="recent-product-image">{item.imageId ? <img src={`/api/media/${item.imageId}`} alt="" loading="lazy" /> : <UiIcon name="box" size={24} />}</span>
+        <span className="recent-product-image">{item.imageId ? <img src={mediaUrl(item.imageId, 160)} alt="" loading="lazy" decoding="async" /> : <UiIcon name="box" size={24} />}</span>
         <span className="recent-product-text"><strong>{item.name}</strong>{item.priceMinor !== null && <small>{formatMinor(item.priceMinor, item.currency, locale)}</small>}</span>
       </Link>)}
     </div>

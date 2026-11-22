@@ -19,17 +19,24 @@ export function FooterGlow() {
   const filterId = `footer-water-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
   const [visible, setVisible] = useState(false);
   const [pageVisible, setPageVisible] = useState(true);
+  // The 56 drops are only built once the footer comes near the screen, so the first load carries none of them.
+  const [near, setNear] = useState(false);
   useEffect(() => {
     const observer = new IntersectionObserver(([entry]) => setVisible(entry.isIntersecting));
+    const approach = new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting) return;
+      setNear(true);
+      approach.disconnect();
+    }, { rootMargin: "600px 0px" });
     const onVisibility = () => setPageVisible(!document.hidden);
     document.addEventListener("visibilitychange", onVisibility);
     onVisibility();
-    if (ref.current) observer.observe(ref.current);
-    return () => { observer.disconnect(); document.removeEventListener("visibilitychange", onVisibility); };
+    if (ref.current) { observer.observe(ref.current); approach.observe(ref.current); }
+    return () => { observer.disconnect(); approach.disconnect(); document.removeEventListener("visibilitychange", onVisibility); };
   }, []);
   return <div ref={ref} className="feature-footer-glow" data-running={visible && pageVisible} aria-hidden="true">
     <div className="feature-footer-liquid" style={{ filter: `url("#${filterId}")` }}>
-      {footerParticles.map((p, i) => <i key={i} style={{ left: `${p.left}%`, width: p.size, height: p.size, "--uplift": `${p.uplift}px`, animationDuration: `${p.duration}s`, animationDelay: `${p.delay}s` } as React.CSSProperties} />)}
+      {near && footerParticles.map((p, i) => <i key={i} style={{ left: `${p.left}%`, width: p.size, height: p.size, "--uplift": `${p.uplift}px`, animationDuration: `${p.duration}s`, animationDelay: `${p.delay}s` } as React.CSSProperties} />)}
     </div>
     {/* The supplied goo filter, followed by a specular pass that makes the surface read as water. */}
     <svg width="0" height="0"><defs><filter id={filterId} x="0" y="0" width="100%" height="100%" colorInterpolationFilters="sRGB">

@@ -108,7 +108,7 @@ export function SiteNav() {
     }}>
       <a className="skip-link" href="#main-content">{locale === "uz" ? "Asosiy mazmunga o‘tish" : locale === "ru" ? "К содержимому" : "Skip to content"}</a>
       <div className="container portal-nav-inner">
-        <Link className="portal-brand" href="/"><img src="/icon.ico" width="32" height="32" alt="" />Tecsecure</Link>
+        <Link className="portal-brand" href="/"><img src="/icon.svg" width="32" height="32" alt="" />Tecsecure</Link>
         <nav className="portal-primary" aria-label={c.nav.primary} onMouseLeave={closeMega}>
           {primary.map(item => <div className="portal-primary-item" key={item.key} onMouseEnter={() => openMega(item.key)} onFocus={() => openMega(item.key)} onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) closeMega(); }}>
             <Link href={item.group.href} aria-current={isActive(pathname, item.active) ? "page" : undefined}>{item.group.title}</Link>

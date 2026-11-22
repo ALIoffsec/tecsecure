@@ -125,7 +125,7 @@ export function SitePreferencesProvider({ children, overrides = {} }: { children
     {children}
     <AnalyticsLoader enabled={analyticsOn} />
     {(cookieConsent === null || cookieSettingsOpen) && (
-      <aside className="cookie-consent" role="dialog" aria-modal="false" aria-labelledby="cookie-consent-title" data-details={cookieDetails}>
+      <div className="cookie-consent" role="dialog" aria-modal="false" aria-labelledby="cookie-consent-title" data-details={cookieDetails}>
         <div className="cookie-consent-head">
           <strong id="cookie-consent-title">{cookie.title}</strong>
           {cookieSettingsOpen && <button className="cookie-consent-close" type="button" aria-label={cookie.close} onClick={() => { setCookieSettingsOpen(false); setCookieDetails(false); }}>×</button>}
@@ -155,7 +155,7 @@ export function SitePreferencesProvider({ children, overrides = {} }: { children
               <button className="cookie-customize" type="button" onClick={() => setCookieDetails(true)}>{cookie.customize}</button>
             </>}
         </div>
-      </aside>
+      </div>
     )}
   </PreferencesContext.Provider>;
 }

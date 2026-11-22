@@ -10,6 +10,7 @@ import { growthCopy } from "@/lib/growth-copy";
 import { checkoutCopy } from "@/lib/checkout-copy";
 import { inquiryHref } from "@/lib/journey-copy";
 import { buildNetworkEstimate } from "@/lib/network-estimate";
+import { mediaSrcSet, mediaUrl } from "@/lib/media-url";
 import { scoreSecurityCheck, securityQuestions } from "@/lib/security-check";
 import { formatDate, formatNumber, formatMinor } from "@/lib/format";
 import { trackGoal } from "@/lib/analytics";
@@ -218,7 +219,7 @@ export function WorkProjectList({ posts }: { posts: WorkStory[] }) {
     <div className="plans-grid">{posts.map(post => {
       const cover = Array.isArray(post.media) ? post.media.find((id): id is string => typeof id === "string") : undefined;
       return <Link className="panel-card work-project" href={`/work/${post.slug}`} key={post.id}>
-        {cover && <img src={`/api/media/${cover}`} alt="" loading="lazy" onError={event => { event.currentTarget.style.display = "none"; }} />}
+        {cover && <img src={mediaUrl(cover, 960)} srcSet={mediaSrcSet(cover, [480, 960, 1280])} sizes="(max-width: 1240px) 100vw, 1200px" alt="" loading="lazy" decoding="async" onError={event => { event.currentTarget.style.display = "none"; }} />}
         <strong>{post.title}</strong>
         {post.location && <span className="small muted">{post.location}</span>}
         <span className="text-link small">{c.more} →</span>

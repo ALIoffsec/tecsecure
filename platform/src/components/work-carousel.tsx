@@ -6,6 +6,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MediaLightbox } from "./media-lightbox";
 import { useSitePreferences } from "./site-preferences";
 import { siteCopy } from "@/lib/site-copy";
+import { mediaSrcSet, mediaUrl, type MediaWidth } from "@/lib/media-url";
+
+const SLIDE_WIDTHS: readonly MediaWidth[] = [480, 640, 960, 1280];
 
 export type WorkPost = { id: string; title: string; description: string; media: unknown };
 type Slide = { key: string; mediaId: string; postId: string; title: string; description: string };
@@ -42,9 +45,10 @@ function slideStyle(offset: number) {
 
 function SlideImage({ id, alt, eager }: { id: string; alt: string; eager: boolean }) {
   const [isVideo, setIsVideo] = useState(false);
-  const source = `/api/media/${id}`;
-  if (isVideo) return <video src={source} muted loop playsInline preload="metadata" autoPlay aria-label={alt || undefined} />;
-  return <img src={source} alt={alt} loading={eager ? "eager" : "lazy"} decoding="async" draggable={false} onError={() => setIsVideo(true)} />;
+  if (isVideo) return <video src={mediaUrl(id)} muted loop playsInline preload="metadata" autoPlay aria-label={alt || undefined} />;
+  // A resized copy for the stage; the lightbox still opens the original file.
+  return <img src={mediaUrl(id, 960)} srcSet={mediaSrcSet(id, SLIDE_WIDTHS)} sizes="(max-width: 1240px) 100vw, 1200px" alt={alt}
+    loading={eager ? "eager" : "lazy"} fetchPriority={eager ? "high" : "low"} decoding="async" draggable={false} onError={() => setIsVideo(true)} />;
 }
 
 export function WorkCarousel({ posts, showLink = false }: { posts: WorkPost[]; showLink?: boolean }) {
@@ -216,7 +220,7 @@ export function WorkCarousel({ posts, showLink = false }: { posts: WorkPost[]; s
     </div>}
 
     <div className="work-stage" ref={stage} data-single={count === 1} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={endDrag} onPointerCancel={endDrag}>
-      <img className="work-ambient" key={current.key} src={`/api/media/${current.mediaId}`} alt="" aria-hidden="true" draggable={false} />
+      <img className="work-ambient" key={current.key} src={mediaUrl(current.mediaId, 64)} alt="" aria-hidden="true" draggable={false} />
       <div className="work-track">
         {slides.map((slide, index) => {
           const style = slideStyle(loopOffset(index, active, count));
@@ -225,7 +229,7 @@ export function WorkCarousel({ posts, showLink = false }: { posts: WorkPost[]; s
             tabIndex={isActive ? 0 : -1} aria-hidden={!isActive} aria-label={`${c.open}: ${slide.title} — ${index + 1} / ${count}`} data-active={isActive}
             style={{ transform: style.transform, opacity: style.opacity, zIndex: style.zIndex, visibility: style.visibility, "--dim": style.dim } as React.CSSProperties}
             onClick={() => onSlideClick(index)}>
-            <SlideImage id={slide.mediaId} alt={isActive ? slide.title : ""} eager={Math.abs(loopOffset(index, active, count)) < 2} />
+            <SlideImage id={slide.mediaId} alt={isActive ? slide.title : ""} eager={loopOffset(index, active, count) === 0} />
             <span className="work-slide-zoom" aria-hidden="true">⤢</span>
           </button>;
         })}
@@ -243,7 +247,7 @@ export function WorkCarousel({ posts, showLink = false }: { posts: WorkPost[]; s
       </div>}
     <div className="work-thumbs" ref={thumbs} role="group" aria-label={c.title}>
       {slides.map((slide, index) => <button type="button" className="work-thumb" key={slide.key} aria-current={index === active} aria-label={`${slide.title} — ${index + 1}`} onClick={() => { setPlaying(false); showIndex(index); }}>
-        <img src={`/api/media/${slide.mediaId}`} alt="" loading="lazy" decoding="async" draggable={false} onError={event => { event.currentTarget.style.visibility = "hidden"; }} />
+        <img src={mediaUrl(slide.mediaId, 160)} alt="" loading="lazy" decoding="async" draggable={false} onError={event => { event.currentTarget.style.visibility = "hidden"; }} />
       </button>)}
     </div>
     </div>}

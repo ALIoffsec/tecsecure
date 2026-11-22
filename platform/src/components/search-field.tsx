@@ -8,6 +8,7 @@ import { UiIcon, type IconName } from "./ui-icon";
 import { siteCopy } from "@/lib/site-copy";
 import { formatMinor } from "@/lib/format";
 import type { SearchGroup, SearchItem, SearchResponse } from "@/lib/search-index";
+import { mediaUrl } from "@/lib/media-url";
 
 const RECENT_KEY = "tecsecure-recent-searches";
 const groupIcons: Record<SearchGroup, IconName> = { product: "box", service: "toolbox", learning: "book", news: "newspaper", page: "layout" };
@@ -67,7 +68,7 @@ export function SearchResultRow({ item, query, active = false, id, onChoose }: {
   const [imageFailed, setImageFailed] = useState(false);
   return <Link className="search-row" href={item.href} id={id} role={id ? "option" : undefined} aria-selected={id ? active : undefined} data-active={active} onClick={onChoose}>
     <span className="search-row-icon">
-      {item.imageId && !imageFailed ? <img src={`/api/media/${item.imageId}`} alt="" loading="lazy" onError={() => setImageFailed(true)} /> : <UiIcon name={groupIcons[item.group]} size={18} />}
+      {item.imageId && !imageFailed ? <img src={mediaUrl(item.imageId, 160)} alt="" loading="lazy" decoding="async" onError={() => setImageFailed(true)} /> : <UiIcon name={groupIcons[item.group]} size={18} />}
     </span>
     <span className="search-row-text">
       <strong><Highlight text={item.title} query={query} /></strong>

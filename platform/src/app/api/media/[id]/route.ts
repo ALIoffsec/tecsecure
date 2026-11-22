@@ -1,6 +1,8 @@
 import { getCurrentUser, isResponse, requireModuleApi } from "@/lib/auth";
 import { parseByteRange } from "@/lib/media-validate";
 import { prisma } from "@/lib/prisma";
+import { isMediaWidth } from "@/lib/media-url";
+import { canResize, mediaVariant } from "@/lib/media-variants";
 
 export const runtime = "nodejs";
 
@@ -43,6 +45,26 @@ export async function GET(request: Request, context: Context) {
   });
   // A private asset answers 404, not 403, so its existence is not disclosed.
   if (!asset || !(await canRead(asset))) return new Response("Not found", { status: 404 });
+  // ?w= asks for a smaller copy of a public image (thumbnails, carousels). Unknown widths, private files
+  // and videos get the original, so old links and the video fallback keep working.
+  const width = Number(new URL(request.url).searchParams.get("w"));
+  if (width && isMediaWidth(width) && !asset.private && canResize(asset.mimeType)) {
+    const webp = /image\/webp|image\/avif|\*\/\*/.test(request.headers.get("accept") ?? "");
+    try {
+      const variant = await mediaVariant(id, asset.data, asset.mimeType, width, webp);
+      return new Response(new Uint8Array(variant.data), {
+        headers: {
+          "Content-Type": variant.mimeType,
+          "Content-Length": String(variant.data.length),
+          "Cache-Control": PUBLIC_CACHE,
+          "Vary": "Accept",
+          "X-Content-Type-Options": "nosniff"
+        }
+      });
+    } catch {
+      // A file sharp cannot read is still served as stored.
+    }
+  }
   const headers: Record<string, string> = {
     "Content-Type": asset.mimeType,
     "Content-Disposition": `inline; filename="${asset.name.replace(/[^\x20-\x7e]|["\\]/g, "_")}"`,

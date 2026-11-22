@@ -29,6 +29,9 @@ const nextConfig: NextConfig = {
   experimental: {
     agentUpgrade: "security",
     cpus: 2,
+    // Styles arrive inside the HTML instead of three render-blocking requests (PageSpeed: ~0.9 s on mobile).
+    // Trade-off: CSS is no longer cached separately; production builds only.
+    inlineCss: true,
     // The dev disk cache left pages reloading in an endless loop after a server restart.
     turbopackFileSystemCacheForDev: false
   },

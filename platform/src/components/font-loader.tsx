@@ -1,19 +1,31 @@
 "use client";
 
 import { useEffect } from "react";
+import { fontStylesheetFor } from "@/lib/site-fonts";
 
-const fontStylesheet = "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&family=Playfair+Display:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap";
-
+/**
+ * Loads, after the page has painted, only the Google Fonts the active design uses. The default liquid design
+ * runs on the system font, so it fetches just the two families a few base rules still name. When admin
+ * switches the design live, the new design's families are added.
+ */
 export function FontLoader() {
   useEffect(() => {
-    if (document.getElementById("site-fonts")) return;
-    const link = document.createElement("link");
-    link.id = "site-fonts";
-    link.rel = "stylesheet";
-    link.href = fontStylesheet;
-    link.media = "print";
-    link.addEventListener("load", () => { link.media = "all"; }, { once: true });
-    document.head.append(link);
+    const root = document.documentElement;
+    const load = () => {
+      const href = fontStylesheetFor(root.dataset.design);
+      if (document.querySelector(`link[data-site-fonts="${CSS.escape(href)}"]`)) return;
+      const link = document.createElement("link");
+      link.dataset.siteFonts = href;
+      link.rel = "stylesheet";
+      link.href = href;
+      link.media = "print";
+      link.addEventListener("load", () => { link.media = "all"; }, { once: true });
+      document.head.append(link);
+    };
+    load();
+    const observer = new MutationObserver(load);
+    observer.observe(root, { attributes: true, attributeFilter: ["data-design"] });
+    return () => observer.disconnect();
   }, []);
 
   return null;
