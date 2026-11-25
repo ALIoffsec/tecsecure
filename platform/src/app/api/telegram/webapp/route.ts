@@ -7,6 +7,8 @@ import { getTelegramCredentials } from "@/lib/integration-credentials";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { verifyTelegramInitData } from "@/lib/telegram-webapp";
+import { standInEmail } from "@/lib/validation";
+import { Prisma } from "@prisma/client";
 
 export const runtime = "nodejs";
 
@@ -50,15 +52,24 @@ export async function POST(request: Request) {
   }
   if (!parsed.data.create) return Response.json({ ok: false, needsAccount: true, name: telegramUser.first_name ?? "" });
   const name = [telegramUser.first_name, telegramUser.last_name].filter(Boolean).join(" ").trim().slice(0, 100);
-  const created = await prisma.user.create({
-    data: {
-      name: name.length >= 2 ? name : `Mijoz ${chatId.slice(-4)}`,
-      email: `tg-${chatId}@accounts.tecsecure.invalid`,
-      telegramChatId: chatId,
-      passwordHash: await bcrypt.hash(randomBytes(32).toString("base64url"), 12)
-    },
-    select: { id: true }
-  });
-  await createSession(created.id);
-  return Response.json({ ok: true, next });
+  try {
+    const created = await prisma.user.create({
+      data: {
+        name: name.length >= 2 ? name : `Mijoz ${chatId.slice(-4)}`,
+        email: standInEmail("tg"),
+        telegramChatId: chatId,
+        passwordHash: await bcrypt.hash(randomBytes(32).toString("base64url"), 12)
+      },
+      select: { id: true }
+    });
+    await createSession(created.id);
+    return Response.json({ ok: true, next });
+  } catch (error) {
+    if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== "P2002") throw error;
+    // A second tap made the account a moment earlier: sign in to that one.
+    const existing = await prisma.user.findUnique({ where: { telegramChatId: chatId }, select: { id: true, role: true, active: true, deletedAt: true } });
+    if (!existing || existing.role !== "CUSTOMER" || !existing.active || existing.deletedAt) return Response.json({ error: "Bu hisob faol emas." }, { status: 403 });
+    await createSession(existing.id);
+    return Response.json({ ok: true, next });
+  }
 }

@@ -4,6 +4,7 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { normalizePhone } from "@/lib/otp";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { isReservedEmail, reservedEmailMessage } from "@/lib/validation";
 import { z } from "zod";
 
 export const runtime = "nodejs";
@@ -37,6 +38,10 @@ export async function PATCH(request: Request) {
   if (!account) return Response.json({ error: "Kirish talab qilinadi." }, { status: 401 });
   const samePhone = (account.phone ? normalizePhone(account.phone) ?? account.phone : null) === (changes.phone ? normalizePhone(changes.phone) ?? changes.phone : null);
   const sensitive = changes.email !== account.email || !samePhone;
+  // Only a newly typed address is checked, so phone and Telegram accounts can still save their name.
+  if (changes.email !== account.email && isReservedEmail(changes.email)) {
+    return Response.json({ error: reservedEmailMessage, code: "RESERVED_EMAIL" }, { status: 400 });
+  }
   if (sensitive) {
     if (!(await checkRateLimit("profile-password", actor.id, 10, 15 * 60 * 1000))) {
       return Response.json({ error: "Urinishlar limiti oshdi. 15 daqiqadan so‘ng qayta urinib ko‘ring." }, { status: 429 });

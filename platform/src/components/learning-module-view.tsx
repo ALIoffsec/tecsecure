@@ -9,6 +9,7 @@ import { GuidedPracticeTerminal } from "@/components/guided-practice-terminal";
 import { ToastMessage } from "@/components/toast-provider";
 import type { LearningDiagram, LearningImage, LearningSection, LearningVideo, Localized } from "@/lib/learning-demo";
 import type { LearningModulePreview } from "@/lib/learning-catalog-types";
+import { loginPath } from "@/lib/safe-next";
 
 type LinuxPracticeProgress = {
   tasksBySection: Record<number, string[]>;
@@ -477,7 +478,7 @@ export function LearningModuleView({ module, nickname }: { module: LearningModul
                 </button>
               : access.error
                 ? <span className="muted">{tx.purchaseUnavailable}</span>
-                : <Link className="button secondary" href="/login">{tx.signInToPurchase}</Link>
+                : <Link className="button secondary" href={loginPath(`/learning/${module.slug}`)}>{tx.signInToPurchase}</Link>
           )}
         </div>
         <ToastMessage message={access.error} variant="error" />
@@ -564,7 +565,7 @@ export function LearningModuleView({ module, nickname }: { module: LearningModul
                   </>
                 : access.error
                   ? <span className="muted">{tx.purchaseUnavailable}</span>
-                  : <Link className="button secondary" href="/login">{tx.signInToPurchase}</Link>}
+                  : <Link className="button secondary" href={loginPath(`/learning/${module.slug}`)}>{tx.signInToPurchase}</Link>}
             </div>
           ) : lessonError ? (
             <ToastMessage message={lessonError} variant="error" />

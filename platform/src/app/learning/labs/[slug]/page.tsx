@@ -16,7 +16,7 @@ export default async function LabPage({ params }: { params: Promise<{ slug: stri
   const { slug } = await params;
   const lab = await getLearningLab(slug);
   if (!lab) notFound();
-  const user = await requireUser();
+  const user = await requireUser(`/learning/labs/${slug}`);
   const [account, planKey, purchase, solved, completion] = await Promise.all([
     prisma.user.findUnique({ where: { id: user.id }, select: { rewardPoints: true } }),
     getActivePlanKey(user.id),

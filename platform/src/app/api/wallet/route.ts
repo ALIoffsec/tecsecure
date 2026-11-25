@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { createTelegramWalletKeyboard, escapeTelegramHtml, getTelegramAdminPanelUrl, notifyTelegramAdminsWithProof } from "@/lib/telegram";
 import { formatNumber } from "@/lib/format";
 import { z } from "zod";
+import { rateLimit, tooManyAttempts } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -38,6 +39,8 @@ export async function POST(request: Request) {
   const user = await getCurrentUser();
   if (!user) return Response.json({ error: "Kirish talab qilinadi." }, { status: 401 });
   if (user.role !== "CUSTOMER") return Response.json({ error: "Hamyon so‘rovi faqat mijoz hisobi uchun." }, { status: 403 });
+  const limited = await rateLimit("wallet-request", user.id, 10, 60 * 60 * 1000);
+  if (!limited.ok) return tooManyAttempts(limited.retryAfterSeconds);
   let input: unknown;
   try { input = await request.json(); } catch {
     return Response.json({ error: "So‘rov JSON formatida bo‘lishi kerak." }, { status: 400 });

@@ -24,7 +24,7 @@ export default async function ExamPage({ params }: { params: Promise<{ slug: str
     getPublishedLearningDocuments("lab"),
     Promise.all(exam.requiredModules.map(async (moduleSlug) => [moduleSlug, await modTitle(moduleSlug)] as const))
   ]);
-  const user = await requireUser();
+  const user = await requireUser(`/learning/exams/${slug}`);
   const now = new Date();
   const [account, planKey, modules, labs, open, certificate] = await Promise.all([
     prisma.user.findUnique({ where: { id: user.id }, select: { rewardPoints: true } }),

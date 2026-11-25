@@ -3,9 +3,25 @@ import { z } from "zod";
 // 100 billion UZS in tiyin; keeps cart totals inside Number.MAX_SAFE_INTEGER.
 export const MAX_PRICE_MINOR = 10_000_000_000_000;
 
+/** Domains the site gives to accounts without a real mailbox (phone, Telegram, deleted). Nobody may type them in. */
+const RESERVED_EMAIL_DOMAINS = ["accounts.tecsecure.invalid", "deleted.invalid"];
+
+export function isReservedEmail(email: string): boolean {
+  const domain = email.trim().toLowerCase().split("@").pop() ?? "";
+  return RESERVED_EMAIL_DOMAINS.some((reserved) => domain === reserved || domain.endsWith(`.${reserved}`));
+}
+
+/** A stand-in address for an account made by phone or Telegram. Random, so an old or taken one never blocks a new account. */
+export function standInEmail(kind: "phone" | "tg"): string {
+  const bytes = globalThis.crypto.getRandomValues(new Uint8Array(8));
+  return `${kind}-${Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("")}@accounts.tecsecure.invalid`;
+}
+
+export const reservedEmailMessage = "Bu email manzilini ishlatib bo‘lmaydi.";
+
 export const registerSchema = z.object({
   name: z.string().trim().min(2).max(100),
-  email: z.string().trim().email().max(254).transform((value) => value.toLowerCase()),
+  email: z.string().trim().email().max(254).transform((value) => value.toLowerCase()).refine((value) => !isReservedEmail(value), reservedEmailMessage),
   password: z.string().min(8).max(128)
 });
 

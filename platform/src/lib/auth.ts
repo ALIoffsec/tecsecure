@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { isAdminAccessActive } from "@/lib/admin-access";
 import { prisma } from "@/lib/prisma";
+import { loginPath } from "@/lib/safe-next";
 
 const SESSION_COOKIE = "tecsecure_session";
 const ADMIN_ACCESS_COOKIE = "tecsecure_admin_access";
@@ -69,6 +70,26 @@ export async function destroySession(): Promise<void> {
   cookieStore.delete(ADMIN_ACCESS_COOKIE);
 }
 
+/**
+ * Signs the account out everywhere except here. "Here" is the session in this request's own cookie, never an
+ * id the client sends. Returns how many sessions ended, or null when this request has no session.
+ */
+export async function endOtherSessions(userId: string): Promise<number | null> {
+  const token = (await cookies()).get(SESSION_COOKIE)?.value;
+  if (!token) return null;
+  const current = hashToken(token);
+  const own = await prisma.session.findFirst({ where: { tokenHash: current, userId }, select: { id: true } });
+  if (!own) return null;
+  const ended = await prisma.session.deleteMany({ where: { userId, tokenHash: { not: current } } });
+  return ended.count;
+}
+
+/** How many other signed-in sessions the account has besides this one. */
+export async function countOtherSessions(userId: string): Promise<number> {
+  const token = (await cookies()).get(SESSION_COOKIE)?.value;
+  return prisma.session.count({ where: { userId, expiresAt: { gt: new Date() }, ...(token ? { tokenHash: { not: hashToken(token) } } : {}) } });
+}
+
 export async function getCurrentUser(): Promise<AuthUser | null> {
   const token = (await cookies()).get(SESSION_COOKIE)?.value;
   if (!token) return null;
@@ -103,7 +124,7 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
 
 export async function requireUser(returnTo?: string): Promise<AuthUser> {
   const user = await getCurrentUser();
-  if (!user) redirect(returnTo ? `/login?next=${encodeURIComponent(returnTo)}` : "/login");
+  if (!user) redirect(loginPath(returnTo));
   return user;
 }
 

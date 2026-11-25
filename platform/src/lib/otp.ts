@@ -188,9 +188,14 @@ export async function issueOtp(purpose: OtpPurpose, target: string, kind: "phone
 
 /** True once, for the right code, within its time and attempt limits. */
 export async function verifyOtp(purpose: OtpPurpose | "RESET_TICKET", target: string, code: string): Promise<boolean> {
-  const record = await prisma.otpCode.findFirst({ where: { target, purpose, consumedAt: null, expiresAt: { gt: new Date() } }, orderBy: { createdAt: "desc" } });
-  if (!record || record.attempts >= MAX_ATTEMPTS) return false;
-  await prisma.otpCode.update({ where: { id: record.id }, data: { attempts: { increment: 1 } } });
+  const record = await prisma.otpCode.findFirst({ where: { target, purpose, consumedAt: null, expiresAt: { gt: new Date() } }, orderBy: { createdAt: "desc" }, select: { id: true, codeHash: true, providerRef: true } });
+  if (!record) return false;
+  // The try is taken in the same statement that checks the count, so parallel requests cannot go past the limit.
+  const claimed = await prisma.otpCode.updateMany({
+    where: { id: record.id, consumedAt: null, expiresAt: { gt: new Date() }, attempts: { lt: MAX_ATTEMPTS } },
+    data: { attempts: { increment: 1 } }
+  });
+  if (claimed.count !== 1) return false;
   const given = Buffer.from(hashCode(code.trim(), target));
   const expected = Buffer.from(record.codeHash);
   if (given.length !== expected.length || !timingSafeEqual(given, expected)) return false;

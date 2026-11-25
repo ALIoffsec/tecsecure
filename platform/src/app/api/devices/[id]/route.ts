@@ -1,7 +1,6 @@
 import { isResponse, requireAdminApi } from "@/lib/auth";
-import { parseMonitoringTarget, isPublicAddress } from "@/lib/monitoring";
+import { parseMonitoringTarget, resolvePublicAddresses } from "@/lib/monitoring";
 import { prisma } from "@/lib/prisma";
-import { isIP } from "node:net";
 import { z } from "zod";
 
 export const runtime = "nodejs";
@@ -28,8 +27,10 @@ export async function PATCH(request: Request, context: Context) {
   if (parsed.data.monitored) {
     const target = parseMonitoringTarget(method, device.hostname);
     if (!target) return Response.json({ error: "Monitoring uchun hostname va 'tcp:PORT' usuli kerak." }, { status: 400 });
-    if (isIP(target.host) && !isPublicAddress(target.host)) {
-      return Response.json({ error: "Faqat ommaviy manzillar tekshiriladi." }, { status: 400 });
+    // A host name is judged by what it resolves to now; the worker checks again before every connection.
+    const resolved = await resolvePublicAddresses(target.host);
+    if (!resolved.ok) {
+      return Response.json({ error: resolved.reason === "dns" ? "DNS nomi topilmadi." : "Faqat ommaviy manzillar tekshiriladi." }, { status: 400 });
     }
   }
   const updated = await prisma.$transaction(async (tx) => {

@@ -3,6 +3,7 @@ import { getCurrentUser, requireModuleApi } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { escapeTelegramHtml, notifyTelegramAdmins } from "@/lib/telegram";
 import { projectSchema } from "@/lib/validation";
+import { rateLimit, tooManyAttempts } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -29,6 +30,8 @@ export async function POST(request: Request) {
   const user = await getCurrentUser();
   if (!user) return Response.json({ error: "Loyiha yaratish uchun kirish talab qilinadi." }, { status: 401 });
   if (user.role !== "CUSTOMER") return Response.json({ error: "Xodimlar mijoz nomidan loyiha yubora olmaydi." }, { status: 403 });
+  const limited = await rateLimit("project-create", user.id, 10, 60 * 60 * 1000);
+  if (!limited.ok) return tooManyAttempts(limited.retryAfterSeconds);
   let body: unknown;
   try {
     body = await request.json();

@@ -2,6 +2,8 @@ import bcrypt from "bcryptjs";
 import { Prisma } from "@prisma/client";
 import { isResponse, requireAdminApi } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { revokeOpenTickets } from "@/lib/two-factor";
+import { isReservedEmail } from "@/lib/validation";
 import { adminModules, AdminModule } from "@/lib/auth";
 import { z } from "zod";
 
@@ -9,7 +11,7 @@ export const runtime = "nodejs";
 
 const createSchema = z.object({
   name: z.string().trim().min(2).max(100),
-  email: z.string().trim().email().max(254).transform((value) => value.toLowerCase()),
+  email: z.string().trim().email().max(254).transform((value) => value.toLowerCase()).refine((value) => !isReservedEmail(value), "Bu email manzilini ishlatib bo‘lmaydi."),
   password: z.string().min(8).max(128),
   role: z.enum(["STAFF", "ADMIN"]),
   permissions: z.array(z.enum(adminModules)).max(adminModules.length).default([])
@@ -100,7 +102,10 @@ export async function PATCH(request: Request) {
         },
         select: { id: true, name: true, email: true, role: true, active: true, permissions: true }
       });
-      if (nextRole !== target.role || !nextActive || parsed.data.permissions) await tx.session.deleteMany({ where: { userId: target.id } });
+      if (nextRole !== target.role || !nextActive || parsed.data.permissions) {
+        await tx.session.deleteMany({ where: { userId: target.id } });
+        await revokeOpenTickets(target.id, tx);
+      }
       await tx.auditLog.create({
         data: { actorId: actor.id, action: "USER_PERMISSIONS_UPDATED", entity: "User", entityId: target.id, metadata: { from: target.role, to: nextRole, active: nextActive } }
       });

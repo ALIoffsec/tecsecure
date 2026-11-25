@@ -15,7 +15,8 @@ const dictionary: Record<string, { ru: string; en: string }> = {
   "Baho (1–5) va kamida 10 belgili sharh kerak.": { ru: "Нужны оценка (1–5) и отзыв не короче 10 символов.", en: "A rating (1–5) and a review of at least 10 characters are required." },
   "Bu amal uchun ruxsat yo‘q.": { ru: "Нет прав на это действие.", en: "You do not have permission to do this." },
   "Bu email allaqachon ro‘yxatdan o‘tgan.": { ru: "Этот email уже зарегистрирован.", en: "This email is already registered." },
-  "Bu email boshqa hisobda ishlatilmoqda.": { ru: "Этот email используется в другом аккаунте.", en: "This email is used by another account." },
+  "Bu email manzilini ishlatib bo‘lmaydi.": { ru: "Этот email использовать нельзя.", en: "This email address cannot be used." },
+  "Bu email boshqa hisobda ishlatilmoqda.":{ ru: "Этот email используется в другом аккаунте.", en: "This email is used by another account." },
   "Bu kirish turi uchun ruxsat yo‘q.": { ru: "Этот способ входа вам недоступен.", en: "This sign-in is not available for your account." },
   "Buyurtma berish uchun hisobga kiring.": { ru: "Войдите в аккаунт, чтобы оформить заказ.", en: "Sign in to place an order." },
   "Buyurtma limiti oshdi. Keyinroq urinib ko‘ring.": { ru: "Слишком много заказов. Попробуйте позже.", en: "Too many orders. Please try again later." },
@@ -154,7 +155,23 @@ const dictionary: Record<string, { ru: string; en: string }> = {
   "Bank o‘tkazmasi hozircha mavjud emas.": { ru: "Банковский перевод пока недоступен.", en: "Bank transfer is not available yet." }
 };
 
+/** Texts with a number in them, such as how many minutes to wait. */
+const patterns: { match: RegExp; ru: (found: RegExpExecArray) => string; en: (found: RegExpExecArray) => string }[] = [
+  {
+    match: /^Urinishlar limiti oshdi\. (\d+) daqiqadan so‘ng qayta urinib ko‘ring\.$/,
+    ru: found => `Слишком много попыток. Повторите через ${found[1]} мин.`,
+    en: found => `Too many attempts. Try again in ${found[1]} min.`
+  }
+];
+
 export function translateMessage(text: string, locale: Locale): string {
   if (locale === "uz") return text;
-  return dictionary[text.trim()]?.[locale] ?? text;
+  const clean = text.trim();
+  const listed = dictionary[clean]?.[locale];
+  if (listed) return listed;
+  for (const pattern of patterns) {
+    const found = pattern.match.exec(clean);
+    if (found) return pattern[locale](found);
+  }
+  return text;
 }

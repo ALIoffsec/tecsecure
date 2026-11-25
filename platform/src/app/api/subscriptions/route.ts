@@ -1,6 +1,7 @@
 import { getCurrentUser, requireModuleApi } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { subscriptionSchema } from "@/lib/validation";
+import { rateLimit, tooManyAttempts } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -22,6 +23,8 @@ export async function GET() {
 export async function POST(request: Request) {
   const user = await getCurrentUser();
   if (!user || user.role !== "CUSTOMER") return Response.json({ error: "Trial boshlash uchun mijoz akkauntida kiring." }, { status: user ? 403 : 401 });
+  const limited = await rateLimit("subscription-create", user.id, 10, 60 * 60 * 1000);
+  if (!limited.ok) return tooManyAttempts(limited.retryAfterSeconds);
   let body: unknown;
   try { body = await request.json(); } catch {
     return Response.json({ error: "So‘rov JSON formatida bo‘lishi kerak." }, { status: 400 });

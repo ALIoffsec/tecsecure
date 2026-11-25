@@ -9,11 +9,30 @@ import type { NextAuthOptions } from "next-auth";
 import { createSession } from "@/lib/auth";
 import { getOAuthCredentials } from "@/lib/integration-credentials";
 import { prisma } from "@/lib/prisma";
+import { isReservedEmail } from "@/lib/validation";
+import { cookies } from "next/headers";
+import { safeNext, safeNextPath, TWO_FACTOR_NEXT_COOKIE, TWO_FACTOR_NEXT_SECONDS } from "@/lib/safe-next";
+
+/** NextAuth keeps the page to return to in its own cookie; when the sign-in stops for the code, it is carried over. */
+async function rememberNextForTwoFactor(): Promise<void> {
+  const store = await cookies();
+  const raw = store.get("__Secure-next-auth.callback-url")?.value ?? store.get("next-auth.callback-url")?.value;
+  if (!raw) return;
+  let next: string | null = null;
+  try {
+    const url = new URL(raw, "https://next.invalid");
+    next = safeNextPath(url.pathname + url.search);
+  } catch {
+    next = null;
+  }
+  if (!next) return;
+  store.set(TWO_FACTOR_NEXT_COOKIE, next, { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/", maxAge: TWO_FACTOR_NEXT_SECONDS });
+}
 
 function normalizedEmail(value: unknown): string | null {
   if (typeof value !== "string") return null;
   const email = value.trim().toLowerCase();
-  return email.length > 0 && email.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+  return email.length > 0 && email.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && !isReservedEmail(email)
     ? email
     : null;
 }
@@ -53,6 +72,21 @@ export async function getAuthOptions(): Promise<NextAuthOptions> {
     session: { strategy: "jwt", maxAge: 14 * 24 * 60 * 60 },
     pages: { signIn: "/login" },
     callbacks: {
+      // Only a customer page on this site; anything else ends in the cabinet.
+      async redirect({ url, baseUrl }) {
+        const origin = new URL(baseUrl).origin;
+        let candidate: string | null = null;
+        if (url.startsWith("/")) candidate = url;
+        else {
+          try {
+            const parsed = new URL(url);
+            if (parsed.origin === origin) candidate = parsed.pathname + parsed.search;
+          } catch {
+            candidate = null;
+          }
+        }
+        return `${origin}${safeNext(candidate, "/portal")}`;
+      },
       async signIn({ account, profile, user }) {
         if (!account || account.type !== "oauth") return false;
         if (!["google", "github", "yandex", "microsoft"].includes(account.provider)) return false;
@@ -70,7 +104,9 @@ export async function getAuthOptions(): Promise<NextAuthOptions> {
           if (!identity.user.active || identity.user.role !== "CUSTOMER") return false;
           // Returning a path sends the person on to the authenticator step instead of signing them in.
           const started = await beginSignIn(identity.user.id);
-          return "twoFactor" in started ? `/login/2fa?ticket=${encodeURIComponent(started.twoFactor)}` : true;
+          if (!("twoFactor" in started)) return true;
+          await rememberNextForTwoFactor();
+          return `/login/2fa?ticket=${encodeURIComponent(started.twoFactor)}`;
         }
 
         const claims = profile && typeof profile === "object" ? profile as Record<string, unknown> : {};

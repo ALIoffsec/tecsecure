@@ -1,6 +1,7 @@
 import { getCurrentUser, isResponse, requireAdminApi } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { organizationSchema } from "@/lib/validation";
+import { rateLimit, tooManyAttempts } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -27,6 +28,11 @@ export async function POST(request: Request) {
   if (user.role === "ADMIN" || user.role === "FOUNDER") {
     const authorized = await requireAdminApi();
     if (isResponse(authorized)) return authorized;
+  }
+  // Staff add these for customers in bulk; the limit is for customer accounts.
+  if (user.role === "CUSTOMER") {
+    const limited = await rateLimit("organization-create", user.id, 5, 60 * 60 * 1000);
+    if (!limited.ok) return tooManyAttempts(limited.retryAfterSeconds);
   }
   let body: unknown;
   try { body = await request.json(); } catch {

@@ -6,6 +6,7 @@ import { getPathArtCategory, LearningCardArt } from "@/components/learning-card-
 import { TecGiftNotifications } from "@/components/tec-gift-notifications";
 import { ProgressBar, useLearningProgress, useLearningText } from "@/components/learning-shared";
 import { ToastMessage } from "@/components/toast-provider";
+import { loginPath } from "@/lib/safe-next";
 
 const xpPerSection = 10;
 const xpPerLevel = 100;
@@ -58,7 +59,7 @@ export function LearningDashboard({ nickname }: { nickname: string | null }) {
       {!progress.rewardsAvailable && !nickname && (
         <div className="notice learn-reward-sign-in">
           <span>{tx.rewardUnavailable}</span>
-          <Link className="button secondary" href="/login">{tx.signInToPurchase}</Link>
+          <Link className="button secondary" href={loginPath("/learning/dashboard")}>{tx.signInToPurchase}</Link>
         </div>
       )}
 

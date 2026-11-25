@@ -2,6 +2,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { paymeCheckoutUrl, paymeConfigured } from "@/lib/payme";
 import { prisma } from "@/lib/prisma";
 import { siteOrigin } from "@/lib/site-origin";
+import { loginPath } from "@/lib/safe-next";
 
 export const runtime = "nodejs";
 
@@ -9,7 +10,7 @@ export const runtime = "nodejs";
 export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
   const origin = siteOrigin();
   const user = await getCurrentUser();
-  if (!user) return Response.redirect(`${origin}/login`, 303);
+  if (!user) return Response.redirect(`${origin}${loginPath("/portal/orders")}`, 303);
   const { id } = await context.params;
   const order = await prisma.order.findUnique({ where: { id }, select: { customerId: true, reference: true, status: true, paymentMethod: true, paymentStatus: true, totalMinor: true } });
   if (!order || order.customerId !== user.id) return Response.json({ error: "Buyurtma topilmadi." }, { status: 404 });

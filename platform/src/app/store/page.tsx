@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 export default async function StorePage() {
   if (isPreviewMode) return <div className="container page-shell"><PreviewModeNotice /></div>;
-  const user = await requireUser();
+  const user = await requireUser("/store");
   const [account, modules] = await Promise.all([
     prisma.user.findUnique({ where: { id: user.id }, select: { walletBalanceMinor: true } }),
     getPublishedLearningDocuments("module")

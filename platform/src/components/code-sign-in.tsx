@@ -7,6 +7,7 @@ import { useSitePreferences } from "./site-preferences";
 import { ToastMessage } from "./toast-provider";
 import { TwoFactorStep } from "./two-factor";
 import { growthCopy } from "@/lib/growth-copy";
+import { loginPath, safeNext } from "@/lib/safe-next";
 
 const RESEND_SECONDS = 60;
 type Step = "identify" | "code" | "password" | "twoFactor";
@@ -21,7 +22,7 @@ function looksLikePhone(value: string): boolean {
  * Phone sign-in and password reset, one step at a time: the number (or email), then only the code, then,
  * for a reset, the new password twice. Accounts with two-factor finish with the authenticator code.
  */
-export function CodeSignIn({ purpose }: { purpose: "LOGIN" | "RESET" }) {
+export function CodeSignIn({ purpose, next }: { purpose: "LOGIN" | "RESET"; next?: string }) {
   const { locale, t } = useSitePreferences();
   const c = growthCopy[locale].code;
   const router = useRouter();
@@ -95,7 +96,7 @@ export function CodeSignIn({ purpose }: { purpose: "LOGIN" | "RESET" }) {
 
   const finish = (data: { twoFactor?: string }) => {
     if (typeof data.twoFactor === "string") { setTwoFactor(data.twoFactor); setStep("twoFactor"); return; }
-    router.replace("/portal");
+    router.replace(safeNext(next, "/portal"));
     router.refresh();
   };
 
@@ -130,7 +131,7 @@ export function CodeSignIn({ purpose }: { purpose: "LOGIN" | "RESET" }) {
   const stepIndex = step === "identify" ? 0 : step === "code" ? 1 : 2;
 
   if (step === "twoFactor") return <div className="container page-shell code-page">
-    <section className="panel-card code-card"><TwoFactorStep ticket={twoFactor} onRestart={restart} onDone={next => { router.replace(next); router.refresh(); }} /></section>
+    <section className="panel-card code-card"><TwoFactorStep ticket={twoFactor} onRestart={restart} onDone={landing => { router.replace(safeNext(next, safeNext(landing, "/portal"))); router.refresh(); }} /></section>
   </div>;
 
   return <div className="container page-shell code-page">
@@ -177,7 +178,7 @@ export function CodeSignIn({ purpose }: { purpose: "LOGIN" | "RESET" }) {
         <button className="button" type="submit" disabled={busy}>{busy ? c.done : c.savePassword}</button>
       </form>}
 
-      <Link className="text-link small" href="/login">{c.back}</Link>
+      <Link className="text-link small" href={loginPath(next)}>{c.back}</Link>
     </section>
   </div>;
 }

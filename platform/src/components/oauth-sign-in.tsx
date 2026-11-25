@@ -4,6 +4,7 @@ import { useEffect, useState, type CSSProperties } from "react";
 import { signIn } from "next-auth/react";
 import { useSitePreferences } from "@/components/site-preferences";
 import { ToastMessage } from "@/components/toast-provider";
+import { safeNext } from "@/lib/safe-next";
 
 type Provider = { id: string; name: string };
 type ProviderState = { providers: Provider[]; error: boolean } | null;
@@ -111,7 +112,7 @@ export function OAuthSignIn({ mode, redirectTo }: { mode: "login" | "register"; 
               setBusy(provider.id);
               setProviderError("");
               try {
-                const result = await signIn(provider.id, { callbackUrl: redirectTo ?? "/portal", redirect: false });
+                const result = await signIn(provider.id, { callbackUrl: safeNext(redirectTo, "/portal"), redirect: false });
                 if (result?.error) {
                   setProviderError(locale === "uz"
                     ? "Kirish amalga oshmadi. Akkauntga avval bog‘langan kirish usulidan foydalaning."

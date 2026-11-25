@@ -1,6 +1,8 @@
 import { clientIp } from "@/lib/client-ip";
 import { z } from "zod";
-import { checkRateLimit } from "@/lib/rate-limit";
+import { cookies } from "next/headers";
+import { checkRateLimit, tooManyAttempts } from "@/lib/rate-limit";
+import { landingFor, TWO_FACTOR_NEXT_COOKIE } from "@/lib/safe-next";
 import { completeSignIn } from "@/lib/two-factor";
 
 export const runtime = "nodejs";
@@ -17,10 +19,14 @@ export async function POST(request: Request) {
   if (!parsed.success) return Response.json({ error: "Kod noto‘g‘ri.", code: "WRONG_CODE" }, { status: 400 });
   const result = await completeSignIn(parsed.data.ticket, parsed.data.code);
   if (!result.ok) {
+    if (result.reason === "limited") return tooManyAttempts(result.retryAfterSeconds);
     return result.reason === "expired"
       ? Response.json({ error: "Kirish vaqti tugadi. Qaytadan kiring.", code: "TICKET_EXPIRED" }, { status: 401 })
       : Response.json({ error: "Kod noto‘g‘ri.", code: "WRONG_CODE" }, { status: 401 });
   }
-  const staff = result.role === "ADMIN" || result.role === "FOUNDER" || result.role === "STAFF";
-  return Response.json({ ok: true, next: staff ? "/admin" : result.role === "SELLER" ? "/seller" : "/portal" });
+  // An OAuth sign-in that stopped for the code left the page to come back to in a short cookie; read once.
+  const cookieStore = await cookies();
+  const remembered = cookieStore.get(TWO_FACTOR_NEXT_COOKIE)?.value;
+  if (remembered !== undefined) cookieStore.delete(TWO_FACTOR_NEXT_COOKIE);
+  return Response.json({ ok: true, next: landingFor(result.role, remembered) });
 }

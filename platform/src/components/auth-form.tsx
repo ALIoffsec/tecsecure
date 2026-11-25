@@ -9,6 +9,7 @@ import { OAuthSignIn } from "./oauth-sign-in";
 import { TwoFactorStep } from "./two-factor";
 import { featureCopy } from "@/lib/feature-copy";
 import { growthCopy } from "@/lib/growth-copy";
+import { loginPath, safeNext } from "@/lib/safe-next";
 
 type Mode = "login" | "register";
 type Props = { mode: Mode; audience?: "customer" | "staff"; redirectTo?: string };
@@ -50,14 +51,14 @@ export function AuthForm({ mode, audience = "customer", redirectTo }: Props) {
       if (!response.ok) { setError(result.error ?? t("requestFailed")); return; }
       // Two-factor on: the password was right, now the authenticator code.
       if (typeof result.twoFactor === "string") { setTicket(result.twoFactor); return; }
-      router.replace(audience === "staff" ? "/admin" : redirectTo ?? "/portal");
+      router.replace(audience === "staff" ? "/admin" : safeNext(redirectTo, "/portal"));
       router.refresh();
     } catch { setError(t("serverUnavailable")); }
     finally { setBusy(false); }
   }
 
   if (ticket) return <section className="panel-card code-card two-factor-panel">
-    <TwoFactorStep ticket={ticket} onRestart={() => setTicket(null)} onDone={next => { router.replace(audience === "staff" ? next : redirectTo ?? next); router.refresh(); }} />
+    <TwoFactorStep ticket={ticket} onRestart={() => setTicket(null)} onDone={next => { router.replace(audience === "staff" ? next : safeNext(redirectTo, safeNext(next, "/portal"))); router.refresh(); }} />
   </section>;
 
   return <section ref={root} className="original-auth" data-mode={active} data-audience={audience}>
@@ -78,7 +79,7 @@ export function AuthForm({ mode, audience = "customer", redirectTo }: Props) {
             </fieldset>
           </form>
           {audience === "customer" && <>
-            {kind === "login" && <p className="auth-alt-links animation"><Link href="/login/reset">{g.forgot}</Link><Link href="/login/code">{g.phoneLogin}</Link></p>}
+            {kind === "login" && <p className="auth-alt-links animation"><Link href={loginPath(redirectTo, "/login/reset")}>{g.forgot}</Link><Link href={loginPath(redirectTo, "/login/code")}>{g.phoneLogin}</Link></p>}
             <p className="regi-link animation">{kind === "login" ? t("noAccount") : t("alreadyHaveAccount")} <button type="button" disabled={busy} onClick={() => switchMode(kind === "login" ? "register" : "login")}>{kind === "login" ? t("registerLink") : t("signIn")}</button></p>
             {selected && <OAuthSignIn mode={kind} redirectTo={redirectTo} />}
           </>}

@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import { getCurrentUser, createSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { revokeOpenTickets } from "@/lib/two-factor";
 import { z } from "zod";
 
 export const runtime = "nodejs";
@@ -34,6 +35,7 @@ export async function PATCH(request: Request) {
       prisma.session.deleteMany({ where: { userId: user.id } }),
       prisma.auditLog.create({ data: { actorId: user.id, action: "PASSWORD_CHANGED", entity: "User", entityId: user.id } })
     ]);
+    await revokeOpenTickets(user.id);
     await createSession(user.id);
     return Response.json({ ok: true });
   } catch (error) {

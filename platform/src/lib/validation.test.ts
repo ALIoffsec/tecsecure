@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { productSchema, projectSchema, requestSchema, serviceSchema } from "./validation";
+import { isReservedEmail, productSchema, projectSchema, registerSchema, requestSchema, serviceSchema, standInEmail } from "./validation";
+import { translateMessage } from "./server-messages";
 import { convertMinorAmount, parseCbuRates } from "./currency";
 import { formatProductDetails, parseProductDetails } from "./product-details";
 
@@ -76,4 +77,26 @@ test("currency conversion normalizes CBU rates by nominal", () => {
   assert.equal(convertMinorAmount(1_200_000, "UZS", "USD", rates.rates), 1.2);
   assert.equal(convertMinorAmount(10_000, "USD", "RUB", rates.rates), 10_000);
   assert.equal(convertMinorAmount(10_000, "EUR", "UZS", rates.rates), null);
+});
+
+test("addresses the site gives to phone, Telegram and deleted accounts cannot be typed in", () => {
+  for (const email of ["phone-998901234567@accounts.tecsecure.invalid", "TG-1@Accounts.Tecsecure.Invalid", "deleted-x@deleted.invalid", "a@sub.deleted.invalid"]) assert.equal(isReservedEmail(email), true, email);
+  for (const email of ["ali@gmail.com", "me@tecsecure.uz", "x@invalid.example.com"]) assert.equal(isReservedEmail(email), false, email);
+  assert.equal(registerSchema.safeParse({ name: "Ali", email: "phone-1@accounts.tecsecure.invalid", password: "12345678" }).success, false);
+  assert.equal(registerSchema.safeParse({ name: "Ali", email: "ali@example.com", password: "12345678" }).success, true);
+});
+
+test("stand-in addresses are random, so a taken one never blocks a new account", () => {
+  const first = standInEmail("phone");
+  assert.match(first, /^phone-[0-9a-f]{16}@accounts\.tecsecure\.invalid$/);
+  assert.match(standInEmail("tg"), /^tg-[0-9a-f]{16}@accounts\.tecsecure\.invalid$/);
+  assert.notEqual(first, standInEmail("phone"));
+  assert.equal(isReservedEmail(first), true);
+});
+
+test("the wait time in a limit message is translated with its number", () => {
+  const text = "Urinishlar limiti oshdi. 12 daqiqadan so‘ng qayta urinib ko‘ring.";
+  assert.equal(translateMessage(text, "uz"), text);
+  assert.equal(translateMessage(text, "ru"), "Слишком много попыток. Повторите через 12 мин.");
+  assert.equal(translateMessage(text, "en"), "Too many attempts. Try again in 12 min.");
 });

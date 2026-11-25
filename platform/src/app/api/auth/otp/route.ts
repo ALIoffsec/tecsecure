@@ -2,9 +2,10 @@ import { clientIp } from "@/lib/client-ip";
 import { randomBytes } from "node:crypto";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
-import { beginSignIn } from "@/lib/two-factor";
+import { beginSignIn, revokeOpenTickets } from "@/lib/two-factor";
 import { prisma } from "@/lib/prisma";
-import { checkRateLimit } from "@/lib/rate-limit";
+import { checkRateLimit, rateLimit, tooManyAttempts } from "@/lib/rate-limit";
+import { standInEmail } from "@/lib/validation";
 import { findCustomer, hashCode, issueOtp, normalizeIdentifier, otpChannels, telegramAvailable, verifyOtp, type OtpDelivery } from "@/lib/otp";
 import { startTelegramPhoneCheck } from "@/lib/phone-telegram";
 
@@ -79,6 +80,9 @@ export async function POST(request: Request) {
     const identifier = normalizeIdentifier(parsed.data.identifier);
     if (!identifier) return badIdentifier();
     if (!(await checkRateLimit("otp-verify-ip", ip, 30, 60 * 60 * 1000))) return tooMany();
+    // Per number or address too, so spreading guesses over many IPs does not help.
+    const perTarget = await rateLimit("otp-verify-target", identifier.value, 10, 60 * 60 * 1000);
+    if (!perTarget.ok) return tooManyAttempts(perTarget.retryAfterSeconds);
     if (!(await verifyOtp(parsed.data.purpose, identifier.value, parsed.data.code))) {
       return Response.json({ error: "Kod noto‘g‘ri yoki muddati tugagan.", code: "WRONG_CODE" }, { status: 401 });
     }
@@ -94,7 +98,7 @@ export async function POST(request: Request) {
       const passwordHash = await bcrypt.hash(randomBytes(32).toString("base64url"), 12);
       const digits = identifier.value.replace("+", "");
       user = await prisma.user.create({
-        data: { name: parsed.data.name || `Mijoz ${digits.slice(-4)}`, email: `phone-${digits}@accounts.tecsecure.invalid`, phone: identifier.value, phoneVerifiedAt: new Date(), passwordHash },
+        data: { name: parsed.data.name || `Mijoz ${digits.slice(-4)}`, email: standInEmail("phone"), phone: identifier.value, phoneVerifiedAt: new Date(), passwordHash },
         select: { id: true, phone: true, telegramChatId: true, email: true, name: true }
       });
     } else if (identifier.kind === "phone") {
@@ -123,6 +127,7 @@ export async function POST(request: Request) {
       prisma.session.deleteMany({ where: { userId: user.id } }),
       prisma.auditLog.create({ data: { actorId: user.id, action: "PASSWORD_RESET_BY_CODE", entity: "User", entityId: user.id } })
     ]);
+    await revokeOpenTickets(user.id);
     const started = await beginSignIn(user.id);
     if ("twoFactor" in started) return Response.json({ twoFactor: started.twoFactor });
     return Response.json({ ok: true });

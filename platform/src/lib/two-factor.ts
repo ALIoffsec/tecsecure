@@ -1,12 +1,17 @@
 import { createHash, randomBytes } from "node:crypto";
 import QRCode from "qrcode";
+import type { Prisma } from "@prisma/client";
 import { createSession } from "./auth";
 import { decryptIntegrationCredential, encryptIntegrationCredential } from "./integration-credentials";
+import { normalizePhone } from "./otp";
 import { prisma } from "./prisma";
+import { rateLimit } from "./rate-limit";
 import { generateBackupCodes, generateTotpSecret, hashBackupCode, otpauthUri, verifyTotp } from "./totp";
 
 const TICKET_MS = 5 * 60 * 1000;
 const TICKET_ATTEMPTS = 5;
+/** Codes tried per account per hour, counted only once the password (or other first step) was right. */
+const USER_ATTEMPTS_PER_HOUR = 15;
 
 function masterSecret(): string {
   const secret = process.env.INTEGRATION_CREDENTIALS_KEY || process.env.NEXTAUTH_SECRET;
@@ -35,14 +40,21 @@ export async function beginSignIn(userId: string, adminAccess = false): Promise<
   return { twoFactor: ticket };
 }
 
-export type TwoFactorResult = { ok: true; role: string } | { ok: false; reason: "expired" | "wrong" };
+export type TwoFactorResult = { ok: true; role: string } | { ok: false; reason: "expired" | "wrong" } | { ok: false; reason: "limited"; retryAfterSeconds: number };
 
 /** Second step of a sign-in: a current authenticator code, or one unused backup code. */
 export async function completeSignIn(ticket: string, code: string): Promise<TwoFactorResult> {
-  const record = await prisma.otpCode.findFirst({ where: { purpose: "TWO_FACTOR", codeHash: ticketHash(ticket), consumedAt: null, expiresAt: { gt: new Date() } } });
-  if (!record || record.attempts >= TICKET_ATTEMPTS) return { ok: false, reason: "expired" };
-  await prisma.otpCode.update({ where: { id: record.id }, data: { attempts: { increment: 1 } } });
+  const record = await prisma.otpCode.findFirst({ where: { purpose: "TWO_FACTOR", codeHash: ticketHash(ticket), consumedAt: null, expiresAt: { gt: new Date() } }, select: { id: true, target: true } });
+  if (!record) return { ok: false, reason: "expired" };
   const [userId, scope] = record.target.split(":");
+  const limited = await rateLimit("two-factor-user", userId, USER_ATTEMPTS_PER_HOUR, 60 * 60 * 1000);
+  if (!limited.ok) return { ok: false, reason: "limited", retryAfterSeconds: limited.retryAfterSeconds };
+  // The try is taken in the same statement that checks the count, so parallel requests cannot go past the limit.
+  const claimed = await prisma.otpCode.updateMany({
+    where: { id: record.id, consumedAt: null, expiresAt: { gt: new Date() }, attempts: { lt: TICKET_ATTEMPTS } },
+    data: { attempts: { increment: 1 } }
+  });
+  if (claimed.count !== 1) return { ok: false, reason: "expired" };
   const user = await prisma.user.findUnique({ where: { id: userId }, select: { id: true, role: true, active: true, twoFactorSecret: true, twoFactorEnabledAt: true, twoFactorBackupCodes: true, twoFactorLastStep: true } });
   if (!user?.active || !user.twoFactorEnabledAt || !user.twoFactorSecret) return { ok: false, reason: "expired" };
   if (!(await acceptCode(user, code))) return { ok: false, reason: "wrong" };
@@ -62,11 +74,43 @@ async function acceptCode(user: SecretHolder, code: string): Promise<boolean> {
     const updated = await prisma.user.updateMany({ where: { id: user.id, OR: [{ twoFactorLastStep: null }, { twoFactorLastStep: { lt: step } }] }, data: { twoFactorLastStep: step } });
     return updated.count === 1;
   }
-  const hashes = Array.isArray(user.twoFactorBackupCodes) ? user.twoFactorBackupCodes.filter((value): value is string => typeof value === "string") : [];
   const hash = hashBackupCode(code);
-  if (!hashes.includes(hash)) return false;
-  await prisma.user.update({ where: { id: user.id }, data: { twoFactorBackupCodes: hashes.filter(item => item !== hash) } });
-  return true;
+  if (!backupHashes(user.twoFactorBackupCodes).includes(hash)) return false;
+  // The account row stays locked while the code is crossed out, so the same code cannot pass twice at once.
+  return prisma.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT id FROM "User" WHERE id = ${user.id} FOR UPDATE`;
+    const fresh = await tx.user.findUnique({ where: { id: user.id }, select: { twoFactorBackupCodes: true } });
+    const hashes = backupHashes(fresh?.twoFactorBackupCodes);
+    if (!hashes.includes(hash)) return false;
+    await tx.user.update({ where: { id: user.id }, data: { twoFactorBackupCodes: hashes.filter(item => item !== hash) } });
+    return true;
+  });
+}
+
+function backupHashes(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+}
+
+type Db = Prisma.TransactionClient | typeof prisma;
+
+/**
+ * Closes every half-finished sign-in step of the account: authenticator tickets, password-reset tickets and,
+ * once they exist, re-check and phone-claim tickets. Called when the password, two-factor or sign-ins change.
+ */
+export async function revokeOpenTickets(userId: string, db: Db = prisma): Promise<void> {
+  const user = await db.user.findUnique({ where: { id: userId }, select: { email: true, phone: true } });
+  const contacts = [user?.email, user?.phone ? normalizePhone(user.phone) : null].filter((value): value is string => Boolean(value));
+  await db.otpCode.updateMany({
+    where: {
+      consumedAt: null,
+      OR: [
+        { purpose: "TWO_FACTOR", target: { startsWith: `${userId}:` } },
+        { purpose: { startsWith: "REAUTH" }, target: { startsWith: `reauth:${userId}:` } },
+        ...(contacts.length ? [{ purpose: { in: ["RESET_TICKET", "PHONE_CLAIM"] }, target: { in: contacts } }] : [])
+      ]
+    },
+    data: { consumedAt: new Date() }
+  });
 }
 
 export async function twoFactorStatus(userId: string) {
@@ -99,6 +143,7 @@ export async function confirmTwoFactor(userId: string, code: string): Promise<st
     prisma.user.update({ where: { id: userId }, data: { twoFactorEnabledAt: new Date(), twoFactorLastStep: step, twoFactorBackupCodes: backupCodes.map(hashBackupCode) } }),
     prisma.auditLog.create({ data: { actorId: userId, action: "TWO_FACTOR_ENABLED", entity: "User", entityId: userId } })
   ]);
+  await revokeOpenTickets(userId);
   return backupCodes;
 }
 
@@ -110,5 +155,6 @@ export async function disableTwoFactor(userId: string, code: string): Promise<bo
     prisma.user.update({ where: { id: userId }, data: { twoFactorSecret: null, twoFactorEnabledAt: null, twoFactorBackupCodes: [], twoFactorLastStep: null } }),
     prisma.auditLog.create({ data: { actorId: userId, action: "TWO_FACTOR_DISABLED", entity: "User", entityId: userId } })
   ]);
+  await revokeOpenTickets(userId);
   return true;
 }
