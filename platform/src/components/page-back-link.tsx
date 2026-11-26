@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSitePreferences } from "@/components/site-preferences";
+import { cabinetLabels, cabinetParent } from "@/lib/cabinet-routes";
 
 const parentRoutes: Record<string, string> = {
   "/products": "/",
@@ -29,8 +30,17 @@ function getParentRoute(pathname: string): string {
 
 export function PageBackLink() {
   const pathname = usePathname();
-  const { t } = useSitePreferences();
+  const { t, locale } = useSitePreferences();
   if (pathname === "/") return null;
+  // In the cabinet "back" is one level up by an ordinary link, named after the page it opens.
+  if (pathname.startsWith("/portal")) {
+    const parent = cabinetParent(pathname);
+    if (!parent) return null;
+    const top = parent.href === "/portal";
+    return <div className={`container page-back-wrap cab-back${top ? " is-cabinet-top" : ""}`}>
+      <Link className="page-back-link" href={parent.href}><span aria-hidden="true">←</span>{cabinetLabels[locale][parent.section]}</Link>
+    </div>;
+  }
 
   return (
     <div className="container page-back-wrap">

@@ -43,7 +43,7 @@ export function TecGiftNotifications() {
 
   useEffect(() => {
     let current = true;
-    fetch("/api/notifications", { cache: "no-store" })
+    fetch("/api/notifications?event=TEC_GIFT", { cache: "no-store" })
       .then(async (response) => {
         const result = await response.json();
         if (!response.ok) throw new Error(result.error ?? t("tecGiftError"));

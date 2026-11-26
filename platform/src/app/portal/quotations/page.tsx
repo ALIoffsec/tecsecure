@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 
-export default function PortalQuotationsPage() {
-  redirect("/portal");
+/** Projects and quotes now live with the requests. */
+export default function LegacyPage() {
+  redirect("/portal/requests");
 }

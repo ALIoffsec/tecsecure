@@ -51,7 +51,7 @@ export async function reviewWalletTransaction(id: string, status: WalletReviewSt
         data: { actorId: actor.id, action: `WALLET_${current.kind}_${status}`, entity: "WalletTransaction", entityId: current.id, metadata: { via: actor.via } }
       });
       await tx.notification.create({
-        data: { userId: current.userId, channel: "IN_APP", event: `WALLET_${status}`, status: "DELIVERED", payload: { kind: current.kind, amountMinor: current.amountMinor } }
+        data: { userId: current.userId, channel: "IN_APP", event: `WALLET_${status}`, status: "UNREAD", payload: { kind: current.kind, amountMinor: current.amountMinor } }
       });
       return updated;
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });

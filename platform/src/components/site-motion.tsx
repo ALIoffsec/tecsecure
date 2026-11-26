@@ -21,8 +21,13 @@ export function SiteMotion() {
   // Page arrival: a short settle, never a wait. Only on in-app navigation: on the first load the server
   // HTML is already painted, and fading it again after hydration pushed the largest paint back by seconds.
   const firstPath = useRef(true);
+  const lastPath = useRef(pathname);
   useEffect(() => {
+    const previous = lastPath.current;
+    lastPath.current = pathname;
     if (firstPath.current) { firstPath.current = false; return; }
+    // Moving between cabinet sections keeps the frame still, as switching sections did before.
+    if (previous.startsWith("/portal") && pathname.startsWith("/portal")) return;
     const preference = motionPreference();
     const main = document.getElementById("main-content");
     if (!main || preference.matches) return;

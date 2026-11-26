@@ -93,7 +93,7 @@ export async function applyOrderStatus(tx: Tx, seen: OrderForStatus, to: OrderSt
   }
   await tx.orderStatusHistory.create({ data: { orderId: order.id, fromStatus: order.status, toStatus: to, note, actorId } });
   await tx.notification.create({
-    data: { userId: order.customerId, channel: "IN_APP", event: "ORDER_STATUS_CHANGED", status: "DELIVERED", payload: { reference: order.reference, orderId: order.id, status: to } }
+    data: { userId: order.customerId, channel: "IN_APP", event: "ORDER_STATUS_CHANGED", status: "UNREAD", payload: { reference: order.reference, orderId: order.id, status: to } }
   });
   if (actorId) {
     await tx.auditLog.create({ data: { actorId, action: "ORDER_STATUS_CHANGED", entity: "Order", entityId: order.id, metadata: { from: order.status, to } } });

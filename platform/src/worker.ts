@@ -65,7 +65,7 @@ async function runOnce() {
           userId: member.userId,
           channel: "IN_APP",
           event: "TRIAL_EXPIRED",
-          status: "DELIVERED",
+          status: "UNREAD",
           dedupKey: `${subscription.id}:expired:${member.userId}`,
           payload: { subscriptionId: subscription.id, message: "Trial tugadi. Avtomatik to‘lov olinmadi." }
         })),
@@ -89,7 +89,7 @@ async function runOnce() {
         userId: member.userId,
         channel: "IN_APP",
         event: "TRIAL_EXPIRING",
-        status: "DELIVERED",
+        status: "UNREAD",
         dedupKey: `${subscription.id}:${reminderWindow}:${member.userId}`,
         payload: { subscriptionId: subscription.id, daysRemaining, trialEndsAt: trialEndsAt.toISOString() }
       })),

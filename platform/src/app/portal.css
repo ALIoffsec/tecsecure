@@ -1,8 +1,69 @@
 /*
- * Customer cabinet. Every rule starts with #app-shell .cab-… and uses only the existing tokens,
- * so the site header (.portal-*) and the admin panel are never touched from here.
+ * Customer cabinet. Every rule starts with #app-shell .cab-… (or the cabinet wrapper) and uses only the
+ * existing tokens, so the site header (.portal-*) and the admin panel are never touched from here.
+ * One breakpoint: 900px. Smaller screens adapt with wrap, minmax and clamp, not more breakpoints.
  */
 
+/* Frame */
+#app-shell .cab-portal { padding-top: 16px; }
+#app-shell .cab-workspace { display: grid; grid-template-columns: 240px minmax(0, 860px); gap: 18px; align-items: start; }
+#app-shell .cab-content { display: grid; gap: 16px; min-width: 0; }
+#app-shell .cab-content > * { margin: 0; }
+#app-shell .cab-side { position: sticky; top: 94px; padding: 10px; border: 1px solid var(--glass-edge); border-radius: var(--radius); background: var(--glass-fill); box-shadow: var(--glass-shadow); backdrop-filter: var(--glass-filter); -webkit-backdrop-filter: var(--glass-filter); }
+#app-shell .cab-title { margin: 0; font-size: clamp(1.25rem, 3vw, 1.8rem); line-height: 1.25; }
+#app-shell .cab-title:focus { outline: none; }
+#app-shell .cab-content .panel-card { padding: 22px; }
+#app-shell .cab-content .panel-card h2 { margin: 0 0 12px; font-size: 1.05rem; }
+#app-shell .cab-content .panel-card h3 { margin: 16px 0 8px; font-size: 1rem; }
+#app-shell .cab-content .portal-section-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; margin-bottom: 12px; }
+#app-shell .cab-content .portal-section-heading h2 { margin: 0; }
+#app-shell .cab-content ul.list { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+#app-shell .cab-content .list-row { padding: 12px 14px; gap: 12px; overflow-wrap: anywhere; }
+#app-shell .cab-content .list-row p { margin: 4px 0 0; font-size: .94rem; }
+#app-shell .cab-content .list-row .small { font-size: .88rem; }
+#app-shell .cab-content .stack { display: grid; gap: 8px; justify-items: end; }
+#app-shell .cab-block + .cab-block { margin-top: 16px; }
+#app-shell .cab-content :is(.order-status, .pay-badge) { font-size: .78rem; font-variant-numeric: tabular-nums; }
+#app-shell .order-status.is-review { color: #f2c063; border-color: #f2c06366; background: transparent; }
+:root[data-theme="light"] #app-shell .order-status.is-review { color: #8a5d05; }
+#app-shell .order-status.is-neutral { color: var(--muted); border-color: var(--glass-edge); background: transparent; }
+
+/* Compact head: initial, name, real contact, bell */
+#app-shell .cab-head { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; padding: 12px 16px; border: 1px solid var(--glass-edge); border-radius: var(--radius); background: var(--glass-fill); box-shadow: var(--glass-shadow); }
+#app-shell .cab-avatar { display: grid; width: 40px; height: 40px; flex: none; place-items: center; border: 1px solid var(--glass-edge); border-radius: 14px; background: linear-gradient(160deg, #ffffff2b, #ffffff08 55%), color-mix(in srgb, var(--accent) 14%, transparent); box-shadow: inset 0 1px 1px var(--glass-shine); color: var(--accent); font-weight: 800; }
+#app-shell .cab-identity { display: grid; min-width: 0; flex: 1; }
+#app-shell .cab-identity strong { overflow-wrap: anywhere; }
+#app-shell .cab-identity small { color: var(--muted); font-size: .88rem; overflow-wrap: anywhere; }
+#app-shell .cab-bell { position: relative; display: grid; place-items: center; width: 44px; min-width: 44px; height: 44px; min-height: 44px; padding: 0; }
+#app-shell .cab-bell-count { position: absolute; top: 2px; right: 0; min-width: 20px; padding: 1px 5px; border-radius: 999px; background: var(--accent); color: #04121b; font-size: .72rem; font-weight: 800; line-height: 1.4; text-align: center; }
+#app-shell .cab-staff-note { margin: 0 0 16px; }
+
+/* Menu: the side panel and the phone hub are one list */
+#app-shell .cab-nav ul { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; }
+#app-shell .cab-nav-item { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto auto; align-items: center; gap: 10px; min-height: 44px; padding: 8px 12px; border: 1px solid transparent; border-radius: 12px; color: var(--muted); text-decoration: none; transition: background-color 200ms, color 200ms; }
+#app-shell .cab-nav-item:hover { background: var(--glass-control); color: var(--text); }
+#app-shell .cab-nav-item[aria-current="page"] { border-color: color-mix(in srgb, var(--accent) 45%, var(--glass-edge)); background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 24%, transparent), color-mix(in srgb, var(--accent) 8%, transparent)); box-shadow: inset 0 1px 1px var(--glass-shine), inset 0 -6px 10px -8px #ffffff66; color: var(--text); font-weight: 700; }
+#app-shell .cab-nav-icon { display: grid; width: 28px; height: 28px; place-items: center; }
+#app-shell .cab-nav-label { min-width: 0; overflow-wrap: anywhere; }
+#app-shell .cab-nav-count { min-width: 22px; padding: 2px 6px; border-radius: 999px; background: var(--glass-control); color: var(--text); font-size: .78rem; font-weight: 800; text-align: center; }
+#app-shell .cab-nav-chevron { display: grid; color: var(--muted); }
+#app-shell .cab-nav-signout { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--glass-edge); }
+#app-shell .cab-hub .cab-nav-item { min-height: 48px; border-color: var(--glass-edge); background: var(--glass-fill); color: var(--text); }
+
+/* Home: first steps for a new customer */
+#app-shell .cab-start a.list-row { display: flex; align-items: center; justify-content: space-between; min-height: 48px; text-decoration: none; color: var(--text); }
+
+/* Notifications */
+#app-shell button.cab-notice { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 12px; border: 1px solid var(--glass-edge); border-radius: 14px; background: transparent; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+#app-shell .cab-notice span { display: grid; gap: 2px; min-width: 0; }
+#app-shell .cab-notice.is-unread { border-color: color-mix(in srgb, var(--accent) 45%, var(--glass-edge)); }
+
+/* Waiting: the shape of a real row */
+#app-shell .cab-skel { min-height: 56px; border-radius: 14px; background: var(--glass-control); animation: tma-pulse 1.2s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { #app-shell .cab-skel { animation: none; } }
+html[data-motion="off"] #app-shell .cab-skel { animation: none; }
+
+/* Dialogs */
 #app-shell dialog.cab-dialog {
   width: min(480px, calc(100vw - 32px));
   max-height: 88dvh;
@@ -17,8 +78,23 @@
 #app-shell .cab-dialog .hero-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 #app-shell .cab-dialog p { margin: 0; }
 
+/* Back link: one level up; not needed on a computer's first-level pages (the side menu is there) */
+html[data-tma="customer"] #app-shell .cab-back { display: none; }
+
+@media (min-width: 901px) {
+  #app-shell .cab-hub { display: none; }
+  #app-shell .cab-back.is-cabinet-top { display: none; }
+}
+
 @media (max-width: 900px) {
+  html:has(.cab-portal) { scroll-padding-bottom: 110px; }
+  #app-shell .cab-workspace { grid-template-columns: minmax(0, 1fr); }
+  #app-shell .cab-side { display: none; }
+  #app-shell .cab-head.is-inner { display: none; }
+  #app-shell .cab-content .panel-card { padding: 16px; }
+  #app-shell :is(.cab-content, .cab-dialog) :is(input, select, textarea) { font-size: 16px; min-height: 44px; }
+  #app-shell :is(.cab-content, .cab-dialog) .button { min-height: 44px; }
+  #app-shell .cab-content .list-row { flex-wrap: wrap; }
+  #app-shell .cab-content .stack { justify-items: start; }
   #app-shell dialog.cab-dialog { padding: 16px; }
-  #app-shell .cab-dialog :is(input, select, textarea) { font-size: 16px; min-height: 44px; }
-  #app-shell .cab-dialog .button { min-height: 44px; }
 }

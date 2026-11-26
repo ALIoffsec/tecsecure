@@ -191,7 +191,7 @@ export function CodeSignIn({ purpose, next }: { purpose: "LOGIN" | "RESET"; next
       {step === "choose" && <div className="form">
         <h2>{pc.chooseTitle}</h2>
         <p className="muted small">{pc.chooseHint}</p>
-        <a className="button secondary" href={loginPath("/portal/profile?section=profile")}>{pc.oldAccount}</a>
+        <a className="button secondary" href={loginPath("/portal/settings")}>{pc.oldAccount}</a>
         <p className="small muted">{pc.oldHint}</p>
         <button className="button" type="button" disabled={busy} onClick={() => void openNewAccount()}>{busy ? c.checking : pc.newAccount}</button>
       </div>}

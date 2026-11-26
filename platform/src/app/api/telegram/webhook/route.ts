@@ -148,7 +148,7 @@ async function handleAdminReply(update: TelegramUpdateBody, reference: string, b
           userId: conversation.customerId,
           channel: "IN_APP",
           event: "SUPPORT_MESSAGE_RECEIVED",
-          status: "DELIVERED",
+          status: "UNREAD",
           payload: { reference }
         }
       });

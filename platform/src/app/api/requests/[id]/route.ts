@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { canTransitionRequest } from "@/lib/request-status";
 import { escapeTelegramHtml, notifyTelegramUser } from "@/lib/telegram";
 import { z } from "zod";
+import { statusText } from "@/lib/status-labels";
 
 export const runtime = "nodejs";
 
@@ -74,7 +75,7 @@ export async function PATCH(request: Request, context: Context) {
             userId: record.customerId,
             channel: "IN_APP",
             event: "SERVICE_REQUEST_STATUS_CHANGED",
-            status: "DELIVERED",
+            status: "UNREAD",
             payload: { reference: record.reference, status: parsed.data.status }
           }
         });
@@ -85,7 +86,7 @@ export async function PATCH(request: Request, context: Context) {
     if (admin && result.request.customerId) {
       await notifyTelegramUser(
         result.request.customerId,
-        `<b>Tecsecure: murojaat holati yangilandi</b>\nRaqam: <code>${escapeTelegramHtml(result.request.reference)}</code>\nYangi holat: ${escapeTelegramHtml(parsed.data.status)}`
+        `<b>Tecsecure: murojaat holati yangilandi</b>\nRaqam: <code>${escapeTelegramHtml(result.request.reference)}</code>\nYangi holat: ${escapeTelegramHtml(statusText("request", parsed.data.status))}`
       );
     }
     return Response.json({ request: result.request });

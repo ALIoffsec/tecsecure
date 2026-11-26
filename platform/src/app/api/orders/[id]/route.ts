@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { escapeTelegramHtml, notifyTelegramUser } from "@/lib/telegram";
 import { applyOrderStatus, isWholeOrder, lockOrder, shipmentStamp } from "@/lib/order-flow";
 import { creditOrderShipments, notifyShopsPaid } from "@/lib/marketplace-server";
+import { statusText } from "@/lib/status-labels";
 
 export const runtime = "nodejs";
 
@@ -72,7 +73,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   if (!updated) return Response.json({ error: "Buyurtma holati allaqachon o‘zgargan." }, { status: 409 });
   await notifyTelegramUser(
     order.customerId,
-    `<b>Tecsecure: buyurtma holati yangilandi</b>\nRaqam: <code>${escapeTelegramHtml(order.reference)}</code>\nYangi holat: ${escapeTelegramHtml(parsed.data.status)}${parsed.data.note ? `\nIzoh: ${escapeTelegramHtml(parsed.data.note)}` : ""}`
+    `<b>Tecsecure: buyurtma holati yangilandi</b>\nRaqam: <code>${escapeTelegramHtml(order.reference)}</code>\nYangi holat: ${escapeTelegramHtml(statusText("order", parsed.data.status))}${parsed.data.note ? `\nIzoh: ${escapeTelegramHtml(parsed.data.note)}` : ""}`
   );
   await creditOrderShipments(id, actor.id);
   return Response.json({ ok: true });

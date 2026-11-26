@@ -153,13 +153,14 @@ function PaymentBadge({ order }: { order: OrderBase }) {
   </span>;
 }
 
-export function CustomerOrders({ orders }: { orders: CustomerOrder[] }) {
+/** `embedded`: inside the cabinet frame, which already gives the page its container. */
+export function CustomerOrders({ orders, embedded = false }: { orders: CustomerOrder[]; embedded?: boolean }) {
   const { locale } = useSitePreferences();
   const c = siteCopy[locale].orders;
   const g = growthCopy[locale].b2b;
-  return <div className="container page-shell customer-orders">
-    <span className="eyebrow">{c.eyebrow}</span>
-    <h1 className="page-title">{c.title}</h1>
+  return <div className={embedded ? "customer-orders" : "container page-shell customer-orders"}>
+    {!embedded && <span className="eyebrow">{c.eyebrow}</span>}
+    <h1 className={embedded ? "cab-title" : "page-title"}>{c.title}</h1>
     {orders.length === 0 && <div className="empty-state checkout-empty">
       <p><strong>{c.empty}</strong></p>
       <Link className="button" href="/products">{c.browse}</Link>
@@ -170,7 +171,7 @@ export function CustomerOrders({ orders }: { orders: CustomerOrder[] }) {
         const index = flow.indexOf(status);
         const cancelled = status === "CANCELLED";
         const progress = index <= 0 ? 0 : (index / (flow.length - 1)) * 80;
-        return <article className="order-card" key={order.id}>
+        return <article className="order-card" id={`order-${order.id}`} key={order.id}>
           <div className="order-head">
             <div>
               <h2>{order.reference}</h2>

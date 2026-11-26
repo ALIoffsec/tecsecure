@@ -49,7 +49,7 @@ export async function PATCH(request: Request, context: Context) {
       data: { actorId: actor.id, action: `SHOP_${action}`, entity: "Shop", entityId: id, metadata: { from: shop.status, to: status, commissionPercent, referralCommissionPercent, note: note ?? null } }
     });
     if (action !== "UPDATE") {
-      await tx.notification.create({ data: { userId: shop.ownerId, channel: "IN_APP", event: `SHOP_${action}`, status: "DELIVERED", payload: { shopId: id, note: note ?? null } } });
+      await tx.notification.create({ data: { userId: shop.ownerId, channel: "IN_APP", event: `SHOP_${action}`, status: "UNREAD", payload: { shopId: id, note: note ?? null } } });
     }
     return result;
   });

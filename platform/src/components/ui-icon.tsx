@@ -1,4 +1,4 @@
-export type IconName = "home" | "user" | "sun" | "moon" | "monitor" | "network" | "camera" | "clipboard" | "toolbox" | "settings" | "phone" | "mail" | "send" | "instagram" | "clock" | "cloud" | "shield" | "refresh" | "box" | "newspaper" | "building" | "users" | "receipt" | "creditCard" | "layout" | "briefcase" | "wallet" | "server" | "book" | "download" | "truck";
+export type IconName = "home" | "user" | "sun" | "moon" | "monitor" | "network" | "camera" | "clipboard" | "toolbox" | "settings" | "phone" | "mail" | "send" | "instagram" | "clock" | "cloud" | "shield" | "refresh" | "box" | "newspaper" | "building" | "users" | "receipt" | "creditCard" | "layout" | "briefcase" | "wallet" | "server" | "book" | "download" | "truck" | "bell" | "chevronRight" | "check" | "alert" | "copy" | "plus" | "logout";
 
 export function UiIcon({ name, size = 20 }: { name: IconName; size?: number }) {
   const common = { fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
@@ -33,7 +33,14 @@ export function UiIcon({ name, size = 20 }: { name: IconName; size?: number }) {
     wallet: <><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4H20v16H5a2 2 0 0 1-2-2V6.5Z" /><path d="M3 8h17m-5 5h5m-5 0a1 1 0 1 0 0 .01" /></>,
     server: <><rect x="3" y="3" width="18" height="8" rx="2" /><rect x="3" y="13" width="18" height="8" rx="2" /><path d="M7 7h.01M7 17h.01m4-10h6m-6 10h6" /></>,
     book: <><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v17H6.5A2.5 2.5 0 0 0 4 22z" /><path d="M4 5.5v14A2.5 2.5 0 0 1 6.5 17H20M8 7h8m-8 4h8" /></>,
-    download: <><path d="M12 3v12m-5-5 5 5 5-5" /><path d="M5 21h14" /></>
+    download: <><path d="M12 3v12m-5-5 5 5 5-5" /><path d="M5 21h14" /></>,
+    bell: <><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15L6 16Z" /><path d="M10 20.5a2 2 0 0 0 4 0" /></>,
+    chevronRight: <path d="m9 5 7 7-7 7" />,
+    check: <path d="m5 12.5 4.5 4.5L19 7.5" />,
+    alert: <><path d="M12 3 2.5 20h19L12 3Z" /><path d="M12 10v4.5m0 3h.01" /></>,
+    copy: <><rect x="8" y="8" width="12" height="12" rx="2" /><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3" /></>,
+    plus: <path d="M12 5v14M5 12h14" />,
+    logout: <><path d="M14 4h5v16h-5" /><path d="M10 8l-4 4 4 4M6 12h10" /></>
   };
 
   return <svg aria-hidden="true" width={size} height={size} viewBox="0 0 24 24" {...common}>{paths[name]}</svg>;

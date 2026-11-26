@@ -406,7 +406,7 @@ export function CartCheckout({ canOrder = false, signedIn = false, customer, wal
           </div>}
 
           {method === "WALLET" && walletTotal !== null && <p className="pay-amount">{d.afterPayment}: <strong>{formatMinor(walletBalance - walletTotal, "UZS", locale)}</strong></p>}
-          {!walletEnough && <Link className="text-link small" href="/portal/profile?section=wallet">{d.topUp}</Link>}
+          {!walletEnough && <Link className="text-link small" href="/portal/wallet">{d.topUp}</Link>}
 
           <ToastMessage message={error} variant="error" />
           <OriginalOrderButton ref={orderButton} busy={busy} disabled={busy || !preview || unavailable || !canOrder || !transferReady} label={d.submit} pending={d.sending} success={d.accepted} />

@@ -470,7 +470,7 @@ export function LearningModuleView({ module, nickname }: { module: LearningModul
             {bundlePrice > 0 && <span className="muted">{tx.sectionPrice}: {individualTotal} TEC</span>}
           </div>
           {access.authenticated && <span className="learn-meta">{tx.tecBalance}: <TecAmount amount={access.tecBalance} /></span>}
-          {access.authenticated && !moduleUnlocked && bundlePrice > access.tecBalance && <Link className="button ghost" href="/portal/profile">{tx.goToWallet}</Link>}
+          {access.authenticated && !moduleUnlocked && bundlePrice > access.tecBalance && <Link className="button ghost" href="/portal/wallet">{tx.goToWallet}</Link>}
           {bundlePrice > 0 && !moduleUnlocked && (
             access.authenticated
               ? <button className="button" type="button" disabled={!access.loaded || buying !== null} onClick={() => void buyContent("MODULE")}>
@@ -561,7 +561,7 @@ export function LearningModuleView({ module, nickname }: { module: LearningModul
                     <button className="button" type="button" disabled={!access.loaded || buying !== null} onClick={() => void buyContent("SECTION", active)}>
                       {buying === active ? tx.purchasing : <>{tx.unlockSection} · <TecAmount amount={sectionPrice} /></>}
                     </button>
-                    {access.tecBalance < sectionPrice && <Link className="button ghost" href="/portal/profile">{tx.goToWallet}</Link>}
+                    {access.tecBalance < sectionPrice && <Link className="button ghost" href="/portal/wallet">{tx.goToWallet}</Link>}
                   </>
                 : access.error
                   ? <span className="muted">{tx.purchaseUnavailable}</span>

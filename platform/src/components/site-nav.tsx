@@ -93,7 +93,7 @@ export function SiteNav() {
     { href: "/services", title: c.menu.services.title, icon: "toolbox", active: primary[0].active },
     { href: "/learning", title: c.menu.learning.title, icon: "book", active: primary[1].active },
     { href: "/products", title: c.menu.shop.title, icon: "box", active: primary[2].active },
-    { href: "/portal/profile", title: c.nav.account, icon: "user", active: ["/portal", "/login", "/register", "/admin", "/staff"] }
+    { href: "/portal", title: c.nav.account, icon: "user", active: ["/portal", "/login", "/register", "/admin", "/staff"] }
   ];
   const dockIndex = dock.findIndex(item => item.href === "/" ? pathname === "/" : isActive(pathname, item.active));
   const openMega = (key: string) => { window.clearTimeout(closeTimer.current); setMega(key); };
@@ -122,7 +122,7 @@ export function SiteNav() {
             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.8-3.8" /></svg>
             <span className="portal-search-label">{c.search.trigger}</span><kbd>Ctrl K</kbd>
           </Link>
-          <Link className="portal-account" href="/portal/profile" aria-label={c.nav.account}><UiIcon name="user" /><span>{c.nav.account}</span></Link>
+          <Link className="portal-account" href="/portal" aria-label={c.nav.account}><UiIcon name="user" /><span>{c.nav.account}</span></Link>
           <button ref={toggle} type="button" className="portal-icon-link portal-menu-toggle" aria-expanded={open} aria-controls="portal-menu" aria-label={open ? c.nav.close : c.nav.menu} onClick={() => setOpen(value => !value)}>
             <span className="portal-burger" data-open={open} aria-hidden="true"><i /><i /></span>
           </button>

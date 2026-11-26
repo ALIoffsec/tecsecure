@@ -100,7 +100,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
             userId: question.userId,
             channel: "IN_APP",
             event: "SUPPORT_MESSAGE_RECEIVED",
-            status: "DELIVERED",
+            status: "UNREAD",
             payload: { reference: conversation.reference }
           }
         });
