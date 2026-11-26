@@ -55,8 +55,10 @@ export async function completeSignIn(ticket: string, code: string): Promise<TwoF
     data: { attempts: { increment: 1 } }
   });
   if (claimed.count !== 1) return { ok: false, reason: "expired" };
-  const user = await prisma.user.findUnique({ where: { id: userId }, select: { id: true, role: true, active: true, twoFactorSecret: true, twoFactorEnabledAt: true, twoFactorBackupCodes: true, twoFactorLastStep: true } });
-  if (!user?.active || !user.twoFactorEnabledAt || !user.twoFactorSecret) return { ok: false, reason: "expired" };
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { id: true, role: true, active: true, deletedAt: true, twoFactorSecret: true, twoFactorEnabledAt: true, twoFactorBackupCodes: true, twoFactorLastStep: true } });
+  if (!user?.active || user.deletedAt || !user.twoFactorEnabledAt || !user.twoFactorSecret) return { ok: false, reason: "expired" };
+  // An admin ticket is honoured only while the account is still staff.
+  if (scope === "admin" && user.role !== "STAFF" && user.role !== "ADMIN" && user.role !== "FOUNDER") return { ok: false, reason: "expired" };
   if (!(await acceptCode(user, code))) return { ok: false, reason: "wrong" };
   const consumed = await prisma.otpCode.updateMany({ where: { id: record.id, consumedAt: null }, data: { consumedAt: new Date() } });
   if (consumed.count !== 1) return { ok: false, reason: "expired" };
@@ -87,6 +89,13 @@ async function acceptCode(user: SecretHolder, code: string): Promise<boolean> {
   });
 }
 
+/** An authenticator or backup code for a signed-in account, used once (for re-checks before sensitive changes). */
+export async function checkTwoFactorCode(userId: string, code: string): Promise<boolean> {
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { id: true, twoFactorSecret: true, twoFactorEnabledAt: true, twoFactorBackupCodes: true, twoFactorLastStep: true } });
+  if (!user?.twoFactorEnabledAt) return false;
+  return acceptCode(user, code);
+}
+
 function backupHashes(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
 }
@@ -110,6 +119,19 @@ export async function revokeOpenTickets(userId: string, db: Db = prisma): Promis
       ]
     },
     data: { consumedAt: new Date() }
+  });
+}
+
+/**
+ * Turns two-factor off for someone who lost the authenticator and the backup codes. Used by an admin (after
+ * their own confirmation) and by the server script; every session and open ticket of that account ends.
+ */
+export async function resetTwoFactor(userId: string, actorId: string | null, reason: string, via: "admin" | "script"): Promise<void> {
+  await prisma.$transaction(async (tx) => {
+    await tx.user.update({ where: { id: userId }, data: { twoFactorSecret: null, twoFactorEnabledAt: null, twoFactorBackupCodes: [], twoFactorLastStep: null } });
+    await tx.session.deleteMany({ where: { userId } });
+    await revokeOpenTickets(userId, tx);
+    await tx.auditLog.create({ data: { actorId, action: "TWO_FACTOR_RESET", entity: "User", entityId: userId, metadata: { via, reason } } });
   });
 }
 

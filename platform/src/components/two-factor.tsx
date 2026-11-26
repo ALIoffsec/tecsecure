@@ -4,6 +4,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { ToastMessage } from "./toast-provider";
 import { useSitePreferences } from "./site-preferences";
 import { securityCopy } from "@/lib/security-copy";
+import { useReauth } from "./reauth-dialog";
 
 /** The second sign-in step: one field for the authenticator (or backup) code. Calls onDone with where to go next. */
 export function TwoFactorStep({ ticket, onDone, onRestart }: { ticket: string; onDone: (next: string) => void; onRestart: () => void }) {
@@ -57,6 +58,7 @@ export function TwoFactorSettings() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [copied, setCopied] = useState(false);
+  const { guarded, dialog } = useReauth();
 
   const refresh = () => fetch("/api/account/2fa", { cache: "no-store" }).then(response => response.ok ? response.json() : null).then(setStatus).catch(() => setStatus(null));
   useEffect(() => { void refresh(); }, []);
@@ -64,7 +66,7 @@ export function TwoFactorSettings() {
   async function call(body: object) {
     setBusy(true); setError(""); setNotice("");
     try {
-      const response = await fetch("/api/account/2fa", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      const response = await guarded(() => fetch("/api/account/2fa", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }));
       const data = await response.json().catch(() => ({}));
       if (!response.ok) { setError(data.code === "WRONG_CODE" ? c.wrong : data.error ?? c.failed); return null; }
       return data;
@@ -146,5 +148,6 @@ export function TwoFactorSettings() {
           </div>
         </form>}
     </>}
+    {dialog}
   </section>;
 }

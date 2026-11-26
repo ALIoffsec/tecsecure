@@ -71,7 +71,8 @@ export async function renewTelegramSession(app: MiniApp): Promise<boolean> {
   if (!telegram) return false;
   try {
     const response = await fetch("/api/telegram/webapp", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ initData: telegram.initData, app }) });
-    return response.ok && Boolean((await response.json().catch(() => ({}))).next);
+    const data = await response.json().catch(() => ({}));
+    return response.ok && typeof data.next === "string" && !data.twoFactor;
   } catch {
     return false;
   }

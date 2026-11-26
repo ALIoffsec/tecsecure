@@ -29,17 +29,17 @@ export async function POST(request: Request) {
     const authorized = await requireAdminApi();
     if (isResponse(authorized)) return authorized;
   }
-  // Staff add these for customers in bulk; the limit is for customer accounts.
-  if (user.role === "CUSTOMER") {
-    const limited = await rateLimit("device-create", user.id, 20, 60 * 60 * 1000);
-    if (!limited.ok) return tooManyAttempts(limited.retryAfterSeconds);
-  }
   let body: unknown;
   try { body = await request.json(); } catch {
     return Response.json({ error: "So‘rov JSON formatida bo‘lishi kerak." }, { status: 400 });
   }
   const parsed = deviceSchema.safeParse(body);
   if (!parsed.success) return Response.json({ error: "Qurilma ma’lumotlari noto‘g‘ri.", details: parsed.error.flatten() }, { status: 400 });
+  // Staff add these for customers in bulk; the limit is for customer accounts.
+  if (user.role === "CUSTOMER") {
+    const limited = await rateLimit("device-create", user.id, 20, 60 * 60 * 1000);
+    if (!limited.ok) return tooManyAttempts(limited.retryAfterSeconds);
+  }
 
   const membership = await prisma.organizationMember.findUnique({
     where: { userId_organizationId: { userId: user.id, organizationId: parsed.data.organizationId } },

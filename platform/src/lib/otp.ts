@@ -1,25 +1,19 @@
 import { createHash, randomInt, timingSafeEqual } from "node:crypto";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { normalizePhone, phoneOwner, phoneSearchSuffix } from "@/lib/phone";
 import { getSmsCredentials, getTelegramCredentials, type SmsCredentials } from "@/lib/integration-credentials";
 import { notifyTelegramUser } from "@/lib/telegram";
 import { mailConfigured, sendMail } from "@/lib/mailer";
 import { deliverPhoneCode, gatewayToken, reportGatewayVerified, sendGatewayCode } from "@/lib/telegram-gateway";
 import { otpSmsText, type OtpPurpose } from "@/lib/otp-text";
 
-export { otpSmsText, type OtpPurpose };
+export { otpSmsText, normalizePhone, type OtpPurpose };
 
 const TTL_MS = 5 * 60 * 1000;
 const MAX_ATTEMPTS = 5;
 const RESEND_AFTER_MS = 60 * 1000;
 const ESKIZ = "https://notify.eskiz.uz/api";
-
-/** One spelling for a Uzbek mobile number, however it was typed: +998901234567. Null if it is not one. */
-export function normalizePhone(input: string): string | null {
-  const digits = input.replace(/\D/g, "");
-  if (/^998\d{9}$/.test(digits)) return `+${digits}`;
-  if (/^\d{9}$/.test(digits)) return `+998${digits}`;
-  return null;
-}
 
 export function normalizeIdentifier(input: string): { kind: "phone" | "email"; value: string } | null {
   const clean = input.trim();
@@ -65,15 +59,67 @@ export async function telegramAvailable(): Promise<boolean> {
   }
 }
 
-/** Phone numbers were stored as typed, so candidates are found by their last digits and then compared whole. */
-export async function findCustomerByPhone(phone: string) {
-  const candidates = await prisma.user.findMany({
-    where: { phone: { contains: phone.slice(-4) }, role: "CUSTOMER", active: true, deletedAt: null },
-    select: { id: true, phone: true, telegramChatId: true, email: true, name: true },
-    take: 50
+type Db = Prisma.TransactionClient | typeof prisma;
+
+/**
+ * Every customer account holding this number, proved or not. Numbers were stored as typed, so rows are
+ * narrowed by their last two digits (no row limit) and then compared whole.
+ */
+export async function phoneAccounts(phone: string, db: Db = prisma) {
+  const rows = await db.user.findMany({
+    where: { role: "CUSTOMER", deletedAt: null, OR: [{ phone }, { phone: { endsWith: phoneSearchSuffix(phone) } }] },
+    select: { id: true, role: true, active: true, deletedAt: true, phone: true, phoneVerifiedAt: true, telegramChatId: true, email: true, name: true }
   });
-  const exact = candidates.filter(user => user.phone && normalizePhone(user.phone) === phone);
-  return exact.length === 1 ? exact[0] : null;
+  return rows.filter(row => row.phone !== null && normalizePhone(row.phone) === phone);
+}
+
+/** The one active account that proved this number, or null. Only it may get codes in its Telegram or be reset. */
+export async function findCustomerByPhone(phone: string, db: Db = prisma) {
+  return phoneOwner(await phoneAccounts(phone, db), phone);
+}
+
+/** Serialises everything that decides who owns a number, until the surrounding transaction ends. */
+export async function lockPhone(tx: Prisma.TransactionClient, phone: string): Promise<void> {
+  await tx.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock(hashtext(${`phone:${phone}`}))`;
+}
+
+/** Target of a profile check code: bound to the account and the number, so it proves nothing anywhere else. */
+export const phoneVerifyTarget = (userId: string, phone: string) => `verify:${userId}:${phone}`;
+
+/**
+ * A code that proves the account's number, sent to the number itself (Gateway, then SMS with the approved
+ * sign-in text), never through the account's own Telegram: a bot message proves nothing about the number.
+ */
+export async function issuePhoneVerification(userId: string, phone: string): Promise<"gateway" | "sms" | "recent" | "none"> {
+  const target = phoneVerifyTarget(userId, phone);
+  const channels = await otpChannels();
+  const recent = await prisma.otpCode.findFirst({ where: { target, purpose: "VERIFY_PHONE", createdAt: { gt: new Date(Date.now() - RESEND_AFTER_MS) } }, select: { id: true } });
+  if (recent) return "recent";
+  if (!channels.sms) return "none";
+  const code = String(randomInt(100000, 1000000));
+  const record = await prisma.otpCode.create({ data: { purpose: "VERIFY_PHONE", target, codeHash: hashCode(code, target), expiresAt: new Date(Date.now() + TTL_MS) }, select: { id: true } });
+  const discard = () => prisma.otpCode.delete({ where: { id: record.id } }).catch(() => undefined);
+  try {
+    if (channels.consoleMode) {
+      console.info(`[OTP dev] ${target} VERIFY_PHONE ${code}`);
+      return "sms";
+    }
+    const token = channels.gateway ? await gatewayToken() : "";
+    const sent = await deliverPhoneCode(phone, code, "LOGIN", {
+      gateway: token ? (to, value, kindOfCode) => sendGatewayCode(token, to, value, kindOfCode) : null,
+      sms: channels.smsOnly ? async (to) => { await sendSms(to, otpSmsText("LOGIN", code)); } : null
+    });
+    if (sent.via === "gateway") {
+      await prisma.otpCode.update({ where: { id: record.id }, data: { providerRef: sent.requestId, deliveryStatus: "sent" } });
+      return "gateway";
+    }
+    if (sent.via === "sms") return "sms";
+  } catch (error) {
+    await discard();
+    throw error;
+  }
+  await discard();
+  return "none";
 }
 
 export async function findCustomer(identifier: { kind: "phone" | "email"; value: string }) {
@@ -187,7 +233,7 @@ export async function issueOtp(purpose: OtpPurpose, target: string, kind: "phone
 }
 
 /** True once, for the right code, within its time and attempt limits. */
-export async function verifyOtp(purpose: OtpPurpose | "RESET_TICKET", target: string, code: string): Promise<boolean> {
+export async function verifyOtp(purpose: OtpPurpose | "RESET_TICKET" | "PHONE_CLAIM" | "VERIFY_PHONE" | "REAUTH", target: string, code: string): Promise<boolean> {
   const record = await prisma.otpCode.findFirst({ where: { target, purpose, consumedAt: null, expiresAt: { gt: new Date() } }, orderBy: { createdAt: "desc" }, select: { id: true, codeHash: true, providerRef: true } });
   if (!record) return false;
   // The try is taken in the same statement that checks the count, so parallel requests cannot go past the limit.

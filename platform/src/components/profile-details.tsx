@@ -7,6 +7,12 @@ import { PasswordChangeForm } from "@/components/password-change-form";
 import { useSitePreferences } from "@/components/site-preferences";
 import { ToastMessage } from "@/components/toast-provider";
 import { TelegramLinkCard } from "@/components/code-sign-in";
+import { PhoneVerify } from "@/components/phone-verify";
+import { useReauth } from "@/components/reauth-dialog";
+import { deletionBlockerText, type DeletionBlocker } from "@/lib/account-rules";
+import Link from "next/link";
+
+const tecWarning = { uz: "Hisob yopilgach TEC ballari ham yo‘qoladi.", ru: "После закрытия аккаунта баллы TEC тоже пропадут.", en: "Your TEC points are lost when the account is closed." } as const;
 import { securityCopy } from "@/lib/security-copy";
 
 export function ProfileDetails({ user }: { user: { name: string; email: string; phone: string | null; role: string } }) {
@@ -18,6 +24,8 @@ export function ProfileDetails({ user }: { user: { name: string; email: string; 
   const [savingProfile, setSavingProfile] = useState(false);
   const [deleteError, setDeleteError] = useState("");
   const [deleting, setDeleting] = useState(false);
+  const [blockers, setBlockers] = useState<DeletionBlocker[]>([]);
+  const { guarded, dialog } = useReauth();
   // Accounts opened by phone or Telegram hold a stand-in address that means nothing to the person.
   const standInEmail = user.email.endsWith("@accounts.tecsecure.invalid");
 
@@ -30,11 +38,11 @@ export function ProfileDetails({ user }: { user: { name: string; email: string; 
     setProfileError("");
     setProfileNotice("");
     try {
-      const response = await fetch("/api/auth/profile", {
+      const response = await guarded(() => fetch("/api/auth/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(values)
-      });
+      }));
       const result = await response.json();
       if (!response.ok) throw new Error(result.error ?? t("requestFailed"));
       setEditing(false);
@@ -49,19 +57,23 @@ export function ProfileDetails({ user }: { user: { name: string; email: string; 
 
   async function deleteAccount(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!window.confirm(t("deleteAccountConfirmation"))) return;
+    if (!window.confirm(`${t("deleteAccountConfirmation")} ${tecWarning[locale]}`)) return;
+    setBlockers([]);
 
     setDeleteError("");
     setDeleting(true);
     const form = event.currentTarget;
     try {
-      const response = await fetch("/api/auth/account", {
+      const password = String(new FormData(form).get("deletePassword") ?? "");
+      const response = await guarded(() => fetch("/api/auth/account", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password: new FormData(form).get("deletePassword") })
-      });
+        body: JSON.stringify(password ? { password } : {})
+      }));
       if (!response.ok) {
-        const message = response.status === 400
+        const data = await response.clone().json().catch(() => ({}));
+        if (data.code === "DELETE_BLOCKED" && Array.isArray(data.blockers)) { setBlockers(data.blockers); return; }
+        const message = response.status === 400 || response.status === 403
           ? t("incorrectCurrentPassword")
           : response.status === 429
             ? t("accountDeletionRateLimited")
@@ -95,6 +107,7 @@ export function ProfileDetails({ user }: { user: { name: string; email: string; 
           <p>{t("name")}: {user.name}</p>
           <p>{t("email")}: {standInEmail ? t("notProvided") : user.email}</p>
           <p>{t("phone")}: {user.phone || t("notProvided")}</p>
+          {user.role === "CUSTOMER" && <PhoneVerify />}
           {user.role !== "CUSTOMER" && <p>{t("role")}: {user.role}</p>}
           <button className="button secondary" type="button" onClick={() => setEditing(true)}>{t("editProfile")}</button>
         </>}
@@ -107,9 +120,12 @@ export function ProfileDetails({ user }: { user: { name: string; email: string; 
           <form className="form" onSubmit={deleteAccount}>
             <div className="field">
               <label htmlFor="deletePassword">{t("confirmDeleteAccount")}</label>
-              <input id="deletePassword" name="deletePassword" type="password" autoComplete="current-password" required maxLength={128} />
+              <input id="deletePassword" name="deletePassword" type="password" autoComplete="current-password" maxLength={128} />
             </div>
             <ToastMessage message={deleteError} variant="error" />
+            {blockers.length > 0 && <div className="notice error" role="alert">
+              <ul>{blockers.map(key => <li key={key}><Link href={deletionBlockerText[locale][key].href}>{deletionBlockerText[locale][key].text}</Link></li>)}</ul>
+            </div>}
             <button className="button danger" type="submit" disabled={deleting}>
               {deleting ? t("deletingAccount") : t("deleteAccount")}
             </button>
@@ -117,6 +133,7 @@ export function ProfileDetails({ user }: { user: { name: string; email: string; 
         </section>}
         <div className="account-signout"><AccountSessionActions /></div>
       </div>
+      {dialog}
     </section>
   );
 }

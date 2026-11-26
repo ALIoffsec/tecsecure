@@ -1,7 +1,7 @@
 import type { OrderStatus } from "@prisma/client";
 import { prisma } from "./prisma";
 import { canTransition, type OrderStatusValue } from "./orders";
-import { applyOrderStatus, isWholeOrder, refundToWallet, shipmentStamp } from "./order-flow";
+import { applyOrderStatus, isWholeOrder, lockOrder, refundToWallet, shipmentStamp } from "./order-flow";
 import { creditOrderShipments, restoreStock } from "./marketplace-server";
 import { escapeTelegramHtml, notifyTelegramAdmins, notifyTelegramUser } from "./telegram";
 import { formatMinor } from "./format";
@@ -32,6 +32,11 @@ export async function moveShopPart(shopId: string, orderId: string, to: OrderSta
   let partial = false;
   let walletRefund = 0;
   const moved = await prisma.$transaction(async (tx) => {
+    // The order first, then the part: the money decisions below use the order as it is now.
+    const order = await lockOrder(tx, orderId);
+    if (!order) return false;
+    if (to !== "CANCELLED" && order.paymentStatus !== "PAID") return false;
+    part.order = order;
     const claim = await tx.shopOrder.updateMany({ where: { id: part.id, status: part.status }, data: { status: to, ...shipmentStamp(to), ...(note ? { sellerNote: note } : {}) } });
     if (claim.count === 0) return false;
     // The part is already marked cancelled above, so the order-wide cancel below would skip its lines:
@@ -47,8 +52,7 @@ export async function moveShopPart(shopId: string, orderId: string, to: OrderSta
       // A wallet payment for the cancelled part goes straight back; other payments are returned by staff.
       const share = (part.itemsTotalMinor ?? 0) + (part.deliveryShareMinor ?? 0);
       if (part.order.paymentMethod === "WALLET" && part.order.paymentStatus === "PAID" && share > 0) {
-        await refundToWallet(tx, part.order, share, actorId, `Do‘kon “${part.shop.name}” qismi bekor qilindi`);
-        walletRefund = share;
+        walletRefund = await refundToWallet(tx, part.order, share, actorId, `Do‘kon “${part.shop.name}” qismi bekor qilindi`);
       }
       const refunded = walletRefund ? `. Hamyonga qaytarildi: ${formatMinor(walletRefund, "UZS")}` : "";
       await tx.orderStatusHistory.create({ data: { orderId, fromStatus: part.order.status, toStatus: part.order.status, note: `Do‘kon “${part.shop.name}” o‘z qismini bekor qildi: ${note}${refunded}`, actorId } });

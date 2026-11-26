@@ -32,7 +32,7 @@ export async function POST(request: Request) {
     const user = await prisma.user.findUnique({ where: { email: parsed.data.email } });
     const passwordHash = user?.passwordHash ?? await dummyPasswordHash;
     const passwordMatches = await bcrypt.compare(parsed.data.password, passwordHash);
-    const valid = Boolean(user?.active && passwordMatches);
+    const valid = Boolean(user?.active && !user.deletedAt && passwordMatches);
     if (!valid || !user) {
       return Response.json({ error: "Email yoki parol noto‘g‘ri." }, { status: 401 });
     }

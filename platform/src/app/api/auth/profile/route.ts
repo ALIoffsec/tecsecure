@@ -1,8 +1,8 @@
 import { Prisma } from "@prisma/client";
-import bcrypt from "bcryptjs";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { normalizePhone } from "@/lib/otp";
-import { getCurrentUser } from "@/lib/auth";
+import { endOtherSessions, getCurrentUser } from "@/lib/auth";
+import { notifySecurityChange, requireReauth } from "@/lib/reauth";
 import { prisma } from "@/lib/prisma";
 import { isReservedEmail, reservedEmailMessage } from "@/lib/validation";
 import { z } from "zod";
@@ -42,13 +42,18 @@ export async function PATCH(request: Request) {
   if (changes.email !== account.email && isReservedEmail(changes.email)) {
     return Response.json({ error: reservedEmailMessage, code: "RESERVED_EMAIL" }, { status: 400 });
   }
+  // Likewise only a new number is checked and stored in the one spelling; an old or foreign one stays as it was.
+  const phone = samePhone ? account.phone : changes.phone ? normalizePhone(changes.phone) : null;
+  if (!samePhone && changes.phone && !phone) {
+    return Response.json({ error: "Telefon raqamini +998 XX XXX XX XX ko‘rinishida kiriting.", code: "BAD_PHONE" }, { status: 400 });
+  }
   if (sensitive) {
     if (!(await checkRateLimit("profile-password", actor.id, 10, 15 * 60 * 1000))) {
       return Response.json({ error: "Urinishlar limiti oshdi. 15 daqiqadan so‘ng qayta urinib ko‘ring." }, { status: 429 });
     }
-    if (!currentPassword || !(await bcrypt.compare(currentPassword, account.passwordHash))) {
-      return Response.json({ error: "Email yoki telefonni o‘zgartirish uchun joriy parolni to‘g‘ri kiriting.", code: "PASSWORD_REQUIRED" }, { status: 403 });
-    }
+    // The confirmation window, or (without two-factor) the current password typed in the form as before.
+    const confirmed = await requireReauth(actor, changes.email !== account.email ? "EMAIL" : "PHONE", currentPassword);
+    if (confirmed instanceof Response) return confirmed;
   }
 
   try {
@@ -56,14 +61,18 @@ export async function PATCH(request: Request) {
       const user = await tx.user.update({
         where: { id: actor.id },
         // A new number has not been proved yet.
-        data: { ...changes, ...(!samePhone ? { phoneVerifiedAt: null } : {}) },
-        select: { id: true, name: true, email: true, phone: true, role: true }
+        data: { ...changes, phone, ...(!samePhone ? { phoneVerifiedAt: null } : {}) },
+        select: { id: true, name: true, email: true, phone: true, phoneVerifiedAt: true, role: true }
       });
       await tx.auditLog.create({
         data: { actorId: actor.id, action: sensitive ? "PROFILE_CONTACT_CHANGED" : "PROFILE_UPDATED", entity: "User", entityId: actor.id }
       });
       return user;
     });
+    if (sensitive) {
+      await endOtherSessions(actor.id);
+      await notifySecurityChange(actor.id, changes.email !== account.email ? "Hisobingiz emaili o‘zgartirildi." : "Hisobingiz telefon raqami o‘zgartirildi.", changes.email !== account.email ? account.email : null);
+    }
     return Response.json({ user: updated });
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {

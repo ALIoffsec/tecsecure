@@ -1,12 +1,13 @@
 import { createHash, randomBytes, randomInt } from "node:crypto";
 import { getTelegramCredentials } from "./integration-credentials";
-import { findCustomerByPhone, hashCode, normalizePhone, type OtpPurpose } from "./otp";
+import { findCustomerByPhone, hashCode, normalizePhone, phoneVerifyTarget, type OtpPurpose } from "./otp";
 import { prisma } from "./prisma";
 import { sendTelegramMessage } from "./telegram";
 
 const LINK_MS = 10 * 60 * 1000;
 const CODE_MS = 5 * 60 * 1000;
 export const PHONE_START_PREFIX = "v_";
+const VERIFY_PREFIX = "VERIFY_PHONE:";
 
 const tokenHash = (token: string) => createHash("sha256").update(`phone-telegram:${token}`).digest("hex");
 
@@ -20,12 +21,14 @@ export function maskPhone(phone: string): string {
  * Step one on the site: a one-time bot link. The bot will ask the person to share their own Telegram
  * number, and only a number equal to `phone` gets a code.
  */
-export async function startTelegramPhoneCheck(purpose: OtpPurpose, phone: string): Promise<string | null> {
+export async function startTelegramPhoneCheck(purpose: OtpPurpose | { verifyFor: string }, phone: string): Promise<string | null> {
   const { botToken, botUsername } = await getTelegramCredentials();
   const username = botUsername.replace(/^@/, "");
   if (!botToken || !username) return null;
   const token = randomBytes(24).toString("base64url");
-  await prisma.phoneVerification.create({ data: { tokenHash: tokenHash(token), phone, purpose, expiresAt: new Date(Date.now() + LINK_MS) } });
+  // A profile check is bound to the account that asked for it; the purpose column carries its id.
+  const stored = typeof purpose === "string" ? purpose : `${VERIFY_PREFIX}${purpose.verifyFor}`;
+  await prisma.phoneVerification.create({ data: { tokenHash: tokenHash(token), phone, purpose: stored, expiresAt: new Date(Date.now() + LINK_MS) } });
   return `https://t.me/${username}?start=${PHONE_START_PREFIX}${token}`;
 }
 
@@ -67,7 +70,19 @@ export async function onSharedContact(chatId: string, fromId: number | undefined
     await sendTelegramMessage(chatId, `Telegram raqamingiz (${shared ? maskPhone(shared) : "noma’lum"}) saytda kiritilgan raqamga (${maskPhone(record.phone)}) mos emas. Kod yuborilmadi.\nSaytda Telegram’dagi raqamingizni kiriting yoki boshqa usulni tanlang.`, { replyMarkup: removeKeyboard });
     return;
   }
+  if (record.purpose.startsWith(VERIFY_PREFIX)) {
+    // The number in this Telegram is the account's: a code for the profile check, valid for that account only.
+    const target = phoneVerifyTarget(record.purpose.slice(VERIFY_PREFIX.length), record.phone);
+    const verifyCode = String(randomInt(100000, 1000000));
+    await prisma.$transaction([
+      prisma.phoneVerification.update({ where: { id: record.id }, data: { status: "SENT" } }),
+      prisma.otpCode.create({ data: { purpose: "VERIFY_PHONE", target, codeHash: hashCode(verifyCode, target), expiresAt: new Date(Date.now() + CODE_MS) } })
+    ]);
+    await sendTelegramMessage(chatId, `🔐 <b>Tecsecure</b>\nRaqamni tasdiqlash kodi: <code>${verifyCode}</code>\nKod 5 daqiqa amal qiladi. Uni hech kimga bermang.`, { replyMarkup: removeKeyboard });
+    return;
+  }
   const purpose = record.purpose === "RESET" ? "RESET" : "LOGIN";
+  // Only the one account that proved this number may be reset or get this chat linked; a number merely typed elsewhere counts for nothing.
   const customer = await findCustomerByPhone(record.phone);
   if (purpose === "RESET" && !customer) {
     await prisma.phoneVerification.update({ where: { id: record.id }, data: { status: "MISMATCH" } });
@@ -80,7 +95,7 @@ export async function onSharedContact(chatId: string, fromId: number | undefined
     await tx.otpCode.create({ data: { purpose, target: record.phone, codeHash: hashCode(code, record.phone), expiresAt: new Date(Date.now() + CODE_MS) } });
     // The number is now proved to belong to this Telegram account: connect them if neither is connected yet.
     if (customer && !customer.telegramChatId && !(await tx.user.findUnique({ where: { telegramChatId: chatId }, select: { id: true } }))) {
-      await tx.user.update({ where: { id: customer.id }, data: { telegramChatId: chatId, phoneVerifiedAt: new Date() } });
+      await tx.user.update({ where: { id: customer.id }, data: { telegramChatId: chatId } });
     }
   });
   await sendTelegramMessage(chatId, `🔐 <b>Tecsecure</b>\n${purpose === "RESET" ? "Parolni tiklash" : "Kirish"} kodi: <code>${code}</code>\nKod 5 daqiqa amal qiladi. Uni hech kimga bermang.`, { replyMarkup: removeKeyboard });

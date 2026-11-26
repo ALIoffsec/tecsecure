@@ -30,8 +30,6 @@ export async function POST(request: Request) {
   const user = await getCurrentUser();
   if (!user) return Response.json({ error: "Loyiha yaratish uchun kirish talab qilinadi." }, { status: 401 });
   if (user.role !== "CUSTOMER") return Response.json({ error: "Xodimlar mijoz nomidan loyiha yubora olmaydi." }, { status: 403 });
-  const limited = await rateLimit("project-create", user.id, 10, 60 * 60 * 1000);
-  if (!limited.ok) return tooManyAttempts(limited.retryAfterSeconds);
   let body: unknown;
   try {
     body = await request.json();
@@ -40,6 +38,8 @@ export async function POST(request: Request) {
   }
   const parsed = projectSchema.safeParse(body);
   if (!parsed.success) return Response.json({ error: "Loyiha ma’lumotlari noto‘g‘ri.", details: parsed.error.flatten() }, { status: 400 });
+  const limited = await rateLimit("project-create", user.id, 10, 60 * 60 * 1000);
+  if (!limited.ok) return tooManyAttempts(limited.retryAfterSeconds);
 
   try {
     const reference = `PRJ-${new Date().getUTCFullYear()}-${randomBytes(5).toString("hex").toUpperCase()}`;

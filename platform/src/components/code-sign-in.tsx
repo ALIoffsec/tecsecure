@@ -8,9 +8,12 @@ import { ToastMessage } from "./toast-provider";
 import { TwoFactorStep } from "./two-factor";
 import { growthCopy } from "@/lib/growth-copy";
 import { loginPath, safeNext } from "@/lib/safe-next";
+import { phoneCopy } from "@/lib/phone-copy";
+import { translateMessage } from "@/lib/server-messages";
+import { useReauth } from "./reauth-dialog";
 
 const RESEND_SECONDS = 60;
-type Step = "identify" | "code" | "password" | "twoFactor";
+type Step = "identify" | "code" | "password" | "twoFactor" | "choose";
 
 /** True for an Uzbek mobile number however it is typed: the only kind the Telegram check can confirm. */
 function looksLikePhone(value: string): boolean {
@@ -25,6 +28,7 @@ function looksLikePhone(value: string): boolean {
 export function CodeSignIn({ purpose, next }: { purpose: "LOGIN" | "RESET"; next?: string }) {
   const { locale, t } = useSitePreferences();
   const c = growthCopy[locale].code;
+  const pc = phoneCopy[locale];
   const router = useRouter();
   const login = purpose === "LOGIN";
   const [step, setStep] = useState<Step>("identify");
@@ -37,6 +41,7 @@ export function CodeSignIn({ purpose, next }: { purpose: "LOGIN" | "RESET"; next
   const [telegramLink, setTelegramLink] = useState<string | null>(null);
   const [resetTicket, setResetTicket] = useState("");
   const [twoFactor, setTwoFactor] = useState("");
+  const [choice, setChoice] = useState<{ ticket: string; name?: string } | null>(null);
   const [channels, setChannels] = useState<{ sms: boolean; email: boolean; telegram: boolean } | null>(null);
 
   useEffect(() => {
@@ -104,8 +109,11 @@ export function CodeSignIn({ purpose, next }: { purpose: "LOGIN" | "RESET"; next
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     return run(async () => {
-      const data = await post({ action: "verify", purpose, identifier, code: String(form.get("code") ?? ""), ...(form.get("name") ? { name: form.get("name") } : {}) });
+      const name = form.get("name") ? String(form.get("name")) : undefined;
+      const data = await post({ action: "verify", purpose, identifier, code: String(form.get("code") ?? ""), ...(name ? { name } : {}) });
       if (!login && typeof data.ticket === "string") { setResetTicket(data.ticket); setStep("password"); return; }
+      // The number sits unconfirmed on some account: the person decides, nothing is opened for them.
+      if (login && data.choose && typeof data.ticket === "string") { setChoice({ ticket: data.ticket, name }); setStep("choose"); return; }
       finish(data);
     });
   };
@@ -126,7 +134,17 @@ export function CodeSignIn({ purpose, next }: { purpose: "LOGIN" | "RESET"; next
     });
   };
 
-  const restart = () => { setStep("identify"); setNote(""); setError(""); setTelegramLink(null); setResetTicket(""); setTwoFactor(""); };
+  const openNewAccount = () => run(async () => {
+    if (!choice) return;
+    try {
+      finish(await post({ action: "new-account", identifier, ticket: choice.ticket, ...(choice.name ? { name: choice.name } : {}) }));
+    } catch (issue) {
+      if ((issue as { code?: string }).code === "TICKET_EXPIRED") { setStep("identify"); setChoice(null); }
+      throw issue;
+    }
+  });
+
+  const restart = () => { setStep("identify"); setNote(""); setError(""); setTelegramLink(null); setResetTicket(""); setTwoFactor(""); setChoice(null); };
   const steps = login ? [c.stepIdentify, c.stepCode] : [c.stepIdentifyReset, c.stepCode, c.stepPassword];
   const stepIndex = step === "identify" ? 0 : step === "code" ? 1 : 2;
 
@@ -170,6 +188,14 @@ export function CodeSignIn({ purpose, next }: { purpose: "LOGIN" | "RESET"; next
         <button className="text-link small code-change" type="button" onClick={restart}>{c.changeNumber}</button>
       </form>}
 
+      {step === "choose" && <div className="form">
+        <h2>{pc.chooseTitle}</h2>
+        <p className="muted small">{pc.chooseHint}</p>
+        <a className="button secondary" href={loginPath("/portal/profile?section=profile")}>{pc.oldAccount}</a>
+        <p className="small muted">{pc.oldHint}</p>
+        <button className="button" type="button" disabled={busy} onClick={() => void openNewAccount()}>{busy ? c.checking : pc.newAccount}</button>
+      </div>}
+
       {step === "password" && <form className="form" onSubmit={savePassword}>
         <h2>{c.passwordTitle}</h2>
         <p className="muted small">{c.passwordHint}</p>
@@ -190,15 +216,16 @@ export function TelegramLinkCard({ staff = false }: { staff?: boolean }) {
   const [linked, setLinked] = useState<boolean | null>(null);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const { guarded, dialog } = useReauth();
   useEffect(() => {
     fetch("/api/telegram/link").then(response => response.ok ? response.json() : null).then(data => setLinked(data ? Boolean(data.linked) : false)).catch(() => setLinked(false));
   }, []);
   async function connect() {
     setBusy(true); setMessage("");
     try {
-      const response = await fetch("/api/telegram/link", { method: "POST" });
-      const data = await response.json();
-      if (!response.ok || typeof data.link !== "string") { setMessage(response.status === 503 ? c.unavailable : data.error ?? t("requestFailed")); return; }
+      const response = await guarded(() => fetch("/api/telegram/link", { method: "POST" }));
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || typeof data.link !== "string") { setMessage(response.status === 503 ? c.unavailable : typeof data.error === "string" ? translateMessage(data.error, locale) : t("requestFailed")); return; }
       window.open(data.link, "_blank", "noopener");
       setMessage(c.openLink);
     } catch {
@@ -210,8 +237,13 @@ export function TelegramLinkCard({ staff = false }: { staff?: boolean }) {
   async function disconnect() {
     setBusy(true);
     try {
-      const response = await fetch("/api/telegram/link", { method: "DELETE" });
-      if (response.ok) setLinked(false);
+      setMessage("");
+      const response = await guarded(() => fetch("/api/telegram/link", { method: "DELETE" }));
+      if (response.ok) { setLinked(false); return; }
+      const data = await response.json().catch(() => ({}));
+      setMessage(typeof data.error === "string" ? translateMessage(data.error, locale) : t("requestFailed"));
+    } catch {
+      setMessage(t("serverUnavailable"));
     } finally {
       setBusy(false);
     }
@@ -221,5 +253,6 @@ export function TelegramLinkCard({ staff = false }: { staff?: boolean }) {
     {linked
       ? <button className="button ghost" type="button" disabled={busy} onClick={() => void disconnect()}>{c.disconnect}</button>
       : <button className="button secondary" type="button" disabled={busy || linked === null} onClick={() => void connect()}>{c.connect}</button>}
+    {dialog}
   </section>;
 }

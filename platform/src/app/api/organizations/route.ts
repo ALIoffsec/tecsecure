@@ -29,17 +29,17 @@ export async function POST(request: Request) {
     const authorized = await requireAdminApi();
     if (isResponse(authorized)) return authorized;
   }
-  // Staff add these for customers in bulk; the limit is for customer accounts.
-  if (user.role === "CUSTOMER") {
-    const limited = await rateLimit("organization-create", user.id, 5, 60 * 60 * 1000);
-    if (!limited.ok) return tooManyAttempts(limited.retryAfterSeconds);
-  }
   let body: unknown;
   try { body = await request.json(); } catch {
     return Response.json({ error: "So‘rov JSON formatida bo‘lishi kerak." }, { status: 400 });
   }
   const parsed = organizationSchema.safeParse(body);
   if (!parsed.success) return Response.json({ error: "Tashkilot ma’lumotlari noto‘g‘ri.", details: parsed.error.flatten() }, { status: 400 });
+  // Staff add these for customers in bulk; the limit is for customer accounts.
+  if (user.role === "CUSTOMER") {
+    const limited = await rateLimit("organization-create", user.id, 5, 60 * 60 * 1000);
+    if (!limited.ok) return tooManyAttempts(limited.retryAfterSeconds);
+  }
 
   try {
     const organization = await prisma.$transaction(async (tx) => {

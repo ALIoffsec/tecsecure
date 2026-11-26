@@ -13,7 +13,7 @@ export default async function StaffAppPage() {
   const can = (module: string) => privileged || actor.permissions.includes(module as typeof actor.permissions[number]);
   const [orders, wallet, requests] = await Promise.all([
     can("PRODUCTS") ? prisma.order.findMany({
-      where: { OR: [{ status: { in: ["NEW", "CONFIRMED", "PREPARING", "SHIPPED"] } }, { paymentStatus: "REFUND_DUE" }] },
+      where: { OR: [{ status: { in: ["NEW", "CONFIRMED", "PREPARING", "SHIPPED"] } }, { paymentStatus: "REFUND_DUE" }, { status: "CANCELLED", paymentStatus: "AWAITING_CONFIRMATION" }] },
       select: { id: true, reference: true, status: true, recipientName: true, phone: true, createdAt: true, totalMinor: true, currency: true, paymentMethod: true, paymentStatus: true, paymentProofMediaId: true },
       orderBy: { createdAt: "desc" }, take: 50
     }) : null,

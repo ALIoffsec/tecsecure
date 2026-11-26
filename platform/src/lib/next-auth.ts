@@ -98,10 +98,10 @@ export async function getAuthOptions(): Promise<NextAuthOptions> {
               providerAccountId: account.providerAccountId
             }
           },
-          select: { user: { select: { id: true, role: true, active: true } } }
+          select: { user: { select: { id: true, role: true, active: true, deletedAt: true } } }
         });
         if (identity) {
-          if (!identity.user.active || identity.user.role !== "CUSTOMER") return false;
+          if (!identity.user.active || identity.user.deletedAt || identity.user.role !== "CUSTOMER") return false;
           // Returning a path sends the person on to the authenticator step instead of signing them in.
           const started = await beginSignIn(identity.user.id);
           if (!("twoFactor" in started)) return true;

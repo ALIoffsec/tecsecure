@@ -10,6 +10,9 @@ import { WalletCard } from "./wallet-card";
 import { formatDate, formatNumber } from "@/lib/format";
 import type { PaymentCard } from "./cart-checkout";
 import { siteCopy } from "@/lib/site-copy";
+import { walletStatusLabels } from "@/lib/wallet-rules";
+
+const cancelWords = { uz: "So‘rovni bekor qilish", ru: "Отменить заявку", en: "Cancel request" } as const;
 
 type WalletRecord = {
   id: string;
@@ -36,6 +39,20 @@ export function WalletPanel({ initialBalance, initialPoints, transactions, payme
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
   const rank = initialPoints >= 2000 ? t("rankGold") : initialPoints >= 500 ? t("rankSilver") : t("rankStarter");
+
+  async function cancelRequest(id: string) {
+    setBusy(true); setError(""); setNotice("");
+    try {
+      const response = await fetch(`/api/wallet/${id}`, { method: "DELETE" });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) { setError(typeof data.error === "string" ? data.error : t("requestFailed")); return; }
+      router.refresh();
+    } catch {
+      setError(t("serverUnavailable"));
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -98,7 +115,8 @@ export function WalletPanel({ initialBalance, initialPoints, transactions, payme
     <h3 style={{ marginTop: 26 }}>{t("wallet")}</h3>
     {transactions.length ? <div className="list">{transactions.map((item) => <div className="list-row" key={item.id}>
       <div><strong>{item.kind === "DEPOSIT" ? t("walletDeposit") : item.kind === "TEC_PURCHASE" ? t("tecPurchaseHistory") : item.kind === "ORDER_PAYMENT" ? `${siteCopy[locale].orders.payment} · ${item.reference ?? ""}` : item.kind === "ORDER_REFUND" ? `${siteCopy[locale].orders.paymentStatus.REFUNDED} · ${item.reference ?? ""}` : t("walletWithdrawal")} · {formatNumber(item.amountMinor / 100)} UZS</strong><p className="small muted">{item.reference ?? item.details} · {formatDate(item.createdAt)}</p></div>
-      <span className={`status ${item.status}`}>{item.status === "PENDING" ? t("walletPending") : item.status === "APPROVED" ? t("walletApproved") : t("walletRejected")}</span>
+      <span className={`status ${item.status}`}>{item.status === "PENDING" ? t("walletPending") : item.status === "APPROVED" ? t("walletApproved") : item.status === "CANCELLED" ? walletStatusLabels[locale].CANCELLED : t("walletRejected")}</span>
+      {item.status === "PENDING" && (item.kind === "DEPOSIT" || item.kind === "WITHDRAWAL") && <button className="button ghost" type="button" disabled={busy} onClick={() => void cancelRequest(item.id)}>{cancelWords[locale]}</button>}
     </div>)}</div> : <p className="muted">{t("walletNoRequests")}</p>}
   </section>;
 }

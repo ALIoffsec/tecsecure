@@ -1,8 +1,9 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { exceedsWalletLimit } from "@/lib/wallet-rules";
 
 export type WalletReviewStatus = "APPROVED" | "REJECTED";
-export type WalletReviewFailure = "NOT_FOUND" | "ALREADY_REVIEWED" | "BALANCE_TOO_LOW" | "USER_NOT_FOUND" | "CONFLICT";
+export type WalletReviewFailure = "NOT_FOUND" | "ALREADY_REVIEWED" | "BALANCE_TOO_LOW" | "USER_NOT_FOUND" | "CONFLICT" | "BALANCE_LIMIT";
 
 export class WalletReviewError extends Error {
   constructor(readonly code: WalletReviewFailure) {
@@ -15,7 +16,8 @@ export const walletReviewMessages: Record<WalletReviewFailure, { status: number;
   ALREADY_REVIEWED: { status: 409, error: "Bu so‘rov avval ko‘rib chiqilgan." },
   BALANCE_TOO_LOW: { status: 409, error: "Hamyon balansi yechib olish uchun yetarli emas." },
   USER_NOT_FOUND: { status: 404, error: "Hamyon egasi topilmadi." },
-  CONFLICT: { status: 409, error: "Hamyon holati o‘zgardi, qayta urinib ko‘ring." }
+  CONFLICT: { status: 409, error: "Hamyon holati o‘zgardi, qayta urinib ko‘ring." },
+  BALANCE_LIMIT: { status: 409, error: "Hamyon balansi ruxsat etilgan chegaradan oshadi. Mijoz bilan bog‘lanib, boshqa yo‘l bilan hal qiling." }
 };
 
 /**
@@ -33,6 +35,7 @@ export async function reviewWalletTransaction(id: string, status: WalletReviewSt
         const user = await tx.user.findUnique({ where: { id: current.userId }, select: { walletBalanceMinor: true } });
         if (!user) throw new WalletReviewError("USER_NOT_FOUND");
         if (current.kind === "WITHDRAWAL" && user.walletBalanceMinor < current.amountMinor) throw new WalletReviewError("BALANCE_TOO_LOW");
+        if (current.kind === "DEPOSIT" && exceedsWalletLimit(user.walletBalanceMinor, current.amountMinor)) throw new WalletReviewError("BALANCE_LIMIT");
         const delta = current.kind === "DEPOSIT" ? current.amountMinor : -current.amountMinor;
         const earnedPoints = current.kind === "DEPOSIT" ? Math.floor(current.amountMinor / 1_000_000) : 0;
         await tx.user.update({

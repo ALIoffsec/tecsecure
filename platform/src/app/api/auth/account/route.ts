@@ -1,13 +1,12 @@
-import bcrypt from "bcryptjs";
-import { Prisma } from "@prisma/client";
 import { destroySession, getCurrentUser } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { requireReauth } from "@/lib/reauth";
+import { anonymizeAccount } from "@/lib/account-anonymize";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { z } from "zod";
 
 export const runtime = "nodejs";
 
-const schema = z.object({ password: z.string().min(1).max(128) });
+const schema = z.object({ password: z.string().max(128).optional() });
 
 export async function DELETE(request: Request) {
   const user = await getCurrentUser();
@@ -27,60 +26,21 @@ export async function DELETE(request: Request) {
   }
   const parsed = schema.safeParse(input);
   if (!parsed.success) return Response.json({ error: "Joriy parol talab qilinadi." }, { status: 400 });
+  // The confirmation window, or (without two-factor) the current password typed in the form as before.
+  const confirmed = await requireReauth(user, "DELETE", parsed.data.password || undefined);
+  if (confirmed instanceof Response) return confirmed;
 
   try {
-    const account = await prisma.user.findUnique({
-      where: { id: user.id },
-      select: { passwordHash: true }
-    });
-    if (!account || !(await bcrypt.compare(parsed.data.password, account.passwordHash))) {
-      return Response.json({ error: "Joriy parol noto‘g‘ri." }, { status: 400 });
+    // The account is anonymised, not deleted: orders, payments and certificates stay with the company's records.
+    const result = await anonymizeAccount(user.id, user.id);
+    if (!result.ok && "blockers" in result) {
+      return Response.json({ error: "Hisobni hozir o‘chirib bo‘lmaydi.", code: "DELETE_BLOCKED", blockers: result.blockers }, { status: 409 });
     }
-    await prisma.$transaction(async (tx) => {
-      await tx.serviceRequest.updateMany({
-        where: { customerId: user.id },
-        data: {
-          customerId: null,
-          name: "Deleted account",
-          phone: "",
-          email: null,
-          organizationName: null,
-          city: null,
-          location: null,
-          description: "[Request details removed after account deletion]",
-          budgetRange: null,
-          preferredContactTime: null
-        }
-      });
-      await tx.project.updateMany({
-        where: { customerId: user.id },
-        data: { customerId: null, name: "Archived customer project", notes: null, city: null }
-      });
-      await tx.portalMessage.updateMany({
-        where: { conversation: { customerId: user.id } },
-        data: { body: "[Message content removed after account deletion]" }
-      });
-      await tx.portalConversation.updateMany({
-        where: { customerId: user.id },
-        data: { customerId: null, customerName: "Deleted account", customerPhone: null, subject: "Archived conversation" }
-      });
-      await tx.organizationMember.deleteMany({ where: { userId: user.id } });
-      await tx.notification.deleteMany({ where: { userId: user.id } });
-      await tx.auditLog.updateMany({ where: { actorId: user.id }, data: { actorId: null } });
-      await tx.requestStatusHistory.updateMany({ where: { actorId: user.id }, data: { actorId: null } });
-      await tx.subscriptionEvent.updateMany({ where: { actorId: user.id }, data: { actorId: null } });
-      await tx.payment.updateMany({ where: { submittedById: user.id }, data: { submittedById: null } });
-      await tx.payment.updateMany({ where: { verifiedById: user.id }, data: { verifiedById: null } });
-      await tx.user.delete({ where: { id: user.id } });
-    });
+    if (!result.ok) return Response.json({ error: "Hisob holati o‘zgardi. Qayta urinib ko‘ring." }, { status: 409 });
     await destroySession();
     return Response.json({ ok: true });
   } catch (error) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2003") {
-      console.error("Account deletion encountered an unhandled relational reference", { userId: user.id });
-      return Response.json({ error: "Akkauntni xavfsiz o‘chirib bo‘lmadi. Yordam xizmatiga murojaat qiling." }, { status: 409 });
-    }
-    console.error("Account deletion failed", error);
+    console.error("Account deletion failed", error instanceof Error ? error.message : "UnknownError");
     return Response.json({ error: "Akkauntni o‘chirib bo‘lmadi." }, { status: 500 });
   }
 }

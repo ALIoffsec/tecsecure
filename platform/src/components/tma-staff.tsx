@@ -9,7 +9,7 @@ import { longDay, tmaCopy } from "@/lib/tma-copy";
 import { siteCopy } from "@/lib/site-copy";
 import { regionNames, type RegionCode } from "@/lib/delivery";
 import { formatDateTime, formatMinor } from "@/lib/format";
-import { nextStatuses, type OrderStatusValue } from "@/lib/orders";
+import { canConfirmPayment, cancelledReceiptLabels, needsCancelledReceiptDecision, nextStatuses, type OrderStatusValue } from "@/lib/orders";
 import { translateMessage } from "@/lib/server-messages";
 import type { MessageKey } from "@/lib/messages";
 import type { StaffDesk } from "@/lib/staff-desk";
@@ -35,7 +35,7 @@ const requestNext: Record<string, string[]> = {
   IN_PROGRESS: ["COMPLETED", "CANCELLED"]
 };
 const dangerous = new Set(["REJECTED", "CANCELLED"]);
-const needsReceiptCheck = (order: Order) => order.paymentStatus === "AWAITING_CONFIRMATION" || (order.paymentStatus === "AWAITING_PAYMENT" && order.paymentMethod === "BANK_TRANSFER");
+const needsReceiptCheck = (order: Order) => canConfirmPayment(order) || needsCancelledReceiptDecision(order);
 
 export function StaffMiniApp({ desk }: { desk: StaffDesk }) {
   const { locale, t } = useSitePreferences();
@@ -163,10 +163,13 @@ export function StaffMiniApp({ desk }: { desk: StaffDesk }) {
       <section className="tma-section tma-list">
         {openOrder.paymentProofMediaId && <a className="tma-row-button" href={`/api/media/${openOrder.paymentProofMediaId}`} target="_blank" rel="noreferrer">{c.proof}</a>}
         {receipt && forward && <button type="button" className="tma-row-button" disabled={busy} onClick={() => void act(`/api/orders/${openOrder.id}`, "PATCH", { status: forward })}>{copy.orders.statusAction[forward]}</button>}
+        {needsCancelledReceiptDecision(openOrder) && <button type="button" className="tma-row-button" disabled={busy} onClick={() => void act(`/api/orders/${openOrder.id}`, "PATCH", { cancelledReceipt: "MISSING" })}>{cancelledReceiptLabels[locale].missing}</button>}
         {next.includes("CANCELLED") && <button type="button" className="tma-row-button is-danger" disabled={busy} onClick={() => void act(`/api/orders/${openOrder.id}`, "PATCH", { status: "CANCELLED" }, true)}>{copy.orders.statusAction.CANCELLED}</button>}
       </section>
       <BottomActions
-        main={receipt
+        main={needsCancelledReceiptDecision(openOrder)
+          ? { text: cancelledReceiptLabels[locale].received, busy, onClick: () => void act(`/api/orders/${openOrder.id}`, "PATCH", { cancelledReceipt: "RECEIVED" }) }
+          : receipt && canConfirmPayment(openOrder)
           ? { text: c.confirmPayment, busy, onClick: () => void act(`/api/orders/${openOrder.id}`, "PATCH", { paymentStatus: "PAID" }) }
           : forward ? { text: copy.orders.statusAction[forward], busy, onClick: () => void act(`/api/orders/${openOrder.id}`, "PATCH", { status: forward }) } : null}
         secondary={{ text: c.call, onClick: () => callNumber(openOrder.phone) }} />

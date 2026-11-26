@@ -18,6 +18,24 @@ export type PaymentMethodValue = (typeof paymentMethods)[number];
 export const paymentStatuses = ["PENDING", "AWAITING_CONFIRMATION", "AWAITING_PAYMENT", "PAID", "REFUND_DUE", "REFUNDED"] as const;
 export type PaymentStatusValue = (typeof paymentStatuses)[number];
 /** Methods that take the money before delivery, so the order total must be known. */
+type PaymentShape = { status: string; paymentStatus: string; paymentMethod: string };
+
+/** Staff may mark the payment received: a receipt to check, or a bank transfer, and never on a cancelled order. */
+export function canConfirmPayment(order: PaymentShape): boolean {
+  return order.status !== "CANCELLED" && (order.paymentStatus === "AWAITING_CONFIRMATION" || (order.paymentStatus === "AWAITING_PAYMENT" && order.paymentMethod === "BANK_TRANSFER"));
+}
+
+/** A cancelled order whose receipt nobody checked yet: staff say whether the money came. */
+export function needsCancelledReceiptDecision(order: PaymentShape): boolean {
+  return order.status === "CANCELLED" && order.paymentStatus === "AWAITING_CONFIRMATION";
+}
+
+export const cancelledReceiptLabels = {
+  uz: { received: "Pul kelgan — qaytarish kerak", missing: "Pul kelmagan" },
+  ru: { received: "Деньги пришли — нужен возврат", missing: "Деньги не пришли" },
+  en: { received: "Money arrived — refund due", missing: "No money arrived" }
+} as const;
+
 export const prepaidMethods: readonly PaymentMethodValue[] = ["CARD_TRANSFER", "WALLET", "BANK_TRANSFER", "ONLINE_PAYME"];
 
 export const paymentMethodLabels: Record<string, string> = {

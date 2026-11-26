@@ -4,14 +4,16 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { beginSignIn, revokeOpenTickets } from "@/lib/two-factor";
 import { prisma } from "@/lib/prisma";
-import { checkRateLimit, rateLimit, tooManyAttempts } from "@/lib/rate-limit";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { standInEmail } from "@/lib/validation";
-import { findCustomer, hashCode, issueOtp, normalizeIdentifier, otpChannels, telegramAvailable, verifyOtp, type OtpDelivery } from "@/lib/otp";
+import { findCustomer, hashCode, issueOtp, lockPhone, normalizeIdentifier, otpChannels, phoneAccounts, telegramAvailable, verifyOtp, type OtpDelivery } from "@/lib/otp";
+import { decidePhoneSignIn } from "@/lib/phone";
 import { startTelegramPhoneCheck } from "@/lib/phone-telegram";
 
 export const runtime = "nodejs";
 
 const RESET_TICKET_MS = 10 * 60 * 1000;
+const CHOICE_TICKET_MS = 10 * 60 * 1000;
 const identifierField = z.string().trim().min(5).max(254);
 const purposeField = z.enum(["LOGIN", "RESET"]);
 const requestSchema = z.object({ action: z.literal("request"), purpose: purposeField, identifier: identifierField });
@@ -19,6 +21,9 @@ const telegramSchema = z.object({ action: z.literal("telegram"), purpose: purpos
 const verifySchema = z.object({
   action: z.literal("verify"), purpose: purposeField, identifier: identifierField,
   code: z.string().trim().regex(/^\d{6}$/), name: z.string().trim().min(2).max(100).optional()
+});
+const newAccountSchema = z.object({
+  action: z.literal("new-account"), identifier: identifierField, ticket: z.string().min(20).max(100), name: z.string().trim().min(2).max(100).optional()
 });
 const resetSchema = z.object({
   action: z.literal("reset"), identifier: identifierField, ticket: z.string().min(20).max(100),
@@ -80,33 +85,30 @@ export async function POST(request: Request) {
     const identifier = normalizeIdentifier(parsed.data.identifier);
     if (!identifier) return badIdentifier();
     if (!(await checkRateLimit("otp-verify-ip", ip, 30, 60 * 60 * 1000))) return tooMany();
-    // Per number or address too, so spreading guesses over many IPs does not help.
-    const perTarget = await rateLimit("otp-verify-target", identifier.value, 10, 60 * 60 * 1000);
-    if (!perTarget.ok) return tooManyAttempts(perTarget.retryAfterSeconds);
     if (!(await verifyOtp(parsed.data.purpose, identifier.value, parsed.data.code))) {
       return Response.json({ error: "Kod noto‘g‘ri yoki muddati tugagan.", code: "WRONG_CODE" }, { status: 401 });
     }
-    let user = await findCustomer(identifier);
     if (parsed.data.purpose === "RESET") {
+      const user = await findCustomer(identifier);
       if (!user) return Response.json({ error: "Kod noto‘g‘ri yoki muddati tugagan.", code: "WRONG_CODE" }, { status: 401 });
       const ticket = randomBytes(24).toString("base64url");
       await prisma.otpCode.create({ data: { purpose: "RESET_TICKET", target: identifier.value, codeHash: hashCode(ticket, identifier.value), expiresAt: new Date(Date.now() + RESET_TICKET_MS) } });
       return Response.json({ ok: true, ticket });
     }
-    if (!user) {
-      // First visit with a verified number: the phone is the account.
-      const passwordHash = await bcrypt.hash(randomBytes(32).toString("base64url"), 12);
-      const digits = identifier.value.replace("+", "");
-      user = await prisma.user.create({
-        data: { name: parsed.data.name || `Mijoz ${digits.slice(-4)}`, email: standInEmail("phone"), phone: identifier.value, phoneVerifiedAt: new Date(), passwordHash },
-        select: { id: true, phone: true, telegramChatId: true, email: true, name: true }
-      });
-    } else if (identifier.kind === "phone") {
-      await prisma.user.update({ where: { id: user.id }, data: { phoneVerifiedAt: new Date() } });
+    if (identifier.kind !== "phone") return badIdentifier();
+    return finishPhoneSignIn(identifier.value, parsed.data.name, false);
+  }
+
+  // 2b. The number sat unproved on another account and the person chose a new account of their own.
+  const fresh = newAccountSchema.safeParse(body);
+  if (fresh.success) {
+    const identifier = normalizeIdentifier(fresh.data.identifier);
+    if (!identifier || identifier.kind !== "phone") return badIdentifier();
+    if (!(await checkRateLimit("otp-verify-ip", ip, 30, 60 * 60 * 1000))) return tooMany();
+    if (!(await verifyOtp("PHONE_CLAIM", identifier.value, fresh.data.ticket))) {
+      return Response.json({ error: "Tasdiqlash vaqti tugadi. Kodni qaytadan oling.", code: "TICKET_EXPIRED" }, { status: 401 });
     }
-    const started = await beginSignIn(user.id);
-    if ("twoFactor" in started) return Response.json({ twoFactor: started.twoFactor });
-    return Response.json({ ok: true });
+    return finishPhoneSignIn(identifier.value, fresh.data.name, true);
   }
 
   // 3. The new password, typed twice, with the ticket from step 2.
@@ -134,4 +136,37 @@ export async function POST(request: Request) {
   }
 
   return Response.json({ error: "So‘rov noto‘g‘ri.", code: "BAD_REQUEST" }, { status: 400 });
+}
+
+/**
+ * A correct sign-in code for a phone number. Decided under a lock on the number, so two requests cannot
+ * both open an account for it. `chosen` is set when the person already chose a new account (step 2b).
+ */
+async function finishPhoneSignIn(phone: string, name: string | undefined, chosen: boolean): Promise<Response> {
+  const passwordHash = await bcrypt.hash(randomBytes(32).toString("base64url"), 12);
+  const outcome = await prisma.$transaction(async (tx) => {
+    await lockPhone(tx, phone);
+    const decision = decidePhoneSignIn(await phoneAccounts(phone, tx), phone);
+    if (decision.kind === "signIn" || decision.kind === "review") return decision;
+    if (decision.kind === "choose" && !chosen) {
+      // Someone typed this number into an account without proving it. Open nothing yet: ask the person.
+      const ticket = randomBytes(24).toString("base64url");
+      await tx.otpCode.create({ data: { purpose: "PHONE_CLAIM", target: phone, codeHash: hashCode(ticket, phone), expiresAt: new Date(Date.now() + CHOICE_TICKET_MS) } });
+      return { kind: "choose" as const, ticket };
+    }
+    // The number is proved by this code and no account holds it as proved: it becomes a new account.
+    const digits = phone.replace("+", "");
+    const created = await tx.user.create({
+      data: { name: name || `Mijoz ${digits.slice(-4)}`, email: standInEmail("phone"), phone, phoneVerifiedAt: new Date(), passwordHash },
+      select: { id: true }
+    });
+    return { kind: "signIn" as const, userId: created.id };
+  });
+  if (outcome.kind === "review") {
+    return Response.json({ error: "Hisobni tekshirish kerak. Biz bilan bog‘laning.", code: "ACCOUNT_REVIEW" }, { status: 409 });
+  }
+  if (outcome.kind === "choose") return Response.json({ ok: true, choose: true, ticket: outcome.ticket });
+  const started = await beginSignIn(outcome.userId);
+  if ("twoFactor" in started) return Response.json({ twoFactor: started.twoFactor });
+  return Response.json({ ok: true });
 }

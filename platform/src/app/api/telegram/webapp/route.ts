@@ -3,6 +3,7 @@ import { randomBytes } from "node:crypto";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { createSession } from "@/lib/auth";
+import { beginSignIn } from "@/lib/two-factor";
 import { getTelegramCredentials } from "@/lib/integration-credentials";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -39,7 +40,9 @@ export async function POST(request: Request) {
 
   if (parsed.data.app === "staff") {
     if (!user || !isStaff) return Response.json({ error: "Avval admin paneldan Telegram'ni xodim hisobingizga ulang.", code: "NOT_LINKED" }, { status: 403 });
-    await createSession(user.id, true);
+    const started = await beginSignIn(user.id, true);
+    // No `next` with a ticket: the app shows the code step, then opens its own page.
+    if ("twoFactor" in started) return Response.json({ twoFactor: started.twoFactor });
     return Response.json({ ok: true, next: "/tg/staff" });
   }
 
@@ -47,7 +50,8 @@ export async function POST(request: Request) {
   // The shop app stays in its own shell, where a new seller fills in the application.
   const next = parsed.data.app === "shop" ? "/tg/shop" : "/products";
   if (user) {
-    await createSession(user.id);
+    const started = await beginSignIn(user.id);
+    if ("twoFactor" in started) return Response.json({ twoFactor: started.twoFactor });
     return Response.json({ ok: true, next });
   }
   if (!parsed.data.create) return Response.json({ ok: false, needsAccount: true, name: telegramUser.first_name ?? "" });
@@ -69,7 +73,8 @@ export async function POST(request: Request) {
     // A second tap made the account a moment earlier: sign in to that one.
     const existing = await prisma.user.findUnique({ where: { telegramChatId: chatId }, select: { id: true, role: true, active: true, deletedAt: true } });
     if (!existing || existing.role !== "CUSTOMER" || !existing.active || existing.deletedAt) return Response.json({ error: "Bu hisob faol emas." }, { status: 403 });
-    await createSession(existing.id);
+    const started = await beginSignIn(existing.id);
+    if ("twoFactor" in started) return Response.json({ twoFactor: started.twoFactor });
     return Response.json({ ok: true, next });
   }
 }

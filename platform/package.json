@@ -7,7 +7,7 @@
     "build": "prisma generate && next build && node scripts/copy-standalone-assets.cjs",
     "start": "node .next/standalone/server.js",
     "worker": "tsx src/worker.ts",
-    "test": "tsx --test src/lib/cctv.test.ts src/lib/request-status.test.ts src/lib/learning-demo.test.ts src/lib/learning-content.test.ts src/lib/practice.test.ts src/lib/learning-profile.test.ts src/lib/validation.test.ts src/lib/admin-access.test.ts src/lib/monitoring.test.ts src/lib/orders.test.ts src/lib/telegram.test.ts src/lib/telegram-gateway.test.ts src/lib/tma.test.ts src/lib/home-facts.test.ts src/lib/home-showcase.test.ts src/lib/error-noise.test.ts src/lib/partner-brands.test.ts src/lib/marketplace.test.ts src/lib/structured-data.test.ts src/lib/integration-credentials.test.ts src/lib/vulnyx-catalog.test.ts src/lib/linux-virtual-terminal.test.ts src/lib/catalog-utils.test.ts src/lib/format.test.ts src/lib/media-validate.test.ts src/lib/product-kind.test.ts src/lib/search-text.test.ts src/lib/growth.test.ts src/lib/delivery.test.ts src/lib/shops.test.ts src/lib/learning-media.test.ts src/lib/totp.test.ts src/lib/safe-next.test.ts",
+    "test": "tsx --test src/lib/cctv.test.ts src/lib/request-status.test.ts src/lib/learning-demo.test.ts src/lib/learning-content.test.ts src/lib/practice.test.ts src/lib/learning-profile.test.ts src/lib/validation.test.ts src/lib/admin-access.test.ts src/lib/monitoring.test.ts src/lib/orders.test.ts src/lib/telegram.test.ts src/lib/telegram-gateway.test.ts src/lib/tma.test.ts src/lib/home-facts.test.ts src/lib/home-showcase.test.ts src/lib/error-noise.test.ts src/lib/partner-brands.test.ts src/lib/marketplace.test.ts src/lib/structured-data.test.ts src/lib/integration-credentials.test.ts src/lib/vulnyx-catalog.test.ts src/lib/linux-virtual-terminal.test.ts src/lib/catalog-utils.test.ts src/lib/format.test.ts src/lib/media-validate.test.ts src/lib/product-kind.test.ts src/lib/search-text.test.ts src/lib/growth.test.ts src/lib/delivery.test.ts src/lib/shops.test.ts src/lib/learning-media.test.ts src/lib/totp.test.ts src/lib/safe-next.test.ts src/lib/phone.test.ts src/lib/reauth-rules.test.ts src/lib/order-money.test.ts src/lib/wallet-rules.test.ts src/lib/account-rules.test.ts",
     "db:generate": "prisma generate",
     "db:backup": "node scripts/backup-db.mjs",
     "db:migrate": "prisma migrate deploy && (node prisma/seed-news.mjs || echo news seed skipped)",
@@ -18,14 +18,16 @@
     "admin:create": "tsx scripts/create-admin.ts",
     "admin:password-reset": "tsx scripts/reset-admin-password.ts",
     "founder:claim": "tsx scripts/claim-founder.ts",
+    "phone:audit": "tsx scripts/phone-audit.ts",
+    "2fa:reset": "tsx scripts/reset-two-factor.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@prisma/client": "6.9.0",
     "bcryptjs": "3.0.2",
-    "next": "16.4.3",
+    "next": "16.4.6",
     "next-auth": "4.24.15",
-    "nodemailer": "7.0.13",
+    "nodemailer": "10.6.1",
     "prisma": "6.9.0",
     "qrcode": "1.5.4",
     "react": "19.2.0",
@@ -37,10 +39,14 @@
   "devDependencies": {
     "@types/bcryptjs": "2.4.6",
     "@types/node": "22.15.30",
-    "@types/nodemailer": "7.0.12",
     "@types/qrcode": "1.5.6",
     "@types/react": "19.1.6",
     "@types/react-dom": "19.1.6",
     "typescript": "5.8.3"
+  },
+  "overrides": {
+    "next-auth": {
+      "nodemailer": "$nodemailer"
+    }
   }
 }

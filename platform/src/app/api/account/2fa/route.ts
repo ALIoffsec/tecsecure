@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { getCurrentUser } from "@/lib/auth";
+import { endOtherSessions, getCurrentUser } from "@/lib/auth";
+import { notifySecurityChange, requireReauth } from "@/lib/reauth";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { confirmTwoFactor, disableTwoFactor, startTwoFactorSetup, twoFactorStatus } from "@/lib/two-factor";
 
@@ -29,14 +30,21 @@ export async function POST(request: Request) {
   if (!parsed.success) return Response.json({ error: "So‘rov noto‘g‘ri." }, { status: 400 });
   try {
     if (parsed.data.action === "start") {
+      // Starting needs a fresh confirmation; turning it off already needs the authenticator code itself.
+      const confirmed = await requireReauth(user, "TWO_FACTOR_START");
+      if (confirmed instanceof Response) return confirmed;
       return Response.json(await startTwoFactorSetup(user.id, user.email.endsWith(".invalid") ? user.name : user.email), { headers: noStore });
     }
     if (parsed.data.action === "confirm") {
       const backupCodes = await confirmTwoFactor(user.id, parsed.data.code);
       if (!backupCodes) return Response.json({ error: "Kod mos kelmadi. Ilovadagi joriy kodni kiriting.", code: "WRONG_CODE" }, { status: 400 });
+      await endOtherSessions(user.id);
+      await notifySecurityChange(user.id, "Hisobingizda ikki bosqichli himoya yoqildi.");
       return Response.json({ ok: true, backupCodes }, { headers: noStore });
     }
     if (!(await disableTwoFactor(user.id, parsed.data.code))) return Response.json({ error: "Kod mos kelmadi.", code: "WRONG_CODE" }, { status: 400 });
+    await endOtherSessions(user.id);
+    await notifySecurityChange(user.id, "Hisobingizda ikki bosqichli himoya o‘chirildi.");
     return Response.json({ ok: true }, { headers: noStore });
   } catch (error) {
     if (error instanceof Error && error.message === "ALREADY_ENABLED") return Response.json({ error: "Ikki bosqichli himoya allaqachon yoqilgan.", code: "ALREADY_ENABLED" }, { status: 409 });

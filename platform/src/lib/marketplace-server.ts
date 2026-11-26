@@ -63,7 +63,11 @@ export async function creditOrderShipments(orderId: string, actorId?: string): P
     if (shipment.shop.status !== "ACTIVE") continue;
     if (!canCredit({ ...shipment, deliveredAt: shipment.deliveredAt ?? shipment.updatedAt }, order.paymentStatus, holdDays)) continue;
     const credited = await prisma.$transaction(async (tx) => {
-      const claim = await tx.shopOrder.updateMany({ where: { id: shipment.id, creditedAt: null }, data: { creditedAt: new Date() } });
+      // Under the order lock the payment must still be the one checked above (a cancel or refund may have won).
+      await tx.$queryRaw`SELECT id FROM "Order" WHERE id = ${orderId} FOR UPDATE`;
+      const fresh = await tx.order.findUnique({ where: { id: orderId }, select: { paymentStatus: true } });
+      if (!fresh || fresh.paymentStatus !== order.paymentStatus) return null;
+      const claim = await tx.shopOrder.updateMany({ where: { id: shipment.id, creditedAt: null, status: "DELIVERED", OR: [{ disputeResolution: null }, { disputeResolution: { not: "REFUNDED" } }] }, data: { creditedAt: new Date() } });
       if (claim.count === 0) return null;
       return changeShopBalance(tx, shipment.shopId, shipment.payoutMinor as number, { kind: "SALE", shopOrderId: shipment.id, note: order.reference, actorId });
     });

@@ -27,7 +27,7 @@ export async function loadStaffDesk(actor: AuthUser) {
       orderBy: { createdAt: "desc" }, take: 100
     }) : null,
     can("PRODUCTS") ? prisma.order.findMany({
-      where: { OR: [{ status: { in: ["NEW", "CONFIRMED", "PREPARING", "SHIPPED"] } }, { paymentStatus: "REFUND_DUE" }] },
+      where: { OR: [{ status: { in: ["NEW", "CONFIRMED", "PREPARING", "SHIPPED"] } }, { paymentStatus: "REFUND_DUE" }, { status: "CANCELLED", paymentStatus: "AWAITING_CONFIRMATION" }] },
       select: {
         id: true, reference: true, status: true, recipientName: true, phone: true, city: true, address: true, region: true, note: true,
         customerType: true, companyName: true, createdAt: true, totalMinor: true, itemsTotalMinor: true, deliveryFeeMinor: true, deliveryMethod: true,

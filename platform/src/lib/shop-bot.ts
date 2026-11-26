@@ -20,7 +20,7 @@ const openButton = (label: string, screen?: string): TelegramReplyMarkup | undef
 
 async function shopOf(telegramId: number) {
   const find = () => prisma.user.findFirst({
-    where: { telegramChatId: String(telegramId), active: true, role: "CUSTOMER" },
+    where: { telegramChatId: String(telegramId), active: true, deletedAt: null, role: "CUSTOMER" },
     select: { id: true, shop: { select: { id: true, name: true, status: true, balanceMinor: true } } }
   });
   const owner = await find();

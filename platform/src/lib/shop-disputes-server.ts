@@ -1,6 +1,6 @@
 import { prisma } from "./prisma";
 import { creditOrderShipments } from "./marketplace-server";
-import { isWholeOrder, refundToWallet } from "./order-flow";
+import { isWholeOrder, lockOrder, refundToWallet } from "./order-flow";
 import { notifyShopOwner } from "./shop-server";
 import { escapeTelegramHtml, notifyTelegramAdmins, notifyTelegramUser } from "./telegram";
 import { formatMinor } from "./format";
@@ -19,6 +19,7 @@ export async function openDispute(customerId: string, orderId: string, shopId: s
   if (part.creditedAt) return { ok: false, status: 409, error: "Pul sotuvchiga o‘tkazilgan. Iltimos, qo‘llab-quvvatlash orqali yozing.", code: "ALREADY_PAID_OUT" };
   if (!canDispute(part)) return { ok: false, status: 409, error: "Muammo haqida faqat jo‘natilgan yoki yetkazilgan buyurtma bo‘yicha yozish mumkin.", code: "NOT_YET" };
   const claimed = await prisma.$transaction(async (tx) => {
+    await lockOrder(tx, orderId);
     const claim = await tx.shopOrder.updateMany({ where: { id: part.id, disputedAt: null, creditedAt: null }, data: { disputedAt: new Date(), disputeNote: note } });
     if (claim.count === 0) return false;
     await tx.orderStatusHistory.create({ data: { orderId, fromStatus: null, toStatus: part.status, note: `Mijoz “${part.shop.name}” jo‘natmasi bo‘yicha muammo bildirdi: ${note}`, actorId: customerId } });
@@ -49,6 +50,9 @@ export async function decideDispute(shopOrderId: string, action: "RELEASE" | "RE
   const share = (part.itemsTotalMinor ?? 0) + (part.deliveryShareMinor ?? 0);
   let refunded = 0;
   const done = await prisma.$transaction(async (tx) => {
+    const order = await lockOrder(tx, part.orderId);
+    if (!order) return false;
+    part.order = { ...part.order, paymentMethod: order.paymentMethod, paymentStatus: order.paymentStatus, status: order.status };
     const claim = await tx.shopOrder.updateMany({
       where: { id: part.id, disputeResolvedAt: null, creditedAt: null },
       data: { disputeResolution: action === "RELEASE" ? "RELEASED" : "REFUNDED", disputeResolvedAt: new Date(), ...(action === "REFUND" ? { status: "CANCELLED" as const, cancelledAt: new Date() } : {}) }
@@ -56,8 +60,7 @@ export async function decideDispute(shopOrderId: string, action: "RELEASE" | "RE
     if (claim.count === 0) return false;
     if (action === "REFUND" && part.order.paymentStatus === "PAID") {
       if (part.order.paymentMethod === "WALLET") {
-        await refundToWallet(tx, part.order, share, actorId, `Murojaat bo‘yicha: “${part.shop.name}”`);
-        refunded = share;
+        refunded = await refundToWallet(tx, { ...part.order, totalMinor: order.totalMinor }, share, actorId, `Murojaat bo‘yicha: “${part.shop.name}”`);
         if (await isWholeOrder(tx, part.orderId, part.shopId)) await tx.order.update({ where: { id: part.orderId }, data: { paymentStatus: "REFUNDED" } });
       } else {
         // Card, bank or Payme money is returned by hand; the order says so until staff do it.

@@ -5,6 +5,14 @@ import { useRouter } from "next/navigation";
 import { useSitePreferences } from "@/components/site-preferences";
 import { ToastMessage } from "@/components/toast-provider";
 import type { MessageKey } from "@/lib/messages";
+import { translateMessage } from "@/lib/server-messages";
+import { useReauth } from "@/components/reauth-dialog";
+
+const resetCopy = {
+  uz: { button: "2FA’ni tiklash", reason: "Sabab (masalan: telefon yo‘qolgan, shaxsi tekshirildi):", done: "2FA o‘chirildi, hisob barcha qurilmalardan chiqarildi." },
+  ru: { button: "Сбросить 2FA", reason: "Причина (например: потерян телефон, личность проверена):", done: "2FA отключена, аккаунт вышел со всех устройств." },
+  en: { button: "Reset 2FA", reason: "Reason (for example: phone lost, identity checked):", done: "2FA turned off; the account was signed out everywhere." }
+} as const;
 
 type UserRole = "CUSTOMER" | "STAFF" | "ADMIN" | "FOUNDER";
 type ManagedUser = { id: string; name: string; email: string; role: UserRole; active: boolean; permissions: string[] };
@@ -16,8 +24,9 @@ const permissionChoices: readonly (readonly [string, MessageKey])[] = [
 ] as const;
 
 export function StaffManagement({ users, founder }: { users: ManagedUser[]; founder: boolean }) {
-  const { t } = useSitePreferences();
+  const { t, locale } = useSitePreferences();
   const router = useRouter();
+  const { guarded, dialog } = useReauth();
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
@@ -71,6 +80,22 @@ export function StaffManagement({ users, founder }: { users: ManagedUser[]; foun
     }
   }
 
+  async function resetTwoFactorFor(user: ManagedUser) {
+    const reason = window.prompt(`${user.name}: ${resetCopy[locale].reason}`)?.trim();
+    if (!reason) return;
+    setBusy(true); setError(""); setNotice("");
+    try {
+      const response = await guarded(() => fetch("/api/admin/users/two-factor", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: user.id, reason }) }));
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(typeof result.error === "string" ? translateMessage(result.error, locale) : t("requestFailed"));
+      setNotice(resetCopy[locale].done);
+    } catch (issue) {
+      setError(issue instanceof Error ? issue.message : t("requestFailed"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function deleteUser(user: ManagedUser) {
     if (!window.confirm(t("confirmDeleteUser").replace("{name}", user.name))) return;
     setBusy(true); setError(""); setNotice("");
@@ -93,6 +118,7 @@ export function StaffManagement({ users, founder }: { users: ManagedUser[]; foun
 
   return (
     <section className="panel-card">
+      {dialog}
       <h2>{t("staffManagementHeading")}</h2>
       <ToastMessage message={error || notice} variant={error ? "error" : "success"} />
       <details className="staff-create-panel">
@@ -137,6 +163,7 @@ export function StaffManagement({ users, founder }: { users: ManagedUser[]; foun
                   <option value="CUSTOMER">{t("customerRole")}</option><option value="STAFF">{t("staffRole")}</option>{founder && <option value="ADMIN">{t("adminRole")}</option>}
                 </select>
                 <button className="button secondary small" type="button" disabled={busy} onClick={() => updateUser(user, { active: !user.active })}>{user.active ? t("disableAccount") : t("enableAccount")}</button>
+                <button className="button secondary small" type="button" disabled={busy} onClick={() => void resetTwoFactorFor(user)}>{resetCopy[locale].button}</button>
                 <button className="button danger small" type="button" disabled={busy} onClick={() => void deleteUser(user)}>{t("deleteUser")}</button>
               </div>}
               {user.role === "STAFF" && <details className="staff-permissions"><summary>{t("staffPermissions")}</summary><div className="permission-grid">{permissionChoices.map(([value, label]) => <label className="permission-option" key={value}><input type="checkbox" checked={user.permissions.includes(value)} disabled={busy} onChange={(event) => updateUser(user, { permissions: event.target.checked ? [...user.permissions, value] : user.permissions.filter((permission) => permission !== value) })} />{t(label)}</label>)}</div></details>}

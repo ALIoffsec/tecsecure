@@ -9,6 +9,7 @@ import { ToastMessage } from "@/components/toast-provider";
 import { learningSubscriptionPlans } from "@/lib/learning-subscriptions";
 import { tecPacks, tecPurchaseCostMinor, TEC_PRICE_UZS } from "@/lib/tec-pricing";
 import { formatDate } from "@/lib/format";
+import { SiteDialog } from "./site-dialog";
 
 type Subscription = { planKey: string; endsAt: string; active: boolean } | null;
 type Celebration = { kind: "tec" | "plan"; title: string };
@@ -68,6 +69,7 @@ export function StoreView({ walletBalanceMinor, moduleCount }: { walletBalanceMi
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
   const [celebration, setCelebration] = useState<Celebration | null>(null);
+  const [confirming, setConfirming] = useState<(typeof learningSubscriptionPlans)[number] | null>(null);
 
   useEffect(() => {
     fetch("/api/learning/subscription").then((r) => r.json()).then((d) => setSubscription(d.subscription ?? null)).catch(() => undefined);
@@ -90,6 +92,8 @@ export function StoreView({ walletBalanceMinor, moduleCount }: { walletBalanceMi
   }
 
   const activePlan = subscription?.active ? subscription.planKey : null;
+  const activePlanName = learningSubscriptionPlans.find((p) => p.key === activePlan)?.name ?? "";
+  const w = planWords[locale];
   return <div className="container page-shell store-page">
     <section className="store-head">
       <div><span className="eyebrow">TEC</span><h1 className="page-title">{locale === "uz" ? "TEC paketlari va ta’lim obunalari" : locale === "ru" ? "Пакеты TEC и подписки на обучение" : "TEC packs and learning subscriptions"}</h1><p className="page-intro">{c.intro}</p><Link className="text-link" href="/products">{locale === "uz" ? "Uskunalar do‘koniga o‘tish →" : locale === "ru" ? "В магазин оборудования →" : "Go to the equipment shop →"}</Link></div>
@@ -138,13 +142,36 @@ export function StoreView({ walletBalanceMinor, moduleCount }: { walletBalanceMi
           <p className="small">{count} {c.modules} · ≈ {money(Math.round(plan.priceMinor / 100 / count))} UZS / {c.modules}</p>
           <p className="small store-perk">{perkText[plan.key]}</p>
           <div className="store-price"><strong>{money(plan.priceMinor / 100)} UZS</strong><small>/ {c.month}</small></div>
-          <button className="button" type="button" disabled={Boolean(busy) || !affordable} onClick={() => post("/api/learning/subscription", { planKey: plan.key }, plan.key, { kind: "plan", title: plan.name }, (r) => r.subscription && setSubscription({ ...r.subscription, active: true }))}>
-            {busy === plan.key ? "…" : c.buy}
-          </button>
-          {!affordable && <small className="muted">{c.noFunds}</small>}
+          {(() => {
+            const blocked = Boolean(activePlan && activePlan !== plan.key);
+            return <>
+              <button className="button" type="button" disabled={Boolean(busy) || !affordable || blocked} onClick={() => setConfirming(plan)}>
+                {busy === plan.key ? "…" : activePlan === plan.key ? w.extend : c.buy}
+              </button>
+              {blocked && subscription && <small className="muted">{w.blocked(activePlanName, formatDate(subscription.endsAt))}</small>}
+              {!blocked && !affordable && <small className="muted">{c.noFunds}</small>}
+            </>;
+          })()}
         </article>;
       })}
     </div>
     <p className="small muted">{c.disclaimer}</p>
+    {confirming && <SiteDialog className="site-dialog cab-dialog" title={confirming.name} onClose={() => setConfirming(null)}>
+      <div className="form">
+        <p>{activePlan === confirming.key ? w.extendHint : w.buyHint}</p>
+        <p><strong>{money(confirming.priceMinor / 100)} UZS</strong></p>
+        <p className="small muted">{w.left}: {money((walletBalanceMinor - confirming.priceMinor) / 100)} UZS</p>
+        <div className="hero-actions">
+          <button className="button" type="button" disabled={Boolean(busy)} onClick={() => { const plan = confirming; setConfirming(null); void post("/api/learning/subscription", { planKey: plan.key }, plan.key, { kind: "plan", title: plan.name }, (r) => r.subscription && setSubscription({ ...r.subscription, active: true })); }}>{w.confirm}</button>
+          <button className="button ghost" type="button" onClick={() => setConfirming(null)}>{w.cancel}</button>
+        </div>
+      </div>
+    </SiteDialog>}
   </div>;
 }
+
+const planWords = {
+  uz: { extend: "Muddatni uzaytirish", blocked: (name: string, date: string) => `${name} ${date} gacha faol. Keyin almashtirishingiz mumkin.`, buyHint: "Reja darhol faollashadi, 30 kun amal qiladi, avtomatik yechilmaydi.", extendHint: "Joriy rejangiz 30 kunga uzaytiriladi.", left: "Hamyonda qoladi", confirm: "Tasdiqlash va to‘lash", cancel: "Bekor qilish" },
+  ru: { extend: "Продлить", blocked: (name: string, date: string) => `${name} активен до ${date}. Потом можно сменить план.`, buyHint: "План включится сразу, действует 30 дней, без автосписания.", extendHint: "Текущий план продлится на 30 дней.", left: "Останется на кошельке", confirm: "Подтвердить и оплатить", cancel: "Отмена" },
+  en: { extend: "Extend", blocked: (name: string, date: string) => `${name} is active until ${date}. You can switch after that.`, buyHint: "The plan starts now, lasts 30 days and is never charged automatically.", extendHint: "Your current plan is extended by 30 days.", left: "Left in the wallet", confirm: "Confirm and pay", cancel: "Cancel" }
+} as const;

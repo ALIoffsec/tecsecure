@@ -9,7 +9,7 @@ import { ToastMessage } from "./toast-provider";
 import { siteCopy } from "@/lib/site-copy";
 import { growthCopy } from "@/lib/growth-copy";
 import { formatDateTime, formatMinor } from "@/lib/format";
-import { nextStatuses, orderStatuses, type OrderStatusValue } from "@/lib/orders";
+import { canConfirmPayment, cancelledReceiptLabels, needsCancelledReceiptDecision, nextStatuses, orderStatuses, type OrderStatusValue } from "@/lib/orders";
 import { canDispute, isDisputeOpen } from "@/lib/marketplace";
 import type { OrderLineProduct } from "@/lib/order-lines";
 import { checkoutCopy } from "@/lib/checkout-copy";
@@ -230,7 +230,11 @@ function AdminOrderActions({ order }: { order: AdminOrder }) {
   }
   const options = nextStatuses(order.status as OrderStatusValue);
   return <div className="order-actions">
-    {(order.paymentStatus === "AWAITING_CONFIRMATION" || (order.paymentStatus === "AWAITING_PAYMENT" && order.paymentMethod === "BANK_TRANSFER")) && <button type="button" className="button" disabled={busy} onClick={() => void send({ paymentStatus: "PAID" })}>{copy.admin.confirmPayment}</button>}
+    {canConfirmPayment(order) && <button type="button" className="button" disabled={busy} onClick={() => void send({ paymentStatus: "PAID" })}>{copy.admin.confirmPayment}</button>}
+    {needsCancelledReceiptDecision(order) && <>
+      <button type="button" className="button" disabled={busy} onClick={() => void send({ cancelledReceipt: "RECEIVED" })}>{cancelledReceiptLabels[locale].received}</button>
+      <button type="button" className="button secondary" disabled={busy} onClick={() => void send({ cancelledReceipt: "MISSING" })}>{cancelledReceiptLabels[locale].missing}</button>
+    </>}
     {options.map((next) => <button key={next} type="button" className={next === "CANCELLED" ? "button danger" : "button secondary"} disabled={busy} onClick={() => void send({ status: next })}>{copy.orders.statusAction[next]}</button>)}
     <ToastMessage message={error} variant="error" />
   </div>;

@@ -3,7 +3,7 @@ import { canTransition, orderStatusSchema } from "@/lib/orders";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { escapeTelegramHtml, notifyTelegramUser } from "@/lib/telegram";
-import { applyOrderStatus, isWholeOrder, shipmentStamp } from "@/lib/order-flow";
+import { applyOrderStatus, isWholeOrder, lockOrder, shipmentStamp } from "@/lib/order-flow";
 import { creditOrderShipments, notifyShopsPaid } from "@/lib/marketplace-server";
 
 export const runtime = "nodejs";
@@ -20,7 +20,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   }
   if (z.object({ paymentStatus: z.literal("PAID") }).safeParse(body).success) {
     const confirmed = await prisma.$transaction(async (tx) => {
-      const result = await tx.order.updateMany({ where: { id, OR: [{ paymentStatus: "AWAITING_CONFIRMATION" }, { paymentStatus: "AWAITING_PAYMENT", paymentMethod: "BANK_TRANSFER" }] }, data: { paymentStatus: "PAID" } });
+      await lockOrder(tx, id);
+      // A cancelled order is never confirmed as paid; its receipt goes through the cancelled-order steps.
+      const result = await tx.order.updateMany({ where: { id, status: { not: "CANCELLED" }, OR: [{ paymentStatus: "AWAITING_CONFIRMATION" }, { paymentStatus: "AWAITING_PAYMENT", paymentMethod: "BANK_TRANSFER" }] }, data: { paymentStatus: "PAID" } });
       if (result.count === 0) return false;
       await tx.auditLog.create({ data: { actorId: actor.id, action: "ORDER_PAYMENT_CONFIRMED", entity: "Order", entityId: id } });
       return true;
@@ -29,6 +31,22 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     // Shops waiting for the money can now ship; parts already delivered are credited.
     await notifyShopsPaid(id);
     await creditOrderShipments(id, actor.id);
+    return Response.json({ ok: true });
+  }
+  // A cancelled order with an unchecked receipt: staff say whether the money came. Kept out of the status history.
+  const receipt = z.object({ cancelledReceipt: z.enum(["RECEIVED", "MISSING"]) }).safeParse(body);
+  if (receipt.success) {
+    const decided = await prisma.$transaction(async (tx) => {
+      await lockOrder(tx, id);
+      const result = await tx.order.updateMany({
+        where: { id, status: "CANCELLED", paymentStatus: "AWAITING_CONFIRMATION" },
+        data: { paymentStatus: receipt.data.cancelledReceipt === "RECEIVED" ? "REFUND_DUE" : "AWAITING_PAYMENT" }
+      });
+      if (result.count === 0) return false;
+      await tx.auditLog.create({ data: { actorId: actor.id, action: "ORDER_CANCELLED_RECEIPT_DECIDED", entity: "Order", entityId: id, metadata: { decision: receipt.data.cancelledReceipt } } });
+      return true;
+    });
+    if (!decided) return Response.json({ error: "Bu buyurtmada tekshiriladigan chek yo‘q." }, { status: 409 });
     return Response.json({ ok: true });
   }
   const parsed = orderStatusSchema.safeParse(body);

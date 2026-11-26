@@ -11,6 +11,7 @@ import "./liquid-water.css";
 import "./liquid-ui.css";
 import "./liquid-search.css";
 import "./growth.css";
+import "./portal.css";
 import "./tma.css";
 import { SiteNav } from "@/components/site-nav";
 import { PageBackLink } from "@/components/page-back-link";

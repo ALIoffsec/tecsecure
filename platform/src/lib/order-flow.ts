@@ -1,5 +1,6 @@
 import type { OrderStatus, Prisma } from "@prisma/client";
 import { restoreStock } from "./marketplace-server";
+import { exceedsWalletLimit } from "./wallet-rules";
 
 type Tx = Prisma.TransactionClient;
 
@@ -9,13 +10,35 @@ const stamp: Partial<Record<OrderStatus, "confirmedAt" | "shippedAt" | "delivere
   CONFIRMED: "confirmedAt", SHIPPED: "shippedAt", DELIVERED: "deliveredAt", CANCELLED: "cancelledAt"
 };
 
-/** Puts money back on the buyer's wallet with its own ledger line (kind ORDER_REFUND, the order's reference). */
-export async function refundToWallet(tx: Tx, order: Pick<OrderForStatus, "customerId" | "reference">, amountMinor: number, actorId: string | null, details: string | null): Promise<void> {
-  if (!Number.isSafeInteger(amountMinor) || amountMinor <= 0) return;
+/**
+ * The one lock for everything that touches an order's money: the order row, taken as the transaction's first
+ * step, then the order read again. Locks are always taken in the order Order, ShopOrder, User.
+ */
+export async function lockOrder(tx: Tx, orderId: string): Promise<OrderForStatus | null> {
+  await tx.$queryRaw`SELECT id FROM "Order" WHERE id = ${orderId} FOR UPDATE`;
+  return tx.order.findUnique({ where: { id: orderId }, select: { id: true, status: true, customerId: true, reference: true, paymentMethod: true, paymentStatus: true, totalMinor: true } });
+}
+
+/** What may still go back to the wallet for this order: refunds together never exceed what was paid. */
+export function refundRoom(totalMinor: number | null, refundedMinor: number, askedMinor: number): number {
+  if (totalMinor === null) return 0;
+  return Math.max(0, Math.min(askedMinor, totalMinor - refundedMinor));
+}
+
+/** Puts money back on the buyer's wallet with its own ledger line (kind ORDER_REFUND, the order's reference). Returns the amount refunded. */
+export async function refundToWallet(tx: Tx, order: Pick<OrderForStatus, "customerId" | "reference" | "totalMinor">, amountMinor: number, actorId: string | null, details: string | null): Promise<number> {
+  if (!Number.isSafeInteger(amountMinor) || amountMinor <= 0) return 0;
+  const refunded = await tx.walletTransaction.aggregate({ where: { userId: order.customerId, kind: "ORDER_REFUND", reference: order.reference }, _sum: { amountMinor: true } });
+  amountMinor = refundRoom(order.totalMinor, refunded._sum.amountMinor ?? 0, amountMinor);
+  if (amountMinor <= 0) return 0;
+  const holder = await tx.user.findUnique({ where: { id: order.customerId }, select: { walletBalanceMinor: true } });
+  // A balance that would not fit undoes the whole step (the transaction rolls back) instead of wrapping.
+  if (!holder || exceedsWalletLimit(holder.walletBalanceMinor, amountMinor)) throw new Error("WALLET_LIMIT");
   await tx.user.update({ where: { id: order.customerId }, data: { walletBalanceMinor: { increment: amountMinor } } });
   await tx.walletTransaction.create({
     data: { userId: order.customerId, kind: "ORDER_REFUND", status: "APPROVED", amountMinor, reference: order.reference, details, reviewedById: actorId, reviewedAt: new Date() }
   });
+  return amountMinor;
 }
 
 /**
@@ -42,7 +65,10 @@ export function shipmentStamp(to: OrderStatus): Record<string, Date> {
  * refund or "refund due" on cancel, stock returned, shop parts cancelled, history, notice and audit.
  * Returns false when someone else changed the order first. The caller has checked the transition.
  */
-export async function applyOrderStatus(tx: Tx, order: OrderForStatus, to: OrderStatus, actorId: string | null, note: string | null): Promise<boolean> {
+export async function applyOrderStatus(tx: Tx, seen: OrderForStatus, to: OrderStatus, actorId: string | null, note: string | null): Promise<boolean> {
+  // Payment and refund decisions use the order as it is under the lock, never a copy read before it.
+  const order = await lockOrder(tx, seen.id);
+  if (!order || order.status !== seen.status) return false;
   const result = await tx.order.updateMany({ where: { id: order.id, status: order.status }, data: { status: to } });
   if (result.count === 0) return false;
   if (to === "DELIVERED" && order.paymentStatus === "PENDING") {

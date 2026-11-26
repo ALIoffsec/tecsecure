@@ -4,6 +4,8 @@ import { isResponse, requireAdminApi } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { revokeOpenTickets } from "@/lib/two-factor";
 import { isReservedEmail } from "@/lib/validation";
+import { anonymizeAccount } from "@/lib/account-anonymize";
+import { deletionBlockerText } from "@/lib/account-rules";
 import { adminModules, AdminModule } from "@/lib/auth";
 import { z } from "zod";
 
@@ -155,46 +157,17 @@ export async function DELETE(request: Request) {
       if (target.role === "FOUNDER") throw new Error("FOUNDER_IMMUTABLE");
       if (target.role === "ADMIN" && actor.role !== "FOUNDER") throw new Error("ONLY_FOUNDER_CAN_DELETE_ADMIN");
 
-      await tx.user.update({
-        where: { id: target.id },
-        data: {
-          name: "O‘chirilgan foydalanuvchi",
-          email: `deleted-${target.id}@deleted.invalid`,
-          phone: null,
-          active: false,
-          deletedAt: new Date()
-        }
-      });
-      await tx.session.deleteMany({ where: { userId: target.id } });
-      await tx.serviceRequest.updateMany({
-        where: { customerId: target.id },
-        data: {
-          customerId: null,
-          name: "Deleted account",
-          phone: "",
-          email: null,
-          organizationName: null,
-          city: null,
-          location: null,
-          description: "[Request details removed after account deletion]",
-          budgetRange: null,
-          preferredContactTime: null
-        }
-      });
-      await tx.project.updateMany({
-        where: { customerId: target.id },
-        data: { customerId: null, name: "Archived customer project", notes: null, city: null }
-      });
-      await tx.organizationMember.deleteMany({ where: { userId: target.id } });
-      await tx.notification.deleteMany({ where: { userId: target.id } });
-      await tx.auditLog.create({
-        data: { actorId: actor.id, action: "USER_DELETED", entity: "User", entityId: target.id }
-      });
-      return "DELETED" as const;
+      return "CHECKED" as const;
     });
 
     if (deleted === "NOT_FOUND") return Response.json({ error: "Foydalanuvchi topilmadi." }, { status: 404 });
     if (deleted === "ALREADY_DELETED") return Response.json({ error: "Foydalanuvchi avval o‘chirilgan." }, { status: 409 });
+    // The same closing as the customer's own: open money or work blocks it; in a hurry, disable the account instead.
+    const result = await anonymizeAccount(parsed.data.id, actor.id);
+    if (!result.ok && "blockers" in result) {
+      return Response.json({ error: `Hisobni o‘chirib bo‘lmaydi: ${result.blockers.map(key => deletionBlockerText.uz[key].text).join(" ")} Shoshilinch bo‘lsa, hisobni faolsizlantiring.`, code: "DELETE_BLOCKED", blockers: result.blockers }, { status: 409 });
+    }
+    if (!result.ok) return Response.json({ error: "Hisob holati o‘zgardi. Qayta urinib ko‘ring." }, { status: 409 });
     return Response.json({ ok: true });
   } catch (error) {
     if (error instanceof Error && error.message === "FOUNDER_IMMUTABLE") {

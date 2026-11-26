@@ -44,6 +44,11 @@ export async function POST(request: Request) {
   const now = new Date();
   try {
     const result = await prisma.$transaction(async (tx) => {
+      // Another plan still running is not replaced (its days would be lost); the same plan is extended.
+      const running = await tx.learningSubscription.findUnique({ where: { userId: user.id }, select: { planKey: true, startsAt: true, endsAt: true } });
+      if (running && running.startsAt <= now && running.endsAt > now && running.planKey !== plan.key) {
+        throw Object.assign(new Error("OTHER_PLAN_ACTIVE"), { running });
+      }
       const debit = await tx.user.updateMany({
         where: { id: user.id, walletBalanceMinor: { gte: plan.priceMinor } },
         data: { walletBalanceMinor: { decrement: plan.priceMinor } }
@@ -84,6 +89,10 @@ export async function POST(request: Request) {
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
     return Response.json(result, { status: 201 });
   } catch (error) {
+    if (error instanceof Error && error.message === "OTHER_PLAN_ACTIVE") {
+      const running = (error as Error & { running: { planKey: string; endsAt: Date } }).running;
+      return Response.json({ error: "Boshqa reja hali faol. U tugagach almashtirishingiz mumkin.", code: "OTHER_PLAN_ACTIVE", planKey: running.planKey, endsAt: running.endsAt }, { status: 409 });
+    }
     if (error instanceof Error && error.message === "LEARNING_WALLET_BALANCE_TOO_LOW") {
       return Response.json({ error: "Obuna uchun hamyoningizdagi UZS mablag‘i yetarli emas." }, { status: 409 });
     }

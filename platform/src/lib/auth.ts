@@ -84,6 +84,15 @@ export async function endOtherSessions(userId: string): Promise<number | null> {
   return ended.count;
 }
 
+/** This request's own session: its hash (never sent to the client) and when it was opened. */
+export async function currentSession(userId: string): Promise<{ hash: string; createdAt: Date } | null> {
+  const token = (await cookies()).get(SESSION_COOKIE)?.value;
+  if (!token) return null;
+  const hash = hashToken(token);
+  const session = await prisma.session.findFirst({ where: { tokenHash: hash, userId, expiresAt: { gt: new Date() } }, select: { createdAt: true } });
+  return session ? { hash, createdAt: session.createdAt } : null;
+}
+
 /** How many other signed-in sessions the account has besides this one. */
 export async function countOtherSessions(userId: string): Promise<number> {
   const token = (await cookies()).get(SESSION_COOKIE)?.value;
@@ -99,12 +108,12 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
     select: {
       expiresAt: true,
       user: {
-        select: { id: true, name: true, email: true, role: true, active: true, permissions: true }
+        select: { id: true, name: true, email: true, role: true, active: true, deletedAt: true, permissions: true }
       }
     }
   });
 
-  if (!session || session.expiresAt <= new Date() || !session.user.active) {
+  if (!session || session.expiresAt <= new Date() || !session.user.active || session.user.deletedAt) {
     if (session) {
       await prisma.session.deleteMany({ where: { tokenHash: hashToken(token) } });
     }

@@ -10,8 +10,9 @@ import { growthCopy } from "@/lib/growth-copy";
 import { siteCopy } from "@/lib/site-copy";
 import { translateMessage } from "@/lib/server-messages";
 import { formatDateTime, formatMinor } from "@/lib/format";
-import { nextStatuses, type OrderStatusValue } from "@/lib/orders";
+import { canConfirmPayment, cancelledReceiptLabels, needsCancelledReceiptDecision, nextStatuses, type OrderStatusValue } from "@/lib/orders";
 import { SCRIPT_URL, SESSION_KEY, webApp } from "./telegram-bridge";
+import { TwoFactorStep } from "./two-factor";
 export { TelegramBridge } from "./telegram-bridge";
 
 
@@ -20,8 +21,18 @@ export function TelegramEntry({ app }: { app: "customer" | "staff" | "shop" }) {
   const { locale } = useSitePreferences();
   const c = growthCopy[locale].tma;
   const router = useRouter();
-  const [state, setState] = useState<"loading" | "outside" | "account" | "failed">("loading");
+  const [state, setState] = useState<"loading" | "outside" | "account" | "failed" | "twoFactor">("loading");
   const [error, setError] = useState("");
+  const [ticket, setTicket] = useState("");
+  // Each app opens its own page after sign-in, also after the authenticator step.
+  const home = app === "staff" ? "/tg/staff" : app === "shop" ? "/tg/shop" : "/products";
+
+  const enter = useCallback((path: string) => {
+    document.documentElement.dataset.tma = app;
+    try { sessionStorage.setItem(SESSION_KEY, app); } catch { /* only the back button depends on it */ }
+    router.replace(path);
+    router.refresh();
+  }, [app, router]);
 
   const signIn = useCallback(async (create = false) => {
     const telegram = webApp();
@@ -34,16 +45,14 @@ export function TelegramEntry({ app }: { app: "customer" | "staff" | "shop" }) {
       const response = await fetch("/api/telegram/webapp", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ initData: telegram.initData, app, create }) });
       const data = await response.json();
       if (response.ok && data.needsAccount) { setState("account"); return; }
+      if (response.ok && typeof data.twoFactor === "string") { setTicket(data.twoFactor); setState("twoFactor"); return; }
       if (!response.ok || !data.next) { setError(data.error ? translateMessage(data.error, locale) : c.failed); setState("failed"); return; }
-      document.documentElement.dataset.tma = app;
-      try { sessionStorage.setItem(SESSION_KEY, app); } catch { /* only the back button depends on it */ }
-      router.replace(data.next);
-      router.refresh();
+      enter(data.next);
     } catch {
       setError(c.failed);
       setState("failed");
     }
-  }, [app, c.failed, locale, router]);
+  }, [app, c.failed, enter, locale]);
 
   return <div className="tma-shell tma-entry" data-app={app}>
     <Script src={SCRIPT_URL} strategy="afterInteractive" onReady={() => void signIn()} onError={() => setState("outside")} />
@@ -53,6 +62,7 @@ export function TelegramEntry({ app }: { app: "customer" | "staff" | "shop" }) {
       {state === "outside" && <><p>{c.outside}</p><Link className="tma-button secondary" href="/">{c.openSite}</Link></>}
       {state === "account" && <><h1>{c.welcome}</h1><p className="tma-hint">{c.welcomeHint}</p><button className="tma-button" type="button" onClick={() => void signIn(true)}>{c.create}</button></>}
       {state === "failed" && <><p role="alert">{error}</p><button className="tma-button secondary" type="button" onClick={() => void signIn()}>{c.retry}</button></>}
+      {state === "twoFactor" && <TwoFactorStep ticket={ticket} onRestart={() => void signIn()} onDone={() => enter(home)} />}
     </section>
   </div>;
 }
@@ -101,7 +111,11 @@ export function StaffApp({ orders, wallet, requests }: { orders: StaffOrder[] | 
         <p className="small muted">{copy.orders.method[order.paymentMethod] ?? order.paymentMethod} · {copy.orders.paymentStatus[order.paymentStatus] ?? order.paymentStatus}</p>
         <div className="staff-actions">
           {order.paymentProofMediaId && <a className="button ghost" href={`/api/media/${order.paymentProofMediaId}`} target="_blank" rel="noreferrer">{c.proof}</a>}
-          {(order.paymentStatus === "AWAITING_CONFIRMATION" || (order.paymentStatus === "AWAITING_PAYMENT" && order.paymentMethod === "BANK_TRANSFER")) && <button className="button" type="button" disabled={busy} onClick={() => void send(`/api/orders/${order.id}`, { paymentStatus: "PAID" })}>{copy.admin.confirmPayment}</button>}
+          {canConfirmPayment(order) && <button className="button" type="button" disabled={busy} onClick={() => void send(`/api/orders/${order.id}`, { paymentStatus: "PAID" })}>{copy.admin.confirmPayment}</button>}
+          {needsCancelledReceiptDecision(order) && <>
+            <button className="button" type="button" disabled={busy} onClick={() => void send(`/api/orders/${order.id}`, { cancelledReceipt: "RECEIVED" })}>{cancelledReceiptLabels[locale].received}</button>
+            <button className="button secondary" type="button" disabled={busy} onClick={() => void send(`/api/orders/${order.id}`, { cancelledReceipt: "MISSING" })}>{cancelledReceiptLabels[locale].missing}</button>
+          </>}
           {nextStatuses(order.status as OrderStatusValue).map(next => <button className={next === "CANCELLED" ? "button danger" : "button secondary"} type="button" disabled={busy} key={next} onClick={() => void send(`/api/orders/${order.id}`, { status: next })}>{copy.orders.statusAction[next]}</button>)}
         </div>
       </article>)}

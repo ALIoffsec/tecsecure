@@ -16,6 +16,7 @@ import { commissionFor, LOW_STOCK, shopOrderMoney, splitDelivery } from "@/lib/m
 import { shopAppUrl } from "@/lib/marketplace-server";
 import { notifyShopOwner } from "@/lib/shop-server";
 import { REFERRAL_COOKIE } from "@/lib/referral";
+import { lockProof, proofInUse, proofUsedMessage } from "@/lib/payment-proof";
 
 export const runtime = "nodejs";
 
@@ -145,6 +146,11 @@ export async function POST(request: Request) {
   try {
     const reference = `ORD-${new Date().getUTCFullYear()}-${randomBytes(5).toString("hex").toUpperCase()}`;
     const order = await prisma.$transaction(async (tx) => {
+      // One receipt backs one payment: not another order, not a wallet top-up.
+      if (parsed.data.paymentProofMediaId) {
+        await lockProof(tx, parsed.data.paymentProofMediaId);
+        if (await proofInUse(tx, parsed.data.paymentProofMediaId)) throw new Error("PROOF_USED");
+      }
       // Counted stock is taken inside the transaction; a parallel order that took the last unit wins.
       for (const line of lines) {
         if (line.product.stockQuantity === null) continue;
@@ -274,6 +280,9 @@ export async function POST(request: Request) {
     await notifyShopsOfOrder(order, shipments, lines, { recipientName: parsed.data.recipientName, address: [region ? regionNames.uz[region] : "", parsed.data.city, parsed.data.address].filter(Boolean).join(", "), deliveryMethod });
     return Response.json({ order }, { status: 201 });
   } catch (error) {
+    if (error instanceof Error && error.message === "PROOF_USED") {
+      return Response.json({ error: proofUsedMessage, code: "PROOF_USED" }, { status: 409 });
+    }
     if (error instanceof Error && error.message === "STOCK_LIMIT") {
       return Response.json({ error: "Kimdir hozirgina oxirgi donalarni sotib oldi. Savatni yangilang.", code: "STOCK_LIMIT" }, { status: 409 });
     }

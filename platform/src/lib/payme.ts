@@ -1,5 +1,7 @@
 import { timingSafeEqual } from "node:crypto";
 import { afterOrderPaid } from "./marketplace-server";
+import { lockOrder } from "./order-flow";
+import { escapeTelegramHtml, notifyTelegramAdmins } from "./telegram";
 import { prisma } from "@/lib/prisma";
 
 /**
@@ -48,14 +50,35 @@ const cannotCancel = () => new PaymeError(-31007, "Заказ выполнен, 
 
 type Params = { id?: string; time?: number; amount?: number; account?: { order_id?: string }; reason?: number; from?: number; to?: number };
 
+type PayableShape = { paymentMethod: string; paymentStatus: string; status: string; currency: string; totalMinor: number | null };
+
+/** Why Payme may not take money for this order now, or null when it may. Pure, so it is tested alone. */
+export function paymeRefusal(order: PayableShape, amount: unknown): "notPayable" | "wrongAmount" | null {
+  if (order.paymentMethod !== "ONLINE_PAYME" || order.paymentStatus !== "AWAITING_PAYMENT" || order.status === "CANCELLED" || order.currency !== "UZS") return "notPayable";
+  if (order.totalMinor === null || Number(amount) !== order.totalMinor) return "wrongAmount";
+  return null;
+}
+
+function assertPayable(order: PayableShape, amount: unknown) {
+  const refusal = paymeRefusal(order, amount);
+  if (refusal === "notPayable") throw orderNotPayable();
+  if (refusal === "wrongAmount") throw wrongAmount();
+}
+
 async function payableOrder(params: Params) {
   const reference = params.account?.order_id;
   if (typeof reference !== "string") throw orderNotFound();
   const order = await prisma.order.findUnique({ where: { reference }, select: { id: true, reference: true, status: true, paymentMethod: true, paymentStatus: true, totalMinor: true, currency: true } });
   if (!order) throw orderNotFound();
-  if (order.paymentMethod !== "ONLINE_PAYME" || order.paymentStatus !== "AWAITING_PAYMENT" || order.status === "CANCELLED" || order.currency !== "UZS") throw orderNotPayable();
-  if (order.totalMinor === null || Number(params.amount) !== order.totalMinor) throw wrongAmount();
+  assertPayable(order, params.amount);
   return order;
+}
+
+/** A Payme answer that left money in a doubtful place: staff hear about it at once. */
+async function alertStaff(orderId: string, text: string) {
+  const order = await prisma.order.findUnique({ where: { id: orderId }, select: { reference: true } });
+  if (!order) return;
+  await notifyTelegramAdmins(`<b>⚠️ Payme</b>\nBuyurtma <code>${escapeTelegramHtml(order.reference)}</code>: ${escapeTelegramHtml(text)}`, order.reference).catch(() => false);
 }
 
 const view = (tx: { id: string; state: number; reason: number | null; createTime: bigint; performTime: bigint; cancelTime: bigint }) => ({
@@ -86,14 +109,21 @@ export async function handlePaymeMethod(method: string, params: Params): Promise
         const { transaction, state, create_time } = view(existing);
         return { transaction, state, create_time };
       }
-      const order = await payableOrder(params);
-      const other = await prisma.paymeTransaction.findFirst({ where: { orderId: order.id, state: paymeStates.created } });
-      if (other) {
-        if (Date.now() - Number(other.createTime) <= TIMEOUT_MS) throw orderBusy();
-        await expire(other.id);
-      }
-      const created = await prisma.paymeTransaction.create({
-        data: { paymeId: id, orderId: order.id, amountMinor: Number(params.amount), paymeTime: BigInt(Number(params.time) || Date.now()), createTime: BigInt(Date.now()) }
+      const found = await payableOrder(params);
+      // Checked again under the order lock, so two Create calls cannot both pass and a cancel cannot slip between.
+      const created = await prisma.$transaction(async db => {
+        const order = await db.order.findUnique({ where: { id: found.id }, select: { currency: true } });
+        const locked = await lockOrder(db, found.id);
+        if (!locked || !order) throw orderNotFound();
+        assertPayable({ ...locked, currency: order.currency }, params.amount);
+        const other = await db.paymeTransaction.findFirst({ where: { orderId: found.id, state: paymeStates.created } });
+        if (other) {
+          if (Date.now() - Number(other.createTime) <= TIMEOUT_MS) throw orderBusy();
+          await db.paymeTransaction.updateMany({ where: { id: other.id, state: paymeStates.created }, data: { state: paymeStates.cancelled, reason: 4, cancelTime: BigInt(Date.now()) } });
+        }
+        return db.paymeTransaction.create({
+          data: { paymeId: id, orderId: found.id, amountMinor: Number(params.amount), paymeTime: BigInt(Number(params.time) || Date.now()), createTime: BigInt(Date.now()) }
+        });
       });
       const { transaction, state, create_time } = view(created);
       return { transaction, state, create_time };
@@ -108,12 +138,32 @@ export async function handlePaymeMethod(method: string, params: Params): Promise
       }
       if (tx.state !== paymeStates.created) throw cannotPerform();
       if (Date.now() - Number(tx.createTime) > TIMEOUT_MS) { await expire(tx.id); throw cannotPerform(); }
-      const updated = await prisma.$transaction(async db => {
-        const done = await db.paymeTransaction.update({ where: { id: tx.id }, data: { state: paymeStates.performed, performTime: BigInt(Date.now()) } });
-        await db.order.update({ where: { id: tx.orderId }, data: { paymentStatus: "PAID", paymentReference: `Payme ${tx.paymeId}` } });
+      const outcome = await prisma.$transaction(async db => {
+        const order = await lockOrder(db, tx.orderId);
+        const current = await db.paymeTransaction.findUnique({ where: { id: tx.id } });
+        if (!order || !current) throw notFound();
+        if (current.state === paymeStates.performed) return { kind: "done" as const, row: current };
+        if (current.state !== paymeStates.created) throw cannotPerform();
+        // The order was cancelled, already paid another way, or its total changed: no money is taken.
+        if (order.status === "CANCELLED" || order.paymentStatus !== "AWAITING_PAYMENT" || order.totalMinor !== current.amountMinor) {
+          return { kind: "refused" as const, status: order.status, paymentStatus: order.paymentStatus };
+        }
+        const claimed = await db.paymeTransaction.updateMany({ where: { id: tx.id, state: paymeStates.created }, data: { state: paymeStates.performed, performTime: BigInt(Date.now()) } });
+        if (claimed.count !== 1) throw cannotPerform();
+        await db.order.updateMany({ where: { id: tx.orderId, status: { not: "CANCELLED" }, paymentStatus: "AWAITING_PAYMENT" }, data: { paymentStatus: "PAID", paymentReference: `Payme ${tx.paymeId}` } });
         await db.auditLog.create({ data: { action: "ORDER_PAYMENT_PAYME_PERFORMED", entity: "Order", entityId: tx.orderId } });
-        return done;
+        return { kind: "performed" as const, row: await db.paymeTransaction.findUniqueOrThrow({ where: { id: tx.id } }) };
       });
+      if (outcome.kind === "refused") {
+        await prisma.auditLog.create({ data: { action: "PAYME_PERFORM_REFUSED", entity: "Order", entityId: tx.orderId, metadata: { paymeId: tx.paymeId, status: outcome.status, paymentStatus: outcome.paymentStatus } } });
+        await alertStaff(tx.orderId, "Payme to‘lovni yakunlamoqchi bo‘ldi, lekin buyurtma to‘lov kutmayapti (bekor qilingan yoki boshqa yo‘l bilan to‘langan). To‘lov qabul qilinmadi; Payme kabinetini tekshiring.");
+        throw cannotPerform();
+      }
+      if (outcome.kind === "done") {
+        const { transaction, state, perform_time } = view(outcome.row);
+        return { transaction, state, perform_time };
+      }
+      const updated = outcome.row;
       // Shops hear the money arrived and delivered parts are credited, without holding up Payme's answer.
       void afterOrderPaid(tx.orderId);
       const { transaction, state, perform_time } = view(updated);
@@ -121,19 +171,35 @@ export async function handlePaymeMethod(method: string, params: Params): Promise
     }
 
     case "CancelTransaction": {
-      const tx = await prisma.paymeTransaction.findUnique({ where: { paymeId: String(params.id ?? "") }, include: { order: { select: { status: true } } } });
+      const tx = await prisma.paymeTransaction.findUnique({ where: { paymeId: String(params.id ?? "") } });
       if (!tx) throw notFound();
       if (tx.state < 0) {
         const { transaction, state, cancel_time } = view(tx);
         return { transaction, state, cancel_time };
       }
-      if (tx.state === paymeStates.performed && tx.order.status === "DELIVERED") throw cannotCancel();
-      const after = tx.state === paymeStates.performed ? paymeStates.cancelledAfterPerform : paymeStates.cancelled;
+      let partlyDelivered = false;
       const updated = await prisma.$transaction(async db => {
-        const done = await db.paymeTransaction.update({ where: { id: tx.id }, data: { state: after, reason: Number(params.reason) || null, cancelTime: BigInt(Date.now()) } });
-        await db.order.update({ where: { id: tx.orderId }, data: { paymentStatus: after === paymeStates.cancelledAfterPerform ? "REFUNDED" : "AWAITING_PAYMENT" } });
-        await db.auditLog.create({ data: { action: "ORDER_PAYMENT_PAYME_CANCELLED", entity: "Order", entityId: tx.orderId, metadata: { reason: Number(params.reason) || null } } });
-        return done;
+        const order = await lockOrder(db, tx.orderId);
+        const current = await db.paymeTransaction.findUnique({ where: { id: tx.id } });
+        if (!order || !current) throw notFound();
+        if (current.state < 0) return current;
+        if (current.state === paymeStates.performed) {
+          if (order.status === "DELIVERED") throw cannotCancel();
+          // Some goods already reached the buyer or a shop got the money: a person has to decide.
+          const settled = await db.shopOrder.count({ where: { orderId: tx.orderId, OR: [{ status: "DELIVERED" }, { creditedAt: { not: null } }] } });
+          if (settled > 0) { partlyDelivered = true; throw cannotCancel(); }
+        }
+        const after = current.state === paymeStates.performed ? paymeStates.cancelledAfterPerform : paymeStates.cancelled;
+        const claimed = await db.paymeTransaction.updateMany({ where: { id: tx.id, state: current.state }, data: { state: after, reason: Number(params.reason) || null, cancelTime: BigInt(Date.now()) } });
+        if (claimed.count !== 1) return db.paymeTransaction.findUniqueOrThrow({ where: { id: tx.id } });
+        if (after === paymeStates.cancelledAfterPerform) {
+          await db.order.updateMany({ where: { id: tx.orderId, paymentStatus: { in: ["PAID", "REFUND_DUE"] } }, data: { paymentStatus: "REFUNDED" } });
+        }
+        await db.auditLog.create({ data: { action: "ORDER_PAYMENT_PAYME_CANCELLED", entity: "Order", entityId: tx.orderId, metadata: { reason: Number(params.reason) || null, performed: after === paymeStates.cancelledAfterPerform } } });
+        return db.paymeTransaction.findUniqueOrThrow({ where: { id: tx.id } });
+      }).catch(async (error: unknown) => {
+        if (partlyDelivered) await alertStaff(tx.orderId, "Payme to‘lovni qaytarmoqchi, lekin buyurtmaning bir qismi yetkazilgan yoki do‘konga pul yozilgan. Qaytarish rad etildi; qo‘lda hal qiling.");
+        throw error;
       });
       const { transaction, state, cancel_time } = view(updated);
       return { transaction, state, cancel_time };

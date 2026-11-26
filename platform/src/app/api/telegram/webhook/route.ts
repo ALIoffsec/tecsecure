@@ -48,23 +48,69 @@ function hasValidSecret(received: string | null, expected: string): boolean {
   return receivedBytes.length === expectedBytes.length && timingSafeEqual(receivedBytes, expectedBytes);
 }
 
+/** "Ali Valiyev" → "Ali V.": enough to recognise the account, not to learn the name. */
+function maskName(name: string): string {
+  const [first = "", second = ""] = name.trim().split(/\s+/);
+  return escapeTelegramHtml(`${first.slice(0, 20)}${second ? ` ${second[0]}.` : ""}`);
+}
+
+/** The bot link from the profile: say which account it is and ask before linking anything. */
 async function handleStart(update: TelegramUpdateBody, token: string): Promise<void> {
   const message = update.message;
   if (!message) return;
-  const now = new Date();
+  const chatId = String(message.chat.id);
+  const account = await prisma.user.findFirst({
+    where: { telegramLinkToken: token, telegramLinkExpiresAt: { gt: new Date() }, active: true, deletedAt: null },
+    select: { name: true }
+  });
+  if (!account) {
+    await sendTelegramMessage(chatId, "Ulanish havolasi eskirgan yoki ishlatilgan. Profilingizdan yangi havola yarating.");
+    return;
+  }
+  await sendTelegramMessage(chatId, [
+    `<b>Tecsecure hisobi: ${maskName(account.name)}</b>`,
+    "Shu Telegram ushbu hisobga ulansinmi?",
+    "Buni siz boshlamagan bo‘lsangiz, “Yo‘q” tugmasini bosing."
+  ].join("\n"), { replyMarkup: { inline_keyboard: [[{ text: "✅ Ha, ulash", callback_data: `tl:y:${token}` }, { text: "❌ Yo‘q", callback_data: `tl:n:${token}` }]] } });
+}
+
+/** The answer to that question. Only the person in that private chat can press it. */
+async function handleLinkCallback(update: TelegramUpdateBody): Promise<void> {
+  const callback = update.callback_query;
+  if (!callback) return;
+  const parsed = /^tl:([yn]):([A-Za-z0-9_-]{20,64})$/.exec(callback.data ?? "");
+  const message = callback.message;
+  if (!parsed || !message || message.chat.type !== "private" || String(callback.from.id) !== String(message.chat.id)) {
+    await answerTelegramCallbackQuery(callback.id, "Bu amal uchun ruxsat yo‘q.");
+    return;
+  }
+  const [, answer, token] = parsed;
+  const chatId = String(message.chat.id);
+  if (answer === "n") {
+    await prisma.user.updateMany({ where: { telegramLinkToken: token }, data: { telegramLinkToken: null, telegramLinkExpiresAt: null } });
+    await answerTelegramCallbackQuery(callback.id, "Bekor qilindi.");
+    await sendTelegramMessage(chatId, "Ulanish bekor qilindi. Hech narsa o‘zgarmadi.");
+    return;
+  }
+  const account = await prisma.user.findFirst({ where: { telegramLinkToken: token }, select: { id: true } });
   try {
+    // Linked only while the link is fresh and the account has no Telegram yet; the token works once.
     const linked = await prisma.user.updateMany({
-      where: { telegramLinkToken: token, telegramLinkExpiresAt: { gt: now }, active: true },
-      data: { telegramChatId: String(message.chat.id), telegramLinkToken: null, telegramLinkExpiresAt: null }
+      where: { telegramLinkToken: token, telegramLinkExpiresAt: { gt: new Date() }, active: true, deletedAt: null, telegramChatId: null },
+      data: { telegramChatId: chatId, telegramLinkToken: null, telegramLinkExpiresAt: null }
     });
-    if (linked.count === 0) {
-      await sendTelegramMessage(String(message.chat.id), "Ulanish havolasi eskirgan yoki ishlatilgan. Profilingizdan yangi havola yarating.");
+    if (linked.count === 0 || !account) {
+      await answerTelegramCallbackQuery(callback.id, "Havola eskirgan.");
+      await sendTelegramMessage(chatId, "Ulanish havolasi eskirgan yoki ishlatilgan. Profilingizdan yangi havola yarating.");
       return;
     }
-    await sendTelegramMessage(String(message.chat.id), "Telegram Tecsecure profilingizga ulandi. Admin javoblari va buyurtma holatlarini shu yerda olasiz.");
+    await prisma.auditLog.create({ data: { actorId: account.id, action: "TELEGRAM_LINKED", entity: "User", entityId: account.id } });
+    await answerTelegramCallbackQuery(callback.id, "Ulandi.");
+    await sendTelegramMessage(chatId, "Telegram Tecsecure profilingizga ulandi. Admin javoblari va buyurtma holatlarini shu yerda olasiz.");
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-      await sendTelegramMessage(String(message.chat.id), "Bu Telegram hisobi boshqa profilga ulangan.");
+      await answerTelegramCallbackQuery(callback.id, "Bu Telegram boshqa profilga ulangan.");
+      await sendTelegramMessage(chatId, "Bu Telegram hisobi boshqa profilga ulangan. Avval o‘sha profildan uzing.");
       return;
     }
     throw error;
@@ -283,6 +329,14 @@ async function handleUpdate(request: Request, bot: "customer" | "staff" | "shop"
       await handleShopBotUpdate(update);
     } catch (error) {
       console.error("Shop bot message failed", error instanceof Error ? error.message : "UnknownError");
+    }
+    return Response.json({ ok: true });
+  }
+  if (update.callback_query?.data?.startsWith("tl:")) {
+    try {
+      await handleLinkCallback(update);
+    } catch (error) {
+      console.error("Telegram link confirmation failed", error instanceof Error ? error.message : "UnknownError");
     }
     return Response.json({ ok: true });
   }
