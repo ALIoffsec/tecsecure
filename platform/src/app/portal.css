@@ -29,14 +29,16 @@
 #app-shell .order-status.is-neutral { color: var(--muted); border-color: var(--glass-edge); background: transparent; }
 
 /* Compact head: initial, name, real contact, bell */
-#app-shell .cab-head { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; padding: 12px 16px; border: 1px solid var(--glass-edge); border-radius: var(--radius); background: var(--glass-fill); box-shadow: var(--glass-shadow); }
+#app-shell .cab-head { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border: 1px solid var(--glass-edge); border-radius: var(--radius); background: var(--glass-fill); box-shadow: var(--glass-shadow); }
 #app-shell .cab-avatar { display: grid; width: 40px; height: 40px; flex: none; place-items: center; border: 1px solid var(--glass-edge); border-radius: 14px; background: linear-gradient(160deg, #ffffff2b, #ffffff08 55%), color-mix(in srgb, var(--accent) 14%, transparent); box-shadow: inset 0 1px 1px var(--glass-shine); color: var(--accent); font-weight: 800; }
 #app-shell .cab-identity { display: grid; min-width: 0; flex: 1; }
 #app-shell .cab-identity strong { overflow-wrap: anywhere; }
 #app-shell .cab-identity small { color: var(--muted); font-size: .88rem; overflow-wrap: anywhere; }
 #app-shell .cab-bell { position: relative; display: grid; place-items: center; width: 44px; min-width: 44px; height: 44px; min-height: 44px; padding: 0; }
 #app-shell .cab-bell-count { position: absolute; top: 2px; right: 0; min-width: 20px; padding: 1px 5px; border-radius: 999px; background: var(--accent); color: #04121b; font-size: .72rem; font-weight: 800; line-height: 1.4; text-align: center; }
-#app-shell .cab-staff-note { margin: 0 0 16px; }
+#app-shell .cab-staff-note { margin: 0; }
+#app-shell .cab-head.is-home .cab-title { font-size: clamp(1.15rem, 2.6vw, 1.5rem); overflow-wrap: anywhere; }
+#app-shell .cab-head-settings { display: inline-flex; align-items: center; gap: 8px; min-width: 44px; min-height: 44px; padding: 0 12px; }
 
 /* Menu: the side panel and the phone hub are one list */
 #app-shell .cab-nav ul { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; }
@@ -46,12 +48,37 @@
 #app-shell .cab-nav-icon { display: grid; width: 28px; height: 28px; place-items: center; }
 #app-shell .cab-nav-label { min-width: 0; overflow-wrap: anywhere; }
 #app-shell .cab-nav-count { min-width: 22px; padding: 2px 6px; border-radius: 999px; background: var(--glass-control); color: var(--text); font-size: .78rem; font-weight: 800; text-align: center; }
-#app-shell .cab-nav-chevron { display: grid; color: var(--muted); }
 #app-shell .cab-nav-signout { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--glass-edge); }
-#app-shell .cab-hub .cab-nav-item { min-height: 48px; border-color: var(--glass-edge); background: var(--glass-fill); color: var(--text); }
 
-/* Home: first steps for a new customer */
-#app-shell .cab-start a.list-row { display: flex; align-items: center; justify-content: space-between; min-height: 48px; text-decoration: none; color: var(--text); }
+/* Home: what waits on the customer (the "under review" badge colours), the latest order, the section cards */
+#app-shell .cab-h2 { margin: 0 0 10px; font-size: 1.05rem; }
+#app-shell .cab-attention { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+#app-shell .cab-attention-row { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid #f2c06366; border-radius: 14px; background: color-mix(in srgb, #f2c063 8%, var(--glass-fill)); }
+#app-shell .cab-attention-icon { display: grid; place-items: center; color: #f2c063; }
+#app-shell .cab-attention-text { display: grid; gap: 2px; min-width: 0; overflow-wrap: anywhere; }
+#app-shell .cab-attention-text small { color: var(--muted); font-size: .88rem; }
+#app-shell .cab-attention-action { min-height: 44px; }
+#app-shell a.cab-order { display: grid; gap: 6px; color: var(--text); text-decoration: none; }
+#app-shell .cab-order-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; }
+#app-shell .cab-content .cab-order-head h2 { margin: 0; }
+#app-shell .cab-order-line { font-size: .94rem; overflow-wrap: anywhere; }
+#app-shell .cab-track { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin: 10px 0 0; padding: 0; list-style: none; }
+#app-shell .cab-track li { display: grid; gap: 6px; min-width: 0; color: var(--muted); font-size: .78rem; text-align: center; overflow-wrap: anywhere; }
+#app-shell .cab-track-bar { height: 6px; border-radius: 999px; background: var(--glass-control); }
+#app-shell .cab-track li.is-done .cab-track-bar { background: var(--accent); }
+#app-shell .cab-track li[aria-current="step"] { color: var(--text); font-weight: 700; }
+#app-shell .cab-tiles ul { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 0; padding: 0; list-style: none; }
+#app-shell .cab-tile { display: grid; align-content: start; gap: 6px; height: 100%; min-height: 44px; padding: 16px; border: 1px solid var(--glass-edge); border-radius: var(--radius); background: var(--glass-fill); box-shadow: var(--glass-shadow); color: var(--text); text-decoration: none; transition: border-color 200ms; }
+#app-shell .cab-tile:hover, #app-shell a.cab-order:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--glass-edge)); }
+#app-shell :is(.cab-tile, a.cab-order):focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+#app-shell .cab-tile-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+#app-shell .cab-tile-icon { display: grid; width: 36px; height: 36px; place-items: center; border-radius: 12px; background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); }
+#app-shell .cab-tile-name { font-size: 1rem; font-weight: 600; overflow-wrap: anywhere; }
+#app-shell .cab-tile-line { display: -webkit-box; overflow: hidden; color: var(--muted); font-size: .88rem; line-height: 1.35; overflow-wrap: anywhere; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; }
+#app-shell .cab-tile-line.is-warn, #app-shell .cab-attention-icon { color: #f2c063; }
+:root[data-theme="light"] #app-shell :is(.cab-tile-line.is-warn, .cab-attention-icon) { color: #8a5d05; }
+#app-shell .cab-signout { display: flex; justify-content: flex-start; }
+#app-shell .order-card[id] { scroll-margin-top: 100px; }
 
 /* Notifications */
 #app-shell button.cab-notice { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 12px; border: 1px solid var(--glass-edge); border-radius: 14px; background: transparent; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
@@ -82,7 +109,6 @@ html[data-motion="off"] #app-shell .cab-skel { animation: none; }
 html[data-tma="customer"] #app-shell .cab-back { display: none; }
 
 @media (min-width: 901px) {
-  #app-shell .cab-hub { display: none; }
   #app-shell .cab-back.is-cabinet-top { display: none; }
 }
 
@@ -92,6 +118,11 @@ html[data-tma="customer"] #app-shell .cab-back { display: none; }
   #app-shell .cab-side { display: none; }
   #app-shell .cab-head.is-inner { display: none; }
   #app-shell .cab-content .panel-card { padding: 16px; }
+  #app-shell .cab-head { gap: 8px; padding: 12px; }
+  #app-shell .cab-head-label { display: none; }
+  #app-shell .cab-head-settings { padding: 0; }
+  #app-shell .cab-tiles ul { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  #app-shell .cab-tile { padding: 14px; }
   #app-shell :is(.cab-content, .cab-dialog) :is(input, select, textarea) { font-size: 16px; min-height: 44px; }
   #app-shell :is(.cab-content, .cab-dialog) .button { min-height: 44px; }
   #app-shell .cab-content .list-row { flex-wrap: wrap; }
