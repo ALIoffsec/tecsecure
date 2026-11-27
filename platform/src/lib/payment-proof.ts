@@ -13,11 +13,12 @@ export async function lockProof(tx: Tx, mediaId: string): Promise<void> {
  * Call it after `lockProof`, inside the same transaction.
  */
 export async function proofInUse(tx: Tx, mediaId: string, except: { walletId?: string; orderId?: string } = {}): Promise<boolean> {
-  const [wallet, orders] = await Promise.all([
+  const [wallet, orders, payments] = await Promise.all([
     tx.walletTransaction.count({ where: { proofMediaId: mediaId, status: { in: [...PROOF_HOLDING_STATUSES] }, ...(except.walletId ? { id: { not: except.walletId } } : {}) } }),
-    tx.order.count({ where: { paymentProofMediaId: mediaId, ...(except.orderId ? { id: { not: except.orderId } } : {}) } })
+    tx.order.count({ where: { paymentProofMediaId: mediaId, ...(except.orderId ? { id: { not: except.orderId } } : {}) } }),
+    tx.payment.count({ where: { proofMediaId: mediaId, status: { in: ["PENDING", "VERIFIED"] } } })
   ]);
-  return wallet + orders > 0;
+  return wallet + orders + payments > 0;
 }
 
 export const proofUsedMessage = "Bu chek avval ishlatilgan. Yangi to‘lov chekini yuklang.";

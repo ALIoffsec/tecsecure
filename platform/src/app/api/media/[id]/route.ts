@@ -15,8 +15,8 @@ async function canRead(asset: { private: boolean; ownerId: string | null }) {
   const user = await getCurrentUser();
   if (user && asset.ownerId === user.id) return true;
   if (!user || user.role === "CUSTOMER") return false;
-  // Payment proofs reach staff through wallet requests and through orders.
-  return !isResponse(await requireModuleApi("WALLET")) || !isResponse(await requireModuleApi("PRODUCTS"));
+  // Payment proofs reach staff through wallet requests, orders and invoice payments.
+  return !isResponse(await requireModuleApi("WALLET")) || !isResponse(await requireModuleApi("PRODUCTS")) || !isResponse(await requireModuleApi("PAYMENTS"));
 }
 
 export async function HEAD(_request: Request, context: Context) {

@@ -26,7 +26,7 @@ const words: Record<"uz" | "ru" | "en", Words> = {
   uz: {
     waiting: "Sizdan kutilmoqda", lastOrder: "Oxirgi buyurtma", sections: "Bo‘limlar", track: "Buyurtma bosqichlari",
     steps: ["Qabul", "Tayyor", "Yo‘lda", "Yetdi"],
-    attention: { invoiceOverdue: "To‘lov muddati o‘tdi", orderUnpaid: "To‘lov kutilmoqda", receiptRejected: "Chek qabul qilinmadi", invoiceUnpaid: "Hisob to‘lanmagan", quoteWaiting: "Taklif javobingizni kutyapti" },
+    attention: { invoiceOverdue: "To‘lov muddati o‘tdi", orderUnpaid: "To‘lov kutilmoqda", receiptRejected: "Chek qabul qilinmadi", invoiceUnpaid: "Hisob to‘lanmagan", quoteWaiting: "Taklif javobingizni kutyapti", staffReply: "Xodim javob berdi" },
     view: "Ko‘rish", pay: "To‘lash", more: n => `yana ${n} ta`,
     orders: n => `${n} ta faol buyurtma`, ordersNone: "Uskuna xarid qilish",
     quotes: n => `${n} ta taklif javob kutyapti`, requests: n => `${n} ta ariza jarayonda`, requestsNone: "Xizmat so‘rash",
@@ -38,7 +38,7 @@ const words: Record<"uz" | "ru" | "en", Words> = {
   ru: {
     waiting: "Ждёт вашего действия", lastOrder: "Последний заказ", sections: "Разделы", track: "Этапы заказа",
     steps: ["Принят", "Готов", "В пути", "Доставлен"],
-    attention: { invoiceOverdue: "Срок оплаты прошёл", orderUnpaid: "Ожидается оплата", receiptRejected: "Чек не принят", invoiceUnpaid: "Счёт не оплачен", quoteWaiting: "Предложение ждёт ответа" },
+    attention: { invoiceOverdue: "Срок оплаты прошёл", orderUnpaid: "Ожидается оплата", receiptRejected: "Чек не принят", invoiceUnpaid: "Счёт не оплачен", quoteWaiting: "Предложение ждёт ответа", staffReply: "Сотрудник ответил" },
     view: "Открыть", pay: "Оплатить", more: n => `ещё ${n}`,
     orders: n => `Активных заказов: ${n}`, ordersNone: "Купить оборудование",
     quotes: n => `Предложений ждут ответа: ${n}`, requests: n => `Заявок в работе: ${n}`, requestsNone: "Заказать услугу",
@@ -50,7 +50,7 @@ const words: Record<"uz" | "ru" | "en", Words> = {
   en: {
     waiting: "Waiting on you", lastOrder: "Latest order", sections: "Sections", track: "Order progress",
     steps: ["Received", "Ready", "On the way", "Delivered"],
-    attention: { invoiceOverdue: "Payment is overdue", orderUnpaid: "Awaiting payment", receiptRejected: "Receipt not accepted", invoiceUnpaid: "Invoice unpaid", quoteWaiting: "A quote awaits your answer" },
+    attention: { invoiceOverdue: "Payment is overdue", orderUnpaid: "Awaiting payment", receiptRejected: "Receipt not accepted", invoiceUnpaid: "Invoice unpaid", quoteWaiting: "A quote awaits your answer", staffReply: "Staff replied" },
     view: "View", pay: "Pay", more: n => `${n} more`,
     orders: n => `${n} active ${n === 1 ? "order" : "orders"}`, ordersNone: "Buy equipment",
     quotes: n => `${n} ${n === 1 ? "quote awaits" : "quotes await"} your answer`, requests: n => `${n} ${n === 1 ? "request" : "requests"} in progress`, requestsNone: "Request a service",
@@ -61,7 +61,7 @@ const words: Record<"uz" | "ru" | "en", Words> = {
   }
 };
 
-const attentionIcon: Record<AttentionKind, IconName> = { invoiceOverdue: "alert", orderUnpaid: "creditCard", receiptRejected: "receipt", invoiceUnpaid: "receipt", quoteWaiting: "clipboard" };
+const attentionIcon: Record<AttentionKind, IconName> = { invoiceOverdue: "alert", orderUnpaid: "creditCard", receiptRejected: "receipt", invoiceUnpaid: "receipt", quoteWaiting: "clipboard", staffReply: "mail" };
 const payKinds = new Set<AttentionKind>(["invoiceOverdue", "orderUnpaid", "invoiceUnpaid"]);
 
 type Tile = { id: CabinetSection | "help"; href: string; icon: IconName; label: string; line: string; count?: number; warn?: boolean };

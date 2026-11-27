@@ -50,7 +50,7 @@ export async function POST(request: Request) {
       }
     } else {
       const created = await prisma.learningCertificate.create({
-        data: { code: certificateCode(), userId, examSlug: exam.slug, scorePercent: grade.scorePercent }
+        data: { code: certificateCode(), userId, examSlug: exam.slug, scorePercent: grade.scorePercent, holderName: auth.user.name.trim().slice(0, 120) || null }
       });
       certificateCodeValue = created.code;
     }

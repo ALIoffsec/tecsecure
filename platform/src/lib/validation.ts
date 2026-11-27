@@ -171,7 +171,8 @@ export const manualPaymentSchema = z.object({
   amountMinor: z.number().int().positive().max(2_000_000_000),
   method: z.enum(["BANK_TRANSFER", "CASH", "OTHER"]),
   // Cash gets its reference from the server.
-  reference: z.string().trim().min(2).max(160).optional()
+  reference: z.string().trim().min(2).max(160).optional(),
+  proofMediaId: z.string().min(1).max(40).optional()
 }).refine(payment => payment.method === "CASH" || Boolean(payment.reference), { path: ["reference"], message: "To‘lov hujjati raqamini yozing." });
 
 export const subscriptionPlanSchema = z.object({

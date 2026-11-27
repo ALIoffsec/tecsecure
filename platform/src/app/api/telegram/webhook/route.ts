@@ -1,4 +1,5 @@
 import { reviewWalletTransaction, WalletReviewError, walletReviewMessages } from "@/lib/wallet-review";
+import { afterMessage } from "@/lib/conversations";
 import { timingSafeEqual } from "node:crypto";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
@@ -136,6 +137,7 @@ async function handleAdminReply(update: TelegramUpdateBody, reference: string, b
     await tx.portalMessage.create({
       data: { conversationId: conversation.id, sender: "ADMIN", body }
     });
+    await tx.portalConversation.update({ where: { id: conversation.id }, data: afterMessage("ADMIN") });
     if (conversation.sourceType === "PRODUCT_QUESTION") {
       await tx.productQuestion.updateMany({
         where: { id: conversation.sourceId },

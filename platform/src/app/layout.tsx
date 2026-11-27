@@ -30,7 +30,7 @@ import { ToastProvider } from "@/components/toast-provider";
 import { CurrencyProvider } from "@/components/currency-context";
 import { ProductCompareProvider } from "@/components/product-compare";
 import { SiteMotion } from "@/components/site-motion";
-import { ContactDock } from "@/components/shop-extras";
+import { HelpPanel } from "@/components/help-panel";
 import { TelegramBridge } from "@/components/telegram-bridge";
 import { SiteChrome } from "@/components/site-chrome";
 import { siteOrigin } from "@/lib/site-origin";
@@ -98,7 +98,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
                 <TelegramBridge />
                 <SiteChrome><SiteNav /><PageBackLink /></SiteChrome>
                 <main id="main-content" tabIndex={-1}>{children}</main>
-                <SiteChrome><SiteBlocksRenderer blocks={siteBlocks} /><SiteFooter /><ContactDock /></SiteChrome>
+                <SiteChrome><SiteBlocksRenderer blocks={siteBlocks} /><SiteFooter /><HelpPanel /></SiteChrome>
                 </ProductCompareProvider>
               </LearningCatalogProvider>
             </ToastProvider>

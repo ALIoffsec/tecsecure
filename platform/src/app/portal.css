@@ -212,3 +212,23 @@ html[data-tma="customer"] #app-shell .cab-back { display: none; }
   #app-shell .cab-steps li.is-reached:has(+ li.is-reached)::after { background: var(--success); }
   #app-shell .cab-steps li:last-child { padding-bottom: 0; }
 }
+
+/* "Yordam" (help) panel, on every page: a corner button on a computer (above the cart button), the header
+   button on a phone, so neither covers the cart or the bottom dock. */
+#app-shell .help-fab { position: fixed; right: 24px; bottom: 24px; z-index: 49; display: inline-flex; align-items: center; gap: 8px; min-height: 48px; padding: 0 18px; border: 1px solid var(--glass-edge); border-radius: 999px; background: var(--glass-overlay); color: var(--text); font: inherit; font-weight: 600; cursor: pointer; box-shadow: var(--glass-shadow); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter); }
+#app-shell:has(.shop-cart-fab) .help-fab { bottom: 88px; }
+#app-shell .help-fab-count { position: absolute; top: -6px; right: -4px; min-width: 20px; padding: 1px 5px; border-radius: 999px; background: var(--accent); color: #04121b; font-size: .72rem; font-weight: 800; text-align: center; }
+#app-shell .help-header-button { display: none; }
+#app-shell .help-contacts { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+#app-shell .help-contacts .button { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; }
+#app-shell .help-thread { display: grid; gap: 8px; max-height: 40dvh; margin: 0 0 12px; padding: 0; overflow-y: auto; list-style: none; }
+#app-shell .help-thread li { display: grid; gap: 2px; max-width: 88%; padding: 8px 10px; border: 1px solid var(--glass-edge); border-radius: 12px; }
+#app-shell .help-thread li.is-staff { background: var(--glass-control); }
+#app-shell .help-thread li.is-customer { justify-self: end; }
+#app-shell .help-thread p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+#app-shell button.help-conversation { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 10px; min-height: 44px; padding: 0; border: 0; background: none; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+html[data-tma] #app-shell :is(.help-fab, .help-header-button) { display: none; }
+@media (max-width: 900px) {
+  #app-shell .help-fab { display: none; }
+  #app-shell .help-header-button { display: inline-grid; place-items: center; }
+}

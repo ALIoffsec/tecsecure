@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { MONITORING_INTERVAL_MS, parseMonitoringTarget, runTcpCheck } from "@/lib/monitoring";
+import { nextDeviceStatus } from "@/lib/monitoring-rules";
 
 const POLL_INTERVAL_MS = 15_000;
 const BATCH_SIZE = 50;
@@ -17,7 +18,9 @@ async function runMonitoring() {
     const result = target
       ? await runTcpCheck(target.host, target.port)
       : { online: false, latencyMs: null, detail: "Monitoring maqsadi noto‘g‘ri sozlangan." };
-    const status = result.online ? "ONLINE" : "OFFLINE";
+    // One failed check is not yet "not responding": that takes two in a row.
+    const previous = await prisma.monitoringCheck.findFirst({ where: { deviceId: device.id }, orderBy: { checkedAt: "desc" }, select: { status: true } });
+    const status = nextDeviceStatus(result.online, previous ? previous.status === "ONLINE" : null);
     await prisma.$transaction([
       prisma.monitoringCheck.create({ data: { deviceId: device.id, status, latencyMs: result.latencyMs, detail: result.detail } }),
       prisma.device.update({ where: { id: device.id }, data: { status, lastCheckAt: new Date() } })

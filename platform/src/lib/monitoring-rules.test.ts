@@ -19,3 +19,13 @@ test("checks stop only on the move to cancelled, when no other live subscription
   assert.equal(cancelStopsMonitoring("CANCELLED", 1), false);
   assert.equal(cancelStopsMonitoring("SUSPENDED", 0), false);
 });
+
+test("a device is 'not responding' only after two failed checks in a row", async () => {
+  const { nextDeviceStatus, isWrongAddress } = await import("./monitoring-rules");
+  assert.equal(nextDeviceStatus(true, false), "ONLINE");
+  assert.equal(nextDeviceStatus(false, true), "STALE");
+  assert.equal(nextDeviceStatus(false, null), "STALE");
+  assert.equal(nextDeviceStatus(false, false), "OFFLINE");
+  assert.equal(isWrongAddress("DNS nomi topilmadi."), true);
+  assert.equal(isWrongAddress("Ulanish rad etildi"), false);
+});

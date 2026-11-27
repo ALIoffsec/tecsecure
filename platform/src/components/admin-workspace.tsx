@@ -58,6 +58,8 @@ type Project = {
   id: string; reference: string; name: string; status: string; customerId: string | null; city: string | null; notes: string | null;
   customer?: { name: string; phone: string | null; email: string } | null; request?: { reference: string } | null; quotations?: { number: string; status: string }[];
   items: { id: string; quantity: number; product: { name: string } | null; service: { name: string } | null }[] };
+const inboxLabel = { uz: "Xabarlar qutisi", ru: "Входящие", en: "Inbox" } as const;
+
 const projectWords = {
   uz: { statusNote: "Holatga izoh (mijozga ko‘rinadi)", fromRequest: "ariza" },
   ru: { statusNote: "Комментарий к статусу (видит клиент)", fromRequest: "заявка" },
@@ -67,7 +69,7 @@ const projectWords = {
 type Article = { id: string; title: string; excerpt: string; content: string; status: string; publishedAt: Date | null; media: unknown };
 type Notice = { id: string; event: string; status: string; createdAt: Date };
 type AcceptedQuote = { id: string; number: string; currency: string; project: { name: string }; invoices: { id: string; number: string; status: string }[] };
-type PendingPayment = { id: string; amountMinor: number; currency: string; method: string; reference: string; invoice: { id: string; number: string; currency: string } };
+type PendingPayment = { id: string; amountMinor: number; currency: string; method: string; reference: string; proofMediaId?: string | null; invoice: { id: string; number: string; currency: string } };
 type Plan = { id: string; name: string; interval: string; priceMinor: number | null; currency: string; trialDays: number; active: boolean; features: string[] };
 type ManagedUser = { id: string; name: string; email: string; role: "CUSTOMER" | "STAFF" | "ADMIN" | "FOUNDER"; active: boolean; permissions: string[] };
 type AdminSection = "requests" | "projects" | "services" | "products" | "news" | "company" | "users" | "invoices" | "subscriptions" | "payments" | "content" | "learning" | "portfolio" | "wallet" | "system";
@@ -308,7 +310,7 @@ export function AdminWorkspace({ overview, newOrderCount, pendingShopCount = 0, 
     event.preventDefault();
     setBusy(true); setError(""); setNotice("");
     const form = event.currentTarget;
-    const data = new FormData(form);
+    const data = new FormData(form);
     try {
       const body = {
         name: data.get("name"), interval: data.get("interval"),
@@ -482,6 +484,14 @@ export function AdminWorkspace({ overview, newOrderCount, pendingShopCount = 0, 
               <span className="admin-sidebar-marker"><UiIcon name="box" size={17} /></span>
               {sidebarOpen && <span>{siteCopy[locale].admin.ordersTitle}</span>}
               {sidebarOpen && newOrderCount > 0 && <span className="admin-sidebar-count">{newOrderCount}</span>}
+            </Link>}
+            <Link className="admin-sidebar-item" href="/admin/inbox" aria-label={inboxLabel[locale]} title={inboxLabel[locale]}>
+              <span className="admin-sidebar-marker"><UiIcon name="mail" size={17} /></span>
+              {sidebarOpen && <span>{inboxLabel[locale]}</span>}
+            </Link>
+            {(isPrivileged || permissions.includes("SUBSCRIPTIONS")) && <Link className="admin-sidebar-item" href="/admin/monitoring" aria-label="Monitoring" title="Monitoring">
+              <span className="admin-sidebar-marker"><UiIcon name="server" size={17} /></span>
+              {sidebarOpen && <span>Monitoring</span>}
             </Link>}
             {isPrivileged && <Link className="admin-sidebar-item" href="/admin/shops" aria-label={sellerCopy[locale].admin.title} title={sellerCopy[locale].admin.title}>
               <span className="admin-sidebar-marker"><UiIcon name="building" size={17} /></span>
@@ -726,7 +736,7 @@ export function AdminWorkspace({ overview, newOrderCount, pendingShopCount = 0, 
           <h2>{t("pendingPayments")}</h2>
           {pendingPayments.length ? <div className="list">{pendingPayments.map((payment) => (
             <div className="list-row" key={payment.id}>
-              <div><strong>{payment.invoice.number} · {payment.reference}</strong><p>{formatNumber(payment.amountMinor / 100)} {payment.currency} · {payment.method}</p></div>
+              <div><strong>{payment.invoice.number} · {payment.reference}</strong><p>{formatNumber(payment.amountMinor / 100)} {payment.currency} · {payment.method}</p>{payment.proofMediaId && <a className="small text-link" href={`/api/media/${payment.proofMediaId}`} target="_blank" rel="noreferrer">{t("walletProof")}</a>}</div>
               <div className="hero-actions"><button className="button" onClick={() => reviewPayment(payment.id, "VERIFIED")}>{t("verifyPayment")}</button><button className="button danger" onClick={() => reviewPayment(payment.id, "REJECTED")}>{t("reject")}</button></div>
             </div>
           ))}</div> : <div className="empty-state">{t("noPendingPayments")}</div>}

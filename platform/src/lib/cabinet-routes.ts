@@ -12,8 +12,7 @@ export const cabinetSections: { id: CabinetSection; href: string; icon: CabinetI
   { id: "learning", href: "/portal/learning", icon: "book", optional: true },
   { id: "wallet", href: "/portal/wallet", icon: "wallet" },
   { id: "devices", href: "/portal/devices", icon: "server", optional: true },
-  { id: "settings", href: "/portal/settings", icon: "settings" },
-  { id: "messages", href: "/portal/messages", icon: "mail" }
+  { id: "settings", href: "/portal/settings", icon: "settings" }
 ];
 
 export const cabinetLabels: Record<"uz" | "ru" | "en", Record<CabinetSection, string> & { nav: string; signOut: string; order: string }> = {

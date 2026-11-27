@@ -28,3 +28,17 @@ export function subscriptionMoveAllowed(from: string, to: string): boolean {
 export function cancelStopsMonitoring(to: string, otherLive: number): boolean {
   return to === "CANCELLED" && otherLive === 0;
 }
+
+/**
+ * A device's status after a check: one failed check is not yet "not responding" (it shows as out of date);
+ * two failed checks in a row are.
+ */
+export function nextDeviceStatus(online: boolean, previousOnline: boolean | null): "ONLINE" | "OFFLINE" | "STALE" {
+  if (online) return "ONLINE";
+  return previousOnline === false ? "OFFLINE" : "STALE";
+}
+
+/** A check that failed because the name does not resolve: the address itself is wrong. */
+export function isWrongAddress(detail: string | null | undefined): boolean {
+  return Boolean(detail && detail.startsWith("DNS"));
+}

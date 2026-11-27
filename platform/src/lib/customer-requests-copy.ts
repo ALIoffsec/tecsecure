@@ -13,7 +13,7 @@ type Copy = {
   cancelRequest: string; cancelText: string; cancelSend: string; cancelled: string; rejected: string;
   requisites: string; seller: string; tin: string; bank: string; account: string; mfo: string; address: string; purpose: (number: string) => string; noRequisites: string;
   copy: string; copied: string; print: string; reportPayment: string; amount: string; method: string; bankTransfer: string; cash: string; other: string; reference: string; referenceHint: string; reportSend: string; reportSent: string; payments: string;
-  invoicePaid: string; invoiceVoid: string; amountBad: string; referenceShort: string; paymentStatus: Record<string, string>;
+  invoicePaid: string; invoiceVoid: string; amountBad: string; referenceShort: string; proofOptional: string; paymentStatus: Record<string, string>;
 };
 
 const uz: Copy = {
@@ -44,6 +44,7 @@ const uz: Copy = {
   noRequisites: "Rekvizitlar hali kiritilmagan. Xodimdan so‘rang.",
   copy: "Nusxa olish", copied: "Nusxa olindi", print: "Chop etish", reportPayment: "To‘lovni bildirish", amount: "Summa (so‘m)", method: "Usul", bankTransfer: "Bank o‘tkazmasi", cash: "Naqd", other: "Boshqa",
   reference: "To‘lov hujjati raqami", referenceHint: "Naqd to‘lovda raqamni tizim o‘zi beradi.", reportSend: "Tekshiruvga yuborish", reportSent: "To‘lov tekshiruvga yuborildi.", payments: "Bildirilgan to‘lovlar",
+  proofOptional: "To‘lov cheki rasmi (ixtiyoriy, tekshiruvni tezlashtiradi)",
   amountBad: "Summani raqam bilan yozing; u qolgan summadan oshmasin.", referenceShort: "Hujjat raqamini kamida 2 belgida yozing.",
   invoicePaid: "Hisob to‘langan.", invoiceVoid: "Hisob bekor qilingan. Bu hisob bo‘yicha to‘lamang.",
   paymentStatus: { PENDING: "Tekshirilmoqda", VERIFIED: "Tasdiqlandi", REJECTED: "Rad etildi", REFUNDED: "Qaytarildi" }
@@ -77,6 +78,7 @@ const ru: Copy = {
   noRequisites: "Реквизиты ещё не заполнены. Спросите сотрудника.",
   copy: "Копировать", copied: "Скопировано", print: "Печать", reportPayment: "Сообщить об оплате", amount: "Сумма (сум)", method: "Способ", bankTransfer: "Банковский перевод", cash: "Наличные", other: "Другое",
   reference: "Номер платёжного документа", referenceHint: "При оплате наличными номер присвоит система.", reportSend: "Отправить на проверку", reportSent: "Оплата отправлена на проверку.", payments: "Сообщённые оплаты",
+  proofOptional: "Фото платёжного чека (необязательно, ускоряет проверку)",
   amountBad: "Укажите сумму цифрами; она не должна превышать остаток.", referenceShort: "Номер документа: не меньше 2 символов.",
   invoicePaid: "Счёт оплачен.", invoiceVoid: "Счёт отменён. Не оплачивайте его.",
   paymentStatus: { PENDING: "Проверяется", VERIFIED: "Подтверждено", REJECTED: "Отклонено", REFUNDED: "Возвращено" }
@@ -110,6 +112,7 @@ const en: Copy = {
   noRequisites: "Payment details are not filled in yet. Ask our staff.",
   copy: "Copy", copied: "Copied", print: "Print", reportPayment: "Report a payment", amount: "Amount (UZS)", method: "Method", bankTransfer: "Bank transfer", cash: "Cash", other: "Other",
   reference: "Payment document number", referenceHint: "For cash the system gives the number.", reportSend: "Send for review", reportSent: "Payment sent for review.", payments: "Reported payments",
+  proofOptional: "Payment receipt photo (optional, speeds up the check)",
   amountBad: "Enter the amount in digits; it must not exceed what is left.", referenceShort: "The document number needs at least 2 characters.",
   invoicePaid: "The invoice is paid.", invoiceVoid: "The invoice was cancelled. Do not pay it.",
   paymentStatus: { PENDING: "Being checked", VERIFIED: "Confirmed", REJECTED: "Rejected", REFUNDED: "Refunded" }

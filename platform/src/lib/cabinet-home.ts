@@ -2,10 +2,10 @@
  * The cabinet home's rules: what waits on the customer and in which order, and where an order stands on the
  * four-step line. Pure, so it is tested alone.
  */
-export type AttentionKind = "invoiceOverdue" | "orderUnpaid" | "receiptRejected" | "invoiceUnpaid" | "quoteWaiting";
+export type AttentionKind = "invoiceOverdue" | "orderUnpaid" | "receiptRejected" | "invoiceUnpaid" | "quoteWaiting" | "staffReply";
 
-/** Most urgent first: an overdue payment, an unpaid order, a refused receipt, an unpaid invoice, a quote to answer. */
-export const attentionRank: Record<AttentionKind, number> = { invoiceOverdue: 0, orderUnpaid: 1, receiptRejected: 2, invoiceUnpaid: 3, quoteWaiting: 4 };
+/** Most urgent first: an overdue payment, an unpaid order, a refused receipt, an unpaid invoice, a quote to answer, a staff reply. */
+export const attentionRank: Record<AttentionKind, number> = { invoiceOverdue: 0, orderUnpaid: 1, receiptRejected: 2, invoiceUnpaid: 3, quoteWaiting: 4, staffReply: 5 };
 
 export type AttentionItem = { kind: AttentionKind; key: string; subject: string; href: string; at: Date | string };
 

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { afterMessage } from "@/lib/conversations";
 import { Prisma } from "@prisma/client";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -48,7 +49,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const write = () => prisma.portalConversation.upsert({
     where: { sourceType_sourceId: { sourceType, sourceId: id } },
     create: { reference, category: "ORDER", sourceType, sourceId: id, subject, customerName: user.name, customerPhone: order.phone, customerId: user.id, messages: { create: { sender: "CUSTOMER", body } } },
-    update: { messages: { create: { sender: "CUSTOMER", body } } },
+    update: { ...afterMessage("CUSTOMER"), messages: { create: { sender: "CUSTOMER", body } } },
     select: { reference: true }
   });
   let conversation: { reference: string };

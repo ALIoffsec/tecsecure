@@ -4,6 +4,7 @@ import { orderItemsWithProduct, withLineProducts } from "./order-lines";
 import { CUSTOMER_EVENTS } from "./notifications";
 import { learningModules } from "./learning-demo";
 import { receiptRefusals } from "./order-refunds-server";
+import { unreadForCustomer } from "./conversations";
 import { ORDERS_MAX_PAGES, ORDERS_PAGE, orderFilterWhere, parseOrderFilter } from "./customer-orders";
 import { ACTIVE_ORDER_STATUSES, OPEN_REQUEST_STATUSES, invoiceAttention, pickAttention, type AttentionItem } from "./cabinet-home";
 import type { CabinetNavState } from "@/components/cabinet/cabinet-nav";
@@ -76,6 +77,12 @@ export async function cabinetHomeData(userId: string) {
     })
   ]);
   const lastAsked = lastOrder ? await cancelRequests([lastOrder.id]) : new Set<string>();
+  // Staff replies the customer has not read yet (read state since the conversation migration).
+  const talks = await prisma.portalConversation.findMany({
+    where: { customerId: userId }, orderBy: { lastMessageAt: "desc" }, take: 10,
+    select: { id: true, subject: true, lastMessageAt: true, customerReadAt: true, messages: { orderBy: { createdAt: "desc" }, take: 10, select: { sender: true, createdAt: true } } }
+  });
+  const replies = talks.filter(talk => unreadForCustomer(talk.messages, talk.customerReadAt) > 0);
   const refused = await receiptRefusals(unpaidOrders.filter(order => order.paymentMethod === "CARD_TRANSFER").map(order => order.id));
   const waiting: AttentionItem[] = [
     ...invoices.flatMap(invoice => {
@@ -83,6 +90,7 @@ export async function cabinetHomeData(userId: string) {
       return kind ? [{ kind, key: `invoice:${invoice.id}`, subject: invoice.quotation?.project.name ?? invoice.number, href: `/portal/invoices/${invoice.id}`, at: invoice.createdAt }] : [];
     }),
     ...unpaidOrders.map(order => ({ kind: refused.has(order.id) ? "receiptRejected" as const : "orderUnpaid" as const, key: `order:${order.id}`, subject: order.items[0]?.name ? `${order.reference} · ${order.items[0].name}` : order.reference, href: `/portal/orders/${order.id}`, at: order.createdAt })),
+    ...replies.map(talk => ({ kind: "staffReply" as const, key: `talk:${talk.id}`, subject: talk.subject, href: "/portal/messages", at: talk.lastMessageAt })),
     ...quotes.map(quote => ({ kind: "quoteWaiting" as const, key: `quote:${quote.id}`, subject: quote.project?.name ?? quote.number, href: `/portal/requests/${quote.project.requestId ?? quote.project.id}#quote`, at: quote.createdAt }))
   ];
   const lesson = lastLesson ? learningModules.find(module => module.slug === lastLesson.moduleSlug) : undefined;
@@ -182,7 +190,7 @@ export async function cabinetDevices(userId: string) {
   const [organizations, plans, subscriptions] = await Promise.all([
     prisma.organization.findMany({
       where: { members: { some: { userId } } },
-      select: { id: true, name: true, locations: { select: { id: true, name: true, address: true } }, devices: { select: { id: true, type: true, model: true, status: true, lastCheckAt: true, monitored: true } } }
+      select: { id: true, name: true, locations: { select: { id: true, name: true, address: true } }, devices: { select: { id: true, type: true, model: true, status: true, lastCheckAt: true, monitored: true, warrantyEndsAt: true, warrantyVerified: true, checks: { orderBy: { checkedAt: "desc" }, take: 1, select: { detail: true } } } } }
     }),
     prisma.subscriptionPlan.findMany({ where: { active: true }, orderBy: { name: "asc" } }),
     prisma.subscription.findMany({

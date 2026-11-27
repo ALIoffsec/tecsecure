@@ -668,6 +668,8 @@ model Payment {
   verifiedById  String?
   verifiedBy    User?         @relation("PaymentVerifier", fields: [verifiedById], references: [id], onDelete: SetNull)
   verifiedAt    DateTime?
+  /// The customer's receipt image for a reported invoice payment (private media); empty when none was sent.
+  proofMediaId  String?
   createdAt     DateTime      @default(now())
 
   @@unique([method, reference])
@@ -996,11 +998,19 @@ model PortalConversation {
   customerPhone String?
   customerId  String?
   customer    User?           @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  /// OPEN or CLOSED; a new customer message opens a closed conversation again.
+  status         String          @default("OPEN")
+  /// When the newest message was written; the inbox is sorted by it.
+  lastMessageAt  DateTime        @default(now())
+  /// When the customer, and staff, last read the conversation: newer messages from the other side are unread.
+  customerReadAt DateTime?
+  staffReadAt    DateTime?
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
   messages    PortalMessage[]
 
   @@unique([sourceType, sourceId])
+  @@index([status, lastMessageAt])
   @@index([customerId, createdAt])
   @@index([category, createdAt])
 }
@@ -1064,6 +1074,8 @@ model LearningCertificate {
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   examSlug     String
   scorePercent Int
+  /// The name printed on the certificate when it was issued; empty on older ones, which show the current name.
+  holderName   String?
   issuedAt     DateTime @default(now())
 
   @@unique([userId, examSlug])

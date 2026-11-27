@@ -3,6 +3,7 @@ import { Prisma } from "@prisma/client";
 import { getCurrentUser } from "@/lib/auth";
 import { rateLimit, tooManyAttempts } from "@/lib/rate-limit";
 import { cashReference, invoiceRoom } from "@/lib/quote-rules";
+import { lockProof, proofInUse, proofUsedMessage } from "@/lib/payment-proof";
 import { prisma } from "@/lib/prisma";
 import { manualPaymentSchema } from "@/lib/validation";
 
@@ -19,6 +20,10 @@ export async function POST(request: Request, context: Context) {
   }
   const parsed = manualPaymentSchema.safeParse(body);
   if (!parsed.success) return Response.json({ error: "To‘lov ma’lumotlari noto‘g‘ri." }, { status: 400 });
+  if (parsed.data.proofMediaId) {
+    const proof = await prisma.mediaAsset.findUnique({ where: { id: parsed.data.proofMediaId }, select: { ownerId: true, private: true, mimeType: true } });
+    if (!proof || proof.ownerId !== user.id || !proof.private || !proof.mimeType.startsWith("image/")) return Response.json({ error: "Chek rasmini qayta yuklang." }, { status: 400 });
+  }
   const limit = await rateLimit("invoice-payment", user.id, 10, 60 * 60 * 1000);
   if (!limit.ok) return tooManyAttempts(limit.retryAfterSeconds);
   const { id } = await context.params;
@@ -30,6 +35,10 @@ export async function POST(request: Request, context: Context) {
     const result = await prisma.$transaction(async (tx) => {
       // Two reports at once must not together pass the invoice total.
       await tx.$queryRaw`SELECT id FROM "Invoice" WHERE id = ${id} FOR UPDATE`;
+      if (parsed.data.proofMediaId) {
+        await lockProof(tx, parsed.data.proofMediaId);
+        if (await proofInUse(tx, parsed.data.proofMediaId)) return { error: proofUsedMessage, status: 409 as const };
+      }
       const invoice = await tx.invoice.findUnique({
         where: { id },
         include: { quotation: { include: { project: { select: { customerId: true } } } }, items: true }
@@ -56,6 +65,7 @@ export async function POST(request: Request, context: Context) {
           currency: invoice.currency,
           method: parsed.data.method,
           reference,
+          proofMediaId: parsed.data.proofMediaId ?? null,
           submittedById: user.id,
           status: "PENDING"
         },

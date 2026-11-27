@@ -6,6 +6,13 @@ import type { Locale } from "./messages";
  * A text that is not listed falls back to the original rather than to nothing.
  */
 const dictionary: Record<string, { ru: string; en: string }> = {
+  "Sinovni xodim ochadi: “Obuna so‘rash” orqali yozing.": { ru: "Пробный период открывает сотрудник: напишите через «Запросить подписку».", en: "Staff open the trial: write through “Ask for a subscription”." },
+  "Tashkilotni tanlang.": { ru: "Выберите организацию.", en: "Choose an organisation." },
+  "Tashkilot topilmadi.": { ru: "Организация не найдена.", en: "Organisation not found." },
+  "Obuna holati allaqachon o‘zgargan. Sahifani yangilang.": { ru: "Статус подписки уже изменился. Обновите страницу.", en: "The subscription already changed. Refresh the page." },
+  "Obunani bu holatga o‘tkazib bo‘lmaydi.": { ru: "Подписку нельзя перевести в этот статус.", en: "The subscription cannot move to this status." },
+  "Mijoz obunani faqat bekor qilishi mumkin.": { ru: "Клиент может только отменить подписку.", en: "A customer can only cancel the subscription." },
+  "Obunani boshqarishga ruxsat yo‘q.": { ru: "Нет прав на управление подпиской.", en: "You may not manage this subscription." },
   "Hisobga kiring.": { ru: "Войдите в аккаунт.", en: "Please sign in." },
   "Sabab 300 belgidan oshmasin.": { ru: "Причина — не длиннее 300 символов.", en: "The reason must be at most 300 characters." },
   "Muammoni kamida 5 belgida yozing.": { ru: "Опишите проблему хотя бы в 5 символах.", en: "Describe the problem in at least 5 characters." },

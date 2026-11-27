@@ -2,11 +2,9 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { usePathname } from "next/navigation";
 import { useSitePreferences } from "./site-preferences";
 import { UiIcon, type IconName } from "./ui-icon";
 import { siteCopy } from "@/lib/site-copy";
-import { defaultContact } from "@/lib/site-contact";
 import { formatMinor } from "@/lib/format";
 import { AddToCartButton } from "./cart";
 import { mediaUrl } from "@/lib/media-url";
@@ -88,18 +86,5 @@ export function MobileBuyBar({ line, priceMinor, currency, available, anchor }: 
   return <div className="mobile-buy-bar" data-visible={visible} inert={!visible}>
     <strong>{priceMinor !== null ? formatMinor(priceMinor, currency, locale) : siteCopy[locale].orders.totalPending}</strong>
     <AddToCartButton product={line} />
-  </div>;
-}
-
-/** A person is one tap away on the pages where people are deciding whether to call. */
-export function ContactDock() {
-  const pathname = usePathname();
-  const { locale } = useSitePreferences();
-  const c = siteCopy[locale];
-  const relevant = ["/services", "/cybersecurity", "/monitoring", "/consultation"].some(prefix => pathname === prefix || pathname.startsWith(`${prefix}/`));
-  if (!relevant) return null;
-  return <div className="contact-dock">
-    <a href={`tel:${defaultContact.phone}`} aria-label={c.contactDock.call} title={c.contactDock.call}><UiIcon name="phone" size={20} /><span>{c.contactDock.call}</span></a>
-    <a href={`https://t.me/${defaultContact.telegram.replace("@", "")}`} target="_blank" rel="noreferrer" aria-label="Telegram" title="Telegram"><UiIcon name="send" size={20} /><span>Telegram</span></a>
   </div>;
 }

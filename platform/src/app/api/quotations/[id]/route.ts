@@ -1,4 +1,5 @@
 import { Prisma } from "@prisma/client";
+import { afterMessage } from "@/lib/conversations";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { escapeTelegramHtml, notifyTelegramAdmins } from "@/lib/telegram";
@@ -22,7 +23,7 @@ async function writeToProject(tx: Prisma.TransactionClient, project: { id: strin
   await tx.portalConversation.upsert({
     where: { sourceType_sourceId: { sourceType: "PROJECT", sourceId: project.id } },
     create: { reference: project.reference, category: "PROJECT", sourceType: "PROJECT", sourceId: project.id, subject: `Loyiha: ${project.name}`, customerName: user.name, customerId: user.id, messages: { create: { sender: "CUSTOMER", body } } },
-    update: { messages: { create: { sender: "CUSTOMER", body } } }
+    update: { ...afterMessage("CUSTOMER"), messages: { create: { sender: "CUSTOMER", body } } }
   });
 }
 

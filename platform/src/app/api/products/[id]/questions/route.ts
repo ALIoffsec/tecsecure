@@ -1,4 +1,5 @@
 import { randomBytes } from "node:crypto";
+import { afterMessage } from "@/lib/conversations";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { getCurrentUser, isResponse, requireModuleApi } from "@/lib/auth";
@@ -95,6 +96,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         await tx.portalMessage.create({
           data: { conversationId: conversation.id, sender: "ADMIN", body: parsed.data.answer }
         });
+        await tx.portalConversation.update({ where: { id: conversation.id }, data: afterMessage("ADMIN") });
         await tx.notification.create({
           data: {
             userId: question.userId,

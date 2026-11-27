@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSitePreferences } from "@/components/site-preferences";
 import { UiIcon } from "@/components/ui-icon";
+import { MediaUploader } from "@/components/media-uploader";
 import { formatDate, formatDateTime, formatMinor } from "@/lib/format";
 import { customerRequestsCopy } from "@/lib/customer-requests-copy";
 import { parseSomInput } from "@/lib/money-input";
@@ -37,6 +38,7 @@ export function InvoiceView({ invoice, seller, backHref }: { invoice: CabinetInv
   const [amount, setAmount] = useState("");
   const [method, setMethod] = useState("BANK_TRANSFER");
   const [reference, setReference] = useState("");
+  const [proof, setProof] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [sent, setSent] = useState(false);
@@ -45,11 +47,11 @@ export function InvoiceView({ invoice, seller, backHref }: { invoice: CabinetInv
     if (!amountMinor || amountMinor > invoice.sums.leftMinor) { setError(w.amountBad); return; }
     if (method !== "CASH" && reference.trim().length < 2) { setError(w.referenceShort); return; }
     setBusy(true); setError("");
-    const response = await fetch(`/api/invoices/${invoice.id}/payments`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ amountMinor, method, ...(method === "CASH" ? {} : { reference: reference.trim() }) }) }).catch(() => null);
+    const response = await fetch(`/api/invoices/${invoice.id}/payments`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ amountMinor, method, ...(method === "CASH" ? {} : { reference: reference.trim() }), ...(proof[0] ? { proofMediaId: proof[0] } : {}) }) }).catch(() => null);
     const data = await response?.json().catch(() => ({})) ?? {};
     setBusy(false);
     if (!response?.ok) { setError(typeof data.error === "string" && data.error ? translateMessage(data.error, locale) : w.failed); return; }
-    setSent(true); setAmount(""); setReference("");
+    setSent(true); setAmount(""); setReference(""); setProof([]);
     router.refresh();
   }
   return <>
@@ -102,6 +104,8 @@ export function InvoiceView({ invoice, seller, backHref }: { invoice: CabinetInv
         {method === "CASH"
           ? <p className="small muted">{w.referenceHint}</p>
           : <div className="field"><label htmlFor="inv-ref">{w.reference}</label><input id="inv-ref" required minLength={2} maxLength={160} value={reference} onChange={event => setReference(event.target.value)} /></div>}
+        <span className="small">{w.proofOptional}</span>
+        <MediaUploader scope="WALLET" value={proof} onChange={setProof} hideLabel />
         {error && <p className="notice error" role="alert" id="inv-error">{error}</p>}
         <button className="button" type="submit" disabled={busy}>{busy ? w.sending : w.reportSend}</button>
       </form>
