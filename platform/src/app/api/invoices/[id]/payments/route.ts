@@ -1,4 +1,8 @@
+import { randomBytes } from "node:crypto";
+import { Prisma } from "@prisma/client";
 import { getCurrentUser } from "@/lib/auth";
+import { rateLimit, tooManyAttempts } from "@/lib/rate-limit";
+import { cashReference, invoiceRoom } from "@/lib/quote-rules";
 import { prisma } from "@/lib/prisma";
 import { manualPaymentSchema } from "@/lib/validation";
 
@@ -15,10 +19,17 @@ export async function POST(request: Request, context: Context) {
   }
   const parsed = manualPaymentSchema.safeParse(body);
   if (!parsed.success) return Response.json({ error: "To‘lov ma’lumotlari noto‘g‘ri." }, { status: 400 });
+  const limit = await rateLimit("invoice-payment", user.id, 10, 60 * 60 * 1000);
+  if (!limit.ok) return tooManyAttempts(limit.retryAfterSeconds);
   const { id } = await context.params;
+  // A cash payment has no bank document number; the server names it so two customers never collide.
+  const reference = parsed.data.method === "CASH" ? cashReference(randomBytes(6).toString("hex")) : parsed.data.reference;
+  if (!reference) return Response.json({ error: "To‘lov hujjati raqamini yozing." }, { status: 400 });
 
   try {
     const result = await prisma.$transaction(async (tx) => {
+      // Two reports at once must not together pass the invoice total.
+      await tx.$queryRaw`SELECT id FROM "Invoice" WHERE id = ${id} FOR UPDATE`;
       const invoice = await tx.invoice.findUnique({
         where: { id },
         include: { quotation: { include: { project: { select: { customerId: true } } } }, items: true }
@@ -35,7 +46,7 @@ export async function POST(request: Request, context: Context) {
         where: { invoiceId: id, status: { in: ["PENDING", "VERIFIED"] } },
         _sum: { amountMinor: true }
       });
-      if ((committed._sum.amountMinor ?? 0) + parsed.data.amountMinor > total) {
+      if (parsed.data.amountMinor > invoiceRoom(total, committed._sum.amountMinor ?? 0)) {
         return { error: "To‘lov summasi hisob-fakturaning qolgan qismidan oshmasligi kerak.", status: 409 as const };
       }
       const payment = await tx.payment.create({
@@ -44,7 +55,7 @@ export async function POST(request: Request, context: Context) {
           amountMinor: parsed.data.amountMinor,
           currency: invoice.currency,
           method: parsed.data.method,
-          reference: parsed.data.reference,
+          reference,
           submittedById: user.id,
           status: "PENDING"
         },
@@ -56,6 +67,9 @@ export async function POST(request: Request, context: Context) {
     if ("error" in result) return Response.json({ error: result.error }, { status: result.status });
     return Response.json({ payment: result.payment }, { status: 201 });
   } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      return Response.json({ error: "Bu hujjat raqami bilan to‘lov allaqachon yuborilgan. Raqamni tekshiring.", code: "REFERENCE_USED" }, { status: 409 });
+    }
     console.error("Manual payment submission failed", error);
     return Response.json({ error: "To‘lov ma’lumotini qayd qilib bo‘lmadi." }, { status: 500 });
   }

@@ -47,12 +47,20 @@ export function TwoFactorStep({ ticket, onDone, onRestart }: { ticket: string; o
 type Status = { enabled: boolean; backupCodesLeft: number };
 
 /** Profile card: turn two-factor sign-in on or off. Optional; nothing changes until the person turns it on. */
+const savedWords = {
+  uz: { download: "Yuklab olish", saved: "Kodlarni saqladim" },
+  ru: { download: "Скачать", saved: "Я сохранил(а) коды" },
+  en: { download: "Download", saved: "I have saved the codes" }
+} as const;
+
 export function TwoFactorSettings() {
   const { locale } = useSitePreferences();
   const c = securityCopy[locale];
   const [status, setStatus] = useState<Status | null>(null);
   const [setup, setSetup] = useState<{ qr: string; secret: string } | null>(null);
   const [backupCodes, setBackupCodes] = useState<string[] | null>(null);
+  // The codes are shown once: the block stays until the person says they kept them.
+  const [saved, setSaved] = useState(false);
   const [disabling, setDisabling] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -112,8 +120,17 @@ export function TwoFactorSettings() {
       <ol className="two-factor-codes">{backupCodes.map(code => <li key={code}><code>{code}</code></li>)}</ol>
       <div className="admin-integration-actions">
         <button className="button secondary" type="button" onClick={() => void copyCodes()}>{copied ? c.copied : c.copy}</button>
-        <button className="button" type="button" onClick={() => { setBackupCodes(null); setCopied(false); }}>{c.done}</button>
+        <button className="button secondary" type="button" onClick={() => {
+          // A plain text file the person keeps; nothing leaves the browser.
+          const link = document.createElement("a");
+          link.href = URL.createObjectURL(new Blob([["Tecsecure", ...backupCodes, ""].join(String.fromCharCode(10))], { type: "text/plain" }));
+          link.download = "tecsecure-backup-codes.txt";
+          link.click();
+          URL.revokeObjectURL(link.href);
+        }}>{savedWords[locale].download}</button>
       </div>
+      <label className="small two-factor-saved"><input type="checkbox" checked={saved} onChange={event => setSaved(event.target.checked)} /> {savedWords[locale].saved}</label>
+      <button className="button" type="button" disabled={!saved} onClick={() => { setBackupCodes(null); setCopied(false); setSaved(false); }}>{c.done}</button>
     </div>}
 
     {!backupCodes && !status.enabled && !setup && <button className="button" type="button" disabled={busy} onClick={() => void start()}>{c.enable}</button>}

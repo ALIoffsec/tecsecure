@@ -22,9 +22,11 @@ export function pickAttention(items: AttentionItem[], limit = 3): AttentionItem[
  * What an open invoice asks of the customer, judged by its newest payment report. A report still being checked
  * asks nothing; an overdue invoice stays overdue even when its receipt was refused.
  */
-export function invoiceAttention(status: string, latestPayment: string | null | undefined): AttentionKind | null {
+export function invoiceAttention(status: string, latestPayment: string | null | undefined, dueAt: Date | string | null = null, now = new Date()): AttentionKind | null {
   if (latestPayment === "PENDING") return null;
-  if (status === "OVERDUE") return "invoiceOverdue";
+  // Nothing marks invoices overdue in the background, so a passed due date counts by itself.
+  const late = dueAt !== null && new Date(dueAt).getTime() < now.getTime() && (status === "ISSUED" || status === "PARTIALLY_PAID");
+  if (status === "OVERDUE" || late) return "invoiceOverdue";
   if (latestPayment === "REJECTED") return "receiptRejected";
   if (status === "ISSUED" || status === "PARTIALLY_PAID") return "invoiceUnpaid";
   return null;

@@ -3,6 +3,7 @@ import { getCurrentUser, isResponse, requireModuleApi } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { escapeTelegramHtml, notifyTelegramUser } from "@/lib/telegram";
 import { quotationSchema } from "@/lib/validation";
+import { LIVE_INVOICE_STATUSES, newQuoteDecision, quoteLineFits } from "@/lib/quote-rules";
 
 export const runtime = "nodejs";
 
@@ -36,11 +37,23 @@ export async function POST(request: Request) {
   if (parsed.data.items.some((item) => item.discountMinor > item.quantity * item.unitPriceMinor)) {
     return Response.json({ error: "Chegirma satr summasidan oshmasligi kerak." }, { status: 400 });
   }
+  if (!parsed.data.items.every(quoteLineFits)) return Response.json({ error: "Satr narxi juda katta. Summani tekshiring." }, { status: 400 });
 
   try {
     const quote = await prisma.$transaction(async (tx) => {
+      // One quote at a time per project: the project row is locked while its quotes are replaced.
+      await tx.$queryRaw`SELECT id FROM "Project" WHERE id = ${parsed.data.projectId} FOR UPDATE`;
       const project = await tx.project.findUnique({ where: { id: parsed.data.projectId }, select: { id: true, status: true } });
       if (!project) throw new Error("PROJECT_NOT_FOUND");
+      const [quotes, liveInvoices] = await Promise.all([
+        tx.quotation.findMany({ where: { projectId: project.id }, select: { id: true, status: true, version: true } }),
+        tx.invoice.count({ where: { quotation: { projectId: project.id }, status: { in: [...LIVE_INVOICE_STATUSES] } } })
+      ]);
+      const decision = newQuoteDecision(quotes, liveInvoices);
+      if (!decision.ok) throw new Error("INVOICE_EXISTS");
+      if (decision.withdraw.length) {
+        await tx.quotation.updateMany({ where: { id: { in: decision.withdraw }, status: { in: ["DRAFT", "ISSUED", "ACCEPTED"] } }, data: { status: "CANCELLED" } });
+      }
       const current = await tx.quotation.aggregate({ where: { projectId: project.id }, _max: { version: true } });
       const version = (current._max.version ?? 0) + 1;
       const created = await tx.quotation.create({
@@ -69,13 +82,16 @@ export async function POST(request: Request) {
     if (project?.customerId) {
       await notifyTelegramUser(
         project.customerId,
-        `<b>Tecsecure: sizga narx taklifi tayyor</b>\nLoyiha: ${escapeTelegramHtml(project.name)}\nTaklif: <code>${escapeTelegramHtml(quote.number)}</code>\nProfilingizdagi “Loyihalar va takliflar” bo‘limida ko‘ring.`
+        `<b>Tecsecure: sizga narx taklifi tayyor</b>\nLoyiha: ${escapeTelegramHtml(project.name)}\nTaklif: <code>${escapeTelegramHtml(quote.number)}</code>\nKabinetdagi “Arizalarim” bo‘limida ko‘ring.`
       );
     }
     return Response.json({ quotation: quote, totalMinor }, { status: 201 });
   } catch (error) {
     if (error instanceof Error && error.message === "PROJECT_NOT_FOUND") {
       return Response.json({ error: "Loyiha topilmadi." }, { status: 404 });
+    }
+    if (error instanceof Error && error.message === "INVOICE_EXISTS") {
+      return Response.json({ error: "Bu loyiha bo‘yicha hisob allaqachon yaratilgan. Yangi taklif uchun avval hisobni bekor qiling.", code: "INVOICE_EXISTS" }, { status: 409 });
     }
     console.error("Quotation creation failed", error);
     return Response.json({ error: "Narx taklifini tuzib bo‘lmadi." }, { status: 500 });

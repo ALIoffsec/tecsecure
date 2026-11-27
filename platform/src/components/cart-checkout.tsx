@@ -263,7 +263,7 @@ export function CartCheckout({ canOrder = false, signedIn = false, customer, wal
         <div className="checkout-done-actions">
           {done.method === "BANK_TRANSFER" && <Link className="button" href={`/portal/orders/${done.id}/invoice`}>{g.invoice}</Link>}
           {done.method === "ONLINE_PAYME" && <a className="button" href={`/api/orders/${done.id}/payme?l=${locale}`}>{g.onlineGo}</a>}
-          <Link className="button" href="/portal/orders">{d.track}</Link>
+          <Link className="button" href={`/portal/orders/${done.id}`}>{d.track}</Link>
           <Link className="button ghost" href="/products">{d.continue}</Link>
         </div>
       </div>

@@ -1,6 +1,6 @@
 import { timingSafeEqual } from "node:crypto";
 import { afterOrderPaid } from "./marketplace-server";
-import { lockOrder } from "./order-flow";
+import { lockOrder, paymeCancelRefused } from "./order-flow";
 import { escapeTelegramHtml, notifyTelegramAdmins } from "./telegram";
 import { prisma } from "@/lib/prisma";
 
@@ -184,10 +184,10 @@ export async function handlePaymeMethod(method: string, params: Params): Promise
         if (!order || !current) throw notFound();
         if (current.state < 0) return current;
         if (current.state === paymeStates.performed) {
-          if (order.status === "DELIVERED") throw cannotCancel();
-          // Some goods already reached the buyer or a shop got the money: a person has to decide.
-          const settled = await db.shopOrder.count({ where: { orderId: tx.orderId, OR: [{ status: "DELIVERED" }, { creditedAt: { not: null } }] } });
-          if (settled > 0) { partlyDelivered = true; throw cannotCancel(); }
+          // Goods reached the buyer, a shop got the money, or part was already paid back by hand: a person decides.
+          const refused = await paymeCancelRefused(db, tx.orderId);
+          if (refused === "DELIVERED") throw cannotCancel();
+          if (refused) { partlyDelivered = true; throw cannotCancel(); }
         }
         const after = current.state === paymeStates.performed ? paymeStates.cancelledAfterPerform : paymeStates.cancelled;
         const claimed = await db.paymeTransaction.updateMany({ where: { id: tx.id, state: current.state }, data: { state: after, reason: Number(params.reason) || null, cancelTime: BigInt(Date.now()) } });
@@ -198,7 +198,7 @@ export async function handlePaymeMethod(method: string, params: Params): Promise
         await db.auditLog.create({ data: { action: "ORDER_PAYMENT_PAYME_CANCELLED", entity: "Order", entityId: tx.orderId, metadata: { reason: Number(params.reason) || null, performed: after === paymeStates.cancelledAfterPerform } } });
         return db.paymeTransaction.findUniqueOrThrow({ where: { id: tx.id } });
       }).catch(async (error: unknown) => {
-        if (partlyDelivered) await alertStaff(tx.orderId, "Payme to‘lovni qaytarmoqchi, lekin buyurtmaning bir qismi yetkazilgan yoki do‘konga pul yozilgan. Qaytarish rad etildi; qo‘lda hal qiling.");
+        if (partlyDelivered) await alertStaff(tx.orderId, "Payme to‘lovni qaytarmoqchi, lekin buyurtmaning bir qismi yetkazilgan, do‘konga pul yozilgan yoki qism puli qo‘lda qaytarilgan. Qaytarish rad etildi; qolganini qo‘lda yoping.");
         throw error;
       });
       const { transaction, state, cancel_time } = view(updated);

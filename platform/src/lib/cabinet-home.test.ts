@@ -29,6 +29,9 @@ test("an invoice asks for action only when nothing is being checked", () => {
   assert.equal(invoiceAttention("PARTIALLY_PAID", "VERIFIED"), "invoiceUnpaid");
   assert.equal(invoiceAttention("ISSUED", null), "invoiceUnpaid");
   assert.equal(invoiceAttention("PAID", null), null);
+  assert.equal(invoiceAttention("ISSUED", null, "2026-01-01", new Date("2026-02-01")), "invoiceOverdue");
+  assert.equal(invoiceAttention("ISSUED", null, "2026-03-01", new Date("2026-02-01")), "invoiceUnpaid");
+  assert.equal(invoiceAttention("ISSUED", "PENDING", "2026-01-01", new Date("2026-02-01")), null);
 });
 
 test("an order's place on the four-step line", () => {

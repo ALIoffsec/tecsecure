@@ -124,8 +124,8 @@ export const quotationSchema = z.object({
     serviceId: z.string().cuid().optional(),
     description: z.string().trim().min(2).max(500),
     quantity: z.number().int().min(1).max(10000),
-    unitPriceMinor: z.number().int().nonnegative(),
-    discountMinor: z.number().int().nonnegative().default(0)
+    unitPriceMinor: z.number().int().nonnegative().max(2_147_483_647),
+    discountMinor: z.number().int().nonnegative().max(2_147_483_647).default(0)
   }).refine((item) => !(item.productId && item.serviceId), "Bir qatorga mahsulot va xizmatni birga bog‘lab bo‘lmaydi.")).min(1).max(100)
 });
 
@@ -170,8 +170,9 @@ export const invoiceSchema = z.object({
 export const manualPaymentSchema = z.object({
   amountMinor: z.number().int().positive().max(2_000_000_000),
   method: z.enum(["BANK_TRANSFER", "CASH", "OTHER"]),
-  reference: z.string().trim().min(2).max(160)
-});
+  // Cash gets its reference from the server.
+  reference: z.string().trim().min(2).max(160).optional()
+}).refine(payment => payment.method === "CASH" || Boolean(payment.reference), { path: ["reference"], message: "To‘lov hujjati raqamini yozing." });
 
 export const subscriptionPlanSchema = z.object({
   name: z.string().trim().min(2).max(100),

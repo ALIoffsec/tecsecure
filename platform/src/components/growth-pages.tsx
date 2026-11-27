@@ -229,9 +229,15 @@ export function WorkProjectList({ posts }: { posts: WorkStory[] }) {
 }
 
 /* ---------- Invoice ---------- */
-export type InvoiceOrder = { reference: string; createdAt: Date | string; companyName: string | null; companyTin: string | null; recipientName: string; totalMinor: number | null; currency: string; deliveryMethod?: string | null; deliveryFeeMinor?: number | null; vatMinor?: number | null; items: { id: string; name: string; quantity: number; unitPriceMinor: number | null }[] };
+export type InvoiceOrder = { id?: string; status?: string; paymentStatus?: string; reference: string; createdAt: Date | string; companyName: string | null; companyTin: string | null; recipientName: string; totalMinor: number | null; currency: string; deliveryMethod?: string | null; deliveryFeeMinor?: number | null; vatMinor?: number | null; items: { id: string; name: string; quantity: number; unitPriceMinor: number | null }[] };
 
-export function InvoiceView({ order, seller }: { order: InvoiceOrder; seller: CompanyRequisites | null }) {
+const invoiceStateWords = {
+  uz: { paid: "To‘langan.", cancelled: "Buyurtma bekor qilingan. Bu hisob bo‘yicha to‘lamang.", back: "Orqaga" },
+  ru: { paid: "Оплачен.", cancelled: "Заказ отменён. Не оплачивайте этот счёт.", back: "Назад" },
+  en: { paid: "Paid.", cancelled: "The order was cancelled. Do not pay this invoice.", back: "Back" }
+} as const;
+
+export function InvoiceView({ order, seller, backHref }: { order: InvoiceOrder; seller: CompanyRequisites | null; backHref?: string }) {
   const { locale } = useSitePreferences();
   const c = growthCopy[locale].invoice;
   const d = checkoutCopy[locale];
@@ -240,6 +246,9 @@ export function InvoiceView({ order, seller }: { order: InvoiceOrder; seller: Co
     <section className="panel-card invoice">
       <header className="invoice-head"><div><strong className="estimate-brand">Tecsecure</strong><h1>{c.title}</h1></div><dl><dt>{c.number}</dt><dd>{order.reference}</dd><dt>{c.date}</dt><dd>{formatDate(order.createdAt)}</dd></dl></header>
       {!seller && <p role="alert">{c.unavailable}</p>}
+      {order.status === "CANCELLED"
+        ? <p className="notice error invoice-state">{invoiceStateWords[locale].cancelled}</p>
+        : order.paymentStatus === "PAID" && <p className="notice invoice-state">{invoiceStateWords[locale].paid}</p>}
       <div className="invoice-parties">
         {seller && <div><h2>{c.seller}</h2><p><strong>{seller.legalName}</strong></p><p>{c.tin}: {seller.tin}</p>{seller.address && <p>{c.address}: {seller.address}</p>}<p>{c.bank}: {seller.bankName}</p><p>{c.account}: {seller.account}</p><p>{c.mfo}: {seller.mfo}</p></div>}
         <div><h2>{c.buyer}</h2><p><strong>{order.companyName ?? order.recipientName}</strong></p>{order.companyTin && <p>{c.tin}: {order.companyTin}</p>}</div>
@@ -257,7 +266,7 @@ export function InvoiceView({ order, seller }: { order: InvoiceOrder; seller: Co
       </table>
       <p><strong>{c.purpose}:</strong> {c.purposeText} {order.reference}</p>
       <p className="small muted">{c.note}</p>
-      <div className="hero-actions print-hide"><button className="button" type="button" onClick={() => window.print()}>{c.print}</button><Link className="button ghost" href="/portal/orders">←</Link></div>
+      <div className="hero-actions print-hide"><button className="button" type="button" onClick={() => window.print()}>{c.print}</button><Link className="button ghost" href={backHref ?? "/portal/orders"} aria-label={invoiceStateWords[locale].back}>←</Link></div>
     </section>
   </div>;
 }

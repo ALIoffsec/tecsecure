@@ -138,6 +138,7 @@ export async function GET(request: Request) {
     include: {
       service: { select: { name: true } },
       customer: { select: { id: true, name: true, email: true, phone: true } },
+      project: { select: { id: true, reference: true } },
       history: { include: { actor: { select: { name: true, email: true } } }, orderBy: { createdAt: "asc" } }
     },
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],

@@ -38,7 +38,7 @@ export function PageBackLink() {
     if (!parent) return null;
     const top = parent.href === "/portal";
     return <div className={`container page-back-wrap cab-back${top ? " is-cabinet-top" : ""}`}>
-      <Link className="page-back-link" href={parent.href}><span aria-hidden="true">←</span>{cabinetLabels[locale][parent.section]}</Link>
+      <Link className="page-back-link" href={parent.href}><span aria-hidden="true">←</span>{parent.section === "orders" && parent.href !== "/portal/orders" ? cabinetLabels[locale].order : cabinetLabels[locale][parent.section]}</Link>
     </div>;
   }
 

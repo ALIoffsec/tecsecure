@@ -50,12 +50,15 @@ export async function deleteOrphanedProofs(options: { ownerId?: string; dryRun?:
   });
   if (candidates.length === 0) return 0;
   const ids = candidates.map(candidate => candidate.id);
-  const [orders, wallet, shops] = await Promise.all([
+  const [orders, wallet, shops, receipts] = await Promise.all([
     prisma.order.findMany({ where: { paymentProofMediaId: { in: ids } }, select: { paymentProofMediaId: true } }),
     prisma.walletTransaction.findMany({ where: { proofMediaId: { in: ids } }, select: { proofMediaId: true } }),
-    prisma.shop.findMany({ where: { logoMediaId: { in: ids } }, select: { logoMediaId: true } })
+    prisma.shop.findMany({ where: { logoMediaId: { in: ids } }, select: { logoMediaId: true } }),
+    // A refused or replaced receipt is evidence: the audit entry keeps its id, so the file stays.
+    prisma.auditLog.findMany({ where: { action: { in: ["ORDER_PROOF_REJECTED", "ORDER_PROOF_REUPLOADED"] }, entity: "Order", OR: ids.map(id => ({ metadata: { path: ["proofMediaId"], equals: id } })) }, select: { metadata: true } })
   ]);
-  const used = new Set([...orders.map(row => row.paymentProofMediaId), ...wallet.map(row => row.proofMediaId), ...shops.map(row => row.logoMediaId)]);
+  const receiptIds = receipts.map(row => row.metadata && typeof row.metadata === "object" ? (row.metadata as Record<string, unknown>).proofMediaId : null);
+  const used = new Set([...orders.map(row => row.paymentProofMediaId), ...wallet.map(row => row.proofMediaId), ...shops.map(row => row.logoMediaId), ...receiptIds.filter((id): id is string => typeof id === "string")]);
   const orphans = ids.filter(id => !used.has(id));
   if (options.dryRun || orphans.length === 0) return orphans.length;
   const deleted = await prisma.mediaAsset.deleteMany({ where: { id: { in: orphans }, private: true } });

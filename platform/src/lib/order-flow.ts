@@ -1,6 +1,7 @@
 import type { OrderStatus, Prisma } from "@prisma/client";
 import { restoreStock } from "./marketplace-server";
 import { exceedsWalletLimit } from "./wallet-rules";
+import { PART_REFUND_DUE, PART_REFUNDED, ownLinesShareMinor } from "./order-refunds";
 
 type Tx = Prisma.TransactionClient;
 
@@ -54,6 +55,33 @@ export async function walletRefundDue(tx: Tx, order: OrderForStatus): Promise<{ 
   return { amountMinor: Math.max(0, (order.totalMinor ?? 0) - (refunded._sum.amountMinor ?? 0) - deliveredMinor), deliveredMinor };
 }
 
+/**
+ * Records that part of a paid order must go back to the buyer by hand while the order itself stays paid
+ * (so the other shops are still credited). A shop's part is keyed by its ShopOrder; lines sold by no shop
+ * by the order. Called inside the transaction that holds the order lock.
+ */
+export async function queuePartRefund(tx: Tx, entry: { orderId: string; entity: "ShopOrder" | "Order"; entityId: string; amountMinor: number | null; shopName: string | null; reason: string | null }, actorId: string | null): Promise<void> {
+  const amountMinor = entry.amountMinor !== null && Number.isSafeInteger(entry.amountMinor) && entry.amountMinor > 0 ? entry.amountMinor : null;
+  await tx.auditLog.create({
+    data: { actorId, action: PART_REFUND_DUE, entity: entry.entity, entityId: entry.entityId, metadata: { orderId: entry.orderId, amountMinor, shopName: entry.shopName, reason: entry.reason?.slice(0, 300) ?? null } }
+  });
+}
+
+/**
+ * Whether a full Payme cancel must be refused for this order: goods reached the buyer, a shop got its money,
+ * or part of the money was already paid back by hand (a Payme cancel always returns the whole amount, so
+ * that part would be paid twice). Staff then close the refund by hand. Call it under the order lock.
+ */
+export async function paymeCancelRefused(tx: Tx, orderId: string): Promise<"DELIVERED" | "SETTLED" | "PART_REFUNDED" | null> {
+  const order = await tx.order.findUnique({ where: { id: orderId }, select: { status: true } });
+  if (order?.status === "DELIVERED") return "DELIVERED";
+  const [settled, refunded] = await Promise.all([
+    tx.shopOrder.count({ where: { orderId, OR: [{ status: "DELIVERED" }, { creditedAt: { not: null } }] } }),
+    tx.auditLog.count({ where: { action: PART_REFUNDED, metadata: { path: ["orderId"], equals: orderId } } })
+  ]);
+  return settled > 0 ? "SETTLED" : refunded > 0 ? "PART_REFUNDED" : null;
+}
+
 /** The timestamp a shop part records when it reaches a status. */
 export function shipmentStamp(to: OrderStatus): Record<string, Date> {
   const field = stamp[to];
@@ -81,8 +109,21 @@ export async function applyOrderStatus(tx: Tx, seen: OrderForStatus, to: OrderSt
       // With delivered shop parts kept, the order stays paid for those goods.
       if (due.deliveredMinor === 0) await tx.order.update({ where: { id: order.id }, data: { paymentStatus: "REFUNDED" } });
     } else if (order.paymentStatus === "PAID") {
-      // Money that came from outside the wallet has to be returned by hand, so the order must say so.
-      await tx.order.update({ where: { id: order.id }, data: { paymentStatus: "REFUND_DUE" } });
+      // Money that came from outside the wallet has to be returned by hand. With delivered shop parts the
+      // order stays paid for those goods (their shops are still credited) and each undelivered share is
+      // queued for a refund by hand; otherwise the whole order is owed back.
+      const parts = await tx.shopOrder.findMany({ where: { orderId: order.id }, select: { id: true, status: true, itemsTotalMinor: true, deliveryShareMinor: true, shop: { select: { name: true } } } });
+      if (!parts.some(part => part.status === "DELIVERED")) {
+        await tx.order.update({ where: { id: order.id }, data: { paymentStatus: "REFUND_DUE" } });
+      } else {
+        for (const part of parts.filter(part => part.status !== "DELIVERED" && part.status !== "CANCELLED")) {
+          const share = part.itemsTotalMinor === null ? null : part.itemsTotalMinor + (part.deliveryShareMinor ?? 0);
+          await queuePartRefund(tx, { orderId: order.id, entity: "ShopOrder", entityId: part.id, amountMinor: share, shopName: part.shop.name, reason: note }, actorId);
+        }
+        if (await tx.orderItem.count({ where: { orderId: order.id, shopId: null } }) > 0) {
+          await queuePartRefund(tx, { orderId: order.id, entity: "Order", entityId: order.id, amountMinor: ownLinesShareMinor(order.totalMinor, parts), shopName: null, reason: note }, actorId);
+        }
+      }
     }
     // Lines of parts that were still open give their stock back; delivered parts keep theirs.
     const open = await tx.shopOrder.findMany({ where: { orderId: order.id, status: { notIn: ["DELIVERED", "CANCELLED"] } }, select: { shopId: true } });

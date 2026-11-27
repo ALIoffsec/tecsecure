@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
+import { SiteDialog } from "@/components/site-dialog";
 import { useLearningCatalog } from "@/components/learning-catalog-context";
 import { getPathArtCategory, LearningCardArt } from "@/components/learning-card-art";
 import { TecGiftNotifications } from "@/components/tec-gift-notifications";
@@ -8,16 +10,11 @@ import { ProgressBar, useLearningProgress, useLearningText } from "@/components/
 import { ToastMessage } from "@/components/toast-provider";
 import { loginPath } from "@/lib/safe-next";
 
-const xpPerSection = 10;
-const xpPerLevel = 100;
-
 export function LearningDashboard({ nickname }: { nickname: string | null }) {
   const { tx, pick } = useLearningText();
   const catalog = useLearningCatalog();
   const progress = useLearningProgress();
 
-  const experience = progress.doneCount * xpPerSection;
-  const level = Math.floor(experience / xpPerLevel) + 1;
   const displayName = nickname || tx.learnerName;
   const doneModules = catalog.modules.filter((item) => progress.moduleProgress(item).percent === 100).length;
   const pathStatus = progress.myPaths.map((path) => ({ path, status: progress.pathProgress(path) }));
@@ -32,9 +29,7 @@ export function LearningDashboard({ nickname }: { nickname: string | null }) {
     { label: tx.badgeFinisher, earned: pathStatus.some(({ status }) => status.percent === 100) }
   ];
 
-  function resetAll() {
-    if (window.confirm(tx.resetConfirm)) progress.reset();
-  }
+  const [confirmReset, setConfirmReset] = useState(false);
 
   return (
     <div className="container page-shell learn-page">
@@ -48,8 +43,6 @@ export function LearningDashboard({ nickname }: { nickname: string | null }) {
       </section>
       <div className="learn-stats learn-dash-stats">
         <div className="metric"><strong>{progress.earnedTec}</strong><span>{tx.earnedTec}</span></div>
-        <div className="metric"><strong>{experience}</strong><span>{tx.points}</span></div>
-        <div className="metric"><strong>{level}</strong><span>{tx.level}</span></div>
         <div className="metric"><strong>{progress.doneCount}</strong><span>{tx.statDoneSections}</span></div>
         <div className="metric"><strong>{doneModules}</strong><span>{tx.statDoneModules}</span></div>
         <div className="metric"><strong>{activePaths}</strong><span>{tx.statActivePaths}</span></div>
@@ -101,17 +94,17 @@ export function LearningDashboard({ nickname }: { nickname: string | null }) {
         </div>
       </section>
 
-      <section className="learn-block">
+      {badges.some((badge) => badge.earned) && <section className="learn-block">
         <div className="section-head"><div><span className="eyebrow">{tx.badges}</span></div></div>
         <div className="learn-badges">
-          {badges.map((badge) => (
+          {badges.filter((badge) => badge.earned).map((badge) => (
             <div className={`learn-badge${badge.earned ? " earned" : ""}`} key={badge.label}>
               <span aria-hidden="true">{badge.earned ? "★" : "☆"}</span>
               <strong>{badge.label}</strong>
             </div>
           ))}
         </div>
-      </section>
+      </section>}
 
       <section className="learn-block">
         <div className="section-head"><div><span className="eyebrow">{tx.certificates}</span></div></div>
@@ -127,8 +120,15 @@ export function LearningDashboard({ nickname }: { nickname: string | null }) {
 
       <div className="learn-footer-row">
         <span className="muted small">{tx.storedLocally}</span>
-        <button className="button danger" onClick={resetAll} type="button">{tx.resetProgress}</button>
+        <button className="button danger" onClick={() => setConfirmReset(true)} type="button">{tx.resetProgress}</button>
       </div>
+      {confirmReset && <SiteDialog className="site-dialog cab-dialog" title={tx.resetProgress} onClose={() => setConfirmReset(false)}>
+        <p>{tx.resetConfirm}</p>
+        <div className="hero-actions">
+          <button className="button danger" type="button" onClick={() => { progress.reset(); setConfirmReset(false); }}>{tx.resetProgress}</button>
+          <button className="button ghost" type="button" onClick={() => setConfirmReset(false)}>✕</button>
+        </div>
+      </SiteDialog>}
     </div>
   );
 }

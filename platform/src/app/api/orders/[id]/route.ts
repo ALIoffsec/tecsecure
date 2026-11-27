@@ -6,6 +6,8 @@ import { escapeTelegramHtml, notifyTelegramUser } from "@/lib/telegram";
 import { applyOrderStatus, isWholeOrder, lockOrder, shipmentStamp } from "@/lib/order-flow";
 import { creditOrderShipments, notifyShopsPaid } from "@/lib/marketplace-server";
 import { statusText } from "@/lib/status-labels";
+import { RECEIPT_REASON, REFUND_DOCUMENT } from "@/lib/order-refunds";
+import { markOrderRefunded, rejectReceipt } from "@/lib/order-refunds-server";
 
 export const runtime = "nodejs";
 
@@ -33,6 +35,22 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     await notifyShopsPaid(id);
     await creditOrderShipments(id, actor.id);
     return Response.json({ ok: true });
+  }
+  // Staff refuse a card-transfer receipt: the buyer is asked for a new one. Kept out of the status history.
+  const rejection = z.object({ rejectReceipt: z.object({ reason: z.string().trim().min(RECEIPT_REASON.min).max(RECEIPT_REASON.max) }) }).safeParse(body);
+  if (rejection.success) {
+    const result = await rejectReceipt(id, rejection.data.rejectReceipt.reason, actor.id);
+    return result.ok ? Response.json({ ok: true }) : Response.json({ error: result.error, code: result.code }, { status: result.status });
+  }
+  if (body && typeof body === "object" && "rejectReceipt" in body) return Response.json({ error: "Rad etish sababini 3–300 belgida yozing." }, { status: 400 });
+  // A refund owed by hand was paid out: money staff only, with the document number.
+  const refunded = z.object({ refunded: z.object({ document: z.string().trim().min(REFUND_DOCUMENT.min).max(REFUND_DOCUMENT.max) }) }).safeParse(body);
+  if (refunded.success || (body && typeof body === "object" && "refunded" in body)) {
+    const payments = await requireModuleApi("PAYMENTS");
+    if (isResponse(payments)) return payments;
+    if (!refunded.success) return Response.json({ error: "Hujjat raqamini 2–120 belgida yozing." }, { status: 400 });
+    const result = await markOrderRefunded(id, refunded.data.refunded.document, payments.id);
+    return result.ok ? Response.json({ ok: true }) : Response.json({ error: result.error, code: result.code }, { status: result.status });
   }
   // A cancelled order with an unchecked receipt: staff say whether the money came. Kept out of the status history.
   const receipt = z.object({ cancelledReceipt: z.enum(["RECEIVED", "MISSING"]) }).safeParse(body);

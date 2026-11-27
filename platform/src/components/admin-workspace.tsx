@@ -29,6 +29,8 @@ import type { AdminModule } from "@/lib/auth";
 import type { MessageKey } from "@/lib/messages";
 import { isSiteDesign, type SiteDesign } from "@/lib/site-designs";
 import { canTransitionRequest } from "@/lib/request-status";
+import { statusText } from "@/lib/status-labels";
+import { AdminInvoiceCreate, AdminQuoteForm, OpenProjectButton, ProjectStatusActions } from "./admin-project-tools";
 import { formatDate, formatDateTime, formatNumber, minorToMajorInput, parseMajorPrice } from "@/lib/format";
 
 type Service = { id: string; name: string; description: string; icon: string | null; status: string; pricingType: string; startingPriceMinor: number | null; currency: string; availability: boolean; media: unknown };
@@ -47,11 +49,21 @@ type RequestRecord = {
   status: RequestStatus;
   service: { name: string } | null;
   customer: { id: string; name: string; email: string; phone: string | null } | null;
+  project?: { id: string; reference: string } | null;
   history: { id: string; fromStatus: RequestStatus | null; toStatus: RequestStatus; actor: { name: string; email: string } | null; note: string | null; createdAt: Date }[];
   createdAt: Date;
   updatedAt: Date;
 };
-type Project = { id: string; name: string; status: string; customerId: string | null; city: string | null; items: { id: string; quantity: number; product: { name: string } | null; service: { name: string } | null }[] };
+type Project = {
+  id: string; reference: string; name: string; status: string; customerId: string | null; city: string | null; notes: string | null;
+  customer?: { name: string; phone: string | null; email: string } | null; request?: { reference: string } | null; quotations?: { number: string; status: string }[];
+  items: { id: string; quantity: number; product: { name: string } | null; service: { name: string } | null }[] };
+const projectWords = {
+  uz: { statusNote: "Holatga izoh (mijozga ko‘rinadi)", fromRequest: "ariza" },
+  ru: { statusNote: "Комментарий к статусу (видит клиент)", fromRequest: "заявка" },
+  en: { statusNote: "Status note (the customer sees it)", fromRequest: "request" }
+} as const;
+
 type Article = { id: string; title: string; excerpt: string; content: string; status: string; publishedAt: Date | null; media: unknown };
 type Notice = { id: string; event: string; status: string; createdAt: Date };
 type AcceptedQuote = { id: string; number: string; currency: string; project: { name: string }; invoices: { id: string; number: string; status: string }[] };
@@ -198,6 +210,7 @@ export function AdminWorkspace({ overview, newOrderCount, pendingShopCount = 0, 
     return [...unique.values()];
   }, [initialRequests, additionalRequests]);
   const isPrivileged = role === "FOUNDER" || role === "ADMIN";
+  const canProjects = isPrivileged || permissions.includes("PROJECTS");
   const [showOverview, setShowOverview] = useState(true);
   const overviewLabel = siteCopy[locale].admin.overview;
   const availableSections = useMemo(() => (Object.keys(sectionModules) as AdminSection[]).filter((section) =>
@@ -384,10 +397,14 @@ export function AdminWorkspace({ overview, newOrderCount, pendingShopCount = 0, 
 
   async function changeRequest(id: string, status: RequestStatus) {
     setError(""); setNotice("");
+    // The note next to the status list goes into the request's history, which the customer sees.
+    const noteField = document.getElementById(`request-note-${id}`) as HTMLInputElement | null;
+    const note = noteField?.value.trim() || undefined;
     try {
       const response = await fetch(`/api/requests/${id}`, {
-        method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status })
+        method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status, note })
       });
+      if (response.ok && noteField) noteField.value = "";
       const result = await response.json();
       if (!response.ok) throw new Error(result.error ?? t("requestFailed"));
       setNotice(t("statusUpdated")); router.refresh();
@@ -418,40 +435,6 @@ export function AdminWorkspace({ overview, newOrderCount, pendingShopCount = 0, 
     const result = await response.json();
     if (!response.ok) { setError(result.error ?? t("requestFailed")); return; }
     router.refresh();
-  }
-
-  async function issueQuote(event: FormEvent<HTMLFormElement>, projectId: string) {
-    event.preventDefault();
-    setBusy(true); setError(""); setNotice("");
-    const form = event.currentTarget;
-    const data = new FormData(form);
-    const buildItems = () => [{
-      description: String(data.get("description") ?? "").trim(),
-      quantity: Number(data.get("quantity")),
-      unitPriceMinor: priceFromForm(data, "unitPrice") ?? 0,
-      discountMinor: priceFromForm(data, "discount") ?? 0,
-      serviceId: undefined,
-      productId: undefined
-    }];
-    try {
-      const result = await post("/api/quotations", {
-        projectId, items: buildItems(), assumptions: data.get("assumptions"),
-        exclusions: data.get("exclusions")
-      });
-      form.reset();
-      setNotice(`${t("quote")} ${result.quotation.number} · ${t("total")}: ${formatNumber(result.totalMinor / 100)} ${result.quotation.currency}.`);
-      router.refresh();
-    } catch (issue) { setError(issue instanceof Error ? issue.message : t("requestFailed")); }
-    finally { setBusy(false); }
-  }
-
-  async function createInvoice(quotationId: string) {
-    setError(""); setNotice("");
-    try {
-      const result = await post("/api/invoices", { quotationId });
-      setNotice(`${t("invoices")}: ${result.invoice.number}`);
-      router.refresh();
-    } catch (issue) { setError(issue instanceof Error ? issue.message : t("requestFailed")); }
   }
 
   async function reviewPayment(id: string, status: "VERIFIED" | "REJECTED") {
@@ -607,6 +590,8 @@ export function AdminWorkspace({ overview, newOrderCount, pendingShopCount = 0, 
               <div className="admin-request-actions">
                 <a className="button secondary small" href={`tel:${request.phone.replace(/[^\d+]/g, "")}`}>{t("callCustomer")}</a>
                 {request.email && <a className="button secondary small" href={`mailto:${request.email}`}>{t("emailCustomer")}</a>}
+                <label className="field small">{projectWords[locale].statusNote}<input id={`request-note-${request.id}`} maxLength={1000} /></label>
+                {canProjects && <OpenProjectButton requestId={request.id} project={request.project ?? null} guest={!request.customer} />}
                 <label className="field small">{t("status")}<select disabled={!allowedTransitions.length || busy} aria-label={`${request.reference} ${t("status")}`} defaultValue="" onChange={(event) => { const nextStatus = event.currentTarget.value as RequestStatus | ""; event.currentTarget.value = ""; if (nextStatus) void changeRequest(request.id, nextStatus); }}><option value="">{allowedTransitions.length ? t("change") : t(requestStatusLabelKeys[request.status])}</option>{allowedTransitions.map((status) => <option key={status} value={status}>{t(requestStatusLabelKeys[status])}</option>)}</select></label>
               </div>
               <details className="admin-request-details">
@@ -696,15 +681,15 @@ export function AdminWorkspace({ overview, newOrderCount, pendingShopCount = 0, 
           <h2>{t("projectQuotes")}</h2>
           {projects.length ? <div className="list">{projects.map((project) => (
             <div className="list-row" key={project.id}>
-              <div><strong>{project.name}</strong><p>{project.city ?? t("cityNotProvided")} · {project.status}</p><p>{project.items.map((item) => `${item.product?.name ?? item.service?.name ?? t("unknownItem")} × ${item.quantity}`).join(", ") || t("itemsNotProvided")}</p>
-                <form className="form" style={{ marginTop: 12 }} onSubmit={(event) => issueQuote(event, project.id)}>
-                  <div className="field"><label>{t("quoteLine")}</label><input name="description" placeholder={t("quoteItemPlaceholder")} required minLength={2} maxLength={500} /></div>
-                  <div className="form-row"><div className="field"><label>{t("quantity")}</label><input name="quantity" type="number" min="1" defaultValue="1" required /></div><div className="field"><label>{t("unitPriceMinor")}</label><input name="unitPrice" inputMode="decimal" autoComplete="off" required /></div></div>
-                  <div className="field"><label>{t("discountMinor")}</label><input name="discount" inputMode="decimal" autoComplete="off" defaultValue="0" /></div>
-                  <div className="field"><label>{t("assumptions")}</label><textarea name="assumptions" maxLength={5000} /></div>
-                  <div className="field"><label>{t("exclusions")}</label><textarea name="exclusions" maxLength={5000} /></div>
-                  <button className="button secondary" disabled={busy}>{t("issueQuote")}</button>
-                </form>
+              <div className="admin-project-body">
+                <strong>{project.name}</strong>
+                <p className="small muted">{project.reference}{project.request ? ` · ${projectWords[locale].fromRequest} ${project.request.reference}` : ""} · {statusText("project", project.status, locale)}{project.quotations?.[0] ? ` · ${project.quotations[0].number}: ${statusText("quote", project.quotations[0].status, locale)}` : ""}</p>
+                {project.customer && <p className="small">{project.customer.name}{project.customer.phone ? <> · <a href={`tel:${project.customer.phone.replace(/[^\d+]/g, "")}`}>{project.customer.phone}</a></> : null} · {project.customer.email}</p>}
+                <p>{project.city ?? t("cityNotProvided")}</p>
+                {project.notes && <p className="small admin-project-notes">{project.notes}</p>}
+                <p>{project.items.map((item) => `${item.product?.name ?? item.service?.name ?? t("unknownItem")} × ${item.quantity}`).join(", ") || t("itemsNotProvided")}</p>
+                <ProjectStatusActions projectId={project.id} status={project.status} />
+                <details className="admin-records-accordion"><summary>{t("issueQuote")}</summary><AdminQuoteForm projectId={project.id} /></details>
               </div>
             </div>
           ))}</div> : <div className="empty-state">{t("noProjects")}</div>}
@@ -715,7 +700,7 @@ export function AdminWorkspace({ overview, newOrderCount, pendingShopCount = 0, 
           {quotations.length ? <details className="admin-records-accordion"><summary>{t("createInvoice")} · {quotations.length}</summary><div className="list">{quotations.map((quote) => (
             <div className="list-row" key={quote.id}>
               <div><strong>{quote.number} · {quote.project.name}</strong><p>{quote.currency} · {quote.invoices.length ? quote.invoices.map((invoice) => `${invoice.number} (${invoice.status})`).join(", ") : t("noInvoiceIssued")}</p></div>
-              {!quote.invoices.length && <button className="button secondary small" onClick={() => createInvoice(quote.id)}>{t("createInvoice")}</button>}
+              {!quote.invoices.length && <AdminInvoiceCreate quotationId={quote.id} />}
             </div>
           ))}</div></details> : <div className="empty-state">{t("noProjects")}</div>}
         </section>}

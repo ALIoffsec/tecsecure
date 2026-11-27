@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { shortfallMinor } from "@/lib/wallet-view";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CoinStack, PlanArt } from "@/components/store-art";
@@ -52,6 +53,19 @@ const copy = {
   ru: { title: "Магазин Tecsecure", intro: "Пакеты TEC и обучающие подписки. Цена указана в каждом блоке.", balance: "Кошелёк", topUp: "Пополнить кошелёк", tecTitle: "Пакеты TEC", tecNote: "1 TEC = 4 990 UZS. Скидки на крупные пакеты.", buy: "Купить", off: "скидка", save: "экономия", subTitle: "Месячные подписки на обучение", subNote: "Доступ на 30 дней без автосписания. Выбранный план действует сразу.", month: "30 дней", modules: "мод.", active: "Активный план", until: "до", noFunds: "Недостаточно средств на кошельке", ok: "TEC зачислены на ваш счёт.", planOk: "План активирован.", fail: "Не удалось выполнить действие.", descriptions: ["Основы сетей, Linux, Windows и кибербезопасности", "Основы и практика, 8 модулей", "Все модули текущего каталога"], disclaimer: "Подписка даёт доступ к материалам; это не гарантия работы или сертификат." },
   en: { title: "Tecsecure Store", intro: "TEC packs and learning subscriptions. Each price is shown on its card.", balance: "Wallet", topUp: "Top up wallet", tecTitle: "TEC packs", tecNote: "1 TEC = 4,990 UZS. Bigger packs are discounted.", buy: "Buy", off: "off", save: "you save", subTitle: "Monthly learning plans", subNote: "30 days of access, no automatic charge. A newly chosen plan applies immediately.", month: "30 days", modules: "modules", active: "Active plan", until: "until", noFunds: "Not enough wallet balance", ok: "TEC added to your account.", planOk: "Plan activated.", fail: "Action failed.", descriptions: ["Core networking, Linux, Windows and security", "Foundations plus practice, 8 modules", "Every module in the current catalog"], disclaimer: "A plan unlocks learning material; it is not a job or certificate guarantee." }
 };
+
+const shortWords = {
+  uz: (amount: string) => `Yana ${amount} UZS kerak — to‘ldirish`,
+  ru: (amount: string) => `Нужно ещё ${amount} UZS — пополнить`,
+  en: (amount: string) => `${amount} UZS more needed — top up`
+} as const;
+
+/** What a purchase still lacks, as a link that opens the wallet top-up with that amount filled in. */
+function Shortfall({ cost, balance }: { cost: number; balance: number }) {
+  const { locale } = useSitePreferences();
+  const missing = shortfallMinor(balance, cost);
+  return <Link className="small text-link" href={`/portal/wallet?topup=${missing}`}>{shortWords[locale](money(missing / 100))}</Link>;
+}
 
 const money = (value: number) => Math.round(value).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
 
@@ -122,7 +136,7 @@ export function StoreView({ walletBalanceMinor, moduleCount }: { walletBalanceMi
           <button className="button" type="button" disabled={Boolean(busy) || !affordable} onClick={() => post("/api/wallet/tec-purchase", { packId: pack.id }, pack.id, { kind: "tec", title: `+${pack.amountTec} TEC` })}>
             {busy === pack.id ? "…" : c.buy}
           </button>
-          {!affordable && <small className="muted">{c.noFunds}</small>}
+          {!affordable && <Shortfall cost={cost} balance={walletBalanceMinor} />}
         </article>;
       })}
     </div>
@@ -149,7 +163,7 @@ export function StoreView({ walletBalanceMinor, moduleCount }: { walletBalanceMi
                 {busy === plan.key ? "…" : activePlan === plan.key ? w.extend : c.buy}
               </button>
               {blocked && subscription && <small className="muted">{w.blocked(activePlanName, formatDate(subscription.endsAt))}</small>}
-              {!blocked && !affordable && <small className="muted">{c.noFunds}</small>}
+              {!blocked && !affordable && <Shortfall cost={plan.priceMinor} balance={walletBalanceMinor} />}
             </>;
           })()}
         </article>;

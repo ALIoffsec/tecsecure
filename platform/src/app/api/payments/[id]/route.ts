@@ -20,10 +20,16 @@ export async function PATCH(request: Request, context: Context) {
 
   try {
     const result = await prisma.$transaction(async (tx) => {
-      const payment = await tx.payment.findUnique({ where: { id }, include: { invoice: { include: { items: true } } } });
-      if (!payment) return { error: "To‘lov topilmadi.", status: 404 as const };
+      const found = await tx.payment.findUnique({ where: { id }, select: { invoiceId: true } });
+      if (!found) return { error: "To‘lov topilmadi.", status: 404 as const };
+      // The invoice row is the lock for everything that changes what was paid on it.
+      await tx.$queryRaw`SELECT id FROM "Invoice" WHERE id = ${found.invoiceId} FOR UPDATE`;
+      const payment = await tx.payment.findUniqueOrThrow({ where: { id }, include: { invoice: { include: { items: true } } } });
       if (payment.status !== "PENDING") return { error: "Faqat kutilayotgan to‘lovni ko‘rib chiqish mumkin.", status: 409 as const };
       const invoice = payment.invoice;
+      if (parsed.data.status === "VERIFIED" && !["ISSUED", "PARTIALLY_PAID", "OVERDUE"].includes(invoice.status)) {
+        return { error: "Bu hisob bo‘yicha to‘lov qabul qilinmaydi.", status: 409 as const };
+      }
       if (parsed.data.status === "VERIFIED") {
         const total = invoice.items.reduce((sum, item) => sum + item.quantity * item.unitPriceMinor + item.taxMinor - item.discountMinor, 0);
         const otherVerified = await tx.payment.aggregate({
@@ -37,14 +43,16 @@ export async function PATCH(request: Request, context: Context) {
           data: { status: paid === total ? "PAID" : "PARTIALLY_PAID" }
         });
       }
-      const updated = await tx.payment.update({
-        where: { id },
+      const claim = await tx.payment.updateMany({
+        where: { id, status: "PENDING" },
         data: {
           status: parsed.data.status,
           verifiedById: actor.id,
           verifiedAt: parsed.data.status === "VERIFIED" ? new Date() : null
         }
       });
+      if (claim.count === 0) throw new Error("ALREADY_REVIEWED");
+      const updated = await tx.payment.findUniqueOrThrow({ where: { id } });
       await tx.auditLog.create({
         data: { actorId: actor.id, action: `MANUAL_PAYMENT_${parsed.data.status}`, entity: "Payment", entityId: id }
       });
@@ -53,6 +61,9 @@ export async function PATCH(request: Request, context: Context) {
     if ("error" in result) return Response.json({ error: result.error }, { status: result.status });
     return Response.json({ payment: result.payment });
   } catch (error) {
+    if (error instanceof Error && error.message === "ALREADY_REVIEWED") {
+      return Response.json({ error: "Faqat kutilayotgan to‘lovni ko‘rib chiqish mumkin." }, { status: 409 });
+    }
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2034") {
       return Response.json({ error: "To‘lov holati parallel o‘zgardi; yangilab qayta urinib ko‘ring." }, { status: 409 });
     }

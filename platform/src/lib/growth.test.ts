@@ -9,9 +9,9 @@ import { buildNetworkEstimate } from "./network-estimate";
 import { scoreSecurityCheck, securityQuestions } from "./security-check";
 
 test("the Payme link carries the order and the amount in tiyin, in Payme's documented format", () => {
-  const url = paymeCheckoutUrl({ merchantId: "587f72c72cac0d162c722ae2", reference: "ORD-2026-AB12", amountMinor: 750000000, locale: "ru", returnUrl: "https://x.uz/portal/orders", host: "https://checkout.paycom.uz" });
+  const url = paymeCheckoutUrl({ merchantId: "587f72c72cac0d162c722ae2", reference: "ORD-2026-AB12", amountMinor: 750000000, locale: "ru", returnUrl: "https://x.uz/portal/orders/ord1?payme=1", host: "https://checkout.paycom.uz" });
   const decoded = Buffer.from(url.replace("https://checkout.paycom.uz/", ""), "base64").toString();
-  assert.equal(decoded, "m=587f72c72cac0d162c722ae2;ac.order_id=ORD-2026-AB12;a=750000000;l=ru;c=https://x.uz/portal/orders");
+  assert.equal(decoded, "m=587f72c72cac0d162c722ae2;ac.order_id=ORD-2026-AB12;a=750000000;l=ru;c=https://x.uz/portal/orders/ord1?payme=1");
 });
 
 test("only Payme's exact credentials pass", () => {

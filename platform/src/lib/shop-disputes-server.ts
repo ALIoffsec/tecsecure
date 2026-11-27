@@ -1,10 +1,11 @@
 import { prisma } from "./prisma";
 import { creditOrderShipments } from "./marketplace-server";
-import { isWholeOrder, lockOrder, refundToWallet } from "./order-flow";
+import { isWholeOrder, lockOrder, queuePartRefund, refundToWallet } from "./order-flow";
 import { notifyShopOwner } from "./shop-server";
 import { escapeTelegramHtml, notifyTelegramAdmins, notifyTelegramUser } from "./telegram";
 import { formatMinor } from "./format";
 import { canDispute, isDisputeOpen } from "./marketplace";
+import { partRefundEffect } from "./order-refunds";
 
 export type DisputeResult = { ok: true } | { ok: false; status: number; error: string; code?: string };
 
@@ -58,13 +59,18 @@ export async function decideDispute(shopOrderId: string, action: "RELEASE" | "RE
       data: { disputeResolution: action === "RELEASE" ? "RELEASED" : "REFUNDED", disputeResolvedAt: new Date(), ...(action === "REFUND" ? { status: "CANCELLED" as const, cancelledAt: new Date() } : {}) }
     });
     if (claim.count === 0) return false;
-    if (action === "REFUND" && part.order.paymentStatus === "PAID") {
-      if (part.order.paymentMethod === "WALLET") {
+    if (action === "REFUND") {
+      const whole = await isWholeOrder(tx, part.orderId, part.shopId);
+      const effect = partRefundEffect(part.order, whole);
+      if (effect === "WALLET") {
         refunded = await refundToWallet(tx, { ...part.order, totalMinor: order.totalMinor }, share, actorId, `Murojaat bo‘yicha: “${part.shop.name}”`);
-        if (await isWholeOrder(tx, part.orderId, part.shopId)) await tx.order.update({ where: { id: part.orderId }, data: { paymentStatus: "REFUNDED" } });
-      } else {
+        if (whole) await tx.order.update({ where: { id: part.orderId }, data: { paymentStatus: "REFUNDED" } });
+      } else if (effect === "REFUND_DUE") {
         // Card, bank or Payme money is returned by hand; the order says so until staff do it.
         await tx.order.update({ where: { id: part.orderId }, data: { paymentStatus: "REFUND_DUE" } });
+      } else if (effect === "QUEUE") {
+        // In a mixed order only this shop's share goes back; the order stays paid so the other shops are credited.
+        await queuePartRefund(tx, { orderId: part.orderId, entity: "ShopOrder", entityId: part.id, amountMinor: share > 0 ? share : null, shopName: part.shop.name, reason: note }, actorId);
       }
     }
     const outcome = action === "RELEASE" ? "pul do‘konga o‘tkaziladi" : refunded ? `mijozga qaytarildi (${formatMinor(refunded, "UZS")})` : "mijozga qaytariladi";

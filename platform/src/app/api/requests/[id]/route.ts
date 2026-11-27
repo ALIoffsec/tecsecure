@@ -2,7 +2,7 @@ import { Prisma } from "@prisma/client";
 import { getCurrentUser, requireModuleApi } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { canTransitionRequest } from "@/lib/request-status";
-import { escapeTelegramHtml, notifyTelegramUser } from "@/lib/telegram";
+import { escapeTelegramHtml, notifyTelegramAdmins, notifyTelegramUser } from "@/lib/telegram";
 import { z } from "zod";
 import { statusText } from "@/lib/status-labels";
 
@@ -44,22 +44,23 @@ export async function PATCH(request: Request, context: Context) {
         if (!admin && parsed.data.status !== "CANCELLED") {
           return { error: "Mijoz faqat o‘z arizasini bekor qilishi mumkin.", status: 403 as const };
         }
-        return { error: `Status ${record.status} holatidan ${parsed.data.status} holatiga o‘ta olmaydi.`, status: 409 as const };
+        return { error: "Bu holatga o‘tib bo‘lmaydi.", status: 409 as const };
       }
-      const updated = await tx.serviceRequest.update({
-        where: { id },
-        data: {
-          status: parsed.data.status,
-          history: {
-            create: {
-              fromStatus: record.status,
-              toStatus: parsed.data.status,
-              actorId: user.id,
-              note: parsed.data.note
-            }
-          }
+      if (parsed.data.status === "CANCELLED") {
+        // A cancelled request leaves no quote open to accept later; with an invoice made, staff handle it.
+        const project = await tx.project.findUnique({ where: { requestId: id }, select: { id: true } });
+        if (project) {
+          await tx.$queryRaw`SELECT id FROM "Project" WHERE id = ${project.id} FOR UPDATE`;
+          const invoices = await tx.invoice.count({ where: { quotation: { projectId: project.id }, status: { not: "VOID" } } });
+          if (invoices > 0) return { error: "Bu loyihada hisob allaqachon yaratilgan. Arizani bekor qilish uchun bizga yozing.", status: 409 as const };
+          await tx.quotation.updateMany({ where: { projectId: project.id, status: { in: ["ISSUED", "DRAFT"] } }, data: { status: "CANCELLED" } });
         }
-      });
+      }
+      // Two staff members, or a customer and staff, at once: only the first move from this status counts.
+      const claim = await tx.serviceRequest.updateMany({ where: { id, status: record.status }, data: { status: parsed.data.status } });
+      if (claim.count === 0) return { error: "Ariza holati allaqachon o‘zgargan. Sahifani yangilang.", status: 409 as const };
+      await tx.requestStatusHistory.create({ data: { requestId: id, fromStatus: record.status, toStatus: parsed.data.status, actorId: user.id, note: parsed.data.note } });
+      const updated = await tx.serviceRequest.findUniqueOrThrow({ where: { id } });
       await tx.auditLog.create({
         data: {
           actorId: user.id,
@@ -83,6 +84,11 @@ export async function PATCH(request: Request, context: Context) {
       return { request: updated };
     });
     if ("error" in result) return Response.json({ error: result.error }, { status: result.status });
+    if (!admin) {
+      // The customer cancelled: staff learn it at once instead of finding it in the list.
+      await notifyTelegramAdmins(`<b>↩️ Mijoz arizani bekor qildi</b>
+Raqam: <code>${escapeTelegramHtml(result.request.reference)}</code>`, result.request.reference);
+    }
     if (admin && result.request.customerId) {
       await notifyTelegramUser(
         result.request.customerId,

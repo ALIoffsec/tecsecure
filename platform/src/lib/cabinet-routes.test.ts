@@ -24,8 +24,10 @@ test("back goes one level up, never by browser history", () => {
   assert.equal(cabinetParent("/portal"), null);
   assert.deepEqual(cabinetParent("/portal/orders"), { href: "/portal", section: "home" });
   assert.deepEqual(cabinetParent("/portal/orders/abc"), { href: "/portal/orders", section: "orders" });
-  assert.deepEqual(cabinetParent("/portal/orders/abc/invoice"), { href: "/portal/orders", section: "orders" });
+  assert.deepEqual(cabinetParent("/portal/orders/abc/invoice"), { href: "/portal/orders/abc", section: "orders" });
   assert.deepEqual(cabinetParent("/portal/settings/security"), { href: "/portal/settings", section: "settings" });
   assert.deepEqual(cabinetParent("/portal/notifications"), { href: "/portal", section: "home" });
+  assert.deepEqual(cabinetParent("/portal/invoices/inv1"), { href: "/portal/requests", section: "requests" });
+  assert.deepEqual(cabinetParent("/portal/requests/r1"), { href: "/portal/requests", section: "requests" });
   assert.equal(cabinetParent("/products"), null);
 });

@@ -1,6 +1,7 @@
 import { getCurrentUser, requireModuleApi } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { LIVE_SUBSCRIPTION_STATUSES, cancelStopsMonitoring, subscriptionMoveAllowed } from "@/lib/monitoring-rules";
 
 export const runtime = "nodejs";
 type Context = { params: Promise<{ id: string }> };
@@ -35,23 +36,19 @@ export async function PATCH(request: Request, context: Context) {
         }
         if (parsed.data.status !== "CANCELLED") return { error: "Mijoz obunani faqat bekor qilishi mumkin.", status: 403 as const };
       }
-      const allowed: Record<string, string[]> = {
-        NOT_ENROLLED: ["TRIAL_ACTIVE", "CANCELLED"],
-        TRIAL_ACTIVE: ["ACTIVE", "PAST_DUE", "CANCELLED"],
-        ACTIVE: ["PAST_DUE", "SUSPENDED", "CANCELLED"],
-        PAST_DUE: ["ACTIVE", "SUSPENDED", "CANCELLED"],
-        SUSPENDED: ["ACTIVE", "CANCELLED"],
-        CANCELLED: []
-      };
-      if (!allowed[current.status].includes(parsed.data.status)) {
-        return { error: `Obuna ${current.status} holatidan ${parsed.data.status} holatiga o‘ta olmaydi.`, status: 409 as const };
-      }
-      const updated = await tx.subscription.update({ where: { id }, data: { status: parsed.data.status } });
-      await tx.subscriptionEvent.create({
-        data: { subscriptionId: id, fromStatus: current.status, toStatus: parsed.data.status, actorId: user.id }
-      });
+      if (!subscriptionMoveAllowed(current.status, parsed.data.status)) return { error: "Obunani bu holatga o‘tkazib bo‘lmaydi.", status: 409 as const };
+      // Two people at once: only the first move from this status counts.
+      const claim = await tx.subscription.updateMany({ where: { id, status: current.status }, data: { status: parsed.data.status } });
+      if (claim.count === 0) return { error: "Obuna holati allaqachon o‘zgargan. Sahifani yangilang.", status: 409 as const };
+      await tx.subscriptionEvent.create({ data: { subscriptionId: id, fromStatus: current.status, toStatus: parsed.data.status, actorId: user.id } });
       await tx.auditLog.create({ data: { actorId: user.id, action: `SUBSCRIPTION_${parsed.data.status}`, entity: "Subscription", entityId: id } });
-      return { subscription: updated };
+      // A cancelled subscription stops the organisation's device checks, unless another one still covers them.
+      const otherLive = await tx.subscription.count({ where: { organizationId: current.organizationId, id: { not: id }, status: { in: [...LIVE_SUBSCRIPTION_STATUSES] } } });
+      if (cancelStopsMonitoring(parsed.data.status, otherLive)) {
+        const stopped = await tx.device.updateMany({ where: { organizationId: current.organizationId, monitored: true }, data: { monitored: false, status: "UNKNOWN" } });
+        await tx.auditLog.create({ data: { actorId: user.id, action: "MONITORING_STOPPED_BY_CANCEL", entity: "Organization", entityId: current.organizationId, metadata: { subscriptionId: id, devices: stopped.count } } });
+      }
+      return { subscription: await tx.subscription.findUniqueOrThrow({ where: { id } }) };
     });
     if ("error" in result) return Response.json({ error: result.error }, { status: result.status });
     return Response.json({ subscription: result.subscription });

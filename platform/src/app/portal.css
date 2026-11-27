@@ -78,7 +78,78 @@
 #app-shell .cab-tile-line.is-warn, #app-shell .cab-attention-icon { color: #f2c063; }
 :root[data-theme="light"] #app-shell :is(.cab-tile-line.is-warn, .cab-attention-icon) { color: #8a5d05; }
 #app-shell .cab-signout { display: flex; justify-content: flex-start; }
-#app-shell .order-card[id] { scroll-margin-top: 100px; }
+#app-shell #receipt { scroll-margin-top: 100px; }
+
+/* My orders: tabs, one card per order (whole card opens it; its one button sits above the link) */
+#app-shell .cab-filters { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; }
+#app-shell .cab-orders { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+#app-shell .cab-order-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "photos main side" "photos main action"; align-items: center; gap: 8px 14px; padding: 14px; border: 1px solid var(--glass-edge); border-radius: var(--radius); background: var(--glass-fill); box-shadow: var(--glass-shadow); }
+#app-shell .cab-order-row:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--glass-edge)); }
+#app-shell .cab-order-photos { grid-area: photos; display: flex; gap: 6px; }
+#app-shell .cab-order-photos img { width: 48px; height: 48px; border-radius: 10px; background: #fff; object-fit: contain; }
+#app-shell .cab-order-main { grid-area: main; display: grid; gap: 4px; min-width: 0; }
+#app-shell .cab-order-title { color: var(--text); font-weight: 700; text-decoration: none; overflow-wrap: anywhere; }
+#app-shell .cab-order-side { grid-area: side; display: grid; justify-items: end; gap: 6px; text-align: right; }
+#app-shell .cab-order-action { grid-area: action; display: flex; justify-content: flex-end; position: relative; z-index: 2; }
+#app-shell .cab-warn-text { color: #f2c063; }
+:root[data-theme="light"] #app-shell .cab-warn-text { color: #8a5d05; }
+
+/* One order */
+#app-shell .cab-order-header { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+#app-shell .cab-next p { margin: 0 0 12px; font-size: .94rem; }
+#app-shell .cab-order-group + .cab-order-group { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--glass-edge); }
+#app-shell .cab-order-group h3 { margin: 0; font-size: 1rem; }
+#app-shell .cab-facts { display: grid; grid-template-columns: minmax(120px, max-content) minmax(0, 1fr); gap: 8px 16px; margin: 0; }
+#app-shell .cab-facts dt { color: var(--muted); font-size: .88rem; }
+#app-shell .cab-facts dd { margin: 0; overflow-wrap: anywhere; }
+#app-shell .cab-order-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+#app-shell details.panel-card summary { cursor: pointer; font-weight: 700; }
+
+/* My requests and the payment invoice */
+#app-shell .cab-title-row { justify-content: space-between; }
+#app-shell .cab-request-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 14px; }
+#app-shell .cab-request-main { display: grid; gap: 4px; min-width: 0; flex: 1 1 220px; }
+#app-shell .cab-request-row .cab-order-side .button { position: relative; z-index: 2; }
+#app-shell .cab-quote-lines { display: grid; gap: 8px; margin: 0 0 12px; padding: 0; list-style: none; }
+#app-shell .cab-quote-lines li { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--glass-edge); }
+#app-shell .cab-quote-lines li span { display: grid; gap: 2px; min-width: 0; overflow-wrap: anywhere; }
+#app-shell .cab-quote-lines small { font-size: .88rem; }
+#app-shell .cab-quote-total { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 0 0 12px; }
+#app-shell .cab-quote-total strong { font-size: 1.35rem; }
+#app-shell .cab-pre { white-space: pre-line; }
+#app-shell .cab-copy { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+#app-shell .cab-copy-button { display: inline-grid; place-items: center; min-width: 36px; min-height: 36px; padding: 0; }
+@media print { #app-shell .print-hide, #app-shell .cab-side, #app-shell .cab-head, #app-shell .cab-back { display: none !important; } }
+
+/* Wallet: both balances as text, the activity with its sign */
+#app-shell .cab-balances { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 0 0 14px; }
+#app-shell .cab-balances p { display: grid; gap: 2px; margin: 0; padding: 12px 14px; border: 1px solid var(--glass-edge); border-radius: 14px; background: var(--glass-control); }
+#app-shell .cab-balances strong { font-size: 1.25rem; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+#app-shell .cab-ledger-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+#app-shell .cab-ledger-row > span { min-width: 0; overflow-wrap: anywhere; }
+#app-shell .cab-ledger-amount { flex: none; font-variant-numeric: tabular-nums; }
+#app-shell .cab-ledger-amount.is-in { color: var(--success); }
+#app-shell .cab-filters + .list, #app-shell .cab-filters + p { margin-top: 12px; }
+
+/* Settings: one row per item, name and state on the left, one action on the right */
+#app-shell .cab-setting-row { display: flex; align-items: center; justify-content: space-between; gap: 10px 14px; min-height: 56px; }
+#app-shell .cab-setting-text { display: grid; gap: 2px; min-width: 0; overflow-wrap: anywhere; }
+#app-shell .cab-setting-action { flex: none; position: relative; z-index: 2; }
+#app-shell .cab-setting-action .button { min-height: 44px; }
+
+/* Progress line (orders and requests): across on a computer, down the page on a phone */
+#app-shell .cab-steps { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); margin: 16px 0 0; padding: 0; list-style: none; }
+#app-shell .cab-steps li { position: relative; display: grid; justify-items: center; gap: 8px; color: var(--muted); font-size: .78rem; font-weight: 600; text-align: center; }
+#app-shell .cab-steps li::before { content: ""; position: absolute; top: 15px; right: 50%; width: 100%; height: 3px; border-radius: 3px; background: var(--line); }
+#app-shell .cab-steps li:first-child::before { display: none; }
+#app-shell .cab-steps li.is-reached::before { background: var(--success); }
+#app-shell .cab-step-dot { position: relative; z-index: 1; display: grid; width: 32px; height: 32px; place-items: center; border: 2px solid var(--line); border-radius: 50%; background: var(--surface); font-size: .8rem; }
+#app-shell .cab-steps li.is-reached .cab-step-dot { border-color: var(--success); background: var(--success); color: #04121b; }
+:root[data-theme="light"] #app-shell .cab-steps li.is-reached .cab-step-dot { color: #fff; }
+#app-shell .cab-steps li.is-current .cab-step-dot { box-shadow: 0 0 0 5px color-mix(in srgb, var(--success) 25%, transparent); }
+#app-shell .cab-steps li.is-reached { color: var(--text); }
+#app-shell .cab-step-text { display: grid; gap: 2px; }
+#app-shell .cab-step-text small { color: var(--muted); font-weight: 400; }
 
 /* Notifications */
 #app-shell button.cab-notice { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 12px; border: 1px solid var(--glass-edge); border-radius: 14px; background: transparent; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
@@ -128,4 +199,16 @@ html[data-tma="customer"] #app-shell .cab-back { display: none; }
   #app-shell .cab-content .list-row { flex-wrap: wrap; }
   #app-shell .cab-content .stack { justify-items: start; }
   #app-shell dialog.cab-dialog { padding: 16px; }
+  #app-shell .cab-order-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "photos photos" "main side" "action action"; }
+  #app-shell .cab-order-action { justify-content: stretch; }
+  #app-shell .cab-order-action .button { width: 100%; }
+  #app-shell .cab-copy-button { min-width: 44px; min-height: 44px; }
+  #app-shell .cab-facts { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+  #app-shell .cab-facts dd { margin-bottom: 8px; }
+  #app-shell .cab-steps { grid-auto-flow: row; grid-auto-columns: auto; gap: 0; }
+  #app-shell .cab-steps li { grid-template-columns: 32px minmax(0, 1fr); justify-items: start; align-items: start; gap: 12px; padding-bottom: 14px; text-align: left; }
+  #app-shell .cab-steps li::before { display: none; }
+  #app-shell .cab-steps li:not(:last-child)::after { content: ""; position: absolute; top: 32px; bottom: 0; left: 14.5px; width: 3px; background: var(--line); }
+  #app-shell .cab-steps li.is-reached:has(+ li.is-reached)::after { background: var(--success); }
+  #app-shell .cab-steps li:last-child { padding-bottom: 0; }
 }

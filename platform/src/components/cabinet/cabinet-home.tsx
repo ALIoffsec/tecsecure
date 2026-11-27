@@ -19,7 +19,7 @@ type Words = {
   attention: Record<AttentionKind, string>; view: string; pay: string; more: (n: number) => string;
   orders: (n: number) => string; ordersNone: string; quotes: (n: number) => string; requests: (n: number) => string; requestsNone: string;
   lesson: (title: string) => string; lessonNone: string; devices: (n: number) => string; quiet: (n: number) => string;
-  phoneMissing: string; phoneUnverified: string; settingsOk: string; help: string; helpLine: string;
+  phoneMissing: string; phoneUnverified: string; settingsOk: string; help: string; helpLine: string; cancelRequested: string;
 };
 
 const words: Record<"uz" | "ru" | "en", Words> = {
@@ -33,7 +33,7 @@ const words: Record<"uz" | "ru" | "en", Words> = {
     lesson: title => `Davom ettirish: ${title}`, lessonNone: "O‘qishni davom ettirish",
     devices: n => `${n} ta qurilma`, quiet: n => `${n} ta qurilma javob bermayapti`,
     phoneMissing: "Telefon qo‘shilmagan", phoneUnverified: "Telefon tasdiqlanmagan", settingsOk: "Ma’lumot va xavfsizlik",
-    help: "Yordam", helpLine: "Savol yozish"
+    help: "Yordam", helpLine: "Savol yozish", cancelRequested: "Bekor qilish so‘raldi"
   },
   ru: {
     waiting: "Ждёт вашего действия", lastOrder: "Последний заказ", sections: "Разделы", track: "Этапы заказа",
@@ -45,7 +45,7 @@ const words: Record<"uz" | "ru" | "en", Words> = {
     lesson: title => `Продолжить: ${title}`, lessonNone: "Продолжить обучение",
     devices: n => `Устройств: ${n}`, quiet: n => `Не отвечают: ${n}`,
     phoneMissing: "Телефон не добавлен", phoneUnverified: "Телефон не подтверждён", settingsOk: "Данные и безопасность",
-    help: "Помощь", helpLine: "Написать вопрос"
+    help: "Помощь", helpLine: "Написать вопрос", cancelRequested: "Запрошена отмена"
   },
   en: {
     waiting: "Waiting on you", lastOrder: "Latest order", sections: "Sections", track: "Order progress",
@@ -57,7 +57,7 @@ const words: Record<"uz" | "ru" | "en", Words> = {
     lesson: title => `Continue: ${title}`, lessonNone: "Continue learning",
     devices: n => `${n} ${n === 1 ? "device" : "devices"}`, quiet: n => `${n} not responding`,
     phoneMissing: "No phone added", phoneUnverified: "Phone not verified", settingsOk: "Details and security",
-    help: "Help", helpLine: "Ask a question"
+    help: "Help", helpLine: "Ask a question", cancelRequested: "Cancellation requested"
   }
 };
 
@@ -80,10 +80,10 @@ export function CabinetHome({ user, unread, nav, data }: { user: CabinetUser; un
   const tiles: Tile[] = [
     { id: "orders", href: "/portal/orders", icon: "truck", label: labels.orders, line: data.activeOrders ? w.orders(data.activeOrders) : w.ordersNone, count: nav.counts.orders },
     { id: "requests", href: "/portal/requests", icon: "clipboard", label: labels.requests, line: quotesWaiting ? w.quotes(quotesWaiting) : data.openRequests ? w.requests(data.openRequests) : w.requestsNone, count: requestsCount },
-    ...(nav.show.learning ? [{ id: "learning" as const, href: "/portal/learning", icon: "book" as const, label: labels.learning, line: data.lesson ? w.lesson(data.lesson[locale]) : w.lessonNone }] : []),
+    ...(nav.show.learning ? [{ id: "learning" as const, href: data.lessonSlug ? `/learning/${data.lessonSlug}` : "/portal/learning", icon: "book" as const, label: labels.learning, line: data.lesson ? w.lesson(data.lesson[locale]) : w.lessonNone }] : []),
     { id: "wallet", href: "/portal/wallet", icon: "wallet", label: labels.wallet, line: `${formatMinor(data.walletMinor, "UZS", locale)} · ${formatNumber(data.tec, 0)} TEC` },
     ...(nav.show.devices || data.devices ? [{ id: "devices" as const, href: "/portal/devices", icon: "server" as const, label: labels.devices, line: data.quietDevices ? w.quiet(data.quietDevices) : w.devices(data.devices), warn: data.quietDevices > 0 }] : []),
-    { id: "settings", href: "/portal/settings", icon: "settings", label: labels.settings, line: data.phone === "missing" ? w.phoneMissing : data.phone === "unverified" ? w.phoneUnverified : w.settingsOk, warn: data.phone !== "verified" },
+    { id: "settings", href: data.phone === "verified" ? "/portal/settings" : "/portal/settings/profile", icon: "settings", label: labels.settings, line: data.phone === "missing" ? w.phoneMissing : data.phone === "unverified" ? w.phoneUnverified : w.settingsOk, warn: data.phone !== "verified" },
     { id: "help", href: "/portal/messages", icon: "mail", label: w.help, line: w.helpLine }
   ];
   const order = data.lastOrder;
@@ -102,7 +102,7 @@ export function CabinetHome({ user, unread, nav, data }: { user: CabinetUser; un
       </ul>
     </section>}
     {order && <section aria-labelledby="cab-last-order">
-      <Link className="panel-card cab-order" href={`/portal/orders#order-${order.id}`}>
+      <Link className="panel-card cab-order" href={`/portal/orders/${order.id}`}>
         <span className="cab-order-head">
           <h2 id="cab-last-order" className="cab-h2">{w.lastOrder}</h2>
           <StatusBadge kind="order" code={order.status} />
@@ -112,6 +112,7 @@ export function CabinetHome({ user, unread, nav, data }: { user: CabinetUser; un
           {order.more > 0 && <span className="muted"> · {w.more(order.more)}</span>}
         </span>
         <small className="muted">{order.reference} · {formatDate(order.createdAt)}</small>
+        {order.cancelRequested && <small className="cab-warn-text">{w.cancelRequested}</small>}
         {step >= 0 && <ol className="cab-track" aria-label={w.track}>
           {w.steps.map((label, index) => <li key={label} className={index <= step ? "is-done" : undefined} aria-current={index === step ? "step" : undefined}>
             <span className="cab-track-bar" aria-hidden="true" />

@@ -1,7 +1,7 @@
 import type { OrderStatus } from "@prisma/client";
 import { prisma } from "./prisma";
 import { canTransition, type OrderStatusValue } from "./orders";
-import { applyOrderStatus, isWholeOrder, lockOrder, refundToWallet, shipmentStamp } from "./order-flow";
+import { applyOrderStatus, isWholeOrder, lockOrder, queuePartRefund, refundToWallet, shipmentStamp } from "./order-flow";
 import { creditOrderShipments, restoreStock } from "./marketplace-server";
 import { escapeTelegramHtml, notifyTelegramAdmins, notifyTelegramUser } from "./telegram";
 import { formatMinor } from "./format";
@@ -53,6 +53,9 @@ export async function moveShopPart(shopId: string, orderId: string, to: OrderSta
       const share = (part.itemsTotalMinor ?? 0) + (part.deliveryShareMinor ?? 0);
       if (part.order.paymentMethod === "WALLET" && part.order.paymentStatus === "PAID" && share > 0) {
         walletRefund = await refundToWallet(tx, part.order, share, actorId, `Do‘kon “${part.shop.name}” qismi bekor qilindi`);
+      } else if (part.order.paymentStatus === "PAID" && part.order.paymentMethod !== "WALLET") {
+        // Money from outside the wallet: this share goes to the staff refund queue; the order stays paid.
+        await queuePartRefund(tx, { orderId, entity: "ShopOrder", entityId: part.id, amountMinor: part.itemsTotalMinor === null ? null : share, shopName: part.shop.name, reason: note }, actorId);
       }
       const refunded = walletRefund ? `. Hamyonga qaytarildi: ${formatMinor(walletRefund, "UZS")}` : "";
       await tx.orderStatusHistory.create({ data: { orderId, fromStatus: part.order.status, toStatus: part.order.status, note: `Do‘kon “${part.shop.name}” o‘z qismini bekor qildi: ${note}${refunded}`, actorId } });

@@ -2,7 +2,7 @@
 
 import { translateMessage } from "@/lib/server-messages";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useSitePreferences } from "@/components/site-preferences";
 import type { ProfilePractice } from "@/lib/learning-profile-types";
 import { formatDate } from "@/lib/format";
@@ -27,7 +27,9 @@ const copy = {
     noCertificates: "Hali sertifikat yo'q.",
     examsLink: "Imtihonlarni ko'rish",
     scoreSource: "Baho Tecsecure ichidagi bo'limlar, laboratoriyalar va imtihonlar asosida hisoblanadi (50/30/20). Bu tashqi malaka emas.",
-    honest: "Daraja faqat Tecsecure ichidagi o'quv natijalarini ifodalaydi; bu ish tajribasi yoki xalqaro sertifikat emas."
+    honest: "Daraja faqat Tecsecure ichidagi o'quv natijalarini ifodalaydi; bu ish tajribasi yoki xalqaro sertifikat emas.",
+    resume: "Davom ettirish", resumeEmpty: "Hali birorta dars boshlanmagan.", continue: "Davom ettirish", access: "Kirish huquqim", plan: "Reja", until: "gacha",
+    noPlan: "Obuna yo'q: bepul modullar va TEC bilan ochilgan bo'limlar ochiq.", planModules: (n: number | "all") => n === "all" ? "barcha modullar" : `${n} ta modul`, plans: "Rejalar"
   },
   ru: {
     noPath: "Вы ещё не выбрали направление.",
@@ -48,7 +50,9 @@ const copy = {
     noCertificates: "Сертификатов пока нет.",
     examsLink: "Смотреть экзамены",
     scoreSource: "Оценка строится только на прогрессе внутри Tecsecure: разделы, лаборатории и экзамены (50/30/20). Это не внешняя квалификация.",
-    honest: "Ранг отражает только учебный прогресс в Tecsecure; это не опыт работы и не международная сертификация."
+    honest: "Ранг отражает только учебный прогресс в Tecsecure; это не опыт работы и не международная сертификация.",
+    resume: "Продолжить", resumeEmpty: "Вы ещё не начали ни одного урока.", continue: "Продолжить", access: "Мой доступ", plan: "План", until: "до",
+    noPlan: "Подписки нет: открыты бесплатные модули и разделы, открытые за TEC.", planModules: (n: number | "all") => n === "all" ? "все модули" : `модулей: ${n}`, plans: "Планы"
   },
   en: {
     noPath: "You haven't chosen a path yet.",
@@ -69,23 +73,19 @@ const copy = {
     noCertificates: "No certificates yet.",
     examsLink: "View exams",
     scoreSource: "Score uses only Tecsecure activity: sections, labs, and exams (50/30/20). This is not an external qualification.",
-    honest: "Rank reflects only learning progress inside Tecsecure; it is not work experience or an external certification."
+    honest: "Rank reflects only learning progress inside Tecsecure; it is not work experience or an external certification.",
+    resume: "Continue", resumeEmpty: "No lesson started yet.", continue: "Continue", access: "My access", plan: "Plan", until: "until",
+    noPlan: "No plan: free modules and sections opened with TEC are available.", planModules: (n: number | "all") => n === "all" ? "all modules" : `${n} modules`, plans: "Plans"
   }
 };
 
-export function ProfileHero({ name, email, rewardPoints, practice, children }: { name: string; email: string; rewardPoints: number; practice: ProfilePractice; children?: React.ReactNode }) {
+export type LearningResume = { slug: string; title: { uz: string; ru: string; en: string }; percent: number; done: number; total: number } | null;
+export type LearningAccess = { name: string; endsAt: string; active: boolean; modules: number | "all" } | null;
+
+export function ProfileHero({ name, email, rewardPoints, practice, resume = null, access = null, children }: { name: string; email: string; rewardPoints: number; practice: ProfilePractice; resume?: LearningResume; access?: LearningAccess; children?: React.ReactNode }) {
   const { locale } = useSitePreferences();
   const c = copy[locale];
   const { profile, progress } = practice;
-
-  const [selected, setSelected] = useState<string[]>([]);
-
-  useEffect(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem("tecsecure-learning-demo-v1") ?? "null");
-      if (saved && Array.isArray(saved.paths)) setSelected(saved.paths.filter((item: unknown): item is string => typeof item === "string"));
-    } catch { /* ignore corrupt local data */ }
-  }, []);
 
 
   const stats = useMemo(() => {
@@ -130,10 +130,29 @@ export function ProfileHero({ name, email, rewardPoints, practice, children }: {
       </div>
       <div className="htb-columns">
         <div className="htb-card">
+          <h3>{c.resume}</h3>
+          {resume ? <>
+            <p><strong>{resume.title[locale]}</strong></p>
+            <div className="htb-bar" role="progressbar" aria-valuenow={resume.percent} aria-valuemin={0} aria-valuemax={100}><span style={{ width: `${resume.percent}%` }} /></div>
+            <small>{resume.done}/{resume.total} · {resume.percent}%</small>
+            <p><Link className="button" href={`/learning/${resume.slug}`}>{c.continue}</Link></p>
+          </> : <p>{c.resumeEmpty} <Link href="/learning">{c.start}</Link></p>}
+        </div>
+        <div className="htb-card">
+          <h3>{c.access}</h3>
+          {access && access.active
+            ? <p>{c.plan}: <strong>{access.name}</strong> · {formatDate(access.endsAt)} {c.until} · {c.planModules(access.modules)}</p>
+            : <p>{c.noPlan}</p>}
+          <p>{c.tec}: <strong>{rewardPoints} TEC</strong></p>
+          <p><Link href="/store">{c.plans}</Link></p>
+        </div>
+      </div>
+      <div className="htb-columns">
+        <div className="htb-card">
           <h3>{c.paths}</h3>
-          {stats.paths.filter((path) => selected.includes(path.slug)).length === 0 && <p>{c.noPath} <Link href="/learning">{c.choosePath}</Link></p>}
+          {stats.paths.filter((path) => path.done > 0).length === 0 && <p>{c.noPath} <Link href="/learning">{c.choosePath}</Link></p>}
           <ul className="htb-paths">
-            {stats.paths.filter((path) => selected.includes(path.slug)).map((path) => <li key={path.slug}>
+            {stats.paths.filter((path) => path.done > 0).map((path) => <li key={path.slug}>
               <div><Link href={`/learning/paths/${path.slug}`}>{path.title}</Link><small>{path.done}/{path.total} · {path.percent}%</small></div>
               <div className="htb-bar"><span style={{ width: `${path.percent}%` }} /></div>
             </li>)}
@@ -170,7 +189,7 @@ export function ProfileHero({ name, email, rewardPoints, practice, children }: {
       </div>
       <div className="htb-card">
         <h3>{c.achievements}</h3>
-        <div className="htb-ach">{profile.achievements.map((item) => <div key={item.id} className={`htb-ach-item ${item.tone}${item.earned ? "" : " off"}`}>
+        <div className="htb-ach">{profile.achievements.filter((item) => item.earned).map((item) => <div key={item.id} className={`htb-ach-item ${item.tone}`}>
           <strong>{translateMessage(item.title, locale)}</strong><small>{translateMessage(item.hint, locale)}</small>
         </div>)}</div>
       </div>

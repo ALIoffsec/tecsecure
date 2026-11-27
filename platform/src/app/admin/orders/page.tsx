@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { orderStatuses } from "@/lib/orders";
 import { AdminOrders } from "@/components/order-views";
 import { orderItemsWithProduct, withLineProducts } from "@/lib/order-lines";
+import { openPartRefundQueue } from "@/lib/order-refunds-server";
+import { paymeCancelRefused } from "@/lib/order-flow";
 
 export const dynamic = "force-dynamic";
 
@@ -22,7 +24,17 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
     }),
     prisma.order.groupBy({ by: ["status"], _count: { _all: true } })
   ]);
+  const canRefund = actor.role !== "STAFF" || actor.permissions.includes("PAYMENTS");
+  const [performed, partRefunds] = await Promise.all([
+    prisma.paymeTransaction.findMany({ where: { orderId: { in: orders.map(order => order.id) }, state: 2 }, select: { orderId: true } }),
+    openPartRefundQueue()
+  ]);
+  // "Refund it from the Payme cabinet" only where Payme would accept the cancel; otherwise staff close it by hand.
+  const refundDue = orders.filter(order => order.paymentStatus === "REFUND_DUE" && performed.some(row => row.orderId === order.id));
+  const refused = new Set((await Promise.all(refundDue.map(async order => (await paymeCancelRefused(prisma, order.id)) ? order.id : null))).filter((id): id is string => id !== null));
+  const paid = new Set(performed.map(row => row.orderId).filter(id => !refused.has(id)));
   const counts = Object.fromEntries(groups.map((group) => [group.status, group._count._all]));
   const total = groups.reduce((sum, group) => sum + group._count._all, 0);
-  return <AdminOrders orders={await withLineProducts(orders)} counts={counts} total={total} status={status} />;
+  const lines = await withLineProducts(orders);
+  return <AdminOrders orders={lines.map(order => ({ ...order, paymePerformed: paid.has(order.id) }))} counts={counts} total={total} status={status} canRefund={canRefund} partRefunds={partRefunds} />;
 }

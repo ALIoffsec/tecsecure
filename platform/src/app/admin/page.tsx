@@ -18,6 +18,7 @@ export default async function AdminPage() {
       include: {
         service: { select: { name: true } },
         customer: { select: { id: true, name: true, email: true, phone: true } },
+        project: { select: { id: true, reference: true } },
         history: { include: { actor: { select: { name: true, email: true } } }, orderBy: { createdAt: "asc" } }
       },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
@@ -31,8 +32,13 @@ export default async function AdminPage() {
     can("COMPANY") ? prisma.notification.findMany({ where: { userId: actor.id }, orderBy: { createdAt: "desc" }, take: 20 }) : [],
     privileged ? prisma.user.findMany({ where: { deletedAt: null }, select: { id: true, name: true, email: true, role: true, active: true, permissions: true }, orderBy: [{ role: "asc" }, { name: "asc" }] }) : [],
     can("PROJECTS") ? prisma.project.findMany({
-      include: { items: { include: { product: { select: { name: true } }, service: { select: { name: true } } } } },
-      orderBy: { createdAt: "desc" },
+      include: {
+        items: { include: { product: { select: { name: true } }, service: { select: { name: true } } } },
+        customer: { select: { name: true, phone: true, email: true } },
+        request: { select: { reference: true } },
+        quotations: { orderBy: { version: "desc" }, take: 1, select: { number: true, status: true } }
+      },
+      orderBy: { updatedAt: "desc" },
       take: 100
     }) : [],
     can("PROJECTS") ? prisma.project.count() : 0,

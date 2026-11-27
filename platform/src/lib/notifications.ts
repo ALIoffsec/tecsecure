@@ -6,7 +6,7 @@
 import { statusText, type StatusLocale } from "./status-labels";
 
 export const CUSTOMER_EVENTS = [
-  "TEC_GIFT", "ORDER_STATUS_CHANGED", "WALLET_APPROVED", "WALLET_REJECTED", "SUPPORT_MESSAGE_RECEIVED",
+  "TEC_GIFT", "ORDER_STATUS_CHANGED", "ORDER_PAYMENT_CHANGED", "WALLET_APPROVED", "WALLET_REJECTED", "SUPPORT_MESSAGE_RECEIVED",
   "SERVICE_REQUEST_STATUS_CHANGED", "TRIAL_EXPIRING", "TRIAL_EXPIRED", "SHOP_APPROVE", "SHOP_REJECT", "SHOP_SUSPEND", "SHOP_REACTIVATE"
 ] as const;
 export type CustomerEvent = typeof CUSTOMER_EVENTS[number];
@@ -19,6 +19,7 @@ export type NotificationView = { id: string; event: CustomerEvent; unread: boole
 export const notificationLinks: Record<CustomerEvent, string> = {
   TEC_GIFT: "/portal/wallet",
   ORDER_STATUS_CHANGED: "/portal/orders",
+  ORDER_PAYMENT_CHANGED: "/portal/orders",
   WALLET_APPROVED: "/portal/wallet",
   WALLET_REJECTED: "/portal/wallet",
   SUPPORT_MESSAGE_RECEIVED: "/portal/messages",
@@ -60,6 +61,7 @@ export function notificationText(view: NotificationView, locale: StatusLocale): 
     uz: {
       TEC_GIFT: `${p.senderName ?? "Tecsecure"} sizga ${p.amountTec ?? ""} TEC sovg‘a qildi`,
       ORDER_STATUS_CHANGED: `Buyurtma${ref}: ${statusText("order", p.status, "uz")}`,
+      ORDER_PAYMENT_CHANGED: `Buyurtma${ref}: ${p.kind === "REFUNDED" ? "pul qaytarildi" : "chek qabul qilinmadi, yangi chek yuklang"}`,
       WALLET_APPROVED: `Hamyon so‘rovi tasdiqlandi${p.amountMinor ? `: ${money(p.amountMinor)}` : ""}`,
       WALLET_REJECTED: `Hamyon so‘rovi rad etildi${p.amountMinor ? `: ${money(p.amountMinor)}` : ""}`,
       SUPPORT_MESSAGE_RECEIVED: `Yangi javob${ref}`,
@@ -71,6 +73,7 @@ export function notificationText(view: NotificationView, locale: StatusLocale): 
     ru: {
       TEC_GIFT: `${p.senderName ?? "Tecsecure"} подарил(а) вам ${p.amountTec ?? ""} TEC`,
       ORDER_STATUS_CHANGED: `Заказ${ref}: ${statusText("order", p.status, "ru")}`,
+      ORDER_PAYMENT_CHANGED: `Заказ${ref}: ${p.kind === "REFUNDED" ? "деньги возвращены" : "чек не принят, загрузите новый"}`,
       WALLET_APPROVED: `Заявка кошелька подтверждена${p.amountMinor ? `: ${money(p.amountMinor)}` : ""}`,
       WALLET_REJECTED: `Заявка кошелька отклонена${p.amountMinor ? `: ${money(p.amountMinor)}` : ""}`,
       SUPPORT_MESSAGE_RECEIVED: `Новый ответ${ref}`,
@@ -82,6 +85,7 @@ export function notificationText(view: NotificationView, locale: StatusLocale): 
     en: {
       TEC_GIFT: `${p.senderName ?? "Tecsecure"} gave you ${p.amountTec ?? ""} TEC`,
       ORDER_STATUS_CHANGED: `Order${ref}: ${statusText("order", p.status, "en")}`,
+      ORDER_PAYMENT_CHANGED: `Order${ref}: ${p.kind === "REFUNDED" ? "money returned" : "receipt not accepted, upload a new one"}`,
       WALLET_APPROVED: `Wallet request approved${p.amountMinor ? `: ${money(p.amountMinor)}` : ""}`,
       WALLET_REJECTED: `Wallet request rejected${p.amountMinor ? `: ${money(p.amountMinor)}` : ""}`,
       SUPPORT_MESSAGE_RECEIVED: `New reply${ref}`,

@@ -2,6 +2,7 @@ import { randomBytes } from "node:crypto";
 import { getCurrentUser, isResponse, requireModuleApi } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { invoiceSchema } from "@/lib/validation";
+import { LIVE_INVOICE_STATUSES, invoiceDecision } from "@/lib/quote-rules";
 
 export const runtime = "nodejs";
 
@@ -37,11 +38,17 @@ export async function POST(request: Request) {
   if (!parsed.success) return Response.json({ error: "Hisob-faktura ma’lumotlari noto‘g‘ri." }, { status: 400 });
   try {
     const invoice = await prisma.$transaction(async (tx) => {
-      const quote = await tx.quotation.findUnique({ where: { id: parsed.data.quotationId }, include: { items: true } });
-      if (!quote) throw new Error("QUOTE_NOT_FOUND");
-      if (quote.status !== "ACCEPTED") throw new Error("QUOTE_NOT_ACCEPTED");
-      const existing = await tx.invoice.findFirst({ where: { quotationId: quote.id, status: { not: "VOID" } }, select: { id: true } });
-      if (existing) throw new Error("INVOICE_EXISTS");
+      const found = await tx.quotation.findUnique({ where: { id: parsed.data.quotationId }, select: { projectId: true } });
+      if (!found) throw new Error("QUOTE_NOT_FOUND");
+      // One payable invoice per project: the project row is locked while that is checked and the invoice made.
+      await tx.$queryRaw`SELECT id FROM "Project" WHERE id = ${found.projectId} FOR UPDATE`;
+      const quote = await tx.quotation.findUniqueOrThrow({ where: { id: parsed.data.quotationId }, include: { items: true } });
+      const [latest, liveInvoices] = await Promise.all([
+        tx.quotation.aggregate({ where: { projectId: quote.projectId }, _max: { version: true } }),
+        tx.invoice.count({ where: { quotation: { projectId: quote.projectId }, status: { in: [...LIVE_INVOICE_STATUSES] } } })
+      ]);
+      const decision = invoiceDecision(quote, latest._max.version ?? quote.version, liveInvoices);
+      if (decision !== "OK") throw new Error(decision);
       const created = await tx.invoice.create({
         data: {
           number: `INV-${new Date().getUTCFullYear()}-${randomBytes(6).toString("hex").toUpperCase()}`,
@@ -67,7 +74,8 @@ export async function POST(request: Request) {
   } catch (error) {
     if (error instanceof Error && error.message === "QUOTE_NOT_FOUND") return Response.json({ error: "Taklif topilmadi." }, { status: 404 });
     if (error instanceof Error && error.message === "QUOTE_NOT_ACCEPTED") return Response.json({ error: "Hisob-faktura faqat mijoz qabul qilgan taklifdan yaratiladi." }, { status: 409 });
-    if (error instanceof Error && error.message === "INVOICE_EXISTS") return Response.json({ error: "Bu taklif uchun hisob-faktura allaqachon yaratilgan." }, { status: 409 });
+    if (error instanceof Error && error.message === "INVOICE_EXISTS") return Response.json({ error: "Bu loyiha uchun hisob allaqachon yaratilgan." }, { status: 409 });
+    if (error instanceof Error && error.message === "NOT_LATEST") return Response.json({ error: "Hisob faqat loyihaning eng so‘nggi taklifidan yaratiladi." }, { status: 409 });
     console.error("Invoice creation failed", error);
     return Response.json({ error: "Hisob-fakturani yaratib bo‘lmadi." }, { status: 500 });
   }

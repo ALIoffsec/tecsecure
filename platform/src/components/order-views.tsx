@@ -14,6 +14,8 @@ import { canDispute, isDisputeOpen } from "@/lib/marketplace";
 import type { OrderLineProduct } from "@/lib/order-lines";
 import { checkoutCopy } from "@/lib/checkout-copy";
 import { regionCodes, regionNames, type RegionCode } from "@/lib/delivery";
+import { canMarkRefunded, canRejectReceipt } from "@/lib/order-refunds";
+import { OrderRefundActions, PartRefundQueue, type PartRefundRow } from "./order-refund-actions";
 
 type OrderItem = { id: string; name: string; sku?: string | null; quantity: number; unitPriceMinor?: number | null; product?: OrderLineProduct; shopId?: string | null };
 type Shipment = { shopId: string; status: string; sellerNote: string | null; creditedAt?: string | Date | null; disputedAt?: string | Date | null; disputeResolution?: string | null; disputeResolvedAt?: string | Date | null; shop: { name: string; slug: string } };
@@ -32,8 +34,7 @@ type OrderBase = {
   items: OrderItem[];
   shipments?: Shipment[];
 };
-export type CustomerOrder = OrderBase & { history: { id: string; toStatus: string; createdAt: Date | string; note: string | null }[] };
-export type AdminOrder = OrderBase & { customer: { name: string; email: string } };
+export type AdminOrder = OrderBase & { customer: { name: string; email: string }; paymePerformed?: boolean };
 
 /** What was bought, as the shop showed it: photo, name, how many, and what each line costs. */
 export function OrderLines({ items, currency, shipments }: { items: OrderItem[]; currency: string; shipments?: Shipment[] }) {
@@ -142,8 +143,6 @@ function OrderTotals({ order }: { order: OrderBase }) {
   </span>;
 }
 
-const flow: OrderStatusValue[] = ["NEW", "CONFIRMED", "PREPARING", "SHIPPED", "DELIVERED"];
-
 function PaymentBadge({ order }: { order: OrderBase }) {
   const { locale } = useSitePreferences();
   const c = siteCopy[locale].orders;
@@ -153,64 +152,7 @@ function PaymentBadge({ order }: { order: OrderBase }) {
   </span>;
 }
 
-/** `embedded`: inside the cabinet frame, which already gives the page its container. */
-export function CustomerOrders({ orders, embedded = false }: { orders: CustomerOrder[]; embedded?: boolean }) {
-  const { locale } = useSitePreferences();
-  const c = siteCopy[locale].orders;
-  const g = growthCopy[locale].b2b;
-  return <div className={embedded ? "customer-orders" : "container page-shell customer-orders"}>
-    {!embedded && <span className="eyebrow">{c.eyebrow}</span>}
-    <h1 className={embedded ? "cab-title" : "page-title"}>{c.title}</h1>
-    {orders.length === 0 && <div className="empty-state checkout-empty">
-      <p><strong>{c.empty}</strong></p>
-      <Link className="button" href="/products">{c.browse}</Link>
-    </div>}
-    <div className="stack" style={{ gap: 18 }}>
-      {orders.map((order) => {
-        const status = order.status as OrderStatusValue;
-        const index = flow.indexOf(status);
-        const cancelled = status === "CANCELLED";
-        const progress = index <= 0 ? 0 : (index / (flow.length - 1)) * 80;
-        return <article className="order-card" id={`order-${order.id}`} key={order.id}>
-          <div className="order-head">
-            <div>
-              <h2>{order.reference}</h2>
-              <span className="small muted">{formatDateTime(order.createdAt)}</span>
-            </div>
-            <span className={`order-status${status === "DELIVERED" ? " is-done" : cancelled ? " is-cancelled" : ""}`}>{c.status[status] ?? status}</span>
-          </div>
-          <div className="order-body">
-            {cancelled
-              ? <p className="order-cancelled">{c.cancelled}</p>
-              : <ol className="order-track" aria-label={c.trackLabel}>
-                <span className="bar" style={{ width: `${progress}%` }} />
-                {flow.map((step, i) => <li key={step} className={`${i <= index ? "is-reached" : ""}${i === index ? " is-current" : ""}`}>
-                  <i>{i < index || step === "DELIVERED" ? "✓" : i + 1}</i>{c.status[step]}
-                </li>)}
-              </ol>}
-            <div className="order-meta">
-              <div><h3>{c.delivery}</h3><p>{order.recipientName} · {order.phone}<br /><DeliverySummary order={order} /></p>
-                {order.latitude !== null && order.longitude !== null && <a className="small text-link" href={`https://yandex.uz/maps/?pt=${order.longitude},${order.latitude}&z=16&l=map`} target="_blank" rel="noreferrer">{c.map}</a>}
-              </div>
-              <div><h3>{c.total}</h3><p><OrderTotals order={order} /></p></div>
-              <div><h3>{c.payment}</h3><PaymentBadge order={order} />
-                {!cancelled && order.paymentMethod === "ONLINE_PAYME" && order.paymentStatus === "AWAITING_PAYMENT" && <a className="button order-pay" href={`/api/orders/${order.id}/payme?l=${locale}`}>{g.pay}</a>}
-                {order.paymentMethod === "BANK_TRANSFER" && <Link className="small text-link order-invoice" href={`/portal/orders/${order.id}/invoice`}>{g.invoice}</Link>}
-              </div>
-            </div>
-            <OrderLines items={order.items} currency={order.currency} shipments={order.shipments} /><ShopShipments shipments={order.shipments} orderId={order.id} />
-            <details>
-              <summary className="small">{c.history}</summary>
-              <ul className="stack small" style={{ marginTop: 8 }}>{order.history.map((entry) => <li key={entry.id}>{formatDateTime(entry.createdAt)} — <strong>{c.status[entry.toStatus] ?? entry.toStatus}</strong>{entry.note ? ` · ${entry.note}` : ""}</li>)}</ul>
-            </details>
-          </div>
-        </article>;
-      })}
-    </div>
-  </div>;
-}
-
-function AdminOrderActions({ order }: { order: AdminOrder }) {
+function AdminOrderActions({ order, canRefund }: { order: AdminOrder; canRefund: boolean }) {
   const { locale } = useSitePreferences();
   const copy = siteCopy[locale];
   const router = useRouter();
@@ -236,12 +178,13 @@ function AdminOrderActions({ order }: { order: AdminOrder }) {
       <button type="button" className="button" disabled={busy} onClick={() => void send({ cancelledReceipt: "RECEIVED" })}>{cancelledReceiptLabels[locale].received}</button>
       <button type="button" className="button secondary" disabled={busy} onClick={() => void send({ cancelledReceipt: "MISSING" })}>{cancelledReceiptLabels[locale].missing}</button>
     </>}
+    <OrderRefundActions orderId={order.id} canReject={canRejectReceipt(order)} canRefund={canRefund && canMarkRefunded({ ...order, paymePerformed: Boolean(order.paymePerformed) })} paymeRefund={order.paymentStatus === "REFUND_DUE" && Boolean(order.paymePerformed)} />
     {options.map((next) => <button key={next} type="button" className={next === "CANCELLED" ? "button danger" : "button secondary"} disabled={busy} onClick={() => void send({ status: next })}>{copy.orders.statusAction[next]}</button>)}
     <ToastMessage message={error} variant="error" />
   </div>;
 }
 
-export function AdminOrders({ orders, counts, total, status }: { orders: AdminOrder[]; counts: Record<string, number>; total: number; status?: string }) {
+export function AdminOrders({ orders, counts, total, status, canRefund = false, partRefunds = [] }: { orders: AdminOrder[]; counts: Record<string, number>; total: number; status?: string; canRefund?: boolean; partRefunds?: PartRefundRow[] }) {
   const { locale } = useSitePreferences();
   const copy = siteCopy[locale];
   const c = copy.orders;
@@ -258,6 +201,7 @@ export function AdminOrders({ orders, counts, total, status }: { orders: AdminOr
       <Link className={`shop-chip${!status ? " is-active" : ""}`} href="/admin/orders">{copy.admin.all} · {total}</Link>
       {orderStatuses.map((value) => <Link className={`shop-chip${status === value ? " is-active" : ""}`} key={value} href={`/admin/orders?status=${value}`}>{c.status[value]} · {counts[value] ?? 0}</Link>)}
     </nav>
+    <PartRefundQueue rows={partRefunds} canRefund={canRefund} />
     <input className="admin-orders-search" type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder={copy.admin.search} aria-label={copy.admin.search} />
     {visible.length === 0 && <div className="empty-state">{copy.admin.noOrders}</div>}
     <div className="stack">
@@ -286,7 +230,7 @@ export function AdminOrders({ orders, counts, total, status }: { orders: AdminOr
             {order.paymentMethod === "BANK_TRANSFER" && <a className="small text-link" href={`/portal/orders/${order.id}/invoice`} target="_blank" rel="noreferrer">{growthCopy[locale].b2b.invoice}</a>}
           </div>
           {order.note && <p className="small">{c.note}: {order.note}</p>}
-          <AdminOrderActions order={order} />
+          <AdminOrderActions order={order} canRefund={canRefund} />
         </div>
       </article>)}
     </div>

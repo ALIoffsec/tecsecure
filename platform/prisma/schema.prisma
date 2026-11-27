@@ -544,6 +544,7 @@ model ServiceRequest {
   createdAt            DateTime               @default(now())
   updatedAt            DateTime               @updatedAt
   history              RequestStatusHistory[]
+  project              Project?
 
   @@index([customerId, createdAt])
   @@index([organizationId, createdAt])
@@ -575,6 +576,9 @@ model Project {
   status         ProjectStatus @default(DRAFT)
   notes          String?
   city           String?
+  /// The service request this project grew out of; one project per request.
+  requestId      String?         @unique
+  request        ServiceRequest? @relation(fields: [requestId], references: [id], onDelete: SetNull)
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
   items          ProjectItem[]
