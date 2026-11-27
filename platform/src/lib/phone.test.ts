@@ -63,3 +63,11 @@ test("codes reach a Telegram only through the one active proved account", () => 
   const owner = account({ telegramChatId: "222" });
   assert.equal(phoneOwner([unproved({ telegramChatId: "111" }), owner], P), owner);
 });
+
+test("a phone is shown with its middle hidden", async () => {
+  const { maskPhone } = await import("./phone");
+  assert.equal(maskPhone("+998901234512"), "+998 90 *** ** 12");
+  assert.equal(maskPhone("998 90 123 45 12"), "+998 90 *** ** 12");
+  assert.equal(maskPhone("+7 495 123 45 67"), "*** 67");
+  assert.equal(maskPhone(null), null);
+});

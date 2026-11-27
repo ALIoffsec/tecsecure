@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { CabinetNav, type CabinetNavState } from "./cabinet-nav";
 import { CabinetHeader } from "./cabinet-header";
 
-export type CabinetUser = { name: string; contact: string | null; staff: boolean };
+export type CabinetUser = { name: string; contact: string | null; maskedPhone: string | null; staff: boolean };
 
 /**
  * The cabinet's frame: a compact header, the side menu on a computer, and the page. The home draws its own

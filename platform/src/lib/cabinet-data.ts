@@ -4,6 +4,10 @@ import { orderItemsWithProduct, withLineProducts } from "./order-lines";
 import { CUSTOMER_EVENTS } from "./notifications";
 import { learningModules } from "./learning-demo";
 import { receiptRefusals } from "./order-refunds-server";
+import { maskPhone } from "./phone";
+import { learningXpEvents } from "./learning-profile-server";
+import { levelForXp } from "./learning-xp";
+import { monthlyCounts } from "./activity";
 import { unreadForCustomer } from "./conversations";
 import { ORDERS_MAX_PAGES, ORDERS_PAGE, orderFilterWhere, parseOrderFilter } from "./customer-orders";
 import { ACTIVE_ORDER_STATUSES, OPEN_REQUEST_STATUSES, invoiceAttention, pickAttention, type AttentionItem } from "./cabinet-home";
@@ -34,7 +38,7 @@ export const cabinetFrameData = cache(async (userId: string) => {
     counts: { orders: ordersToPay, requests: quotesToAnswer + invoicesToPay }
   };
   return {
-    user: { name: account?.name ?? "", contact: realEmail ?? account?.phone ?? null, staff: Boolean(account && account.role !== "CUSTOMER") },
+    user: { name: account?.name ?? "", contact: realEmail ?? maskPhone(account?.phone) ?? null, maskedPhone: maskPhone(account?.phone), staff: Boolean(account && account.role !== "CUSTOMER") },
     nav, unread
   };
 });
@@ -77,6 +81,17 @@ export async function cabinetHomeData(userId: string) {
     })
   ]);
   const lastAsked = lastOrder ? await cancelRequests([lastOrder.id]) : new Set<string>();
+  // The identity card's learning level and the 12-month activity chart, from tables that already keep dates.
+  const since = new Date(); since.setUTCMonth(since.getUTCMonth() - 12);
+  const [xpEvents, orderDates, lessonDates, requestDates, certificates] = await Promise.all([
+    learningXpEvents(userId),
+    prisma.order.findMany({ where: { customerId: userId, createdAt: { gte: since } }, select: { createdAt: true } }),
+    prisma.learningProgress.findMany({ where: { userId, completedAt: { gte: since } }, select: { completedAt: true } }),
+    prisma.serviceRequest.findMany({ where: { customerId: userId, createdAt: { gte: since } }, select: { createdAt: true } }),
+    prisma.learningCertificate.count({ where: { userId } })
+  ]);
+  const totalXp = xpEvents.reduce((sum, event) => sum + event.xp, 0);
+  const levelInfo = levelForXp(totalXp);
   // Staff replies the customer has not read yet (read state since the conversation migration).
   const talks = await prisma.portalConversation.findMany({
     where: { customerId: userId }, orderBy: { lastMessageAt: "desc" }, take: 10,
@@ -90,6 +105,8 @@ export async function cabinetHomeData(userId: string) {
       return kind ? [{ kind, key: `invoice:${invoice.id}`, subject: invoice.quotation?.project.name ?? invoice.number, href: `/portal/invoices/${invoice.id}`, at: invoice.createdAt }] : [];
     }),
     ...unpaidOrders.map(order => ({ kind: refused.has(order.id) ? "receiptRejected" as const : "orderUnpaid" as const, key: `order:${order.id}`, subject: order.items[0]?.name ? `${order.reference} · ${order.items[0].name}` : order.reference, href: `/portal/orders/${order.id}`, at: order.createdAt })),
+    // An unverified phone is one quiet line here (settings live behind the gear in the head, not a card).
+    ...(account?.phone && !account.phoneVerifiedAt ? [{ kind: "phoneUnverified" as const, key: "phone", subject: account.phone, href: "/portal/settings/profile", at: new Date(0) }] : []),
     ...replies.map(talk => ({ kind: "staffReply" as const, key: `talk:${talk.id}`, subject: talk.subject, href: "/portal/messages", at: talk.lastMessageAt })),
     ...quotes.map(quote => ({ kind: "quoteWaiting" as const, key: `quote:${quote.id}`, subject: quote.project?.name ?? quote.number, href: `/portal/requests/${quote.project.requestId ?? quote.project.id}#quote`, at: quote.createdAt }))
   ];
@@ -105,7 +122,9 @@ export async function cabinetHomeData(userId: string) {
     },
     activeOrders, openRequests, devices, quietDevices,
     lesson: lesson ? lesson.title : null,
-    lessonSlug: lesson?.slug ?? null
+    lessonSlug: lesson?.slug ?? null,
+    xp: totalXp, level: levelInfo.level, nextXp: levelInfo.ceil, certificates,
+    activity: monthlyCounts([...orderDates.map(row => row.createdAt), ...lessonDates.map(row => row.completedAt), ...requestDates.map(row => row.createdAt)])
   };
 }
 

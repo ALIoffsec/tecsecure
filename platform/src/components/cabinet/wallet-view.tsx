@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { useSitePreferences } from "@/components/site-preferences";
 import { SiteDialog } from "@/components/site-dialog";
 import { MediaUploader } from "@/components/media-uploader";
-import { WalletCard } from "@/components/wallet-card";
 import { UiIcon } from "@/components/ui-icon";
 import type { PaymentCard } from "@/components/cart-checkout";
 import { formatDate, formatMinor, formatNumber } from "@/lib/format";
@@ -19,7 +18,7 @@ type Entry = { id: string; kind: string; status: string; amountMinor: number; re
 
 const words = {
   uz: {
-    balance: "Hamyonda", tec: "TEC", topUp: "To‘ldirish", withdraw: "Yechish", pending: "Kutilayotgan so‘rov", cancel: "So‘rovni bekor qilish",
+    balance: "Hamyonda", tec: "TEC", moneyTitle: "Pul", buyTec: "TEC sotib olish", whatTec: "TEC nima?", topUp: "To‘ldirish", withdraw: "Yechish", pending: "Kutilayotgan so‘rov", cancel: "So‘rovni bekor qilish",
     noCard: "Karta orqali to‘ldirish hozircha sozlanmagan. Bizga yozing.", write: "Xabar yozish", tecNote: "TEC sotib olish va ta’lim obunasi", store: "TEC va obuna",
     history: "Harakatlar", filters: { all: "Hammasi", in: "Kirim", out: "Chiqim", tec: "TEC" }, empty: "Hozircha harakat yo‘q.", filterLabel: "Harakatlarni saralash",
     steps: ["Summa", "Karta", "Chek"], amount: "Summa (so‘m)", next: "Keyingi", back: "Orqaga", card: "Shu kartaga o‘tkazing", copy: "Karta raqamidan nusxa olish", copied: "Nusxa olindi",
@@ -29,7 +28,7 @@ const words = {
     statuses: { PENDING: "Kutilmoqda", APPROVED: "Tasdiqlandi", REJECTED: "Rad etildi" } as Record<string, string>
   },
   ru: {
-    balance: "В кошельке", tec: "TEC", topUp: "Пополнить", withdraw: "Вывести", pending: "Заявка ждёт проверки", cancel: "Отменить заявку",
+    balance: "В кошельке", tec: "TEC", moneyTitle: "Деньги", buyTec: "Купить TEC", whatTec: "Что такое TEC?", topUp: "Пополнить", withdraw: "Вывести", pending: "Заявка ждёт проверки", cancel: "Отменить заявку",
     noCard: "Пополнение картой пока не настроено. Напишите нам.", write: "Написать", tecNote: "Покупка TEC и подписка на обучение", store: "TEC и подписка",
     history: "Операции", filters: { all: "Все", in: "Поступления", out: "Списания", tec: "TEC" }, empty: "Операций пока нет.", filterLabel: "Фильтр операций",
     steps: ["Сумма", "Карта", "Чек"], amount: "Сумма (сум)", next: "Далее", back: "Назад", card: "Переведите на эту карту", copy: "Скопировать номер карты", copied: "Скопировано",
@@ -39,7 +38,7 @@ const words = {
     statuses: { PENDING: "Ожидает", APPROVED: "Подтверждено", REJECTED: "Отклонено" } as Record<string, string>
   },
   en: {
-    balance: "In the wallet", tec: "TEC", topUp: "Top up", withdraw: "Withdraw", pending: "Request waiting for review", cancel: "Cancel request",
+    balance: "In the wallet", tec: "TEC", moneyTitle: "Money", buyTec: "Buy TEC", whatTec: "What is TEC?", topUp: "Top up", withdraw: "Withdraw", pending: "Request waiting for review", cancel: "Cancel request",
     noCard: "Card top-up is not set up yet. Write to us.", write: "Write to us", tecNote: "Buy TEC and learning plans", store: "TEC and plans",
     history: "Activity", filters: { all: "All", in: "In", out: "Out", tec: "TEC" }, empty: "No activity yet.", filterLabel: "Filter activity",
     steps: ["Amount", "Card", "Receipt"], amount: "Amount (UZS)", next: "Next", back: "Back", card: "Transfer to this card", copy: "Copy the card number", copied: "Copied",
@@ -60,6 +59,7 @@ export function WalletView({ balanceMinor, points, entries, paymentCard, startTo
   const router = useRouter();
   const [dialog, setDialog] = useState<"topup" | "withdraw" | null>(startTopUp && paymentCard ? "topup" : null);
   const [filter, setFilter] = useState<LedgerFilter>("all");
+  const [tecInfo, setTecInfo] = useState(false);
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -89,20 +89,27 @@ export function WalletView({ balanceMinor, points, entries, paymentCard, startTo
       </li>)}</ul>
     </section>}
 
-    <section className="panel-card" aria-label={t("wallet")}>
-      <div className="cab-balances">
-        <p><span className="muted">{w.balance}</span><strong>{formatMinor(balanceMinor, "UZS", locale)}</strong></p>
-        <p><span className="muted">{w.tec}</span><strong>{formatNumber(points, 0)} TEC</strong></p>
-      </div>
-      <WalletCard balance={balanceMinor} points={points} />
-      <div className="hero-actions">
-        {paymentCard ? <button type="button" className="button" onClick={() => setDialog("topup")}>{w.topUp}</button>
-          : <p className="small muted">{w.noCard} <Link className="text-link" href="/portal/messages">{w.write}</Link></p>}
-        <button type="button" className="button ghost" onClick={() => setDialog("withdraw")} disabled={balanceMinor <= 0}>{w.withdraw}</button>
-      </div>
-      <p className="small muted">{t("tecEarnRate")}</p>
-      <p className="small"><Link className="text-link" href="/store">{w.store}</Link> · <span className="muted">{w.tecNote}</span></p>
-    </section>
+    {/* Two cards: money and TEC, each with its own actions. Side by side on a computer, stacked on a phone. */}
+    <div className="cab-money-cards">
+      <section className="panel-card cab-money-card" aria-labelledby="wallet-money">
+        <h2 id="wallet-money" className="cab-h2">{w.moneyTitle}</h2>
+        <strong className="cab-money-amount">{formatMinor(balanceMinor, "UZS", locale)}</strong>
+        <div className="hero-actions">
+          {paymentCard ? <button type="button" className="button" onClick={() => setDialog("topup")}>{w.topUp}</button>
+            : <p className="small muted">{w.noCard} <Link className="text-link" href="/portal/messages">{w.write}</Link></p>}
+          <button type="button" className="button ghost" onClick={() => setDialog("withdraw")} disabled={balanceMinor <= 0}>{w.withdraw}</button>
+        </div>
+      </section>
+      <section className="panel-card cab-money-card is-tec" aria-labelledby="wallet-tec">
+        <h2 id="wallet-tec" className="cab-h2">TEC</h2>
+        <strong className="cab-money-amount">{formatNumber(points, 0)} TEC</strong>
+        <div className="hero-actions">
+          <Link className="button" href="/store">{w.buyTec}</Link>
+          <button type="button" className="button ghost" aria-expanded={tecInfo} aria-controls="wallet-tec-info" onClick={() => setTecInfo(value => !value)}>{w.whatTec}</button>
+        </div>
+        {tecInfo && <div id="wallet-tec-info" className="small muted cab-tec-info"><p>{t("tecPurchaseDescription")}</p><p>{t("tecEarnRate")}</p></div>}
+      </section>
+    </div>
 
     <section className="panel-card" aria-labelledby="wallet-history">
       <h2 id="wallet-history">{w.history}</h2>

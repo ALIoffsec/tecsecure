@@ -1,4 +1,4 @@
-import { computeProfile } from "@/lib/learning-profile";
+import { XP_RULES, computeProfile, labXp } from "@/lib/learning-profile";
 import type { ProfilePractice } from "@/lib/learning-profile-types";
 import { prisma } from "@/lib/prisma";
 import { getPublishedLearningDocuments } from "@/lib/learning-content";
@@ -55,4 +55,27 @@ export async function getProfilePractice(userId: string): Promise<ProfilePractic
       })
     }
   };
+}
+
+/**
+ * Every XP-giving event of a learner with its time, from the tables that already record it: lessons,
+ * finished modules, labs and the first pass of each exam. Buying TEC gives no XP.
+ */
+export async function learningXpEvents(userId: string): Promise<{ at: Date; xp: number }[]> {
+  const [sections, modules, labs, passes, labsCatalog] = await Promise.all([
+    prisma.learningProgress.findMany({ where: { userId }, select: { completedAt: true } }),
+    prisma.learningModuleCompletion.findMany({ where: { userId }, select: { completedAt: true } }),
+    prisma.learningLabCompletion.findMany({ where: { userId }, select: { labSlug: true, completedAt: true } }),
+    prisma.learningExamAttempt.findMany({ where: { userId, passed: true, submittedAt: { not: null } }, orderBy: { submittedAt: "asc" }, select: { examSlug: true, submittedAt: true } }),
+    getPublishedLearningDocuments("lab")
+  ]);
+  const firstPass = new Map<string, Date>();
+  for (const pass of passes) if (pass.submittedAt && !firstPass.has(pass.examSlug)) firstPass.set(pass.examSlug, pass.submittedAt);
+  const levels = new Map(labsCatalog.map(lab => [lab.slug, lab.level]));
+  return [
+    ...sections.map(item => ({ at: item.completedAt, xp: XP_RULES.section })),
+    ...modules.map(item => ({ at: item.completedAt, xp: XP_RULES.module })),
+    ...labs.map(item => ({ at: item.completedAt, xp: labXp(levels.get(item.labSlug) ?? "") })),
+    ...[...firstPass.values()].map(at => ({ at, xp: XP_RULES.exam }))
+  ];
 }

@@ -121,6 +121,15 @@
 #app-shell .cab-copy-button { display: inline-grid; place-items: center; min-width: 36px; min-height: 36px; padding: 0; }
 @media print { #app-shell .print-hide, #app-shell .cab-side, #app-shell .cab-head, #app-shell .cab-back { display: none !important; } }
 
+/* Wallet: a money card and a TEC card, each with its actions; content always stays inside the card */
+#app-shell .cab-money-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+#app-shell .cab-money-card { display: grid; align-content: start; gap: 10px; min-width: 0; overflow: hidden; }
+#app-shell .cab-money-card .cab-h2 { margin: 0; }
+#app-shell .cab-money-amount { font-size: clamp(1.3rem, 4vw, 1.7rem); line-height: 1.2; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+#app-shell .cab-money-card.is-tec .cab-money-amount { color: var(--accent); }
+#app-shell .cab-money-card .hero-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; }
+#app-shell .cab-tec-info p { margin: 0 0 6px; }
+
 /* Wallet: both balances as text, the activity with its sign */
 #app-shell .cab-balances { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 0 0 14px; }
 #app-shell .cab-balances p { display: grid; gap: 2px; margin: 0; padding: 12px 14px; border: 1px solid var(--glass-edge); border-radius: 14px; background: var(--glass-control); }
@@ -150,6 +159,10 @@
 #app-shell .cab-steps li.is-reached { color: var(--text); }
 #app-shell .cab-step-text { display: grid; gap: 2px; }
 #app-shell .cab-step-text small { color: var(--muted); font-weight: 400; }
+
+/* Home: at most one quiet line for unread notifications; the list itself lives behind the bell */
+#app-shell a.cab-news-line { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 10px 14px; border: 1px solid var(--glass-edge); border-radius: 14px; background: var(--glass-fill); color: var(--text); text-decoration: none; }
+#app-shell a.cab-news-line span { flex: 1; }
 
 /* Notifications */
 #app-shell button.cab-notice { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 12px; border: 1px solid var(--glass-edge); border-radius: 14px; background: transparent; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
@@ -203,6 +216,8 @@ html[data-tma="customer"] #app-shell .cab-back { display: none; }
   #app-shell .cab-order-action { justify-content: stretch; }
   #app-shell .cab-order-action .button { width: 100%; }
   #app-shell .cab-copy-button { min-width: 44px; min-height: 44px; }
+  #app-shell .cab-money-cards { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  #app-shell .cab-money-card { gap: 8px; }
   #app-shell .cab-facts { grid-template-columns: minmax(0, 1fr); gap: 2px; }
   #app-shell .cab-facts dd { margin-bottom: 8px; }
   #app-shell .cab-steps { grid-auto-flow: row; grid-auto-columns: auto; gap: 0; }
@@ -221,13 +236,42 @@ html[data-tma="customer"] #app-shell .cab-back { display: none; }
 #app-shell .help-header-button { display: none; }
 #app-shell .help-contacts { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
 #app-shell .help-contacts .button { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; }
-#app-shell .help-thread { display: grid; gap: 8px; max-height: 40dvh; margin: 0 0 12px; padding: 0; overflow-y: auto; list-style: none; }
-#app-shell .help-thread li { display: grid; gap: 2px; max-width: 88%; padding: 8px 10px; border: 1px solid var(--glass-edge); border-radius: 12px; }
-#app-shell .help-thread li.is-staff { background: var(--glass-control); }
-#app-shell .help-thread li.is-customer { justify-self: end; }
-#app-shell .help-thread p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
-#app-shell button.help-conversation { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 10px; min-height: 44px; padding: 0; border: 0; background: none; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
 html[data-tma] #app-shell :is(.help-fab, .help-header-button) { display: none; }
+
+/* Chat (help panel and "Xabarlarim"): bubbles, day lines, a composer pinned to the bottom of the thread */
+#app-shell .chat { display: flex; flex-direction: column; gap: 10px; min-height: 0; }
+#app-shell .chat-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 44px; }
+#app-shell .chat-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#app-shell .chat-list { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+#app-shell .chat-list button { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 12px; min-height: 56px; padding: 10px 12px; border: 1px solid var(--glass-edge); border-radius: 14px; background: transparent; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+#app-shell .chat-list-text { display: grid; gap: 2px; min-width: 0; }
+#app-shell .chat-list-text small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#app-shell .chat-list-side { display: grid; justify-items: end; gap: 4px; flex: none; }
+#app-shell .chat-unread { min-width: 20px; padding: 1px 7px; border-radius: 999px; background: var(--accent); color: #04121b; font-size: .72rem; font-weight: 800; }
+#app-shell .chat-thread { display: flex; flex-direction: column; gap: 6px; flex: 1 1 auto; min-height: 160px; max-height: 50dvh; margin: 0; padding: 4px 2px; overflow-y: auto; overscroll-behavior: contain; list-style: none; }
+#app-shell .cab-chat-page .chat-thread { max-height: 60dvh; }
+#app-shell .chat-item { display: flex; flex-direction: column; }
+#app-shell .chat-day { display: flex; justify-content: center; margin: 8px 0 4px; }
+#app-shell .chat-day span { padding: 2px 10px; border-radius: 999px; background: var(--glass-control); color: var(--muted); font-size: .75rem; }
+#app-shell .chat-bubble { display: grid; gap: 2px; max-width: 82%; padding: 8px 12px; border-radius: 16px; }
+#app-shell .chat-bubble p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+#app-shell .chat-bubble small { justify-self: end; opacity: .75; font-size: .72rem; }
+#app-shell .chat-bubble.from-me { align-self: flex-end; border-bottom-right-radius: 6px; background: color-mix(in srgb, var(--accent) 26%, var(--glass-fill)); border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--glass-edge)); }
+#app-shell .chat-bubble.from-staff { align-self: flex-start; border-bottom-left-radius: 6px; background: var(--glass-control); border: 1px solid var(--glass-edge); }
+#app-shell .chat-bubble.is-failed { border-color: #ff8a8a; }
+#app-shell .chat-retry { align-self: flex-end; font-size: .8rem; }
+#app-shell .chat-hint { align-self: center; padding: 16px; text-align: center; }
+#app-shell .chat-note { margin: 0; }
+#app-shell .chat-composer { position: sticky; bottom: 0; display: flex; align-items: flex-end; gap: 8px; padding-top: 8px; background: inherit; }
+#app-shell .chat-composer textarea { flex: 1; min-height: 44px; resize: none; line-height: 1.4; font-size: 16px; }
+#app-shell .chat-send { display: grid; place-items: center; width: 44px; min-width: 44px; height: 44px; padding: 0; }
+@media (max-width: 900px) {
+  /* The help chat is a full-screen sheet on a phone; its height follows the visible area when the keyboard opens. */
+  #app-shell dialog.help-dialog { width: 100vw; max-width: none; height: var(--chat-vh, 100dvh); max-height: none; margin: 0; inset: 0 auto auto 0; border-radius: 0; display: flex; flex-direction: column; }
+  #app-shell dialog.help-dialog:not([open]) { display: none; }
+  #app-shell dialog.help-dialog .chat { flex: 1; }
+  #app-shell dialog.help-dialog .chat-thread { max-height: none; }
+}
 @media (max-width: 900px) {
   #app-shell .help-fab { display: none; }
   #app-shell .help-header-button { display: inline-grid; place-items: center; }

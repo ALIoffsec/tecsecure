@@ -6,7 +6,7 @@ test("every old section address moves to its new page", () => {
   const table: [string | null, string][] = [
     ["overview", "/portal"], ["profile", "/portal/settings"], ["requests", "/portal/requests"], ["projects", "/portal/requests"],
     ["invoices", "/portal/requests"], ["orders", "/portal/orders"], ["wallet", "/portal/wallet"], ["monitoring", "/portal/devices"],
-    ["subscriptions", "/portal/devices"], ["messages", "/portal/messages"], ["learning", "/portal/learning"], ["store", "/store"],
+    ["subscriptions", "/portal/devices"], ["messages", "/portal/messages"], ["learning", "/learning"], ["store", "/store"],
     ["nonsense", "/portal"], [null, "/portal"]
   ];
   for (const [section, path] of table) assert.equal(legacyPortalPath(section), path, String(section));

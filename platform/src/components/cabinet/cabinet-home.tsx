@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { AccountSessionActions } from "@/components/account-session-actions";
 import { useSitePreferences } from "@/components/site-preferences";
-import { TecGiftNotifications } from "@/components/tec-gift-notifications";
 import { UiIcon, type IconName } from "@/components/ui-icon";
 import { formatDate, formatMinor, formatNumber } from "@/lib/format";
 import { cabinetLabels, type CabinetSection } from "@/lib/cabinet-routes";
@@ -19,49 +18,49 @@ type Words = {
   attention: Record<AttentionKind, string>; view: string; pay: string; more: (n: number) => string;
   orders: (n: number) => string; ordersNone: string; quotes: (n: number) => string; requests: (n: number) => string; requestsNone: string;
   lesson: (title: string) => string; lessonNone: string; devices: (n: number) => string; quiet: (n: number) => string;
-  phoneMissing: string; phoneUnverified: string; settingsOk: string; help: string; helpLine: string; cancelRequested: string;
+  phoneMissing: string; phoneUnverified: string; settingsOk: string; help: string; helpLine: string; cancelRequested: string; news: (n: number) => string;
 };
 
 const words: Record<"uz" | "ru" | "en", Words> = {
   uz: {
     waiting: "Sizdan kutilmoqda", lastOrder: "Oxirgi buyurtma", sections: "Bo‘limlar", track: "Buyurtma bosqichlari",
     steps: ["Qabul", "Tayyor", "Yo‘lda", "Yetdi"],
-    attention: { invoiceOverdue: "To‘lov muddati o‘tdi", orderUnpaid: "To‘lov kutilmoqda", receiptRejected: "Chek qabul qilinmadi", invoiceUnpaid: "Hisob to‘lanmagan", quoteWaiting: "Taklif javobingizni kutyapti", staffReply: "Xodim javob berdi" },
+    attention: { invoiceOverdue: "To‘lov muddati o‘tdi", orderUnpaid: "To‘lov kutilmoqda", receiptRejected: "Chek qabul qilinmadi", invoiceUnpaid: "Hisob to‘lanmagan", quoteWaiting: "Taklif javobingizni kutyapti", staffReply: "Xodim javob berdi", phoneUnverified: "Telefon raqamingizni tasdiqlang" },
     view: "Ko‘rish", pay: "To‘lash", more: n => `yana ${n} ta`,
     orders: n => `${n} ta faol buyurtma`, ordersNone: "Uskuna xarid qilish",
     quotes: n => `${n} ta taklif javob kutyapti`, requests: n => `${n} ta ariza jarayonda`, requestsNone: "Xizmat so‘rash",
     lesson: title => `Davom ettirish: ${title}`, lessonNone: "O‘qishni davom ettirish",
     devices: n => `${n} ta qurilma`, quiet: n => `${n} ta qurilma javob bermayapti`,
     phoneMissing: "Telefon qo‘shilmagan", phoneUnverified: "Telefon tasdiqlanmagan", settingsOk: "Ma’lumot va xavfsizlik",
-    help: "Yordam", helpLine: "Savol yozish", cancelRequested: "Bekor qilish so‘raldi"
+    help: "Yordam", helpLine: "Savol yozish", news: n => `${n} ta yangi bildirishnoma`, cancelRequested: "Bekor qilish so‘raldi"
   },
   ru: {
     waiting: "Ждёт вашего действия", lastOrder: "Последний заказ", sections: "Разделы", track: "Этапы заказа",
     steps: ["Принят", "Готов", "В пути", "Доставлен"],
-    attention: { invoiceOverdue: "Срок оплаты прошёл", orderUnpaid: "Ожидается оплата", receiptRejected: "Чек не принят", invoiceUnpaid: "Счёт не оплачен", quoteWaiting: "Предложение ждёт ответа", staffReply: "Сотрудник ответил" },
+    attention: { invoiceOverdue: "Срок оплаты прошёл", orderUnpaid: "Ожидается оплата", receiptRejected: "Чек не принят", invoiceUnpaid: "Счёт не оплачен", quoteWaiting: "Предложение ждёт ответа", staffReply: "Сотрудник ответил", phoneUnverified: "Подтвердите номер телефона" },
     view: "Открыть", pay: "Оплатить", more: n => `ещё ${n}`,
     orders: n => `Активных заказов: ${n}`, ordersNone: "Купить оборудование",
     quotes: n => `Предложений ждут ответа: ${n}`, requests: n => `Заявок в работе: ${n}`, requestsNone: "Заказать услугу",
     lesson: title => `Продолжить: ${title}`, lessonNone: "Продолжить обучение",
     devices: n => `Устройств: ${n}`, quiet: n => `Не отвечают: ${n}`,
     phoneMissing: "Телефон не добавлен", phoneUnverified: "Телефон не подтверждён", settingsOk: "Данные и безопасность",
-    help: "Помощь", helpLine: "Написать вопрос", cancelRequested: "Запрошена отмена"
+    help: "Помощь", helpLine: "Написать вопрос", news: n => `Новых уведомлений: ${n}`, cancelRequested: "Запрошена отмена"
   },
   en: {
     waiting: "Waiting on you", lastOrder: "Latest order", sections: "Sections", track: "Order progress",
     steps: ["Received", "Ready", "On the way", "Delivered"],
-    attention: { invoiceOverdue: "Payment is overdue", orderUnpaid: "Awaiting payment", receiptRejected: "Receipt not accepted", invoiceUnpaid: "Invoice unpaid", quoteWaiting: "A quote awaits your answer", staffReply: "Staff replied" },
+    attention: { invoiceOverdue: "Payment is overdue", orderUnpaid: "Awaiting payment", receiptRejected: "Receipt not accepted", invoiceUnpaid: "Invoice unpaid", quoteWaiting: "A quote awaits your answer", staffReply: "Staff replied", phoneUnverified: "Verify your phone number" },
     view: "View", pay: "Pay", more: n => `${n} more`,
     orders: n => `${n} active ${n === 1 ? "order" : "orders"}`, ordersNone: "Buy equipment",
     quotes: n => `${n} ${n === 1 ? "quote awaits" : "quotes await"} your answer`, requests: n => `${n} ${n === 1 ? "request" : "requests"} in progress`, requestsNone: "Request a service",
     lesson: title => `Continue: ${title}`, lessonNone: "Continue learning",
     devices: n => `${n} ${n === 1 ? "device" : "devices"}`, quiet: n => `${n} not responding`,
     phoneMissing: "No phone added", phoneUnverified: "Phone not verified", settingsOk: "Details and security",
-    help: "Help", helpLine: "Ask a question", cancelRequested: "Cancellation requested"
+    help: "Help", helpLine: "Ask a question", news: n => `${n} new notification${n === 1 ? "" : "s"}`, cancelRequested: "Cancellation requested"
   }
 };
 
-const attentionIcon: Record<AttentionKind, IconName> = { invoiceOverdue: "alert", orderUnpaid: "creditCard", receiptRejected: "receipt", invoiceUnpaid: "receipt", quoteWaiting: "clipboard", staffReply: "mail" };
+const attentionIcon: Record<AttentionKind, IconName> = { invoiceOverdue: "alert", orderUnpaid: "creditCard", receiptRejected: "receipt", invoiceUnpaid: "receipt", quoteWaiting: "clipboard", staffReply: "mail", phoneUnverified: "phone" };
 const payKinds = new Set<AttentionKind>(["invoiceOverdue", "orderUnpaid", "invoiceUnpaid"]);
 
 type Tile = { id: CabinetSection | "help"; href: string; icon: IconName; label: string; line: string; count?: number; warn?: boolean };
@@ -83,14 +82,13 @@ export function CabinetHome({ user, unread, nav, data }: { user: CabinetUser; un
     ...(nav.show.learning ? [{ id: "learning" as const, href: data.lessonSlug ? `/learning/${data.lessonSlug}` : "/portal/learning", icon: "book" as const, label: labels.learning, line: data.lesson ? w.lesson(data.lesson[locale]) : w.lessonNone }] : []),
     { id: "wallet", href: "/portal/wallet", icon: "wallet", label: labels.wallet, line: `${formatMinor(data.walletMinor, "UZS", locale)} · ${formatNumber(data.tec, 0)} TEC` },
     ...(nav.show.devices || data.devices ? [{ id: "devices" as const, href: "/portal/devices", icon: "server" as const, label: labels.devices, line: data.quietDevices ? w.quiet(data.quietDevices) : w.devices(data.devices), warn: data.quietDevices > 0 }] : []),
-    { id: "settings", href: data.phone === "verified" ? "/portal/settings" : "/portal/settings/profile", icon: "settings", label: labels.settings, line: data.phone === "missing" ? w.phoneMissing : data.phone === "unverified" ? w.phoneUnverified : w.settingsOk, warn: data.phone !== "verified" },
     { id: "help", href: "/portal/messages", icon: "mail", label: w.help, line: w.helpLine }
   ];
   const order = data.lastOrder;
   const step = order ? orderStep(order.status) : -1;
   return <>
     <CabinetHeader user={user} unread={unread} home={{ walletMinor: data.walletMinor, tec: data.tec }} />
-    <TecGiftNotifications />
+    {unread > 0 && <Link className="cab-news-line" href="/portal/notifications"><UiIcon name="bell" size={18} /><span>{w.news(unread)}</span><UiIcon name="chevronRight" size={18} /></Link>}
     {data.waiting.length > 0 && <section className="cab-block-plain" aria-labelledby="cab-waiting">
       <h2 id="cab-waiting" className="cab-h2">{w.waiting}</h2>
       <ul className="cab-attention">

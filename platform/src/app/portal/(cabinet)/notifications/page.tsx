@@ -3,6 +3,7 @@ import { requireUser } from "@/lib/auth";
 import { isPreviewMode } from "@/lib/preview-mode";
 import { PreviewModeNotice } from "@/components/preview-mode-notice";
 import { NotificationList } from "@/components/cabinet/notification-list";
+import { TecGiftNotifications } from "@/components/tec-gift-notifications";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: { absolute: "Bildirishnomalar | Tecsecure" }, robots: { index: false, follow: false } };
@@ -10,5 +11,5 @@ export const metadata: Metadata = { title: { absolute: "Bildirishnomalar | Tecse
 export default async function CabinetNotificationsPage() {
   if (isPreviewMode) return <PreviewModeNotice />;
   await requireUser("/portal/notifications");
-  return <NotificationList />;
+  return <><NotificationList /><TecGiftNotifications /></>;
 }

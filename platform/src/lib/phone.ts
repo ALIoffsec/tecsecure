@@ -63,3 +63,11 @@ export function phoneOwner<T extends PhoneHolder>(accounts: T[], phone: string):
 export function phoneSearchSuffix(phone: string): string {
   return phone.replace(/\D/g, "").slice(-2);
 }
+
+/** A phone for display with the middle hidden: "+998 90 *** ** 12". Anything that is not an Uzbek mobile keeps only its last two digits. */
+export function maskPhone(phone: string | null | undefined): string | null {
+  if (!phone) return null;
+  const digits = phone.replace(/\D/g, "");
+  if (digits.length === 12 && digits.startsWith("998")) return `+998 ${digits.slice(3, 5)} *** ** ${digits.slice(-2)}`;
+  return digits.length >= 4 ? `*** ${digits.slice(-2)}` : null;
+}

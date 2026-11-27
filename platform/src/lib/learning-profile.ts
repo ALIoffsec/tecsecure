@@ -1,6 +1,7 @@
 import { learningExams } from "@/lib/learning-exams";
 import { learningLabs } from "@/lib/learning-labs";
 import { learningModules } from "@/lib/learning-demo";
+import { LEVEL_NAMES, levelForXp, skillScore } from "@/lib/learning-xp";
 
 export type ProfileInput = {
   sections: { moduleSlug: string; sectionIndex: number }[];
@@ -17,11 +18,11 @@ export type ProfileInput = {
 };
 
 export const XP_RULES = { section: 10, module: 100, labByLevel: { "boshlang‘ich": 100, "o‘rta": 150, "ilg‘or": 200 } as Record<string, number>, exam: 400 };
+export const labXp = (level: string) => XP_RULES.labByLevel[level] ?? 100;
 
-const levelSteps = [0, 100, 300, 600, 1000, 1600, 2400, 3400, 4600, 6000];
-const levelNames = ["Yangi", "O‘quvchi", "Amaliyotchi", "Tahlilchi", "Tajribali", "Mutaxassis", "Ekspert", "Usta", "Ustoz", "Afsona"];
 
-const skillDefs = [
+/** The skill axes: groups of modules from the catalogue (its four broad categories are too coarse for a chart). */
+export const skillDefs = [
   { key: "net", title: "Tarmoq", modules: ["network-fundamentals", "network-engineering-advanced", "computer-science-core", "cisco-ios-fundamentals", "mikrotik-routeros-basics", "wifi-security"] },
   { key: "sys", title: "Tizimlar", modules: ["linux-fundamentals", "linux-systems-administration", "windows-fundamentals", "windows-active-directory-operations"] },
   { key: "sec", title: "Xavfsizlik", modules: ["intro-cybersecurity", "web-security-owasp", "security-engineering-appsec", "cloud-devsecops-operations", "senior-infrastructure-architecture", "cctv-system-design"] },
@@ -40,6 +41,9 @@ export type PracticeProfile = {
   levelName: string;
   levelFloor: number;
   levelCeil: number | null;
+  /** Index into LEVEL_NAMES and the stage (1–3) within that name. */
+  nameIndex: number;
+  stage: number;
   skills: SkillRating[];
   achievements: Achievement[];
   breakdown: { sections: number; modules: number; labs: number; exams: number };
@@ -58,26 +62,24 @@ export function computeProfile(input: ProfileInput): PracticeProfile {
 
   const sectionsXp = sectionSet.size * XP_RULES.section;
   const modulesXp = modulesDone.size * XP_RULES.module;
-  const labsXp = labsCatalog.filter((lab) => labsDone.has(lab.slug)).reduce((sum, lab) => sum + (XP_RULES.labByLevel[lab.level] ?? 100), 0);
+  const labsXp = labsCatalog.filter((lab) => labsDone.has(lab.slug)).reduce((sum, lab) => sum + labXp(lab.level), 0);
   const examsXp = examsCatalog.filter((exam) => examsPassed.has(exam.slug)).length * XP_RULES.exam;
   const xp = sectionsXp + modulesXp + labsXp + examsXp;
 
-  let level = 1;
-  levelSteps.forEach((step, index) => { if (xp >= step) level = index + 1; });
-  const levelFloor = levelSteps[level - 1];
-  const levelCeil = levelSteps[level] ?? null;
+  const levelInfo = levelForXp(xp);
+  const level = levelInfo.level;
 
+  // A skill's score is the XP earned in its modules, labs and exams over the XP they can give.
   const skills = skillDefs.map((skill) => {
     const modules = modulesCatalog.filter((item) => skill.modules.includes(item.slug));
-    const totalSections = modules.reduce((sum, item) => sum + item.sections.length, 0);
-    const doneSections = modules.reduce((sum, item) => sum + item.sections.filter((_, index) => sectionSet.has(`${item.slug}:${index}`)).length, 0);
     const labs = labsCatalog.filter((lab) => skill.modules.includes(lab.moduleSlug));
     const exams = examsCatalog.filter((exam) => exam.requiredModules.some((slug) => skill.modules.includes(slug)));
-    const parts: [number, number][] = [[totalSections ? doneSections / totalSections : 0, 50]];
-    if (labs.length) parts.push([labs.filter((lab) => labsDone.has(lab.slug)).length / labs.length, 30]);
-    if (exams.length) parts.push([exams.filter((exam) => examsPassed.has(exam.slug)).length / exams.length, 20]);
-    const weight = parts.reduce((sum, [, w]) => sum + w, 0);
-    const score = Math.round(parts.reduce((sum, [ratio, w]) => sum + ratio * w, 0) / weight * 100);
+    const possible = modules.reduce((sum, item) => sum + item.sections.length * XP_RULES.section + XP_RULES.module, 0)
+      + labs.reduce((sum, lab) => sum + labXp(lab.level), 0) + exams.length * XP_RULES.exam;
+    const earned = modules.reduce((sum, item) => sum + item.sections.filter((_, index) => sectionSet.has(`${item.slug}:${index}`)).length * XP_RULES.section + (modulesDone.has(item.slug) ? XP_RULES.module : 0), 0)
+      + labs.filter((lab) => labsDone.has(lab.slug)).reduce((sum, lab) => sum + labXp(lab.level), 0)
+      + exams.filter((exam) => examsPassed.has(exam.slug)).length * XP_RULES.exam;
+    const score = skillScore(earned, possible);
     return { key: skill.key, title: skill.title, score, label: skillLabel(score) };
   });
 
@@ -96,5 +98,5 @@ export function computeProfile(input: ProfileInput): PracticeProfile {
     { id: "xp-1000", title: "1000 XP", hint: "1000 XP to‘plang", earned: xp >= 1000, tone: "cyan" }
   ];
 
-  return { xp, level, levelName: levelNames[level - 1], levelFloor, levelCeil, skills, achievements, breakdown: { sections: sectionsXp, modules: modulesXp, labs: labsXp, exams: examsXp } };
+  return { xp, level, levelName: LEVEL_NAMES.uz[levelInfo.nameIndex], levelFloor: levelInfo.floor, levelCeil: levelInfo.ceil, nameIndex: levelInfo.nameIndex, stage: levelInfo.stage, skills, achievements, breakdown: { sections: sectionsXp, modules: modulesXp, labs: labsXp, exams: examsXp } };
 }

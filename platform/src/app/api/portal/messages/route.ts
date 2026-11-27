@@ -19,12 +19,15 @@ const messageSchema = z.object({
 export async function GET(request: Request) {
   const user = await getCurrentUser();
   if (!user || user.role !== "CUSTOMER") return Response.json({ guest: true, unread: 0, conversations: [] }, { headers: { "Cache-Control": "no-store" } });
-  const countOnly = new URL(request.url).searchParams.get("scope") === "count";
+  const query = new URL(request.url).searchParams;
+  const countOnly = query.get("scope") === "count";
+  // The help panel shows the latest few; the messages page asks for more.
+  const many = query.get("scope") === "all";
   const rows = await prisma.portalConversation.findMany({
     where: { customerId: user.id },
     orderBy: { lastMessageAt: "desc" },
-    take: countOnly ? 20 : 5,
-    select: { id: true, reference: true, subject: true, status: true, customerReadAt: true, lastMessageAt: true, messages: { orderBy: { createdAt: "desc" }, take: countOnly ? 10 : 30, select: { id: true, sender: true, body: true, createdAt: true } } }
+    take: countOnly ? 20 : many ? 50 : 10,
+    select: { id: true, reference: true, subject: true, status: true, customerReadAt: true, lastMessageAt: true, messages: { orderBy: { createdAt: "desc" }, take: countOnly ? 10 : 100, select: { id: true, sender: true, body: true, createdAt: true } } }
   });
   const unread = rows.reduce((sum, row) => sum + unreadForCustomer(row.messages, row.customerReadAt), 0);
   if (countOnly) return Response.json({ guest: false, unread }, { headers: { "Cache-Control": "no-store" } });
