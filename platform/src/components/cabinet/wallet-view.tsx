@@ -18,7 +18,7 @@ type Entry = { id: string; kind: string; status: string; amountMinor: number; re
 
 const words = {
   uz: {
-    balance: "Hamyonda", tec: "TEC", moneyTitle: "Pul", buyTec: "TEC sotib olish", whatTec: "TEC nima?", topUp: "To‘ldirish", withdraw: "Yechish", pending: "Kutilayotgan so‘rov", cancel: "So‘rovni bekor qilish",
+    balance: "Hamyonda", tec: "TEC", moneyTitle: "Pul", buyTec: "Sotib olish", whatTec: "TEC nima?", topUp: "To‘ldirish", withdraw: "Yechish", pending: "Kutilayotgan so‘rov", cancel: "So‘rovni bekor qilish",
     noCard: "Karta orqali to‘ldirish hozircha sozlanmagan. Bizga yozing.", write: "Xabar yozish", tecNote: "TEC sotib olish va ta’lim obunasi", store: "TEC va obuna",
     history: "Harakatlar", filters: { all: "Hammasi", in: "Kirim", out: "Chiqim", tec: "TEC" }, empty: "Hozircha harakat yo‘q.", filterLabel: "Harakatlarni saralash",
     steps: ["Summa", "Karta", "Chek"], amount: "Summa (so‘m)", next: "Keyingi", back: "Orqaga", card: "Shu kartaga o‘tkazing", copy: "Karta raqamidan nusxa olish", copied: "Nusxa olindi",
@@ -92,6 +92,7 @@ export function WalletView({ balanceMinor, points, entries, paymentCard, startTo
     {/* Two cards: money and TEC, each with its own actions. Side by side on a computer, stacked on a phone. */}
     <div className="cab-money-cards">
       <section className="panel-card cab-money-card" aria-labelledby="wallet-money">
+        <span className="cab-money-chip" aria-hidden="true" />
         <h2 id="wallet-money" className="cab-h2">{w.moneyTitle}</h2>
         <strong className="cab-money-amount">{formatMinor(balanceMinor, "UZS", locale)}</strong>
         <div className="hero-actions">
@@ -101,6 +102,7 @@ export function WalletView({ balanceMinor, points, entries, paymentCard, startTo
         </div>
       </section>
       <section className="panel-card cab-money-card is-tec" aria-labelledby="wallet-tec">
+        <span className="cab-money-coin" aria-hidden="true">TEC</span>
         <h2 id="wallet-tec" className="cab-h2">TEC</h2>
         <strong className="cab-money-amount">{formatNumber(points, 0)} TEC</strong>
         <div className="hero-actions">

@@ -2200,3 +2200,78 @@ th { color: var(--muted); font-size: .8rem; text-transform: uppercase; letter-sp
     .learn-home-step-grid { grid-template-columns: minmax(0, 1fr); }
     .learn-home-section-heading { align-items: flex-start; flex-direction: column; gap: 8px; }
   }
+
+/* ===== Learning home and navigation (spec B): iOS-level liquid glass on the site tokens =====
+   Blur budget on /learning: site header, segmented control, level card, help button (4 of at most 6). */
+#app-shell .learning-catalog-layout.learn-shell { display: block; }
+#app-shell .learn-segments { position: sticky; top: 76px; z-index: 20; display: flex; justify-content: center; margin: 4px 0 18px; }
+#app-shell .learn-segments-track { position: relative; display: flex; gap: 2px; max-width: 100%; padding: 4px; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; border: .5px solid var(--glass-edge); border-radius: 999px; background: var(--glass-overlay); box-shadow: inset 0 1px 0 #ffffff40, 0 12px 30px -16px #00000070; -webkit-backdrop-filter: blur(22px) saturate(180%); backdrop-filter: blur(22px) saturate(180%); }
+#app-shell .learn-segments-track::-webkit-scrollbar { display: none; }
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) { #app-shell .learn-segments-track { background: var(--surface); } }
+#app-shell .learn-segments-indicator { position: absolute; top: 4px; bottom: 4px; left: 0; border-radius: 999px; background: color-mix(in srgb, var(--accent) 22%, var(--glass-control)); box-shadow: inset 0 1px 0 #ffffff55, 0 4px 12px -6px #00000080; transition: transform 380ms cubic-bezier(.32, .72, 0, 1), width 380ms cubic-bezier(.32, .72, 0, 1); }
+#app-shell .learn-segment { position: relative; z-index: 1; display: inline-flex; flex: none; align-items: center; justify-content: center; min-height: 40px; padding: 0 16px; border-radius: 999px; color: var(--muted); font-weight: 600; text-decoration: none; white-space: nowrap; transition: color 200ms, transform 200ms cubic-bezier(.32, .72, 0, 1); }
+#app-shell .learn-segment.is-icon { padding: 0 12px; }
+#app-shell .learn-segment[aria-current="page"] { color: var(--text); }
+#app-shell .learn-segment:active { transform: scale(.97); }
+#app-shell .learn-filter { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 16px; }
+
+#app-shell .learn-home { display: grid; gap: 14px; max-width: 980px; margin: 0 auto; }
+#app-shell .learn-home .panel-card, #app-shell .learn-home .learn-tile { -webkit-backdrop-filter: none; backdrop-filter: none; }
+#app-shell .learn-home-bar { position: sticky; top: 132px; z-index: 15; padding: 2px 0; transition: padding 280ms cubic-bezier(.32, .72, 0, 1); }
+#app-shell .learn-home-title { margin: 0; font-size: clamp(1.7rem, 5vw, 2.3rem); letter-spacing: -.03em; transition: font-size 280ms cubic-bezier(.32, .72, 0, 1); }
+#app-shell .learn-home-bar.is-compact .learn-home-title { font-size: 1.05rem; }
+#app-shell .learn-home-bar.is-compact { padding: 8px 14px; border-radius: 14px; background: var(--glass-overlay); box-shadow: inset 0 1px 0 #ffffff30; }
+#app-shell .learn-home-title:focus { outline: none; }
+
+#app-shell .learn-level-card { display: grid; gap: 14px; padding: 20px; border: .5px solid var(--glass-edge); border-radius: 26px; background: var(--glass-fill); box-shadow: inset 0 1px 0 #ffffff59, 0 24px 60px -20px #00000080, var(--glass-shadow); -webkit-backdrop-filter: blur(26px) saturate(185%); backdrop-filter: blur(26px) saturate(185%); }
+:root[data-theme="light"] #app-shell .learn-level-card { box-shadow: inset 0 1px 0 #ffffffcc, 0 20px 50px -24px #354a7a40; }
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) { #app-shell .learn-level-card { background: var(--surface); } }
+#app-shell .learn-level-top { display: flex; align-items: center; gap: 16px; }
+#app-shell .learn-level-ring { display: grid; flex: none; width: 68px; height: 68px; place-content: center; border: 3px solid var(--accent); border-radius: 50%; text-align: center; line-height: 1; }
+#app-shell .learn-level-ring small { color: var(--muted); font-size: .68rem; text-transform: uppercase; letter-spacing: .06em; }
+#app-shell .learn-level-ring strong { font-size: 1.6rem; font-weight: 300; font-variant-numeric: tabular-nums; }
+#app-shell .learn-level-text { display: grid; flex: 1; gap: 6px; min-width: 0; }
+#app-shell .learn-level-text small { color: var(--muted); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+#app-shell .learn-xp-track { display: block; height: 8px; overflow: hidden; border-radius: 999px; background: var(--glass-control); }
+#app-shell .learn-xp-fill { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 70%, #fff), var(--accent)); transform-origin: left; animation: xp-grow 600ms cubic-bezier(.32, .72, 0, 1) both; }
+@keyframes xp-grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+#app-shell .learn-level-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+#app-shell .learn-level-stats p { display: grid; gap: 2px; margin: 0; padding: 12px 14px; border: .5px solid var(--glass-edge); border-radius: 14px; background: var(--glass-control); }
+#app-shell .learn-level-stats small { color: var(--muted); font-size: .8rem; }
+#app-shell .learn-level-stats strong { font-size: 1.25rem; font-weight: 300; font-variant-numeric: tabular-nums; }
+
+#app-shell .learn-skills h2, #app-shell .learn-resume-card h2, #app-shell .learn-xp-weeks h2 { margin: 0 0 8px; font-size: 1.05rem; }
+#app-shell .learn-radar { margin: 0; }
+#app-shell .learn-radar svg { display: block; width: 100%; max-width: 360px; height: auto; margin: 0 auto; overflow: visible; }
+#app-shell .learn-radar-ring { fill: none; stroke: var(--glass-edge); stroke-width: 1; }
+#app-shell .learn-radar-spoke { stroke: var(--glass-edge); stroke-width: 1; }
+#app-shell .learn-radar-shape { fill: color-mix(in srgb, var(--accent) 30%, transparent); stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; animation: radar-grow 600ms cubic-bezier(.32, .72, 0, 1) both; }
+@keyframes radar-grow { from { transform: scale(0); } to { transform: scale(1); } }
+#app-shell .learn-radar-label { fill: var(--text); font-size: 11px; font-weight: 600; }
+#app-shell .learn-radar-score { fill: var(--muted); font-weight: 400; font-variant-numeric: tabular-nums; }
+
+#app-shell .learn-tiles ul { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 0; padding: 0; list-style: none; }
+#app-shell .learn-tile { display: grid; gap: 4px; height: 100%; padding: 14px; border: .5px solid var(--glass-edge); border-radius: 14px; background: var(--glass-fill); box-shadow: inset 0 1px 0 var(--glass-shine); color: var(--text); text-decoration: none; transition: transform 200ms cubic-bezier(.32, .72, 0, 1), border-color 200ms; }
+#app-shell .learn-tile:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--glass-edge)); }
+#app-shell .learn-tile:active { transform: scale(.97); }
+#app-shell .learn-tile:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+#app-shell .learn-tile-icon { display: grid; width: 34px; height: 34px; place-items: center; border-radius: 10px; background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent); }
+#app-shell .learn-tile small { color: var(--muted); overflow-wrap: anywhere; }
+#app-shell .learn-resume-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 12px; }
+#app-shell .learn-resume-card p { margin: 0 0 12px; }
+#app-shell .learn-resume-button { width: 100%; justify-content: center; }
+#app-shell .learn-earned { margin-bottom: 16px; }
+
+@media (min-width: 901px) {
+  /* The same blocks in the same order, in two columns on a computer. */
+  #app-shell .learn-home { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+  #app-shell .learn-home > .learn-home-bar, #app-shell .learn-home > div[aria-hidden] { grid-column: 1 / -1; }
+  #app-shell .learn-resume-button { width: auto; }
+}
+@media (max-width: 900px) {
+  #app-shell .learn-segments { top: 64px; justify-content: flex-start; }
+  #app-shell .learn-home-bar { top: 116px; }
+  #app-shell .learn-level-card { padding: 16px; }
+}
+html[data-motion="off"] #app-shell :is(.learn-xp-fill, .learn-radar-shape, .learn-segments-indicator, .learn-home-title) { animation: none; transition: none; }
+@media (prefers-reduced-motion: reduce) { #app-shell :is(.learn-xp-fill, .learn-radar-shape, .learn-segments-indicator, .learn-home-title) { animation: none; transition: none; } }

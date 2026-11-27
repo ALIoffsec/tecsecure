@@ -8,9 +8,9 @@ import { translateMessage } from "@/lib/server-messages";
 import { MESSAGE_MAX } from "@/lib/conversations";
 
 const words = {
-  uz: { list: "Suhbatlar", newChat: "Yangi suhbat", newTitle: "Yangi suhbat", back: "Suhbatlar", placeholder: "Xabar yozing…", send: "Yuborish", sending: "yuborilmoqda…", retry: "Qayta yuborish", failed: "Yuborilmadi", today: "Bugun", yesterday: "Kecha", none: "Hali suhbat yo‘q. Savolingizni yozing.", start: "Savolingizni yozing — xodim shu yerda javob beradi.", loading: "Yuklanmoqda…", closed: "Suhbat yopilgan; yozsangiz qayta ochiladi.", unread: (n: number) => `${n} ta yangi`, tooShort: "Kamida 3 belgi yozing.", you: "Siz", staff: "Tecsecure" },
-  ru: { list: "Диалоги", newChat: "Новый диалог", newTitle: "Новый диалог", back: "Диалоги", placeholder: "Напишите сообщение…", send: "Отправить", sending: "отправляется…", retry: "Отправить снова", failed: "Не отправлено", today: "Сегодня", yesterday: "Вчера", none: "Диалогов пока нет. Напишите свой вопрос.", start: "Напишите вопрос — сотрудник ответит здесь.", loading: "Загрузка…", closed: "Диалог закрыт; если напишете, он откроется снова.", unread: (n: number) => `новых: ${n}`, tooShort: "Напишите хотя бы 3 символа.", you: "Вы", staff: "Tecsecure" },
-  en: { list: "Conversations", newChat: "New conversation", newTitle: "New conversation", back: "Conversations", placeholder: "Write a message…", send: "Send", sending: "sending…", retry: "Send again", failed: "Not sent", today: "Today", yesterday: "Yesterday", none: "No conversations yet. Write your question.", start: "Write your question — staff will reply here.", loading: "Loading…", closed: "This conversation is closed; writing opens it again.", unread: (n: number) => `${n} new`, tooShort: "Write at least 3 characters.", you: "You", staff: "Tecsecure" }
+  uz: { list: "Suhbatlar", newChat: "Yangi suhbat", newTitle: "Yangi suhbat", back: "Suhbatlar", placeholder: "Xabar yozing…", send: "Yuborish", sending: "yuborilmoqda…", retry: "Qayta yuborish", failed: "Yuborilmadi", today: "Bugun", yesterday: "Kecha", none: "Hali suhbat yo‘q. Savolingizni yozing.", start: "Savolingizni yozing — xodim shu yerda javob beradi.", loading: "Yuklanmoqda…", closed: "Suhbat yopilgan; yozsangiz qayta ochiladi.", unread: (n: number) => `${n} ta yangi`, tooShort: "Kamida 3 belgi yozing.", you: "Siz", staff: "Tecsecure", brand: "Tecsecure yordam", staffRole: "Xodim" },
+  ru: { list: "Диалоги", newChat: "Новый диалог", newTitle: "Новый диалог", back: "Диалоги", placeholder: "Напишите сообщение…", send: "Отправить", sending: "отправляется…", retry: "Отправить снова", failed: "Не отправлено", today: "Сегодня", yesterday: "Вчера", none: "Диалогов пока нет. Напишите свой вопрос.", start: "Напишите вопрос — сотрудник ответит здесь.", loading: "Загрузка…", closed: "Диалог закрыт; если напишете, он откроется снова.", unread: (n: number) => `новых: ${n}`, tooShort: "Напишите хотя бы 3 символа.", you: "Вы", staff: "Tecsecure", brand: "Поддержка Tecsecure", staffRole: "Сотрудник" },
+  en: { list: "Conversations", newChat: "New conversation", newTitle: "New conversation", back: "Conversations", placeholder: "Write a message…", send: "Send", sending: "sending…", retry: "Send again", failed: "Not sent", today: "Today", yesterday: "Yesterday", none: "No conversations yet. Write your question.", start: "Write your question — staff will reply here.", loading: "Loading…", closed: "This conversation is closed; writing opens it again.", unread: (n: number) => `${n} new`, tooShort: "Write at least 3 characters.", you: "You", staff: "Tecsecure", brand: "Tecsecure support", staffRole: "Staff" }
 } as const;
 
 type Message = { id: string; fromStaff: boolean; body: string; createdAt: string; state?: "sending" | "failed" };
@@ -132,7 +132,7 @@ export function ChatView({ scope = "panel" }: { scope?: "panel" | "page" }) {
     <div className="chat-head">
       {conversations.length > 1 || selected === "new" && conversations.length > 0
         ? <button type="button" className="text-link" onClick={() => { setSelected(null); setPending([]); setError(""); }}>← {w.back}</button> : <span />}
-      <strong className="chat-title">{open ? open.subject : w.newTitle}</strong>
+      <span className="chat-title"><strong>{w.brand}</strong><small className="muted">{open ? open.subject : w.newTitle}</small></span>
       {open && <button type="button" className="button ghost small" onClick={() => { setSelected("new"); setPending([]); }} aria-label={w.newChat} title={w.newChat}><UiIcon name="plus" size={16} /></button>}
     </div>
     <ol className="chat-thread" ref={thread}>
@@ -144,7 +144,7 @@ export function ChatView({ scope = "panel" }: { scope?: "panel" | "page" }) {
           <div className={`chat-bubble ${message.fromStaff ? "from-staff" : "from-me"}${message.state === "failed" ? " is-failed" : ""}`}>
             <span className="sr-only">{message.fromStaff ? w.staff : w.you}: </span>
             <p>{message.body}</p>
-            <small>{message.state === "sending" ? w.sending : message.state === "failed" ? w.failed : formatTime(message.createdAt)}</small>
+            <small>{message.state === "sending" ? w.sending : message.state === "failed" ? w.failed : message.fromStaff ? `${formatTime(message.createdAt)} · ${w.staffRole}` : formatTime(message.createdAt)}</small>
           </div>
           {message.state === "failed" && <button type="button" className="text-link chat-retry" onClick={() => retry(message)}>{w.retry}</button>}
         </li>;

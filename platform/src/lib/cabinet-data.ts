@@ -111,6 +111,7 @@ export async function cabinetHomeData(userId: string) {
     ...quotes.map(quote => ({ kind: "quoteWaiting" as const, key: `quote:${quote.id}`, subject: quote.project?.name ?? quote.number, href: `/portal/requests/${quote.project.requestId ?? quote.project.id}#quote`, at: quote.createdAt }))
   ];
   const lesson = lastLesson ? learningModules.find(module => module.slug === lastLesson.moduleSlug) : undefined;
+  const lessonDone = lesson ? await prisma.learningProgress.count({ where: { userId, moduleSlug: lesson.slug } }) : 0;
   return {
     walletMinor: account?.walletBalanceMinor ?? 0,
     tec: account?.rewardPoints ?? 0,
@@ -123,7 +124,8 @@ export async function cabinetHomeData(userId: string) {
     activeOrders, openRequests, devices, quietDevices,
     lesson: lesson ? lesson.title : null,
     lessonSlug: lesson?.slug ?? null,
-    xp: totalXp, level: levelInfo.level, nextXp: levelInfo.ceil, certificates,
+    xp: totalXp, level: levelInfo.level, nextXp: levelInfo.ceil, levelXp: totalXp - levelInfo.floor, levelSpan: levelInfo.ceil - levelInfo.floor, certificates,
+    lessonNext: lesson ? Math.min(lesson.sections.length, lessonDone + 1) : null,
     activity: monthlyCounts([...orderDates.map(row => row.createdAt), ...lessonDates.map(row => row.completedAt), ...requestDates.map(row => row.createdAt)])
   };
 }

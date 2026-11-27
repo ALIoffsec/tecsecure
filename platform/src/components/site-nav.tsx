@@ -7,6 +7,7 @@ import { useSitePreferences } from "./site-preferences";
 import { UiIcon, type IconName } from "./ui-icon";
 import { CartIcon, useCart } from "./cart";
 import { HelpHeaderButton } from "./help-panel";
+import { AccountMenu } from "./account-menu";
 import { siteCopy } from "@/lib/site-copy";
 import type { Locale } from "@/lib/messages";
 import { AppInstallButton } from "./app-install-button";
@@ -124,7 +125,7 @@ export function SiteNav() {
             <span className="portal-search-label">{c.search.trigger}</span><kbd>Ctrl K</kbd>
           </Link>
           <HelpHeaderButton />
-          <Link className="portal-account" href="/portal" aria-label={c.nav.account}><UiIcon name="user" /><span>{c.nav.account}</span></Link>
+          <AccountMenu className="portal-account" label={c.nav.account}><UiIcon name="user" /><span>{c.nav.account}</span></AccountMenu>
           <button ref={toggle} type="button" className="portal-icon-link portal-menu-toggle" aria-expanded={open} aria-controls="portal-menu" aria-label={open ? c.nav.close : c.nav.menu} onClick={() => setOpen(value => !value)}>
             <span className="portal-burger" data-open={open} aria-hidden="true"><i /><i /></span>
           </button>

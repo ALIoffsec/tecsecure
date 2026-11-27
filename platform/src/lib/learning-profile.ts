@@ -23,14 +23,12 @@ export const labXp = (level: string) => XP_RULES.labByLevel[level] ?? 100;
 
 /** The skill axes: groups of modules from the catalogue (its four broad categories are too coarse for a chart). */
 export const skillDefs = [
-  { key: "net", title: "Tarmoq", modules: ["network-fundamentals", "network-engineering-advanced", "computer-science-core", "cisco-ios-fundamentals", "mikrotik-routeros-basics", "wifi-security"] },
-  { key: "sys", title: "Tizimlar", modules: ["linux-fundamentals", "linux-systems-administration", "windows-fundamentals", "windows-active-directory-operations"] },
-  { key: "sec", title: "Xavfsizlik", modules: ["intro-cybersecurity", "web-security-owasp", "security-engineering-appsec", "cloud-devsecops-operations", "senior-infrastructure-architecture", "cctv-system-design"] },
-  { key: "soc", title: "SOC tahlil", modules: ["soc-log-analysis", "soc-incident-response-detection"] },
-  { key: "fw", title: "Firewall", modules: ["firewall-zero-to-hero", "kerio-control-zero-to-hero"] },
-  { key: "ad", title: "Identifikatsiya", modules: ["active-directory-security", "windows-active-directory-operations"] },
-  { key: "cloud", title: "Cloud/DevOps", modules: ["cloud-devsecops-operations", "linux-systems-administration"] },
-  { key: "grc", title: "GRC va Privacy", modules: ["iso-27001-isms", "gdpr-privacy-engineering"] }
+  { key: "net", title: "Tarmoq", modules: ["network-fundamentals", "network-engineering-advanced", "computer-science-core", "cisco-ios-fundamentals", "mikrotik-routeros-basics", "wifi-security", "firewall-zero-to-hero", "kerio-control-zero-to-hero"] },
+  { key: "sys", title: "Linux va tizimlar", modules: ["linux-fundamentals", "linux-systems-administration", "cloud-devsecops-operations"] },
+  { key: "win", title: "Windows/AD", modules: ["windows-fundamentals", "windows-active-directory-operations", "active-directory-security"] },
+  { key: "sec", title: "Veb va AppSec", modules: ["intro-cybersecurity", "web-security-owasp", "security-engineering-appsec", "senior-infrastructure-architecture"] },
+  { key: "soc", title: "SOC tahlil", modules: ["soc-log-analysis", "soc-incident-response-detection", "iso-27001-isms", "gdpr-privacy-engineering"] },
+  { key: "iot", title: "CCTV/IoT", modules: ["cctv-system-design"] }
 ];
 
 export type SkillRating = { key: string; title: string; score: number; label: string };

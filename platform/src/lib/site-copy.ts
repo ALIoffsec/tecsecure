@@ -41,10 +41,10 @@ const uz: SiteCopy = {
     learning: { title: "Ta’lim", href: "/learning", links: [
       { href: "/learning/paths", title: "Yo‘nalishlar", hint: "Noldan kasbgacha bosqichma-bosqich reja" },
       { href: "/learning/modules", title: "Modullar", hint: "Aniq mavzu bo‘yicha darslar" },
-      { href: "/learning/practice", title: "Amaliyot", hint: "Laboratoriya va mashqlar" },
-      { href: "/learning/exams", title: "Imtihonlar", hint: "Bilimni tekshirish va sertifikat" },
+      { href: "/learning/labs", title: "Laboratoriyalar", hint: "Lab vazifalari, amaliyot va CTF" },
+      { href: "/learning/certifications", title: "Sertifikatlar", hint: "Bilimni tekshirish va sertifikat" },
       { href: "/learning/business", title: "Kompaniyalar uchun", hint: "Xodimlar guruhi uchun o‘quv dasturi" },
-      { href: "/learning/dashboard", title: "Mening o‘qishim", hint: "Natijalar va davom ettirish" }
+      { href: "/learning", title: "Mening o‘qishim", hint: "Natijalar va davom ettirish" }
     ] },
     shop: { title: "Do‘kon", href: "/products", links: [
       { href: "/products", title: "Barcha uskunalar", hint: "Tarmoq, kamera va xavfsizlik jihozlari" },
@@ -112,10 +112,10 @@ const ru: SiteCopy = {
     learning: { title: "Обучение", href: "/learning", links: [
       { href: "/learning/paths", title: "Направления", hint: "Пошаговый план от нуля до профессии" },
       { href: "/learning/modules", title: "Модули", hint: "Уроки по конкретной теме" },
-      { href: "/learning/practice", title: "Практика", hint: "Лаборатории и упражнения" },
-      { href: "/learning/exams", title: "Экзамены", hint: "Проверка знаний и сертификат" },
+      { href: "/learning/labs", title: "Лаборатории", hint: "Задания, практика и CTF" },
+      { href: "/learning/certifications", title: "Сертификаты", hint: "Проверка знаний и сертификат" },
       { href: "/learning/business", title: "Для компаний", hint: "Программа для группы сотрудников" },
-      { href: "/learning/dashboard", title: "Моё обучение", hint: "Результаты и продолжение" }
+      { href: "/learning", title: "Моё обучение", hint: "Результаты и продолжение" }
     ] },
     shop: { title: "Магазин", href: "/products", links: [
       { href: "/products", title: "Всё оборудование", hint: "Сети, камеры и системы безопасности" },
@@ -183,10 +183,10 @@ const en: SiteCopy = {
     learning: { title: "Learning", href: "/learning", links: [
       { href: "/learning/paths", title: "Paths", hint: "A step-by-step plan from zero to a career" },
       { href: "/learning/modules", title: "Modules", hint: "Lessons on a specific topic" },
-      { href: "/learning/practice", title: "Practice", hint: "Labs and exercises" },
-      { href: "/learning/exams", title: "Exams", hint: "Test your knowledge and earn a certificate" },
+      { href: "/learning/labs", title: "Labs", hint: "Lab tasks, practice and CTF" },
+      { href: "/learning/certifications", title: "Certificates", hint: "Test your knowledge and earn a certificate" },
       { href: "/learning/business", title: "For companies", hint: "A programme for a group of employees" },
-      { href: "/learning/dashboard", title: "My learning", hint: "Results and where to continue" }
+      { href: "/learning", title: "My learning", hint: "Results and where to continue" }
     ] },
     shop: { title: "Shop", href: "/products", links: [
       { href: "/products", title: "All equipment", hint: "Networking, cameras and security gear" },

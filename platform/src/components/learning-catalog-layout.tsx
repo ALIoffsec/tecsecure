@@ -2,78 +2,65 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { useSitePreferences } from "@/components/site-preferences";
-import { UiIcon, type IconName } from "@/components/ui-icon";
-import { learningUi } from "@/lib/learning-ui";
+import { UiIcon } from "@/components/ui-icon";
 
+const words = {
+  uz: { nav: "Ta’lim bo‘limlari", home: "Mening o‘qishim", modules: "Modullar", paths: "Yo‘llar", certifications: "Sertifikatlar", labs: "Laboratoriyalar" },
+  ru: { nav: "Разделы обучения", home: "Моё обучение", modules: "Модули", paths: "Пути", certifications: "Сертификаты", labs: "Лаборатории" },
+  en: { nav: "Learning sections", home: "My learning", modules: "Modules", paths: "Paths", certifications: "Certificates", labs: "Labs" }
+} as const;
+
+type Tab = "home" | "modules" | "paths" | "certifications" | "labs";
+const tabs: { id: Tab; href: string }[] = [
+  { id: "home", href: "/learning" },
+  { id: "modules", href: "/learning/modules" },
+  { id: "paths", href: "/learning/paths" },
+  { id: "certifications", href: "/learning/certifications" },
+  { id: "labs", href: "/learning/labs" }
+];
+
+/** Which of the four sections (or the learning home) an address belongs to. */
+export function learningTabOf(pathname: string): Tab | null {
+  if (pathname === "/learning") return "home";
+  const part = pathname.split("/")[2] ?? "";
+  if (part === "modules") return "modules";
+  if (part === "paths") return "paths";
+  if (part === "certifications" || part === "exams") return "certifications";
+  if (part === "labs" || part === "practice" || part === "ctf") return "labs";
+  if (part === "business" || part === "dashboard") return null;
+  return part ? "modules" : null;
+}
+
+/**
+ * Learning keeps one navigation on every page: a glass segmented control with a sliding indicator (it scrolls
+ * sideways on a phone without moving the page). The learning home is its first, icon-only segment.
+ */
 export function LearningCatalogLayout({ children }: { children: React.ReactNode }) {
   const { locale } = useSitePreferences();
-  const tx = learningUi[locale];
+  const w = words[locale];
   const pathname = usePathname() ?? "";
-  const [open, setOpen] = useState(false);
+  const active = learningTabOf(pathname);
+  const bar = useRef<HTMLDivElement>(null);
+  const [indicator, setIndicator] = useState<{ left: number; width: number } | null>(null);
 
-  const items: { href: string; label: string; icon: IconName }[] = [
-    { href: "/learning", label: tx.catalogOverview, icon: "home" },
-    { href: "/learning/paths", label: tx.catalogPaths, icon: "network" },
-    { href: "/learning/modules", label: tx.catalogModules, icon: "book" },
-    { href: "/learning/exams", label: tx.catalogExams, icon: "clipboard" },
-    { href: "/learning/ctf", label: tx.catalogCtf, icon: "shield" },
-    { href: "/learning/dashboard", label: tx.catalogProgress, icon: "user" },
-    { href: "/learning/practice", label: tx.catalogPracticeLabel, icon: "layout" }
-  ];
+  useLayoutEffect(() => {
+    const element = bar.current?.querySelector<HTMLElement>("[aria-current='page']");
+    if (!element || !bar.current) { setIndicator(null); return; }
+    setIndicator({ left: element.offsetLeft, width: element.offsetWidth });
+    element.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }, [active, locale]);
 
-  const isModuleDetail = /^\/learning\/[^/]+$/.test(pathname)
-    && !["paths", "modules", "labs", "exams", "ctf", "dashboard", "practice"].includes(pathname.split("/")[2] ?? "");
-  const isActive = (href: string) => href === "/learning"
-    ? pathname === href
-    : href === "/learning/practice" && pathname.startsWith("/learning/labs/")
-      ? true
-    : href === "/learning/modules" && isModuleDetail
-      ? true
-      : pathname === href || pathname.startsWith(`${href}/`);
-  const activeItem = items.find((item) => isActive(item.href));
-
-  return (
-    <div className={`learning-catalog-layout${open ? " is-open" : ""}`}>
-      <aside className={`learning-catalog-sidebar${open ? " is-open" : ""}`}>
-        <button
-          aria-controls="learning-catalog-navigation"
-          aria-expanded={open}
-          aria-label={open ? tx.catalogClose : tx.catalogOpen}
-          className="learning-catalog-toggle"
-          onClick={() => setOpen((value) => !value)}
-          title={open ? tx.catalogClose : tx.catalogOpen}
-          type="button"
-        >
-          <span className={`learning-catalog-chevron${open ? " is-open" : ""}`} aria-hidden="true">&gt;</span>
-          {open && <span>{tx.catalogMenuTitle}</span>}
-        </button>
-        {open && (
-          <>
-            <div className="learning-catalog-mobile-heading">
-              <strong>{tx.catalogMenuTitle}</strong>
-              {activeItem && <span>{activeItem.label}</span>}
-            </div>
-            <nav aria-label={tx.catalogMenuTitle} className="learning-catalog-navigation" id="learning-catalog-navigation">
-              {items.map((item) => (
-                <Link
-                  aria-current={isActive(item.href) ? "page" : undefined}
-                  className={isActive(item.href) ? "is-active" : ""}
-                  href={item.href}
-                  key={item.href}
-                  onClick={() => setOpen(false)}
-                >
-                  <UiIcon name={item.icon} size={18} />
-                  <span>{item.label}</span>
-                </Link>
-              ))}
-            </nav>
-          </>
-        )}
-      </aside>
-      {open && <button aria-label={tx.catalogClose} className="learning-catalog-overlay" onClick={() => setOpen(false)} type="button" />}
-      <div className="learning-catalog-content">{children}</div>
-    </div>
-  );
+  return <div className="learning-catalog-layout learn-shell">
+    <nav className="learn-segments" aria-label={w.nav}>
+      <div className="learn-segments-track" ref={bar}>
+        {indicator && <span className="learn-segments-indicator" aria-hidden="true" style={{ transform: `translateX(${indicator.left}px)`, width: indicator.width }} />}
+        {tabs.map(tab => <Link key={tab.id} href={tab.href} className={`learn-segment${tab.id === "home" ? " is-icon" : ""}`} aria-current={active === tab.id ? "page" : undefined} aria-label={tab.id === "home" ? w.home : undefined} title={tab.id === "home" ? w.home : undefined}>
+          {tab.id === "home" ? <UiIcon name="home" size={18} /> : w[tab.id]}
+        </Link>)}
+      </div>
+    </nav>
+    <div className="learning-catalog-content">{children}</div>
+  </div>;
 }

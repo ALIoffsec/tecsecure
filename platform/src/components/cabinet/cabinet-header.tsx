@@ -5,16 +5,16 @@ import { useSitePreferences } from "@/components/site-preferences";
 import { UiIcon } from "@/components/ui-icon";
 import { AccountMenu } from "@/components/account-menu";
 import { unreadBadge } from "@/lib/notifications";
-import { formatMinor, formatNumber } from "@/lib/format";
+import { formatNumber } from "@/lib/format";
 import type { CabinetUser } from "./cabinet-frame";
 
 const words = {
-  uz: { bell: "Bildirishnomalar", unread: (n: number) => `${n} ta o‘qilmagan`, staff: "Siz xodim hisobidasiz. Mijoz bo‘limlari bu hisob uchun bo‘sh.", panel: "Boshqaruv paneli", menu: "Hisob menyusi", wallet: "Hamyon", level: (l: number, x: number, y: number) => `Daraja ${l} · ${x}/${y} XP` },
-  ru: { bell: "Уведомления", unread: (n: number) => `непрочитанных: ${n}`, staff: "Вы вошли как сотрудник. Разделы клиента для этого аккаунта пусты.", panel: "Панель управления", menu: "Меню аккаунта", wallet: "Кошелёк", level: (l: number, x: number, y: number) => `Уровень ${l} · ${x}/${y} XP` },
-  en: { bell: "Notifications", unread: (n: number) => `${n} unread`, staff: "You are signed in as staff. Customer sections are empty for this account.", panel: "Admin panel", menu: "Account menu", wallet: "Wallet", level: (l: number, x: number, y: number) => `Level ${l} · ${x}/${y} XP` }
+  uz: { bell: "Bildirishnomalar", unread: (n: number) => `${n} ta o‘qilmagan`, staff: "Siz xodim hisobidasiz. Mijoz bo‘limlari bu hisob uchun bo‘sh.", panel: "Boshqaruv paneli", menu: "Hisob menyusi", wallet: "Hamyon", level: (l: number, x: number, y: number) => `Daraja ${l} · ${x}/${y}`, som: "so‘m" },
+  ru: { bell: "Уведомления", unread: (n: number) => `непрочитанных: ${n}`, staff: "Вы вошли как сотрудник. Разделы клиента для этого аккаунта пусты.", panel: "Панель управления", menu: "Меню аккаунта", wallet: "Кошелёк", level: (l: number, x: number, y: number) => `Уровень ${l} · ${x}/${y}`, som: "сум" },
+  en: { bell: "Notifications", unread: (n: number) => `${n} unread`, staff: "You are signed in as staff. Customer sections are empty for this account.", panel: "Admin panel", menu: "Account menu", wallet: "Wallet", level: (l: number, x: number, y: number) => `Level ${l} · ${x}/${y}`, som: "UZS" }
 } as const;
 
-export type HomeHead = { walletMinor: number; tec: number; level: number; xp: number; nextXp: number };
+export type HomeHead = { walletMinor: number; tec: number; level: number; levelXp: number; levelSpan: number };
 
 /**
  * The cabinet's head. On the home page it is the identity card: the avatar (opens the account menu), the
@@ -43,12 +43,13 @@ export function CabinetHeader({ user, unread, home }: { user: CabinetUser; unrea
       <div className="cab-id-stats">
         <Link href="/portal/wallet" className="cab-id-stat">
           <small>{w.wallet}</small>
-          <strong>{formatMinor(home.walletMinor, "UZS", locale)}</strong>
+          <strong>{formatNumber(Math.floor(home.walletMinor / 100), 0)}</strong>
+          <small>{w.som}</small>
         </Link>
         <Link href="/learning" className="cab-id-stat">
           <small>TEC</small>
           <strong>{formatNumber(home.tec, 0)}</strong>
-          <small>{w.level(home.level, home.xp, home.nextXp)}</small>
+          <small>{w.level(home.level, home.levelXp, home.levelSpan)}</small>
         </Link>
       </div>
     </header> : <header className="cab-head is-inner">

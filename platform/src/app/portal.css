@@ -241,7 +241,8 @@ html[data-tma] #app-shell :is(.help-fab, .help-header-button) { display: none; }
 /* Chat (help panel and "Xabarlarim"): bubbles, day lines, a composer pinned to the bottom of the thread */
 #app-shell .chat { display: flex; flex-direction: column; gap: 10px; min-height: 0; }
 #app-shell .chat-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 44px; }
-#app-shell .chat-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#app-shell .chat-title { display: grid; flex: 1; min-width: 0; text-align: center; }
+#app-shell .chat-title > * { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #app-shell .chat-list { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
 #app-shell .chat-list button { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 12px; min-height: 56px; padding: 10px 12px; border: 1px solid var(--glass-edge); border-radius: 14px; background: transparent; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
 #app-shell .chat-list-text { display: grid; gap: 2px; min-width: 0; }
@@ -262,9 +263,12 @@ html[data-tma] #app-shell :is(.help-fab, .help-header-button) { display: none; }
 #app-shell .chat-retry { align-self: flex-end; font-size: .8rem; }
 #app-shell .chat-hint { align-self: center; padding: 16px; text-align: center; }
 #app-shell .chat-note { margin: 0; }
-#app-shell .chat-composer { position: sticky; bottom: 0; display: flex; align-items: flex-end; gap: 8px; padding-top: 8px; background: inherit; }
-#app-shell .chat-composer textarea { flex: 1; min-height: 44px; resize: none; line-height: 1.4; font-size: 16px; }
-#app-shell .chat-send { display: grid; place-items: center; width: 44px; min-width: 44px; height: 44px; padding: 0; }
+#app-shell .chat-composer { position: sticky; bottom: 0; display: flex; align-items: flex-end; gap: 8px; padding: 6px 6px 6px 14px; border: .5px solid var(--glass-edge); border-radius: 24px; background: var(--glass-overlay); box-shadow: inset 0 1px 0 #ffffff40; -webkit-backdrop-filter: blur(20px) saturate(170%); backdrop-filter: blur(20px) saturate(170%); }
+#app-shell .chat-composer textarea { flex: 1; min-height: 36px; padding: 8px 0; border: 0; resize: none; background: transparent; color: var(--text); line-height: 1.4; font-size: 16px; box-shadow: none; outline: none; }
+#app-shell .chat-composer:focus-within { border-color: color-mix(in srgb, var(--accent) 55%, var(--glass-edge)); }
+#app-shell .chat-send { display: grid; place-items: center; width: 40px; min-width: 40px; height: 40px; min-height: 40px; padding: 0; border-radius: 50%; transition: transform 200ms cubic-bezier(.32, .72, 0, 1), opacity 160ms; }
+#app-shell .chat-send:disabled { opacity: .45; }
+#app-shell .chat-send:active { transform: scale(.94); }
 @media (max-width: 900px) {
   /* The help chat is a full-screen sheet on a phone; its height follows the visible area when the keyboard opens. */
   #app-shell dialog.help-dialog { width: 100vw; max-width: none; height: var(--chat-vh, 100dvh); max-height: none; margin: 0; inset: 0 auto auto 0; border-radius: 0; display: flex; flex-direction: column; }
@@ -276,3 +280,101 @@ html[data-tma] #app-shell :is(.help-fab, .help-header-button) { display: none; }
   #app-shell .help-fab { display: none; }
   #app-shell .help-header-button { display: inline-grid; place-items: center; }
 }
+
+/* ===== Profile home (spec A): iOS-level liquid glass on the site tokens =====
+   Blur budget on /portal: site header, side menu, identity card, help button (4 of at most 6). Plain blocks
+   and tiles use the glass fill without their own blur, so a child is never blind under a blurred parent. */
+#app-shell { --ios-spring: cubic-bezier(.32, .72, 0, 1); --ios-hair: .5px; }
+#app-shell .cab-home { display: grid; gap: 14px; }
+#app-shell .cab-home .panel-card, #app-shell .cab-home .cab-tile { -webkit-backdrop-filter: none; backdrop-filter: none; }
+#app-shell .cab-id-card {
+  display: grid; gap: 14px; padding: 18px; border-radius: 26px;
+  border: var(--ios-hair) solid var(--glass-edge);
+  background: var(--glass-fill);
+  box-shadow: inset 0 1px 0 #ffffff59, 0 24px 60px -20px #00000080, var(--glass-shadow);
+  -webkit-backdrop-filter: blur(26px) saturate(180%); backdrop-filter: blur(26px) saturate(180%);
+}
+:root[data-theme="light"] #app-shell .cab-id-card { box-shadow: inset 0 1px 0 #ffffffcc, 0 20px 50px -24px #354a7a40; }
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) { #app-shell .cab-id-card { background: var(--surface); } }
+#app-shell .cab-id-top { display: flex; align-items: center; gap: 12px; }
+#app-shell .cab-avatar-button { width: 52px; height: 52px; border-radius: 50%; font-size: 1.2rem; cursor: pointer; transition: transform 200ms var(--ios-spring); }
+#app-shell .cab-avatar-button:active { transform: scale(.97); }
+#app-shell .cab-hello { font-size: 1rem; font-weight: 700; letter-spacing: 0; }
+#app-shell .cab-id-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+#app-shell .cab-id-stat { display: grid; gap: 2px; min-width: 0; padding: 12px 14px; border: var(--ios-hair) solid var(--glass-edge); border-radius: 14px; background: var(--glass-control); color: var(--text); text-decoration: none; transition: transform 200ms var(--ios-spring); }
+#app-shell .cab-id-stat:active, #app-shell .cab-tile:active, #app-shell a.cab-attention-row:active { transform: scale(.97); }
+#app-shell .cab-id-stat strong { font-size: clamp(1.4rem, 5vw, 1.9rem); font-weight: 300; line-height: 1.15; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+#app-shell .cab-id-stat small { color: var(--muted); font-size: .8rem; }
+#app-shell a.cab-attention-row { color: var(--text); text-decoration: none; grid-template-columns: 28px minmax(0, 1fr) auto; }
+#app-shell .cab-attention-chevron { display: grid; color: var(--muted); }
+#app-shell .cab-attention > li { list-style: none; }
+#app-shell .cab-home .cab-tiles ul { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+#app-shell .cab-tile { border-radius: 14px; border-width: var(--ios-hair); }
+#app-shell .cab-activity .activity-bars { margin: 6px 0 8px; }
+@media (min-width: 901px) {
+  /* The same blocks in the same order, in two columns on a computer. */
+  #app-shell .cab-home { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+  #app-shell .cab-home > .cab-id-card, #app-shell .cab-home > .cab-news-line, #app-shell .cab-home > .cab-staff-note, #app-shell .cab-home > .cab-tiles { grid-column: 1 / -1; }
+  #app-shell .cab-home .cab-tiles ul { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  #app-shell .cab-home .cab-tiles.is-six ul { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+}
+
+/* Grouped side menu */
+#app-shell .cab-nav-group + .cab-nav-group { margin-top: 10px; }
+#app-shell .cab-nav-heading { margin: 4px 12px; color: var(--muted); font-size: .72rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+
+/* Activity bars (shared with learning) */
+#app-shell .activity-bars { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); align-items: end; gap: 6px; height: 120px; margin: 0; padding: 0; list-style: none; }
+#app-shell .activity-bars li { position: relative; display: grid; grid-template-rows: 1fr auto; align-items: end; height: 100%; gap: 4px; outline: none; }
+#app-shell .activity-bar { display: block; width: 100%; min-height: 2px; border-radius: 6px 6px 3px 3px; background: linear-gradient(180deg, var(--accent), color-mix(in srgb, var(--accent) 45%, transparent)); transform-origin: bottom; animation: bar-grow 420ms var(--ios-spring) both; }
+#app-shell .activity-bar[data-empty] { background: var(--glass-control); }
+#app-shell .activity-label { color: var(--muted); font-size: .66rem; text-align: center; white-space: nowrap; overflow: hidden; }
+#app-shell .activity-bars li:is(:hover, :focus-visible)::after { content: attr(data-tip); position: absolute; bottom: calc(100% + 6px); left: 50%; z-index: 3; transform: translateX(-50%); padding: 4px 8px; border-radius: 10px; background: var(--glass-overlay); color: var(--text); font-size: .75rem; white-space: nowrap; box-shadow: var(--glass-shadow); pointer-events: none; }
+#app-shell .activity-bars li:first-child:is(:hover, :focus-visible)::after { left: 0; transform: none; }
+#app-shell .activity-bars li:last-child:is(:hover, :focus-visible)::after { left: auto; right: 0; transform: none; }
+#app-shell .activity-bars li:focus-visible .activity-bar { outline: 2px solid var(--accent); outline-offset: 2px; }
+@keyframes bar-grow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+
+/* Account menu: a glass popover beside the button on a computer, a bottom sheet on a phone */
+dialog.account-menu { position: fixed; inset: var(--menu-top, 72px) var(--menu-right, 16px) auto auto; width: min(320px, calc(100vw - 24px)); max-height: calc(100dvh - var(--menu-top, 72px) - 16px); margin: 0; padding: 0; overflow: visible; border: 0; background: transparent; color: var(--text); }
+dialog.account-menu::backdrop { background: #0000002e; }
+dialog.account-menu .account-menu-panel { max-height: inherit; overflow-y: auto; padding: 10px; border: .5px solid var(--glass-edge); border-radius: 22px; background: var(--glass-overlay); box-shadow: inset 0 1px 0 #ffffff59, 0 30px 70px -20px #000000a0; -webkit-backdrop-filter: blur(24px) saturate(180%); backdrop-filter: blur(24px) saturate(180%); transform-origin: top right; animation: menu-in 320ms cubic-bezier(.32, .72, 0, 1) both; }
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) { dialog.account-menu .account-menu-panel { background: var(--surface); } }
+dialog.account-menu .account-menu-grabber { display: none; }
+dialog.account-menu .account-menu-who { display: flex; align-items: center; gap: 10px; padding: 6px 6px 12px; }
+dialog.account-menu .account-menu-who > span:last-child { display: grid; min-width: 0; }
+dialog.account-menu .account-menu-who small { color: var(--muted); }
+dialog.account-menu .account-menu-group { margin: 0 0 10px; }
+dialog.account-menu .account-menu-group h2 { margin: 0 8px 4px; color: var(--muted); font-size: .7rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+dialog.account-menu .account-menu-group ul { margin: 0; padding: 0; overflow: hidden; border-radius: 14px; background: var(--glass-control); list-style: none; }
+dialog.account-menu .account-menu-group li + li a { border-top: .5px solid var(--glass-edge); }
+dialog.account-menu .account-menu-group a { display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 8px 12px; color: var(--text); text-decoration: none; transition: background-color 160ms; }
+dialog.account-menu .account-menu-group a:is(:hover, :focus-visible) { background: color-mix(in srgb, var(--accent) 12%, transparent); }
+dialog.account-menu .account-menu-label { flex: 1; }
+dialog.account-menu .account-menu-chevron { display: grid; color: var(--muted); }
+dialog.account-menu .account-menu-icon { display: grid; width: 28px; height: 28px; place-items: center; border-radius: 8px; color: #fff; }
+dialog.account-menu .tone-blue { background: #2f6fd6; }
+dialog.account-menu .tone-grey { background: #6b7484; }
+dialog.account-menu .tone-orange { background: #c96f1a; }
+dialog.account-menu .tone-teal { background: #18857c; }
+dialog.account-menu .tone-green { background: #23834a; }
+dialog.account-menu .tone-violet { background: #6a4cc4; }
+dialog.account-menu .tone-gold { background: #9a7215; }
+dialog.account-menu .account-menu-out { padding-top: 6px; border-top: .5px solid var(--glass-edge); }
+@keyframes menu-in { from { opacity: 0; transform: scale(.94); } to { opacity: 1; transform: scale(1); } }
+@keyframes sheet-in { from { transform: translateY(100%); } to { transform: translateY(0); } }
+@media (max-width: 900px) {
+  dialog.account-menu { inset: auto 0 0 0; width: 100vw; max-width: none; max-height: 88dvh; }
+  dialog.account-menu .account-menu-panel { max-height: 88dvh; padding: 6px 14px calc(16px + env(safe-area-inset-bottom)); border-radius: 26px 26px 0 0; animation-name: sheet-in; }
+  dialog.account-menu .account-menu-grabber { display: grid; place-items: center; height: 24px; cursor: grab; touch-action: none; }
+  dialog.account-menu .account-menu-grabber span { width: 38px; height: 5px; border-radius: 3px; background: var(--muted); opacity: .5; }
+}
+
+/* Wallet cards: the chip and the coin sit inside their card, top left */
+#app-shell .cab-money-chip { display: block; width: 34px; height: 26px; border-radius: 6px; background: linear-gradient(135deg, #e8cf8a, #b89140 55%, #e9d79b); box-shadow: inset 0 0 0 1px #00000026; }
+#app-shell .cab-money-coin { display: grid; width: 30px; height: 30px; place-items: center; border-radius: 50%; background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--accent) 70%, #fff), var(--accent)); color: #04121b; font-size: .62rem; font-weight: 800; }
+#app-shell .cab-money-card .cab-money-amount { font-weight: 300; }
+
+/* Motion: everything is instant when motion is off (site setting) or reduced (system) */
+html[data-motion="off"] #app-shell :is(.activity-bar, .learn-xp-fill, .learn-radar-shape), html[data-motion="off"] dialog.account-menu .account-menu-panel { animation: none; transition: none; }
+@media (prefers-reduced-motion: reduce) { #app-shell :is(.activity-bar, .learn-xp-fill, .learn-radar-shape), dialog.account-menu .account-menu-panel { animation: none; transition: none; } }

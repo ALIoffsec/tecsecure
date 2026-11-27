@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 const staticPaths = [
   "", "/services", "/cybersecurity", "/consultation", "/request-service", "/support-plans", "/estimate", "/security-check", "/sample-report",
   "/products", "/work", "/news", "/about", "/contact", "/careers", "/privacy", "/terms",
-  "/learning", "/learning/modules", "/learning/paths", "/learning/practice", "/learning/practice/labs", "/learning/exams", "/learning/ctf", "/learning/business"
+  "/learning", "/learning/modules", "/learning/paths", "/learning/practice", "/learning/practice/labs", "/learning/certifications", "/learning/labs", "/learning/ctf", "/learning/business"
 ];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {

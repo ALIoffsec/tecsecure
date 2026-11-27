@@ -52,7 +52,7 @@ export function LearningDashboard({ nickname }: { nickname: string | null }) {
       {!progress.rewardsAvailable && !nickname && (
         <div className="notice learn-reward-sign-in">
           <span>{tx.rewardUnavailable}</span>
-          <Link className="button secondary" href={loginPath("/learning/dashboard")}>{tx.signInToPurchase}</Link>
+          <Link className="button secondary" href={loginPath("/learning")}>{tx.signInToPurchase}</Link>
         </div>
       )}
 

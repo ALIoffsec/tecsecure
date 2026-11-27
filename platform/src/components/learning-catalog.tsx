@@ -107,7 +107,7 @@ export function LearningCatalog(props: LearningCatalogProps) {
               <div className="hero-actions">
                 {progress.ready && progress.last && catalog.modules.some(module => module.slug === progress.last) && <Link className="button" href={`/learning/${progress.last}`}>{entry.resume}</Link>}
                 <Link className="button" href="/learning/paths"><UiIcon name="network" size={18} />{tx.learningHomeStart}</Link>
-                <Link className="button secondary" href="/learning/dashboard"><UiIcon name="layout" size={18} />{tx.openDashboard}</Link>
+                <Link className="button secondary" href="/learning"><UiIcon name="layout" size={18} />{tx.openDashboard}</Link>
               </div>
             </div>
             <aside className="learn-home-summary" aria-label={tx.learningHomeSummary}>
@@ -149,7 +149,7 @@ export function LearningCatalog(props: LearningCatalogProps) {
                 <p>{tx.catalogLabsDescription}</p>
                 <span className="learn-catalog-tile-action">{tx.learningHomeOpenSection}<span aria-hidden="true">→</span></span>
               </Link>
-              <Link className="learn-catalog-tile card" href="/learning/exams">
+              <Link className="learn-catalog-tile card" href="/learning/certifications">
                 <span className="learn-catalog-tile-heading"><UiIcon name="clipboard" /><strong>{tx.catalogExams}</strong></span>
                 <p>{tx.catalogExamsDescription}</p>
                 <span className="learn-catalog-tile-action">{tx.learningHomeOpenSection}<span aria-hidden="true">→</span></span>
@@ -159,7 +159,7 @@ export function LearningCatalog(props: LearningCatalogProps) {
                 <p>{tx.catalogCtfDescription}</p>
                 <span className="learn-catalog-tile-action">{tx.learningHomeOpenSection}<span aria-hidden="true">→</span></span>
               </Link>
-              <Link className="learn-catalog-tile card" href="/learning/dashboard">
+              <Link className="learn-catalog-tile card" href="/learning">
                 <span className="learn-catalog-tile-heading"><UiIcon name="user" /><strong>{tx.catalogProgress}</strong></span>
                 <p>{tx.catalogMyPractice}</p>
                 <span className="learn-catalog-tile-action">{tx.learningHomeOpenSection}<span aria-hidden="true">→</span></span>
@@ -184,7 +184,7 @@ export function LearningCatalog(props: LearningCatalogProps) {
       {section === "paths" && <section className="learn-block">
         <div className="section-head learn-section-title">
           <div><span className="eyebrow">{tx.eyebrow}</span><h1 className="page-title">{tx.pathsTitle}</h1></div>
-          <Link className="button secondary" href="/learning/dashboard">{tx.openDashboard}</Link>
+          <Link className="button secondary" href="/learning">{tx.openDashboard}</Link>
         </div>
         <div className="learn-path-grid">
           {catalog.paths.map((path) => {

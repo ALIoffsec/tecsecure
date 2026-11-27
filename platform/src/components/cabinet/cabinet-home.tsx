@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { AccountSessionActions } from "@/components/account-session-actions";
 import { useSitePreferences } from "@/components/site-preferences";
 import { UiIcon, type IconName } from "@/components/ui-icon";
-import { formatDate, formatMinor, formatNumber } from "@/lib/format";
+import { formatDate } from "@/lib/format";
+import { ActivityBars } from "@/components/activity-bars";
+import { MONTH_SHORT } from "@/lib/activity";
 import { cabinetLabels, type CabinetSection } from "@/lib/cabinet-routes";
 import { orderStep, type AttentionKind } from "@/lib/cabinet-home";
 import type { CabinetHomeData } from "@/lib/cabinet-data";
@@ -19,6 +20,8 @@ type Words = {
   orders: (n: number) => string; ordersNone: string; quotes: (n: number) => string; requests: (n: number) => string; requestsNone: string;
   lesson: (title: string) => string; lessonNone: string; devices: (n: number) => string; quiet: (n: number) => string;
   phoneMissing: string; phoneUnverified: string; settingsOk: string; help: string; helpLine: string; cancelRequested: string; news: (n: number) => string;
+  tileOrders: string; tileRequests: string; tileLearning: string; tileCertificates: string; ordersShort: (n: number) => string; quotesShort: (n: number) => string; requestsShort: (n: number) => string; lessonShort: (n: number) => string;
+  activity: string; activityHint: string; activityEmpty: string; activityAction: string; certificates: (n: number) => string; certificatesNone: string; perMonth: string;
 };
 
 const words: Record<"uz" | "ru" | "en", Words> = {
@@ -32,7 +35,9 @@ const words: Record<"uz" | "ru" | "en", Words> = {
     lesson: title => `Davom ettirish: ${title}`, lessonNone: "O‘qishni davom ettirish",
     devices: n => `${n} ta qurilma`, quiet: n => `${n} ta qurilma javob bermayapti`,
     phoneMissing: "Telefon qo‘shilmagan", phoneUnverified: "Telefon tasdiqlanmagan", settingsOk: "Ma’lumot va xavfsizlik",
-    help: "Yordam", helpLine: "Savol yozish", news: n => `${n} ta yangi bildirishnoma`, cancelRequested: "Bekor qilish so‘raldi"
+    help: "Yordam", helpLine: "Savol yozish", news: n => `${n} ta yangi bildirishnoma`, cancelRequested: "Bekor qilish so‘raldi",
+    tileOrders: "Buyurtmalar", tileRequests: "Arizalar", tileLearning: "O‘qishim", tileCertificates: "Sertifikatlar", ordersShort: n => `${n} faol`, quotesShort: n => `${n} taklif`, requestsShort: n => `${n} jarayonda`, lessonShort: n => `${n}-dars`,
+    activity: "Faollik (12 oy)", activityHint: "Buyurtmalar, darslar va arizalar oylar bo‘yicha", activityEmpty: "Bu yerda oylik faolligingiz chiziladi. Birinchi qadam:", activityAction: "Darsni boshlash", certificates: n => `${n} ta sertifikat`, certificatesNone: "Birinchisini oling", perMonth: "ta"
   },
   ru: {
     waiting: "Ждёт вашего действия", lastOrder: "Последний заказ", sections: "Разделы", track: "Этапы заказа",
@@ -44,7 +49,9 @@ const words: Record<"uz" | "ru" | "en", Words> = {
     lesson: title => `Продолжить: ${title}`, lessonNone: "Продолжить обучение",
     devices: n => `Устройств: ${n}`, quiet: n => `Не отвечают: ${n}`,
     phoneMissing: "Телефон не добавлен", phoneUnverified: "Телефон не подтверждён", settingsOk: "Данные и безопасность",
-    help: "Помощь", helpLine: "Написать вопрос", news: n => `Новых уведомлений: ${n}`, cancelRequested: "Запрошена отмена"
+    help: "Помощь", helpLine: "Написать вопрос", news: n => `Новых уведомлений: ${n}`, cancelRequested: "Запрошена отмена",
+    tileOrders: "Заказы", tileRequests: "Заявки", tileLearning: "Обучение", tileCertificates: "Сертификаты", ordersShort: n => `${n} активн.`, quotesShort: n => `предложений: ${n}`, requestsShort: n => `в работе: ${n}`, lessonShort: n => `урок ${n}`,
+    activity: "Активность (12 мес.)", activityHint: "Заказы, уроки и заявки по месяцам", activityEmpty: "Здесь появится ваша активность по месяцам. Первый шаг:", activityAction: "Начать урок", certificates: n => `Сертификатов: ${n}`, certificatesNone: "Получите первый", perMonth: ""
   },
   en: {
     waiting: "Waiting on you", lastOrder: "Latest order", sections: "Sections", track: "Order progress",
@@ -56,46 +63,50 @@ const words: Record<"uz" | "ru" | "en", Words> = {
     lesson: title => `Continue: ${title}`, lessonNone: "Continue learning",
     devices: n => `${n} ${n === 1 ? "device" : "devices"}`, quiet: n => `${n} not responding`,
     phoneMissing: "No phone added", phoneUnverified: "Phone not verified", settingsOk: "Details and security",
-    help: "Help", helpLine: "Ask a question", news: n => `${n} new notification${n === 1 ? "" : "s"}`, cancelRequested: "Cancellation requested"
+    help: "Help", helpLine: "Ask a question", news: n => `${n} new notification${n === 1 ? "" : "s"}`, cancelRequested: "Cancellation requested",
+    tileOrders: "Orders", tileRequests: "Requests", tileLearning: "Learning", tileCertificates: "Certificates", ordersShort: n => `${n} active`, quotesShort: n => `${n} quote${n === 1 ? "" : "s"}`, requestsShort: n => `${n} in progress`, lessonShort: n => `lesson ${n}`,
+    activity: "Activity (12 months)", activityHint: "Orders, lessons and requests by month", activityEmpty: "Your monthly activity will be drawn here. A first step:", activityAction: "Start a lesson", certificates: n => `${n} certificate${n === 1 ? "" : "s"}`, certificatesNone: "Earn your first", perMonth: ""
   }
 };
 
 const attentionIcon: Record<AttentionKind, IconName> = { invoiceOverdue: "alert", orderUnpaid: "creditCard", receiptRejected: "receipt", invoiceUnpaid: "receipt", quoteWaiting: "clipboard", staffReply: "mail", phoneUnverified: "phone" };
 const payKinds = new Set<AttentionKind>(["invoiceOverdue", "orderUnpaid", "invoiceUnpaid"]);
 
-type Tile = { id: CabinetSection | "help"; href: string; icon: IconName; label: string; line: string; count?: number; warn?: boolean };
+type Tile = { id: CabinetSection; href: string; icon: IconName; label: string; line: string; count?: number; warn?: boolean };
 
 /**
- * The cabinet's home: greeting with the wallet, what waits on the customer, the latest active order on its
- * four-step line, and one card per section with a live line. Cards are the way into every section on a phone;
- * a computer also has the side menu.
+ * The cabinet's home: the identity card (wallet, TEC and learning level), what waits on the customer, the latest
+ * order, a year of activity, and compact tiles (2×2, or 2×3 with devices). Everything else is in the avatar
+ * menu and, on a computer, the side menu.
  */
 export function CabinetHome({ user, unread, nav, data }: { user: CabinetUser; unread: number; nav: CabinetNavState; data: CabinetHomeData }) {
   const { locale } = useSitePreferences();
   const w = words[locale];
   const labels = cabinetLabels[locale];
   const quotesWaiting = data.waiting.filter(item => item.kind === "quoteWaiting").length;
-  const requestsCount = nav.counts.requests ?? 0;
   const tiles: Tile[] = [
-    { id: "orders", href: "/portal/orders", icon: "truck", label: labels.orders, line: data.activeOrders ? w.orders(data.activeOrders) : w.ordersNone, count: nav.counts.orders },
-    { id: "requests", href: "/portal/requests", icon: "clipboard", label: labels.requests, line: quotesWaiting ? w.quotes(quotesWaiting) : data.openRequests ? w.requests(data.openRequests) : w.requestsNone, count: requestsCount },
-    ...(nav.show.learning ? [{ id: "learning" as const, href: data.lessonSlug ? `/learning/${data.lessonSlug}` : "/portal/learning", icon: "book" as const, label: labels.learning, line: data.lesson ? w.lesson(data.lesson[locale]) : w.lessonNone }] : []),
-    { id: "wallet", href: "/portal/wallet", icon: "wallet", label: labels.wallet, line: `${formatMinor(data.walletMinor, "UZS", locale)} · ${formatNumber(data.tec, 0)} TEC` },
-    ...(nav.show.devices || data.devices ? [{ id: "devices" as const, href: "/portal/devices", icon: "server" as const, label: labels.devices, line: data.quietDevices ? w.quiet(data.quietDevices) : w.devices(data.devices), warn: data.quietDevices > 0 }] : []),
-    { id: "help", href: "/portal/messages", icon: "mail", label: w.help, line: w.helpLine }
+    { id: "orders", href: "/portal/orders", icon: "truck", label: w.tileOrders, line: data.activeOrders ? w.ordersShort(data.activeOrders) : w.ordersNone, count: nav.counts.orders },
+    { id: "requests", href: "/portal/requests", icon: "clipboard", label: w.tileRequests, line: quotesWaiting ? w.quotesShort(quotesWaiting) : data.openRequests ? w.requestsShort(data.openRequests) : w.requestsNone, count: nav.counts.requests },
+    { id: "learning", href: "/learning", icon: "book", label: w.tileLearning, line: data.lessonNext ? w.lessonShort(data.lessonNext) : w.lessonNone },
+    { id: "certificates", href: "/learning/certifications", icon: "shield", label: w.tileCertificates, line: data.certificates ? w.certificates(data.certificates) : w.certificatesNone },
+    ...(nav.show.devices || data.devices ? [{ id: "devices" as const, href: "/portal/devices", icon: "server" as const, label: labels.devices, line: data.quietDevices ? w.quiet(data.quietDevices) : w.devices(data.devices), warn: data.quietDevices > 0 }] : [])
   ];
   const order = data.lastOrder;
   const step = order ? orderStep(order.status) : -1;
-  return <>
-    <CabinetHeader user={user} unread={unread} home={{ walletMinor: data.walletMinor, tec: data.tec }} />
+  const months = MONTH_SHORT[locale];
+  const activityEmpty = data.activity.every(item => item.count === 0);
+  return <div className="cab-home">
+    <CabinetHeader user={user} unread={unread} home={{ walletMinor: data.walletMinor, tec: data.tec, level: data.level, levelXp: data.levelXp, levelSpan: data.levelSpan }} />
     {unread > 0 && <Link className="cab-news-line" href="/portal/notifications"><UiIcon name="bell" size={18} /><span>{w.news(unread)}</span><UiIcon name="chevronRight" size={18} /></Link>}
     {data.waiting.length > 0 && <section className="cab-block-plain" aria-labelledby="cab-waiting">
       <h2 id="cab-waiting" className="cab-h2">{w.waiting}</h2>
       <ul className="cab-attention">
-        {data.waiting.map(item => <li className="cab-attention-row" key={item.key}>
-          <span className="cab-attention-icon" aria-hidden="true"><UiIcon name={attentionIcon[item.kind]} /></span>
-          <span className="cab-attention-text"><strong>{w.attention[item.kind]}</strong><small>{item.subject}</small></span>
-          <Link className="button ghost cab-attention-action" href={item.href}>{payKinds.has(item.kind) ? w.pay : w.view}<span className="sr-only"> · {item.subject}</span></Link>
+        {data.waiting.map(item => <li key={item.key}>
+          <Link className="cab-attention-row is-link" href={item.href}>
+            <span className="cab-attention-icon" aria-hidden="true"><UiIcon name={attentionIcon[item.kind]} /></span>
+            <span className="cab-attention-text"><strong>{item.subject}: {w.attention[item.kind]}</strong><span className="sr-only"> · {payKinds.has(item.kind) ? w.pay : w.view}</span></span>
+            <span className="cab-attention-chevron" aria-hidden="true"><UiIcon name="chevronRight" size={18} /></span>
+          </Link>
         </li>)}
       </ul>
     </section>}
@@ -105,11 +116,7 @@ export function CabinetHome({ user, unread, nav, data }: { user: CabinetUser; un
           <h2 id="cab-last-order" className="cab-h2">{w.lastOrder}</h2>
           <StatusBadge kind="order" code={order.status} />
         </span>
-        <span className="cab-order-line">
-          {order.first ? `${order.first.name} × ${order.first.quantity}` : order.reference}
-          {order.more > 0 && <span className="muted"> · {w.more(order.more)}</span>}
-        </span>
-        <small className="muted">{order.reference} · {formatDate(order.createdAt)}</small>
+        <span className="sr-only">{order.first ? `${order.first.name} × ${order.first.quantity}` : order.reference} · {formatDate(order.createdAt)}</span>
         {order.cancelRequested && <small className="cab-warn-text">{w.cancelRequested}</small>}
         {step >= 0 && <ol className="cab-track" aria-label={w.track}>
           {w.steps.map((label, index) => <li key={label} className={index <= step ? "is-done" : undefined} aria-current={index === step ? "step" : undefined}>
@@ -119,7 +126,16 @@ export function CabinetHome({ user, unread, nav, data }: { user: CabinetUser; un
         </ol>}
       </Link>
     </section>}
-    <nav className="cab-tiles" aria-label={w.sections}>
+    <section className="panel-card cab-activity" aria-labelledby="cab-activity">
+      <h2 id="cab-activity" className="cab-h2">{w.activity}</h2>
+      {activityEmpty
+        ? <p className="small muted">{w.activityEmpty} <Link className="text-link" href="/learning">{w.activityAction}</Link></p>
+        : <>
+          <ActivityBars label={w.activityHint} unit={w.perMonth} bars={data.activity.map(item => ({ key: `${item.year}-${item.month}`, short: months[item.month], long: `${months[item.month]} ${item.year}`, value: item.count }))} />
+          <p className="small muted">{w.activityHint}</p>
+        </>}
+    </section>
+    <nav className={`cab-tiles${tiles.length > 4 ? " is-six" : ""}`} aria-label={w.sections}>
       <ul>
         {tiles.map(tile => <li key={tile.id}>
           <Link className="cab-tile" href={tile.href}>
@@ -133,6 +149,5 @@ export function CabinetHome({ user, unread, nav, data }: { user: CabinetUser; un
         </li>)}
       </ul>
     </nav>
-    <div className="cab-signout"><AccountSessionActions compact /></div>
-  </>;
+  </div>;
 }
